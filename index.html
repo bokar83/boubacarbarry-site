@@ -304,10 +304,37 @@
     }
     .hero-headline em {
       font-style: normal;
+    }
+
+    /* ── Rolodex cycling text — fixed block, flips vertically ─────── */
+    .hero-cycle-wrap {
+      display: block;
+      overflow: hidden;
+      /* height matches one line of the headline; line-height 1.08 × font-size */
+      height: 1.12em;
+      line-height: 1.12em;
+    }
+    #heroCycleText {
+      display: block;
       background: linear-gradient(105deg, var(--primary) 0%, #7dd3fc 55%, var(--gold) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      will-change: transform, opacity;
+    }
+    #heroCycleText.flip-out {
+      animation: flipOut 0.28s cubic-bezier(0.4, 0, 1, 1) forwards;
+    }
+    #heroCycleText.flip-in {
+      animation: flipIn 0.32s cubic-bezier(0, 0, 0.2, 1) forwards;
+    }
+    @keyframes flipOut {
+      0%   { transform: translateY(0);      opacity: 1; }
+      100% { transform: translateY(-110%);  opacity: 0; }
+    }
+    @keyframes flipIn {
+      0%   { transform: translateY(110%);   opacity: 0; }
+      100% { transform: translateY(0);      opacity: 1; }
     }
     .hero-sub {
       font-size: clamp(1rem, 2.2vw, 1.2rem);
@@ -2681,21 +2708,31 @@
   var cycleEl = document.getElementById('heroCycleText');
   var cycleIndex = 0;
 
-  if (cycleEl && !reducedMotion) {
-    function nextCycle() {
-      cycleEl.classList.add('fade-out');
-      setTimeout(function() {
+  if (cycleEl) {
+    if (reducedMotion) {
+      /* reduced motion: just swap text, no animation */
+      setInterval(function() {
         cycleIndex = (cycleIndex + 1) % cycleWords.length;
         cycleEl.textContent = cycleWords[cycleIndex];
         cycleEl.setAttribute('aria-label', cycleWords[cycleIndex]);
-        cycleEl.classList.remove('fade-out');
-        cycleEl.classList.add('fade-in');
+      }, 3000);
+    } else {
+      function nextCycle() {
+        /* flip current word out upward */
+        cycleEl.classList.remove('flip-in');
+        cycleEl.classList.add('flip-out');
         setTimeout(function() {
-          cycleEl.classList.remove('fade-in');
-        }, 400);
-      }, 300);
+          /* swap word while off-screen */
+          cycleIndex = (cycleIndex + 1) % cycleWords.length;
+          cycleEl.textContent = cycleWords[cycleIndex];
+          cycleEl.setAttribute('aria-label', cycleWords[cycleIndex]);
+          cycleEl.classList.remove('flip-out');
+          /* flip new word in from below */
+          cycleEl.classList.add('flip-in');
+        }, 280); /* matches flipOut duration */
+      }
+      setInterval(nextCycle, 2800);
     }
-    setInterval(nextCycle, 2800);
   }
 
   /* -- CountUp on readiness stats ---------------------------------------- */
