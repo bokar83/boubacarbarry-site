@@ -1,5 +1,5 @@
 // Detected: Static HTML + vanilla JS for YouTube transcript requests
-(function() {
+(function () {
   const urlInput = document.getElementById('youtube-url');
   const fetchBtn = document.getElementById('fetch-btn');
   const statusEl = document.getElementById('status');
@@ -40,31 +40,61 @@
 
     setStatus('Loading transcript…');
     transcriptEl.textContent = '';
-    try {
-      const response = await fetch('/api/youtube-transcript', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
-      });
+    /**
+     * Fetches JSONP data asynchronously by wrapping the script injection in a Promise.
+     * @param {string} baseUrl - The Google Apps Script URL
+     * @param {string} targetUrl - The YouTube video URL
+     * @returns {Promise<Object>} The transcript payload
+     */
+    const fetchJsonp = (baseUrl, targetUrl) => {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'jsonpCallback_' + Math.round(100000 * Math.random());
+        const endpoint = new URL(baseUrl);
+        endpoint.searchParams.append('url', targetUrl);
+        endpoint.searchParams.append('callback', callbackName);
 
-      const payload = await response.json();
-      if (!response.ok || payload.error) {
-        throw new Error(payload.error || 'Unable to fetch transcript.');
+        const script = document.createElement('script');
+        script.src = endpoint.toString();
+        
+        window[callbackName] = (payload) => {
+          cleanup();
+          resolve(payload);
+        };
+
+        script.onerror = () => {
+          cleanup();
+          reject(new Error('Network error: Failed to reach transcript server.'));
+        };
+
+        const cleanup = () => {
+          delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+        };
+
+        document.body.appendChild(script);
+      });
+    };
+
+    try {
+      const payload = await fetchJsonp(
+        'https://script.google.com/macros/s/AKfycbxRBXudksuoosJ2ZdVi7eq_4uESmticUnNoD1yhbAgXMNXREL1DuOsYn9yCY_kqRGyL/exec',
+        url
+      );
+
+      if (payload.error) {
+        throw new Error(payload.error);
       }
 
       const text = (payload.transcript || '').trim();
       if (!text) {
-        setStatus('No transcript available for this video.', 'error');
-        transcriptEl.textContent = 'No transcript available for this video.';
-        return;
+        throw new Error('No transcript available for this video.');
       }
 
       transcriptEl.textContent = text;
       setStatus('Transcript loaded.', 'success');
     } catch (err) {
       console.error(err);
-      const fallback =
-        'Transcript service is currently unavailable. Please try again later or copy captions directly from YouTube.';
+      const fallback = 'Transcript service is currently unavailable. Please copy captions directly from YouTube.';
       setStatus(err.message || fallback, 'error');
       transcriptEl.textContent = err.message || fallback;
     }
