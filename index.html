@@ -2482,7 +2482,7 @@
     faqList.appendChild(item);
   });
 
-  /* ── Contact form (Formspree) ───────────────────────────── */
+  /* ── Contact form ───────────────────────────────────────── */
   var contactForm = document.getElementById('contact-form');
   var cfSubmit    = document.getElementById('cf-submit');
   var cfMsg       = document.getElementById('cf-msg-status');
@@ -2516,21 +2516,24 @@
     cfSubmit.disabled = true;
     cfSubmit.textContent = 'Sending…';
 
-    var data = new FormData(contactForm);
-    fetch('https://formspree.io/f/mnjogapv', {
+    var payload = {
+      name:         document.getElementById('cf-name').value.trim(),
+      email:        emailVal,
+      organization: (document.getElementById('cf-org') ? document.getElementById('cf-org').value.trim() : ''),
+      message:      (document.getElementById('cf-msg') ? document.getElementById('cf-msg').value.trim() : '')
+    };
+    fetch('https://n8n.srv1040886.hstgr.cloud/webhook/formspree-contact', {
       method: 'POST',
-      body: data,
-      headers: { 'Accept': 'application/json' }
+      body: JSON.stringify({ body: payload }),
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
     })
-    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
-    .then(function (res) {
-      if (res.ok) {
-        cfMsg.textContent = 'Message sent. I\'ll be in touch within 24 hours.';
+    .then(function (r) {
+      if (r.ok || r.status === 200) {
+        cfMsg.textContent = 'Message sent. I\'ll be in touch shortly.';
         cfMsg.className = 'contact-msg success';
         contactForm.reset();
       } else {
-        var errs = (res.body.errors || []).map(function (x) { return x.message; }).join(', ');
-        cfMsg.textContent = errs || 'Something went wrong. Please email me directly.';
+        cfMsg.textContent = 'Something went wrong. Please email catalystworks.ai@gmail.com directly.';
         cfMsg.className = 'contact-msg error';
       }
       cfMsg.style.display = 'block';
@@ -2546,7 +2549,7 @@
     });
   });
 
-  /* ── Subscribe form (Formspree) ─────────────────────────── */
+  /* ── Subscribe form ─────────────────────────────────────── */
   var subForm = document.getElementById('subscribe-form');
   var subMsg  = document.getElementById('sub-msg');
 
@@ -2557,17 +2560,13 @@
     var email = document.getElementById('sub-email').value.trim();
     if (!email) return;
 
-    var data = new FormData();
-    data.append('email', email);
-    data.append('_subject', 'Newsletter signup from boubacarbarry.com');
-
-    fetch('https://formspree.io/f/mnjogapv', {
+    fetch('https://n8n.srv1040886.hstgr.cloud/webhook/formspree-contact', {
       method: 'POST',
-      body: data,
-      headers: { 'Accept': 'application/json' }
+      body: JSON.stringify({ body: { email: email, name: 'Newsletter Signup', message: 'Newsletter signup from boubacarbarry.com', organization: '' } }),
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
     })
     .then(function (r) {
-      if (r.ok) {
+      if (r.ok || r.status === 200) {
         subMsg.textContent = "You're on the list. I'll reach out when the newsletter launches.";
         subMsg.className = 'form-msg success';
         subForm.reset();
