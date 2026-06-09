@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UTM Link Builder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23071A2E'/%3E%3Cpath d='M16 6v20M21 10.5H13.2a3.3 3.3 0 0 0 0 6.6h5.6a3.3 3.3 0 0 1 0 6.6H11' stroke='%2300B7C2' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#071A2E; --navy-2:#0c2742; --clay:#B47C57; --clay-soft:#d8b89e;
+    --action:#00B7C2; --paper:#f4efe8; --ink:#0d1b29;
+    --line:rgba(244,239,232,.14);
+    --good:#3fb27f; --bad:#d99a3c;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 88% -10%, #103252 0%, transparent 55%),
+      var(--navy);
+    color:var(--paper); font-family:'Public Sans',system-ui,sans-serif;
+    line-height:1.5; min-height:100vh; padding:clamp(18px,4vw,52px);
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:.5rem}
+  h1{font-family:'Spectral',serif;font-weight:700;font-size:clamp(2rem,1.3rem+3.2vw,3.4rem);line-height:1.04;letter-spacing:-.01em;max-width:16ch}
+  h1 em{font-style:italic;color:var(--clay-soft)}
+  .sub{margin-top:.85rem;max-width:52ch;color:rgba(244,239,232,.74);font-size:1.02rem}
+  .rule{width:100%;height:14px;margin:1.6rem 0 2.1rem;display:block;opacity:.8}
+  .grid{display:grid;grid-template-columns:1fr;gap:clamp(20px,2.5vw,34px)}
+  @media(min-width:880px){.grid{grid-template-columns:1.05fr .95fr;align-items:start}}
+
+  .panel{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border:1px solid var(--line);border-radius:18px;padding:clamp(18px,2.4vw,30px)}
+  .panel + .panel{margin-top:22px}
+  .ptitle{display:flex;align-items:center;gap:.55rem;font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:1.1rem}
+  .ptitle svg{width:16px;height:16px;stroke:var(--clay);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ptitle .hint{text-transform:none;letter-spacing:0}
+  .field{margin-bottom:1.15rem}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:.86rem;color:rgba(244,239,232,.82);margin-bottom:.45rem;font-weight:500}
+  .field .hint{color:rgba(244,239,232,.5);font-weight:400}
+  input[type=text],input[type=url]{
+    width:100%;background:rgba(7,17,28,.55);border:1px solid var(--line);border-radius:11px;
+    color:var(--paper);font-family:var(--mono);font-size:.96rem;font-weight:600;padding:.7rem .85rem;
+    transition:border-color .2s var(--ease),box-shadow .2s var(--ease);
+  }
+  input:focus{outline:none;border-color:var(--action);box-shadow:0 0 0 3px rgba(0,183,194,.18)}
+  input::placeholder{color:rgba(244,239,232,.32);font-weight:400}
+  .chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+  .chip{font-family:var(--mono);font-size:.72rem;padding:.28rem .6rem;border:1px solid var(--line);border-radius:99px;background:rgba(7,17,28,.4);color:var(--clay-soft);cursor:pointer;transition:border-color .18s var(--ease),background .18s var(--ease)}
+  .chip:hover{border-color:var(--action);background:rgba(0,183,194,.12)}
+
+  .result{position:sticky;top:24px}
+  .eyebrow-sm{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:.8rem}
+  .urlbox{font-family:var(--mono);font-size:.95rem;line-height:1.6;word-break:break-all;background:rgba(7,17,28,.5);border:1px solid var(--line);border-radius:13px;padding:1rem 1.1rem;color:var(--paper);min-height:3.4rem}
+  .urlbox .base{color:var(--paper)}
+  .urlbox .pq{color:var(--clay-soft)}
+  .urlbox .pv{color:var(--action)}
+  .urlbox .amp{color:rgba(244,239,232,.4)}
+  .copybtn{margin-top:1.1rem;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-family:var(--mono);font-size:.85rem;font-weight:600;letter-spacing:.04em;padding:.85rem 1rem;border-radius:12px;border:1px solid var(--action);background:rgba(0,183,194,.14);color:var(--action);cursor:pointer;transition:background .18s var(--ease)}
+  .copybtn:hover{background:rgba(0,183,194,.24)}
+  .copybtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .verdict{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.04em;padding:.4rem .8rem;border-radius:99px;margin-top:1.2rem}
+  .verdict svg{width:15px;height:15px;stroke-width:2.3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .verdict.ok{background:rgba(63,178,127,.14);color:var(--good)} .verdict.ok svg{stroke:var(--good)}
+  .verdict.warn{background:rgba(217,154,60,.14);color:var(--bad)} .verdict.warn svg{stroke:var(--bad)}
+  .note{margin-top:1.4rem;font-size:.84rem;color:rgba(244,239,232,.55);line-height:1.55}
+  .note b{color:var(--clay-soft);font-weight:600}
+  .foot{margin-top:2.4rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;color:rgba(244,239,232,.4)}
+  .foot a{color:var(--action);text-decoration:none}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Campaign tracking · live build</p>
+  <h1>Build a <em>tracked link</em> in one pass</h1>
+  <p class="sub">Fill the source, medium, and campaign. The tagged URL assembles live and stays encoded. Copy it, drop it in the ad, the email, the post.</p>
+
+  <svg class="rule" viewBox="0 0 1080 14" preserveAspectRatio="none" aria-hidden="true"><path d="M2,8 C140,3 260,11 380,7 C520,2.5 640,12 760,6.5 C880,2 1000,10 1078,5" stroke="#B47C57" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+
+  <div class="grid">
+    <section>
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg> Destination</div>
+        <div class="field">
+          <label>Base URL <span class="hint">where the link points</span></label>
+          <input type="url" id="base" placeholder="https://catalystworks.consulting/offer" value="https://catalystworks.consulting/">
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg> Required parameters</div>
+        <div class="field">
+          <label>Source <span class="hint">utm_source · where it comes from</span></label>
+          <input type="text" id="source" placeholder="linkedin" value="linkedin">
+          <div class="chips" data-target="source"><span class="chip">linkedin</span><span class="chip">twitter</span><span class="chip">newsletter</span><span class="chip">google</span><span class="chip">instagram</span></div>
+        </div>
+        <div class="field">
+          <label>Medium <span class="hint">utm_medium · the channel type</span></label>
+          <input type="text" id="medium" placeholder="social" value="social">
+          <div class="chips" data-target="medium"><span class="chip">social</span><span class="chip">email</span><span class="chip">cpc</span><span class="chip">referral</span><span class="chip">organic</span></div>
+        </div>
+        <div class="field">
+          <label>Campaign <span class="hint">utm_campaign · the named push</span></label>
+          <input type="text" id="campaign" placeholder="june-workshop" value="june-workshop">
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><path d="M12 20v-6M6 20v-3M18 20v-9"/><path d="M3 20h18"/></svg> Optional parameters</div>
+        <div class="field">
+          <label>Term <span class="hint">utm_term · paid keyword</span></label>
+          <input type="text" id="term" placeholder="fractional cmo">
+        </div>
+        <div class="field">
+          <label>Content <span class="hint">utm_content · A/B variant or placement</span></label>
+          <input type="text" id="content" placeholder="hero-cta">
+        </div>
+      </div>
+    </section>
+
+    <section class="result">
+      <div class="panel">
+        <p class="eyebrow-sm">Assembled tracked URL</p>
+        <div class="urlbox" id="out"></div>
+        <button type="button" class="copybtn" id="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg><span id="copyLabel">Copy link</span></button>
+        <div id="verdict" class="verdict ok"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span id="verdictText">Ready to ship</span></div>
+        <p class="note"><b>Encoding handled.</b> Spaces and symbols are percent-encoded so the link survives copy-paste. Lowercase source and medium values keep analytics from splitting one channel into three.</p>
+      </div>
+      <p class="foot">UTM link builder · tag once, attribute cleanly · <a href="https://catalystworks.consulting">catalystworks.consulting</a></p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const fields=['base','source','medium','campaign','term','content'];
+  const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+  function build(){
+    const base=$('base').value.trim();
+    const parts=[
+      ['utm_source',$('source').value.trim()],
+      ['utm_medium',$('medium').value.trim()],
+      ['utm_campaign',$('campaign').value.trim()],
+      ['utm_term',$('term').value.trim()],
+      ['utm_content',$('content').value.trim()],
+    ].filter(p=>p[1]);
+
+    // build plain URL for copy + a colorized version for display
+    let plain=base, html=esc(base||'(base URL)');
+    if(parts.length){
+      const qs=parts.map(([k,v])=>k+'='+encodeURIComponent(v));
+      const sep=base.includes('?')?'&':'?';
+      plain=base+sep+qs.join('&');
+      html=esc(base)+'<span class="amp">'+esc(sep)+'</span>'+
+        parts.map(([k,v])=>'<span class="pq">'+esc(k)+'=</span><span class="pv">'+esc(encodeURIComponent(v))+'</span>').join('<span class="amp">&amp;</span>');
+    }
+    $('out').innerHTML=html;
+    $('out').dataset.plain=plain;
+
+    // verdict: required params + valid-ish base
+    const v=$('verdict'), vt=$('verdictText');
+    const hasReq=$('source').value.trim() && $('medium').value.trim() && $('campaign').value.trim();
+    const validBase=/^https?:\/\/.+/i.test(base);
+    if(!validBase){
+      v.className='verdict warn'; v.querySelector('svg').innerHTML='<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>';
+      vt.textContent='Base URL needs http(s)://';
+    } else if(!hasReq){
+      v.className='verdict warn'; v.querySelector('svg').innerHTML='<path d="M12 8v5"/><circle cx="12" cy="12" r="9"/><path d="M12 16h.01"/>';
+      vt.textContent='Add source, medium and campaign';
+    } else {
+      v.className='verdict ok'; v.querySelector('svg').innerHTML='<path d="M20 6L9 17l-5-5"/>';
+      vt.textContent='Ready to ship';
+    }
+  }
+
+  fields.forEach(id=>$(id).addEventListener('input',build));
+  document.querySelectorAll('.chips').forEach(box=>{
+    const target=box.dataset.target;
+    box.addEventListener('click',e=>{
+      if(e.target.classList.contains('chip')){ $(target).value=e.target.textContent; build(); }
+    });
+  });
+
+  $('copy').addEventListener('click',async()=>{
+    const txt=$('out').dataset.plain||'';
+    if(!txt) return;
+    try{ await navigator.clipboard.writeText(txt); }
+    catch(e){ const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove(); }
+    const lbl=$('copyLabel'); lbl.textContent='Copied'; setTimeout(()=>lbl.textContent='Copy link',1400);
+  });
+
+  build();
+})();
+</script>
+</body>
+</html>

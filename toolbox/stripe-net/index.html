@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stripe Net Calculator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23071A2E'/%3E%3Cpath d='M16 6v20M21 10.5H13.2a3.3 3.3 0 0 0 0 6.6h5.6a3.3 3.3 0 0 1 0 6.6H11' stroke='%2300B7C2' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#071A2E; --navy-2:#0c2742; --clay:#B47C57; --clay-soft:#d8b89e;
+    --action:#00B7C2; --paper:#f4efe8; --ink:#0d1b29;
+    --line:rgba(244,239,232,.14);
+    --good:#3fb27f; --bad:#d99a3c;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 88% -10%, #103252 0%, transparent 55%),
+      var(--navy);
+    color:var(--paper); font-family:'Public Sans',system-ui,sans-serif;
+    line-height:1.5; min-height:100vh; padding:clamp(18px,4vw,52px);
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:.5rem}
+  h1{font-family:'Spectral',serif;font-weight:700;font-size:clamp(2rem,1.3rem+3.2vw,3.4rem);line-height:1.04;letter-spacing:-.01em;max-width:15ch}
+  h1 em{font-style:italic;color:var(--clay-soft)}
+  .sub{margin-top:.85rem;max-width:52ch;color:rgba(244,239,232,.74);font-size:1.02rem}
+  .rule{width:100%;height:14px;margin:1.6rem 0 2.1rem;display:block;opacity:.8}
+  .grid{display:grid;grid-template-columns:1fr;gap:clamp(20px,2.5vw,34px)}
+  @media(min-width:880px){.grid{grid-template-columns:1.05fr .95fr;align-items:start}}
+
+  .panel{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border:1px solid var(--line);border-radius:18px;padding:clamp(18px,2.4vw,30px)}
+  .panel + .panel{margin-top:22px}
+  .ptitle{display:flex;align-items:center;gap:.55rem;font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:1.1rem}
+  .ptitle svg{width:16px;height:16px;stroke:var(--clay);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .field{margin-bottom:1.15rem}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:.86rem;color:rgba(244,239,232,.82);margin-bottom:.45rem;font-weight:500}
+  .field .hint{color:rgba(244,239,232,.5);font-weight:400}
+  .row{display:flex;align-items:center;gap:.7rem}
+  input[type=number]{
+    width:100%;background:rgba(7,17,28,.55);border:1px solid var(--line);border-radius:11px;
+    color:var(--paper);font-family:var(--mono);font-size:1.02rem;font-weight:600;padding:.7rem .85rem;
+    transition:border-color .2s var(--ease),box-shadow .2s var(--ease);
+  }
+  input[type=number]:focus{outline:none;border-color:var(--action);box-shadow:0 0 0 3px rgba(0,183,194,.18)}
+
+  /* mode segmented control */
+  .seg{display:flex;gap:.4rem;background:rgba(7,17,28,.5);border:1px solid var(--line);border-radius:12px;padding:.32rem;margin-bottom:1.4rem}
+  .seg button{flex:1;font-family:var(--mono);font-size:.78rem;font-weight:600;letter-spacing:.04em;padding:.62rem .5rem;border:none;border-radius:9px;background:transparent;color:rgba(244,239,232,.6);cursor:pointer;transition:background .18s var(--ease),color .18s var(--ease)}
+  .seg button.on{background:rgba(0,183,194,.18);color:var(--action)}
+
+  .result{position:sticky;top:24px}
+  .hero-num{font-family:'Spectral',serif;font-weight:700;line-height:.9;letter-spacing:-.02em;font-size:clamp(3rem,1.6rem+7vw,5.4rem);color:var(--paper)}
+  .hero-num .unit{font-family:var(--mono);font-size:.85rem;font-weight:600;letter-spacing:.08em;color:var(--clay-soft);display:block;margin-top:.5rem}
+  .lines{margin-top:1.7rem;border-top:1px solid var(--line)}
+  .li{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.72rem 0;border-bottom:1px solid var(--line);font-size:.95rem}
+  .li .k{color:rgba(244,239,232,.74)}
+  .li .v{font-family:var(--mono);font-weight:600}
+  .li.sub .k,.li.sub .v{color:rgba(244,239,232,.5);font-size:.86rem;padding-left:1rem}
+  .li.total .k{font-weight:600;color:var(--paper)} .li.total .v{font-size:1.15rem;font-weight:700;color:var(--action)}
+  .li .v.neg{color:var(--bad)}
+  .note{margin-top:1.4rem;font-size:.84rem;color:rgba(244,239,232,.55);line-height:1.55}
+  .note b{color:var(--clay-soft);font-weight:600}
+  .foot{margin-top:2.4rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;color:rgba(244,239,232,.4)}
+  .foot a{color:var(--action);text-decoration:none}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Payment processing · live model</p>
+  <h1>What you <em>actually</em> keep after Stripe</h1>
+  <p class="sub">Default rate is 2.9% plus 30 cents per charge. Run it forward from a charge, or reverse it: enter the net you need and see what to charge.</p>
+
+  <svg class="rule" viewBox="0 0 1080 14" preserveAspectRatio="none" aria-hidden="true"><path d="M2,8 C140,3 260,11 380,7 C520,2.5 640,12 760,6.5 C880,2 1000,10 1078,5" stroke="#B47C57" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+
+  <div class="grid">
+    <section>
+      <div class="seg" id="seg">
+        <button type="button" data-mode="fwd" class="on">Charge to net</button>
+        <button type="button" data-mode="rev">Net to charge</button>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> <span id="amtLabel">Charge amount</span></div>
+        <div class="field">
+          <label id="amtHint">What the customer pays at checkout <span class="hint">$</span></label>
+          <input type="number" id="amount" value="1500" min="0" step="1" inputmode="decimal">
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9h.01M15 15h.01M16 8 8 16"/></svg> Fee structure</div>
+        <div class="field row" style="gap:1rem">
+          <div style="flex:1"><label>Percent fee <span class="hint">%</span></label><input type="number" id="pct" value="2.9" min="0" step="0.1" inputmode="decimal"></div>
+          <div style="flex:1"><label>Flat fee <span class="hint">$ per charge</span></label><input type="number" id="flat" value="0.30" min="0" step="0.05" inputmode="decimal"></div>
+        </div>
+        <p class="note" style="margin-top:1rem">Standard US card rate is preloaded. Override for international cards (3.9% + $0.30), ACH, or a negotiated rate.</p>
+      </div>
+    </section>
+
+    <section class="result">
+      <div class="panel">
+        <p class="eyebrow" style="margin-bottom:.8rem" id="resEyebrow">Net you receive</p>
+        <div class="hero-num"><span id="hero">$1,455.20</span><span class="unit" id="heroNote">after a $1,500 charge</span></div>
+
+        <div class="lines">
+          <div class="li"><span class="k" id="kCharge">Customer charge</span><span class="v" id="vCharge">$1,500.00</span></div>
+          <div class="li sub"><span class="k">less percent fee</span><span class="v neg" id="vPct">−$43.50</span></div>
+          <div class="li sub"><span class="k">less flat fee</span><span class="v neg" id="vFlat">−$0.30</span></div>
+          <div class="li total"><span class="k" id="kNet">Net received</span><span class="v" id="vNet">$1,455.20</span></div>
+        </div>
+
+        <p class="note"><b>Effective rate:</b> <span id="effRate">3.0%</span> of the charge goes to Stripe on this amount. The flat fee hurts small charges most: a $5 charge loses about <span id="smallPct">8.8%</span>, a $500 charge about 3.0%.</p>
+      </div>
+      <p class="foot">Stripe net calculator · forward and reverse · <a href="https://catalystworks.consulting">catalystworks.consulting</a></p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const money=n=>{const neg=n<0;const v=Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});return (neg?'−$':'$')+v;};
+  let mode='fwd';
+
+  function calc(){
+    const amount=Math.max(0,+$('amount').value||0);
+    const pct=Math.max(0,+$('pct').value||0)/100;
+    const flat=Math.max(0,+$('flat').value||0);
+
+    if(mode==='fwd'){
+      // amount = customer charge -> net
+      const pctFee=amount*pct;
+      const fee=pctFee+flat;
+      const net=amount-fee;
+      const eff=amount>0?fee/amount:0;
+
+      $('vCharge').textContent=money(amount);
+      $('vPct').textContent='−'+money(pctFee).replace('−','');
+      $('vFlat').textContent='−'+money(flat).replace('−','');
+      $('vNet').textContent=money(net);
+      $('hero').textContent=money(net);
+      $('heroNote').textContent='after a '+money(amount)+' charge';
+      $('effRate').textContent=(eff*100).toFixed(1)+'%';
+    } else {
+      // amount field = desired net -> required charge.  net = charge*(1-pct) - flat  =>  charge = (net+flat)/(1-pct)
+      const desiredNet=amount;
+      const charge=pct<1?((desiredNet+flat)/(1-pct)):Infinity;
+      const pctFee=isFinite(charge)?charge*pct:0;
+      const fee=pctFee+flat;
+      const eff=isFinite(charge)&&charge>0?fee/charge:0;
+
+      $('vCharge').textContent=isFinite(charge)?money(charge):'∞';
+      $('vPct').textContent='−'+money(pctFee).replace('−','');
+      $('vFlat').textContent='−'+money(flat).replace('−','');
+      $('vNet').textContent=money(desiredNet);
+      $('hero').textContent=isFinite(charge)?money(charge):'∞';
+      $('heroNote').textContent='to net '+money(desiredNet);
+      $('effRate').textContent=(eff*100).toFixed(1)+'%';
+    }
+
+    // small-charge illustration (always forward, $5)
+    const small=5, smallFee=small*pct+flat;
+    $('smallPct').textContent=(smallFee/small*100).toFixed(1)+'%';
+  }
+
+  function setMode(m){
+    mode=m;
+    document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
+    if(m==='fwd'){
+      $('amtLabel').textContent='Charge amount';
+      $('amtHint').innerHTML='What the customer pays at checkout <span class="hint">$</span>';
+      $('resEyebrow').textContent='Net you receive';
+      $('kCharge').textContent='Customer charge'; $('kNet').textContent='Net received';
+      $('amount').value=1500;
+    } else {
+      $('amtLabel').textContent='Net you want';
+      $('amtHint').innerHTML='The amount you need to land in your account <span class="hint">$</span>';
+      $('resEyebrow').textContent='Charge to set';
+      $('kCharge').textContent='Required charge'; $('kNet').textContent='Net you wanted';
+      $('amount').value=1500;
+    }
+    calc();
+  }
+
+  ['amount','pct','flat'].forEach(id=>$(id).addEventListener('input',calc));
+  document.querySelectorAll('#seg button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+  calc();
+})();
+</script>
+</body>
+</html>

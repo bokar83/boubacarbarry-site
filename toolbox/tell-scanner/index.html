@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Tell Scanner</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23071A2E'/%3E%3Cpath d='M16 6v20M21 10.5H13.2a3.3 3.3 0 0 0 0 6.6h5.6a3.3 3.3 0 0 1 0 6.6H11' stroke='%2300B7C2' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#071A2E; --navy-2:#0c2742; --clay:#B47C57; --clay-soft:#d8b89e;
+    --action:#00B7C2; --paper:#f4efe8; --ink:#0d1b29;
+    --line:rgba(244,239,232,.14);
+    --good:#3fb27f; --bad:#d99a3c;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 88% -10%, #103252 0%, transparent 55%),
+      var(--navy);
+    color:var(--paper); font-family:'Public Sans',system-ui,sans-serif;
+    line-height:1.5; min-height:100vh; padding:clamp(18px,4vw,52px);
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:.5rem}
+  h1{font-family:'Spectral',serif;font-weight:700;font-size:clamp(2rem,1.3rem+3.2vw,3.4rem);line-height:1.04;letter-spacing:-.01em;max-width:15ch}
+  h1 em{font-style:italic;color:var(--clay-soft)}
+  .sub{margin-top:.85rem;max-width:54ch;color:rgba(244,239,232,.74);font-size:1.02rem}
+  .rule{width:100%;height:14px;margin:1.6rem 0 2.1rem;display:block;opacity:.8}
+  .grid{display:grid;grid-template-columns:1fr;gap:clamp(20px,2.5vw,34px)}
+  @media(min-width:880px){.grid{grid-template-columns:1.05fr .95fr;align-items:start}}
+
+  .panel{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border:1px solid var(--line);border-radius:18px;padding:clamp(18px,2.4vw,30px)}
+  .panel + .panel{margin-top:22px}
+  .ptitle{display:flex;align-items:center;gap:.55rem;font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:1.1rem}
+  .ptitle svg{width:16px;height:16px;stroke:var(--clay);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  textarea{
+    width:100%;min-height:300px;resize:vertical;background:rgba(7,17,28,.55);border:1px solid var(--line);border-radius:13px;
+    color:var(--paper);font-family:'Public Sans',system-ui,sans-serif;font-size:1rem;line-height:1.6;padding:.95rem 1.05rem;
+    transition:border-color .2s var(--ease),box-shadow .2s var(--ease);
+  }
+  textarea:focus{outline:none;border-color:var(--action);box-shadow:0 0 0 3px rgba(0,183,194,.18)}
+  textarea::placeholder{color:rgba(244,239,232,.32)}
+
+  .result{position:sticky;top:24px}
+  .hero-num{font-family:'Spectral',serif;font-weight:700;line-height:.9;letter-spacing:-.02em;font-size:clamp(3rem,1.6rem+7vw,5.2rem)}
+  .hero-num.clean{color:var(--good)} .hero-num.flagged{color:var(--bad)}
+  .hero-num .unit{font-family:var(--mono);font-size:.85rem;font-weight:600;letter-spacing:.08em;color:var(--clay-soft);display:block;margin-top:.5rem}
+  .verdict{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.04em;padding:.4rem .8rem;border-radius:99px;margin-top:1.2rem}
+  .verdict svg{width:15px;height:15px;stroke-width:2.3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .verdict.clean{background:rgba(63,178,127,.14);color:var(--good)} .verdict.clean svg{stroke:var(--good)}
+  .verdict.flagged{background:rgba(217,154,60,.14);color:var(--bad)} .verdict.flagged svg{stroke:var(--bad)}
+  .flags{margin-top:1.7rem;border-top:1px solid var(--line)}
+  .flag{padding:.85rem 0;border-bottom:1px solid var(--line)}
+  .flag-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem}
+  .flag-term{font-family:var(--mono);font-size:.92rem;font-weight:600;color:var(--bad)}
+  .flag-n{font-family:var(--mono);font-size:.8rem;color:rgba(244,239,232,.55)}
+  .flag-why{font-size:.82rem;color:rgba(244,239,232,.6);margin-top:.3rem}
+  .empty{margin-top:1.7rem;font-size:.92rem;color:rgba(244,239,232,.6);padding:1rem 0;border-top:1px solid var(--line)}
+  .note{margin-top:1.4rem;font-size:.82rem;color:rgba(244,239,232,.5);line-height:1.55}
+  .note b{color:var(--clay-soft);font-weight:600}
+  .foot{margin-top:2.4rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;color:rgba(244,239,232,.4)}
+  .foot a{color:var(--action);text-decoration:none}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Voice check · live scan</p>
+  <h1>Catch the <em>AI tells</em> before you post</h1>
+  <p class="sub">Paste a draft. The scanner flags em-dashes and the hype words that read as machine-written. It counts and lists each one. You decide what to cut.</p>
+
+  <svg class="rule" viewBox="0 0 1080 14" preserveAspectRatio="none" aria-hidden="true"><path d="M2,8 C140,3 260,11 380,7 C520,2.5 640,12 760,6.5 C880,2 1000,10 1078,5" stroke="#B47C57" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+
+  <div class="grid">
+    <section>
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg> Paste your draft</div>
+        <textarea id="text" placeholder="Paste the post, email, or page copy here. Flags appear as you type."></textarea>
+      </div>
+    </section>
+
+    <section class="result">
+      <div class="panel">
+        <p class="eyebrow" style="margin-bottom:.8rem">Tells found</p>
+        <div class="hero-num clean" id="hero">0<span class="unit" id="heroNote">paste a draft to scan</span></div>
+        <div id="verdict" class="verdict clean"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span id="verdictText">Nothing to flag yet</span></div>
+
+        <div id="flags"></div>
+
+        <p class="note"><b>These are signals, not hard blocks.</b> A flagged word can be the right word. Em-dashes are the one hard rule: cut them every time. For the rest, read the line aloud. If it sounds like you, keep it.</p>
+      </div>
+      <p class="foot">Content tell scanner · catch the slop before you post · <a href="https://catalystworks.consulting">catalystworks.consulting</a></p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+
+  // word tells: [display label, regex, why].  word-boundary, case-insensitive.
+  const WORDS=[
+    ['leverage', /\bleverage[ds]?\b/gi, 'Filler verb when it means "use". Often a machine tell.'],
+    ["in today's world", /\bin today'?s world\b/gi, 'Throat-clearing opener. Cut it and start with the point.'],
+    ['unlock', /\bunlock(s|ed|ing)?\b/gi, 'Hype verb. "Unlock your potential" reads as AI.'],
+    ['delve', /\bdelv(e|es|ed|ing)\b/gi, 'The signature AI verb. Replace with "look at" or cut.'],
+    ['elevate', /\belevate[ds]?\b/gi, 'Empty upgrade word. Say what actually changes.'],
+    ['game-changer', /\bgame[\s-]?chang(er|ing)\b/gi, 'Dead cliche. Show the change instead of naming it.'],
+    ['seamless', /\bseamless(ly)?\b/gi, 'Brochure word. Describe the friction it removes.'],
+    ['robust', /\brobust\b/gi, 'Vague strength word. Be specific about what it does.'],
+  ];
+
+  function calc(){
+    const raw=$('text').value;
+    const flags=[];
+    let total=0;
+
+    // em-dash + en-dash (one combined hard-rule flag)
+    const dash = raw.match(/[—–]/g);
+    if(dash && dash.length){
+      total+=dash.length;
+      flags.push(['em-dash / en-dash', dash.length, 'Hard rule: no em-dashes. Use commas, colons, or rewrite.', true]);
+    }
+
+    WORDS.forEach(([label,re,why])=>{
+      const m=raw.match(re);
+      if(m && m.length){ total+=m.length; flags.push([label, m.length, why, false]); }
+    });
+
+    // hero + verdict
+    const hero=$('hero'), v=$('verdict'), vt=$('verdictText');
+    hero.firstChild.textContent=total.toLocaleString('en-US');
+    const note=raw.trim()===''?'paste a draft to scan':(total===0?'clean of common tells':'flag'+(total===1?'':'s')+' to review');
+    $('heroNote').textContent=note;
+
+    if(total===0){
+      hero.className='hero-num clean';
+      v.className='verdict clean'; v.querySelector('svg').innerHTML='<path d="M20 6L9 17l-5-5"/>';
+      vt.textContent = raw.trim()===''?'Nothing to flag yet':'Clean of common tells';
+    } else {
+      hero.className='hero-num flagged';
+      v.className='verdict flagged'; v.querySelector('svg').innerHTML='<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>';
+      vt.textContent = total+' tell'+(total===1?'':'s')+' worth a second look';
+    }
+
+    // render list
+    const host=$('flags');
+    if(flags.length===0){
+      host.innerHTML = raw.trim()===''?'' : '<div class="empty">No common tells found. Still read it aloud once.</div>';
+      return;
+    }
+    host.innerHTML='<div class="flags">'+flags.map(([label,n,why,hard])=>
+      '<div class="flag"><div class="flag-head"><span class="flag-term">'+label+(hard?' · hard rule':'')+'</span>'+
+      '<span class="flag-n">'+n+'×</span></div><div class="flag-why">'+why+'</div></div>'
+    ).join('')+'</div>';
+  }
+
+  $('text').addEventListener('input',calc);
+  calc();
+})();
+</script>
+</body>
+</html>

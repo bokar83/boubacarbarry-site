@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Post Character and Hook Counter</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23071A2E'/%3E%3Cpath d='M16 6v20M21 10.5H13.2a3.3 3.3 0 0 0 0 6.6h5.6a3.3 3.3 0 0 1 0 6.6H11' stroke='%2300B7C2' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#071A2E; --navy-2:#0c2742; --clay:#B47C57; --clay-soft:#d8b89e;
+    --action:#00B7C2; --paper:#f4efe8; --ink:#0d1b29;
+    --line:rgba(244,239,232,.14);
+    --good:#3fb27f; --bad:#d99a3c;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 88% -10%, #103252 0%, transparent 55%),
+      var(--navy);
+    color:var(--paper); font-family:'Public Sans',system-ui,sans-serif;
+    line-height:1.5; min-height:100vh; padding:clamp(18px,4vw,52px);
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:.5rem}
+  h1{font-family:'Spectral',serif;font-weight:700;font-size:clamp(2rem,1.3rem+3.2vw,3.4rem);line-height:1.04;letter-spacing:-.01em;max-width:15ch}
+  h1 em{font-style:italic;color:var(--clay-soft)}
+  .sub{margin-top:.85rem;max-width:52ch;color:rgba(244,239,232,.74);font-size:1.02rem}
+  .rule{width:100%;height:14px;margin:1.6rem 0 2.1rem;display:block;opacity:.8}
+  .grid{display:grid;grid-template-columns:1fr;gap:clamp(20px,2.5vw,34px)}
+  @media(min-width:880px){.grid{grid-template-columns:1.05fr .95fr;align-items:start}}
+
+  .panel{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border:1px solid var(--line);border-radius:18px;padding:clamp(18px,2.4vw,30px)}
+  .panel + .panel{margin-top:22px}
+  .ptitle{display:flex;align-items:center;gap:.55rem;font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:1.1rem}
+  .ptitle svg{width:16px;height:16px;stroke:var(--clay);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  textarea{
+    width:100%;min-height:240px;resize:vertical;background:rgba(7,17,28,.55);border:1px solid var(--line);border-radius:13px;
+    color:var(--paper);font-family:'Public Sans',system-ui,sans-serif;font-size:1rem;line-height:1.6;padding:.95rem 1.05rem;
+    transition:border-color .2s var(--ease),box-shadow .2s var(--ease);
+  }
+  textarea:focus{outline:none;border-color:var(--action);box-shadow:0 0 0 3px rgba(0,183,194,.18)}
+  textarea::placeholder{color:rgba(244,239,232,.32)}
+  .mini{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:1.2rem}
+  .mcard{background:rgba(7,17,28,.4);border:1px solid var(--line);border-radius:13px;padding:.85rem .9rem;text-align:center}
+  .mcard .ml{font-size:.66rem;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:rgba(244,239,232,.55)}
+  .mcard .mv{font-family:'Spectral',serif;font-size:1.6rem;font-weight:700;margin-top:.2rem}
+
+  .result{position:sticky;top:24px}
+  .eyebrow-sm{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:1.1rem}
+  .plat{padding:1rem 0;border-bottom:1px solid var(--line)}
+  .plat:last-child{border-bottom:none;padding-bottom:0}
+  .plat:first-child{padding-top:0}
+  .plat-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-bottom:.5rem}
+  .plat-name{font-size:.9rem;font-weight:600;color:var(--paper)}
+  .plat-name .lim{font-family:var(--mono);font-size:.72rem;color:rgba(244,239,232,.45);font-weight:400;margin-left:.4rem}
+  .plat-count{font-family:var(--mono);font-size:.88rem;font-weight:600;color:var(--good)}
+  .plat-count.over{color:var(--bad)}
+  .bar{height:7px;border-radius:99px;background:rgba(7,17,28,.7);overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--action);border-radius:99px;transition:width .2s var(--ease),background .2s var(--ease)}
+  .bar i.warnfill{background:var(--bad)}
+  .plat-note{font-family:var(--mono);font-size:.72rem;color:rgba(244,239,232,.5);margin-top:.4rem}
+  .plat-note.over{color:var(--bad)}
+  .note{margin-top:1.4rem;font-size:.84rem;color:rgba(244,239,232,.55);line-height:1.55}
+  .note b{color:var(--clay-soft);font-weight:600}
+  .foot{margin-top:2.4rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;color:rgba(244,239,232,.4)}
+  .foot a{color:var(--action);text-decoration:none}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Drafting · live limits</p>
+  <h1>Fit the post <em>before</em> you paste it</h1>
+  <p class="sub">Type or paste a draft. Every platform limit fills live, including the LinkedIn first-line cutoff that decides whether the hook even shows before "see more".</p>
+
+  <svg class="rule" viewBox="0 0 1080 14" preserveAspectRatio="none" aria-hidden="true"><path d="M2,8 C140,3 260,11 380,7 C520,2.5 640,12 760,6.5 C880,2 1000,10 1078,5" stroke="#B47C57" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+
+  <div class="grid">
+    <section>
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h12M4 17h16"/></svg> Your draft</div>
+        <textarea id="text" placeholder="Paste the post here. The counters update as you type."></textarea>
+        <div class="mini">
+          <div class="mcard"><div class="ml">Characters</div><div class="mv" id="chars">0</div></div>
+          <div class="mcard"><div class="ml">Words</div><div class="mv" id="words">0</div></div>
+          <div class="mcard"><div class="ml">Lines</div><div class="mv" id="linesC">0</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="result">
+      <div class="panel">
+        <p class="eyebrow-sm">Per-platform fit</p>
+        <div id="plats"></div>
+        <p class="note"><b>The LinkedIn hook line</b> is the ~210 characters that show before the "see more" fold. If your hook lands past that, the reader never sees it. Keep the payoff inside the first line.</p>
+      </div>
+      <p class="foot">Post character and hook counter · fit before you ship · <a href="https://catalystworks.consulting">catalystworks.consulting</a></p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  // [key, name, limit, type]  type: 'count' = total chars, 'hook' = first line / pre-truncation
+  const PLATFORMS=[
+    ['x','X post',280,'count'],
+    ['xbio','X bio',160,'count'],
+    ['li','LinkedIn post',3000,'count'],
+    ['lihook','LinkedIn hook line',210,'hook'],
+  ];
+
+  // build rows once
+  const host=$('plats');
+  PLATFORMS.forEach(([key,name,limit])=>{
+    const row=document.createElement('div'); row.className='plat';
+    row.innerHTML=
+      '<div class="plat-head"><span class="plat-name">'+name+'<span class="lim">'+limit.toLocaleString('en-US')+'</span></span>'+
+      '<span class="plat-count" id="c_'+key+'">0</span></div>'+
+      '<div class="bar"><i id="b_'+key+'"></i></div>'+
+      '<div class="plat-note" id="n_'+key+'"></div>';
+    host.appendChild(row);
+  });
+
+  function calc(){
+    const raw=$('text').value;
+    const chars=[...raw].length;                       // code-point aware, counts emoji as 1
+    const words=raw.trim()?raw.trim().split(/\s+/).length:0;
+    const lines=raw==''?0:raw.split(/\n/).length;
+    const firstLine=[...(raw.split(/\n/)[0]||'')].length;
+
+    $('chars').textContent=chars.toLocaleString('en-US');
+    $('words').textContent=words.toLocaleString('en-US');
+    $('linesC').textContent=lines.toLocaleString('en-US');
+
+    PLATFORMS.forEach(([key,name,limit,type])=>{
+      const used = type==='hook' ? firstLine : chars;
+      const over = used-limit;
+      const pct = Math.min(100, limit>0?(used/limit*100):0);
+      $('c_'+key).textContent = used.toLocaleString('en-US')+' / '+limit.toLocaleString('en-US');
+      $('c_'+key).className='plat-count'+(over>0?' over':'');
+      const bar=$('b_'+key);
+      bar.style.width=pct+'%';
+      bar.className=over>0?'warnfill':'';
+      const note=$('n_'+key);
+      if(over>0){ note.textContent=over.toLocaleString('en-US')+' over the limit'; note.className='plat-note over'; }
+      else if(type==='hook'){ note.textContent=(limit-used).toLocaleString('en-US')+' chars of hook left before "see more"'; note.className='plat-note'; }
+      else { note.textContent=(limit-used).toLocaleString('en-US')+' remaining'; note.className='plat-note'; }
+    });
+  }
+
+  $('text').addEventListener('input',calc);
+  calc();
+})();
+</script>
+</body>
+</html>
