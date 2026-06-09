@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workshop Break-Even Calculator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23071A2E'/%3E%3Cpath d='M16 6v20M21 10.5H13.2a3.3 3.3 0 0 0 0 6.6h5.6a3.3 3.3 0 0 1 0 6.6H11' stroke='%2300B7C2' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#071A2E; --navy-2:#0c2742; --clay:#B47C57; --clay-soft:#d8b89e;
+    --action:#00B7C2; --paper:#f4efe8; --ink:#0d1b29;
+    --line:rgba(244,239,232,.14);
+    --good:#3fb27f; --bad:#d99a3c;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 88% -10%, #103252 0%, transparent 55%),
+      var(--navy);
+    color:var(--paper); font-family:'Public Sans',system-ui,sans-serif;
+    line-height:1.5; min-height:100vh; padding:clamp(18px,4vw,52px);
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:.5rem}
+  h1{font-family:'Spectral',serif;font-weight:700;font-size:clamp(2rem,1.3rem+3.2vw,3.4rem);line-height:1.04;letter-spacing:-.01em;max-width:14ch}
+  h1 em{font-style:italic;color:var(--clay-soft)}
+  .sub{margin-top:.85rem;max-width:52ch;color:rgba(244,239,232,.74);font-size:1.02rem}
+  /* hand-inked rule */
+  .rule{width:100%;height:14px;margin:1.6rem 0 2.1rem;display:block;opacity:.8}
+  .grid{display:grid;grid-template-columns:1fr;gap:clamp(20px,2.5vw,34px)}
+  @media(min-width:880px){.grid{grid-template-columns:1.05fr .95fr;align-items:start}}
+
+  /* ---- inputs ---- */
+  .panel{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border:1px solid var(--line);border-radius:18px;padding:clamp(18px,2.4vw,30px)}
+  .panel + .panel{margin-top:22px}
+  .ptitle{display:flex;align-items:center;gap:.55rem;font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:1.1rem}
+  .ptitle svg{width:16px;height:16px;stroke:var(--clay);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .field{margin-bottom:1.15rem}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:.86rem;color:rgba(244,239,232,.82);margin-bottom:.45rem;font-weight:500}
+  .field .hint{color:rgba(244,239,232,.5);font-weight:400}
+  .row{display:flex;align-items:center;gap:.7rem}
+  input[type=number]{
+    width:100%;background:rgba(7,17,28,.55);border:1px solid var(--line);border-radius:11px;
+    color:var(--paper);font-family:var(--mono);font-size:1.02rem;font-weight:600;padding:.7rem .85rem;
+    transition:border-color .2s var(--ease),box-shadow .2s var(--ease);
+  }
+  input[type=number]:focus{outline:none;border-color:var(--action);box-shadow:0 0 0 3px rgba(0,183,194,.18)}
+  input[type=range]{flex:1;accent-color:var(--action);height:4px}
+  .stepper{display:flex;align-items:center;gap:.5rem}
+  .stepper button{width:38px;height:38px;flex:0 0 38px;border:1px solid var(--line);background:rgba(7,17,28,.5);color:var(--paper);border-radius:10px;font-size:1.2rem;cursor:pointer;transition:background .18s var(--ease),border-color .18s var(--ease)}
+  .stepper button:hover{background:rgba(0,183,194,.16);border-color:var(--action)}
+  .stepper input{text-align:center}
+  .toggle{display:flex;align-items:center;gap:.7rem;cursor:pointer;user-select:none}
+  .toggle input{position:absolute;opacity:0;pointer-events:none}
+  .track{width:46px;height:26px;flex:0 0 46px;border-radius:99px;background:rgba(7,17,28,.7);border:1px solid var(--line);position:relative;transition:background .2s var(--ease)}
+  .track::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--clay-soft);transition:transform .2s var(--ease),background .2s var(--ease)}
+  .toggle input:checked + .track{background:rgba(0,183,194,.5)}
+  .toggle input:checked + .track::after{transform:translateX(20px);background:var(--action)}
+  .togwrap{display:flex;justify-content:space-between;align-items:center;gap:1rem}
+  .rangeval{font-family:var(--mono);font-weight:700;color:var(--action);min-width:5.2ch;text-align:right}
+
+  /* ---- results ---- */
+  .result{position:sticky;top:24px}
+  .hero-num{font-family:'Spectral',serif;font-weight:700;line-height:.9;letter-spacing:-.02em;font-size:clamp(3.4rem,2rem+8vw,6rem);color:var(--paper)}
+  .hero-num .unit{font-family:var(--mono);font-size:.9rem;font-weight:600;letter-spacing:.08em;color:var(--clay-soft);display:block;margin-top:.4rem}
+  .verdict{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.82rem;font-weight:600;letter-spacing:.04em;padding:.4rem .8rem;border-radius:99px;margin-top:1.2rem}
+  .verdict svg{width:15px;height:15px;stroke-width:2.3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .verdict.profit{background:rgba(63,178,127,.14);color:var(--good)} .verdict.profit svg{stroke:var(--good)}
+  .verdict.loss{background:rgba(217,154,60,.14);color:var(--bad)} .verdict.loss svg{stroke:var(--bad)}
+  .lines{margin-top:1.6rem;border-top:1px solid var(--line)}
+  .li{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.72rem 0;border-bottom:1px solid var(--line);font-size:.95rem}
+  .li .k{color:rgba(244,239,232,.74)}
+  .li .v{font-family:var(--mono);font-weight:600}
+  .li.sub .k,.li.sub .v{color:rgba(244,239,232,.5);font-size:.86rem;padding-left:1rem}
+  .li.total .k{font-weight:600;color:var(--paper)} .li.total .v{font-size:1.15rem;font-weight:700}
+  .li .v.neg{color:var(--bad)} .li .v.pos{color:var(--good)}
+  .mini{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:1.5rem}
+  .mcard{background:rgba(7,17,28,.4);border:1px solid var(--line);border-radius:13px;padding:.95rem 1rem}
+  .mcard .ml{font-size:.72rem;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:rgba(244,239,232,.55)}
+  .mcard .mv{font-family:'Spectral',serif;font-size:1.7rem;font-weight:700;margin-top:.25rem}
+  .note{margin-top:1.4rem;font-size:.84rem;color:rgba(244,239,232,.55);line-height:1.55}
+  .note b{color:var(--clay-soft);font-weight:600}
+  .foot{margin-top:2.4rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;color:rgba(244,239,232,.4)}
+  .foot a{color:var(--action);text-decoration:none}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Workshop economics · live model</p>
+  <h1>Will the workshop <em>break even?</em></h1>
+  <p class="sub">Live model for the June 24 paid flagship. Change any number and the breakeven point recalculates. Built to answer one question fast: how many seats do I actually need.</p>
+
+  <svg class="rule" viewBox="0 0 1080 14" preserveAspectRatio="none" aria-hidden="true"><path d="M2,8 C140,3 260,11 380,7 C520,2.5 640,12 760,6.5 C880,2 1000,10 1078,5" stroke="#B47C57" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+
+  <div class="grid">
+    <!-- ============ INPUTS ============ -->
+    <section>
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v16"/></svg> Tickets sold</div>
+        <div class="field">
+          <label>Presale tickets <span class="hint">@ $<span id="pPrice">47</span> each</span></label>
+          <div class="stepper">
+            <button type="button" data-step="presale" data-d="-1" aria-label="fewer presale">−</button>
+            <input type="number" id="presale" value="12" min="0" step="1" inputmode="numeric">
+            <button type="button" data-step="presale" data-d="1" aria-label="more presale">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Week-of tickets <span class="hint">@ $<span id="wPrice">97</span> each</span></label>
+          <div class="stepper">
+            <button type="button" data-step="weekof" data-d="-1" aria-label="fewer week-of">−</button>
+            <input type="number" id="weekof" value="0" min="0" step="1" inputmode="numeric">
+            <button type="button" data-step="weekof" data-d="1" aria-label="more week-of">+</button>
+          </div>
+        </div>
+        <div class="field row" style="gap:1rem">
+          <div style="flex:1"><label>Presale price <span class="hint">$</span></label><input type="number" id="presalePrice" value="47" min="0" step="1"></div>
+          <div style="flex:1"><label>Week-of price <span class="hint">$</span></label><input type="number" id="weekofPrice" value="97" min="0" step="1"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Costs</div>
+        <div class="field">
+          <label>Venue <span class="hint">Peerspace + service fee</span></label>
+          <input type="number" id="venue" value="130" min="0" step="5">
+        </div>
+        <div class="field">
+          <div class="togwrap"><label style="margin:0">Ad spend (Meta) <span class="hint">total over the run</span></label><span class="rangeval">$<span id="adVal">500</span></span></div>
+          <div class="row" style="margin-top:.6rem"><input type="range" id="ad" min="0" max="2000" step="25" value="500"></div>
+        </div>
+        <div class="field">
+          <div class="togwrap">
+            <label style="margin:0" class="toggle" for="giftOn"><span style="display:flex;flex-direction:column"><span>$20 Claude Pro gift per attendee</span><span class="hint" style="font-size:.78rem">AP gives each attendee one. Optional.</span></span></label>
+            <label class="toggle" style="margin:0"><input type="checkbox" id="giftOn"><span class="track"></span></label>
+          </div>
+        </div>
+        <div class="field">
+          <div class="togwrap"><label style="margin:0">Stripe fee per ticket</label><span class="hint" style="font-family:var(--mono)">2.9% + $0.30</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg> Back-end pipeline <span class="hint" style="text-transform:none;letter-spacing:0">(the real money)</span></div>
+        <div class="field">
+          <label>Audits that close after <span class="hint">post-workshop implementations</span></label>
+          <div class="stepper">
+            <button type="button" data-step="closes" data-d="-1" aria-label="fewer closes">−</button>
+            <input type="number" id="closes" value="0" min="0" step="1" inputmode="numeric">
+            <button type="button" data-step="closes" data-d="1" aria-label="more closes">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Value per close <span class="hint">$ implementation</span></label>
+          <input type="number" id="closeVal" value="5000" min="0" step="500">
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RESULTS ============ -->
+    <section class="result">
+      <div class="panel">
+        <p class="eyebrow" style="margin-bottom:.8rem">Seats needed to break even</p>
+        <div class="hero-num"><span id="breakeven">14</span><span class="unit" id="beNote">at the current price mix</span></div>
+        <div id="verdict" class="verdict loss"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg><span id="verdictText">3 seats short of breakeven</span></div>
+
+        <div class="lines">
+          <div class="li"><span class="k">Gross ticket revenue</span><span class="v" id="gross">$564</span></div>
+          <div class="li sub"><span class="k">less Stripe fees</span><span class="v neg" id="fees">−$20</span></div>
+          <div class="li"><span class="k">Net from tickets</span><span class="v" id="netTickets">$544</span></div>
+          <div class="li sub"><span class="k">Venue</span><span class="v neg" id="oVenue">−$130</span></div>
+          <div class="li sub"><span class="k">Ad spend</span><span class="v neg" id="oAd">−$500</span></div>
+          <div class="li sub"><span class="k">Claude gifts</span><span class="v neg" id="oGift">−$0</span></div>
+          <div class="li total"><span class="k">Event net</span><span class="v" id="eventNet">−$86</span></div>
+        </div>
+
+        <div class="mini">
+          <div class="mcard"><div class="ml">Attendees</div><div class="mv" id="att">12</div></div>
+          <div class="mcard"><div class="ml">Net / ticket</div><div class="mv" id="perTicket">$45</div></div>
+        </div>
+
+        <div class="lines" style="margin-top:1.5rem">
+          <div class="li"><span class="k">Event net</span><span class="v" id="eventNet2">−$86</span></div>
+          <div class="li sub"><span class="k">+ back-end closes</span><span class="v pos" id="pipeAdd">+$0</span></div>
+          <div class="li total"><span class="k">All-in result</span><span class="v" id="allIn">−$86</span></div>
+        </div>
+
+        <p class="note"><b>Breakeven if all-presale:</b> <span id="beAll47">14</span> seats &nbsp;·&nbsp; <b>if all-week-of:</b> <span id="beAll97">7</span> seats. Room caps ~25-35. <br><b>AP's frame:</b> the event is built to roughly cover ad cost, not profit. One closed audit ($5k+) pays for the whole thing many times over. The seats are lead-gen.</p>
+      </div>
+      <p class="foot">Workshop economics model · change any number, see the break-even instantly · <a href="https://catalystworks.consulting">catalystworks.consulting</a></p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const money=n=>{const r=Math.round(n);return (r<0?'−$':'$')+Math.abs(r).toLocaleString('en-US');};
+  const STRIPE_PCT=0.029, STRIPE_FLAT=0.30;
+  const ids=['presale','weekof','presalePrice','weekofPrice','venue','ad','closes','closeVal'];
+
+  function netPer(price){ return price - (price*STRIPE_PCT + STRIPE_FLAT); }
+
+  function calc(){
+    const nP=Math.max(0,+$('presale').value||0), nW=Math.max(0,+$('weekof').value||0);
+    const pP=Math.max(0,+$('presalePrice').value||0), pW=Math.max(0,+$('weekofPrice').value||0);
+    const venue=Math.max(0,+$('venue').value||0), ad=Math.max(0,+$('ad').value||0);
+    const gift=$('giftOn').checked?20:0;
+    const closes=Math.max(0,+$('closes').value||0), closeVal=Math.max(0,+$('closeVal').value||0);
+
+    $('pPrice').textContent=pP; $('wPrice').textContent=pW; $('adVal').textContent=ad.toLocaleString('en-US');
+
+    const att=nP+nW;
+    const gross=nP*pP + nW*pW;
+    const fees=nP*(pP*STRIPE_PCT+STRIPE_FLAT) + nW*(pW*STRIPE_PCT+STRIPE_FLAT);
+    const netTickets=gross-fees;
+    const gifts=att*gift;
+    const fixed=venue+ad;                 // costs that don't scale with a marginal ticket (gift does)
+    const eventNet=netTickets - fixed - gifts;
+
+    // blended net per ticket at current mix (fallback to presale price if no tickets yet)
+    const blendedNet = att>0 ? (netTickets/att - gift) : (netPer(pP)-gift);
+    const be = blendedNet>0 ? Math.ceil(fixed/blendedNet) : Infinity;
+    const be47 = (netPer(pP)-gift)>0 ? Math.ceil(fixed/(netPer(pP)-gift)) : Infinity;
+    const be97 = (netPer(pW)-gift)>0 ? Math.ceil(fixed/(netPer(pW)-gift)) : Infinity;
+
+    const pipe=closes*closeVal;
+    const allIn=eventNet+pipe;
+
+    // render
+    $('breakeven').textContent = isFinite(be)?be:'∞';
+    $('gross').textContent=money(gross);
+    $('fees').textContent='−'+money(fees).replace('−','');
+    $('netTickets').textContent=money(netTickets);
+    $('oVenue').textContent='−'+money(venue).replace('−','');
+    $('oAd').textContent='−'+money(ad).replace('−','');
+    $('oGift').textContent='−'+money(gifts).replace('−','');
+    $('eventNet').textContent=money(eventNet);
+    $('eventNet2').textContent=money(eventNet);
+    $('pipeAdd').textContent='+'+money(pipe).replace('−','');
+    $('allIn').textContent=money(allIn);
+    $('att').textContent=att;
+    $('perTicket').textContent=money(att>0?netTickets/att:netPer(pP));
+    $('beAll47').textContent=isFinite(be47)?be47:'∞';
+    $('beAll97').textContent=isFinite(be97)?be97:'∞';
+
+    // event-net color
+    $('eventNet').className='v '+(eventNet>=0?'pos':'neg');
+    $('eventNet2').className='v '+(eventNet>=0?'pos':'neg');
+    $('allIn').className='v '+(allIn>=0?'pos':'neg');
+
+    // verdict vs current attendee count
+    const v=$('verdict'), vt=$('verdictText');
+    if(eventNet>=0){
+      v.className='verdict profit';
+      v.querySelector('svg').innerHTML='<path d="M20 6L9 17l-5-5"/>';
+      vt.textContent = (att>=be?('Breakeven cleared, +'+(att-be)+' seats of margin'):'In profit');
+    } else {
+      const short = isFinite(be)?(be-att):'—';
+      v.className='verdict loss';
+      v.querySelector('svg').innerHTML='<path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/>';
+      vt.textContent = isFinite(be)?(short+' seat'+(short===1?'':'s')+' short of breakeven'):'Price too low to break even';
+    }
+    $('beNote').textContent = att>0 ? 'at the current price mix' : 'all presale ($'+pP+')';
+  }
+
+  // wire inputs
+  ids.forEach(id=>{$(id).addEventListener('input',calc);});
+  $('giftOn').addEventListener('change',calc);
+  document.querySelectorAll('[data-step]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const t=$(b.dataset.step); t.value=Math.max(0,(+t.value||0)+(+b.dataset.d)); calc();
+    });
+  });
+  calc();
+})();
+</script>
+</body>
+</html>
