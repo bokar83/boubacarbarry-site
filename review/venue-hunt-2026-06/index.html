@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Venue Hunt - Live Tracker (Thu 6/25)</title>
+<style>
+  :root{
+    --bg:#0e1420; --surface:#16202f; --surface2:#1c2940;
+    --ink:#e8eef7; --muted:#93a4bc; --accent:#4da3ff; --green:#3ddc97;
+    --amber:#ffc857; --red:#ff7a7a; --purple:#b08bff; --chip:#22324d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.5; padding-bottom:90px;}
+  .wrap{max-width:580px;margin:0 auto;padding:16px;}
+  header{padding:22px 0 8px;}
+  h1{font-size:1.3rem;font-weight:700;letter-spacing:-.01em;}
+  .sub{color:var(--muted);font-size:.88rem;margin-top:4px;}
+
+  .script{margin-top:14px;background:var(--surface);border-radius:14px;padding:14px;}
+  .script h2{font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:8px;}
+  .script ul{list-style:none;}
+  .script li{font-size:.9rem;padding:3px 0;color:var(--ink);}
+  .script li b{color:var(--amber);}
+
+  .secthead{margin:22px 0 4px;font-size:.76rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
+
+  .card{background:var(--surface);border-radius:16px;padding:15px;margin-top:12px;border-left:4px solid var(--chip);}
+  .card.ap{background:var(--surface2);}
+  .card[data-status="quoted"]{border-left-color:var(--purple);}
+  .card[data-status="booked"]{border-left-color:var(--green);}
+  .card[data-status="dead"]{border-left-color:var(--red);opacity:.62;}
+  .card[data-status="msg"]{border-left-color:var(--amber);}
+  .toprow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .name{font-size:1.02rem;font-weight:700;flex:1;min-width:55%;}
+  .badge{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    padding:3px 7px;border-radius:999px;background:var(--chip);color:var(--muted);}
+  .badge.appick{color:#0e1420;background:var(--green);}
+  .meta{color:var(--muted);font-size:.82rem;margin-top:6px;}
+  .callbtn{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;
+    background:var(--accent);color:#08101d;font-weight:700;font-size:1rem;text-decoration:none;
+    padding:12px;border-radius:11px;}
+  .statusrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+  .statusrow button{flex:1;min-width:calc(33% - 6px);font-size:.74rem;font-weight:700;
+    padding:9px 4px;border-radius:9px;border:1px solid var(--chip);background:transparent;
+    color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.03em;}
+  .statusrow button.on[data-s="tocall"]{background:var(--chip);color:var(--ink);border-color:var(--ink);}
+  .statusrow button.on[data-s="msg"]{background:var(--amber);color:#0e1420;border-color:var(--amber);}
+  .statusrow button.on[data-s="quoted"]{background:var(--purple);color:#0e1420;border-color:var(--purple);}
+  .statusrow button.on[data-s="dead"]{background:var(--red);color:#0e1420;border-color:var(--red);}
+  .statusrow button.on[data-s="booked"]{background:var(--green);color:#0e1420;border-color:var(--green);}
+  textarea{width:100%;margin-top:10px;background:var(--bg);border:1px solid var(--chip);border-radius:10px;
+    color:var(--ink);font-family:inherit;font-size:.88rem;padding:9px;resize:vertical;min-height:44px;}
+  textarea::placeholder{color:var(--muted);}
+
+  .sticky{position:fixed;left:0;right:0;bottom:0;background:rgba(14,20,32,.96);
+    border-top:1px solid var(--chip);padding:10px 16px;backdrop-filter:blur(8px);}
+  .sticky .inner{max-width:580px;margin:0 auto;display:flex;gap:10px;align-items:center;}
+  .progress{flex:1;font-size:.82rem;color:var(--muted);}
+  .progress b{color:var(--ink);}
+  .copybtn{background:var(--green);color:#08101d;font-weight:700;font-size:.9rem;text-decoration:none;
+    padding:11px 16px;border-radius:11px;border:none;cursor:pointer;}
+  .toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--green);
+    color:#08101d;font-weight:700;padding:9px 16px;border-radius:999px;font-size:.85rem;opacity:0;
+    transition:opacity .25s;pointer-events:none;}
+  .toast.show{opacity:1;}
+  footer{margin-top:24px;color:var(--muted);font-size:.76rem;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Venue hunt - live tracker</h1>
+  <div class="sub">Workshop Thu 2026-06-25 evening &middot; ~3h &middot; 15-25 owner-operators &middot; tap to call, tap a status, jot a note</div>
+</header>
+
+<div class="script">
+  <h2>Say this on every call</h2>
+  <ul>
+    <li>Thu June 25, evening. Book 3 hours. 15-25 people, tables+chairs, screen, wifi.</li>
+    <li>Anchor: "I'm budgeting about $250 for the 3 hours." Ask: water, coffee, notepads?</li>
+    <li><b>Before hanging up: "Email me that quote now - boubacar@catalystworks.consulting." No email = no deal.</b></li>
+  </ul>
+</div>
+
+<div class="secthead">AP picks (call first)</div>
+<div id="list-ap"></div>
+
+<div class="secthead">Business hotels</div>
+<div id="list-hotel"></div>
+
+<div class="secthead">Distinctive non-hotel spaces</div>
+<div id="list-other"></div>
+
+<footer>
+  v1 tracker &middot; 2026-06-10 &middot; statuses + notes saved on THIS phone only (localStorage). "Copy status" -> paste back to the agent.
+</footer>
+
+</div>
+
+<div class="sticky">
+  <div class="inner">
+    <div class="progress" id="progress">0 / 14 worked</div>
+    <button class="copybtn" id="copybtn">Copy status</button>
+  </div>
+</div>
+<div class="toast" id="toast">Copied - paste it back</div>
+
+<script>
+const VERSION = "v1";
+const KEY = "venue-hunt-2026-06-" + VERSION;
+
+const venues = [
+  {id:"sleepinn", group:"ap", ap:true, name:"Sleep Inn South Jordan-Sandy", meta:"~2 mi &middot; 3.5&#9733; &middot; meetings page + biz center", tel:"+18015722020", telDisp:"(801) 572-2020"},
+  {id:"cottontree", group:"ap", ap:true, name:"Best Western Plus CottonTree Inn", meta:"Sandy ~6 mi &middot; 4&#9733; &middot; 2,700 sq ft verified", tel:"+18015238484", telDisp:"(801) 523-8484"},
+  {id:"courtyard", group:"hotel", name:"Courtyard by Marriott Sandy", meta:"~7 mi &middot; 4&#9733; &middot; 2,250 sq ft", tel:"+18015713600", telDisp:"(801) 571-3600"},
+  {id:"hgi", group:"hotel", name:"Hilton Garden Inn Sandy", meta:"~7 mi &middot; 4&#9733; &middot; 3,200 sq ft / 35 (may quote &gt; $250)", tel:"+18013529400", telDisp:"(801) 352-9400"},
+  {id:"hyatt", group:"hotel", name:"Hyatt Place SLC/Lehi", meta:"~13 mi &middot; 4&#9733; &middot; 2,600 sq ft, newest room", tel:"+13853458300", telDisp:"(385) 345-8300"},
+  {id:"hampton", group:"hotel", name:"Hampton Inn Sandy", meta:"~7 mi &middot; 3.5&#9733; &middot; ~1,000 sq ft / 35", tel:"+18015710800", telDisp:"(801) 571-0800"},
+  {id:"crystal", group:"hotel", name:"Crystal Inn Midvalley (indie)", meta:"Murray ~9 mi &middot; 4&#9733; &middot; 2,185 sq ft &middot; 21:00 hard-stop", tel:"+18016859300", telDisp:"(801) 685-9300"},
+  {id:"laquinta", group:"hotel", name:"La Quinta South Jordan", meta:"~3 mi &middot; 3.5&#9733; &middot; ~750 sq ft (snug at 25)", tel:"+13854488000", telDisp:"(385) 448-8000"},
+  {id:"sandralloyd", group:"other", name:"Sandra N. Lloyd Community Center", meta:"Riverton ~6 mi &middot; open to 22:00 Mon-Sat &middot; $200 dep", tel:"+18012540704", telDisp:"(801) 254-0704"},
+  {id:"saltmine", group:"other", name:"Salt Mine Productive Workspace", meta:"Sandy ~9 mi &middot; event space + cafe, best vibe", tel:"+18014328275", telDisp:"(801) 432-8275"},
+  {id:"viridian", group:"other", name:"Viridian Event Center (Library)", meta:"West Jordan ~6 mi &middot; from $200/4-hr, AV incl", tel:"+18019487858", telDisp:"(801) 948-7858"},
+  {id:"megaplex", group:"other", name:"Megaplex Theatres - The District", meta:"South Jordan ~4 mi &middot; conf room + catering, distinctive", tel:"+18013044052", telDisp:"(801) 304-4052"},
+  {id:"davinci", group:"other", name:"Davinci Meeting Rooms South Jordan", meta:"~3 mi &middot; hourly rooms (confirm cap + evening hrs)", tel:"+18774534055", telDisp:"(877) 453-4055"},
+  {id:"peerspace", group:"other", name:"Peerspace backup (online)", meta:"Pre-filtered to Thu 6/25 18:00-22:00, book online", tel:"", telDisp:"", url:"https://www.peerspace.com/s/?a=event&location=salt-lake-city--ut--usa&availability=%5B%5B2026-06-25T18:00,2026-06-25T22:00%5D%5D"}
+];
+
+const STATUSES = [
+  {s:"tocall", label:"To call"},
+  {s:"msg", label:"Left msg"},
+  {s:"quoted", label:"Quoted"},
+  {s:"dead", label:"Dead"},
+  {s:"booked", label:"Booked"}
+];
+
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } }
+function save(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+let data = load();
+
+function render(){
+  ["ap","hotel","other"].forEach(g=>{
+    const c = document.getElementById("list-"+g);
+    c.innerHTML = "";
+    venues.filter(v=>v.group===g).forEach(v=>{
+      const st = (data[v.id] && data[v.id].status) || "tocall";
+      const note = (data[v.id] && data[v.id].note) || "";
+      const card = document.createElement("div");
+      card.className = "card" + (v.ap ? " ap" : "");
+      card.setAttribute("data-status", st);
+      const callEl = v.url
+        ? `<a class="callbtn" href="${v.url}" target="_blank" rel="noopener">Open Peerspace</a>`
+        : `<a class="callbtn" href="tel:${v.tel}">Call ${v.telDisp}</a>`;
+      card.innerHTML = `
+        <div class="toprow">
+          <div class="name">${v.name}</div>
+          ${v.ap ? '<span class="badge appick">AP pick</span>' : ''}
+        </div>
+        <div class="meta">${v.meta}</div>
+        ${callEl}
+        <div class="statusrow">
+          ${STATUSES.map(o=>`<button data-s="${o.s}" class="${st===o.s?'on':''}" onclick="setStatus('${v.id}','${o.s}')">${o.label}</button>`).join("")}
+        </div>
+        <textarea placeholder="Notes: quote $, room, contact name, callback time..." onchange="setNote('${v.id}', this.value)">${note.replace(/</g,"&lt;")}</textarea>
+      `;
+      c.appendChild(card);
+    });
+  });
+  updateProgress();
+}
+
+function setStatus(id, s){
+  if(!data[id]) data[id] = {};
+  data[id].status = s;
+  save(data);
+  render();
+}
+function setNote(id, val){
+  if(!data[id]) data[id] = {};
+  data[id].note = val;
+  save(data);
+  updateProgress();
+}
+function updateProgress(){
+  const worked = venues.filter(v=>{
+    const st = data[v.id] && data[v.id].status;
+    return st && st !== "tocall";
+  }).length;
+  document.getElementById("progress").innerHTML = `<b>${worked}</b> / ${venues.length} worked`;
+}
+
+document.getElementById("copybtn").addEventListener("click", ()=>{
+  const lines = ["VENUE HUNT STATUS - Thu 6/25 workshop", ""];
+  const labelMap = {tocall:"TO CALL", msg:"LEFT MSG", quoted:"QUOTED", dead:"DEAD", booked:"BOOKED"};
+  venues.forEach(v=>{
+    const st = (data[v.id] && data[v.id].status) || "tocall";
+    const note = (data[v.id] && data[v.id].note) || "";
+    const nm = v.name.replace(/&amp;/g,"&");
+    let line = `[${labelMap[st]}] ${nm}`;
+    if(note.trim()) line += ` -- ${note.trim()}`;
+    lines.push(line);
+  });
+  const txt = lines.join("\n");
+  const done = ()=>{ const t=document.getElementById("toast"); t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1800); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done, ()=>fallback(txt,done));
+  } else { fallback(txt, done); }
+});
+function fallback(txt, cb){
+  const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+  ta.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(ta); cb();
+}
+
+render();
+</script>
+</body>
+</html>
