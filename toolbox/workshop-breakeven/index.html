@@ -97,7 +97,7 @@
 <main class="wrap">
   <p class="eyebrow">Workshop economics · live model</p>
   <h1>Will the workshop <em>break even?</em></h1>
-  <p class="sub">Live model for the June 24 paid flagship. Change any number and the breakeven point recalculates. Built to answer one question fast: how many seats do I actually need.</p>
+  <p class="sub">Live model for the June 25 paid flagship. Change any number and the breakeven point recalculates. Built to answer one question fast: how many seats do I actually need.</p>
 
   <svg class="rule" viewBox="0 0 1080 14" preserveAspectRatio="none" aria-hidden="true"><path d="M2,8 C140,3 260,11 380,7 C520,2.5 640,12 760,6.5 C880,2 1000,10 1078,5" stroke="#B47C57" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
 
@@ -131,8 +131,16 @@
       <div class="panel">
         <div class="ptitle"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Costs</div>
         <div class="field">
-          <label>Venue <span class="hint">Peerspace + service fee</span></label>
-          <input type="number" id="venue" value="130" min="0" step="5">
+          <label>Venue <span class="hint">Karen Gail Miller CC, Room 105</span></label>
+          <input type="number" id="venue" value="150" min="0" step="5">
+        </div>
+        <div class="field row" style="gap:1rem">
+          <div style="flex:1"><label>Insurance <span class="hint">GL $1M/$5M</span></label><input type="number" id="insurance" value="159" min="0" step="1"></div>
+          <div style="flex:1"><label>Catering <span class="hint">water $15 +</span></label><input type="number" id="catering" value="15" min="0" step="5"></div>
+        </div>
+        <div class="field row" style="gap:1rem">
+          <div style="flex:1"><label>Equipment <span class="hint">AV in room = $0</span></label><input type="number" id="equipment" value="0" min="0" step="5"></div>
+          <div style="flex:1"><label>Miscellaneous <span class="hint">labels, prints</span></label><input type="number" id="misc" value="0" min="0" step="5"></div>
         </div>
         <div class="field">
           <div class="togwrap"><label style="margin:0">Ad spend (Meta) <span class="hint">total over the run</span></label><span class="rangeval">$<span id="adVal">500</span></span></div>
@@ -177,7 +185,11 @@
           <div class="li"><span class="k">Gross ticket revenue</span><span class="v" id="gross">$564</span></div>
           <div class="li sub"><span class="k">less Stripe fees</span><span class="v neg" id="fees">−$20</span></div>
           <div class="li"><span class="k">Net from tickets</span><span class="v" id="netTickets">$544</span></div>
-          <div class="li sub"><span class="k">Venue</span><span class="v neg" id="oVenue">−$130</span></div>
+          <div class="li sub"><span class="k">Venue</span><span class="v neg" id="oVenue">−$150</span></div>
+          <div class="li sub"><span class="k">Insurance</span><span class="v neg" id="oIns">−$159</span></div>
+          <div class="li sub"><span class="k">Catering</span><span class="v neg" id="oCat">−$15</span></div>
+          <div class="li sub"><span class="k">Equipment</span><span class="v neg" id="oEq">−$0</span></div>
+          <div class="li sub"><span class="k">Miscellaneous</span><span class="v neg" id="oMisc">−$0</span></div>
           <div class="li sub"><span class="k">Ad spend</span><span class="v neg" id="oAd">−$500</span></div>
           <div class="li sub"><span class="k">Claude gifts</span><span class="v neg" id="oGift">−$0</span></div>
           <div class="li total"><span class="k">Event net</span><span class="v" id="eventNet">−$86</span></div>
@@ -206,7 +218,7 @@
   const $=id=>document.getElementById(id);
   const money=n=>{const r=Math.round(n);return (r<0?'−$':'$')+Math.abs(r).toLocaleString('en-US');};
   const STRIPE_PCT=0.029, STRIPE_FLAT=0.30;
-  const ids=['presale','weekof','presalePrice','weekofPrice','venue','ad','closes','closeVal'];
+  const ids=['presale','weekof','presalePrice','weekofPrice','venue','insurance','catering','equipment','misc','ad','closes','closeVal'];
 
   function netPer(price){ return price - (price*STRIPE_PCT + STRIPE_FLAT); }
 
@@ -214,6 +226,8 @@
     const nP=Math.max(0,+$('presale').value||0), nW=Math.max(0,+$('weekof').value||0);
     const pP=Math.max(0,+$('presalePrice').value||0), pW=Math.max(0,+$('weekofPrice').value||0);
     const venue=Math.max(0,+$('venue').value||0), ad=Math.max(0,+$('ad').value||0);
+    const ins=Math.max(0,+$('insurance').value||0), cat=Math.max(0,+$('catering').value||0);
+    const eq=Math.max(0,+$('equipment').value||0), misc=Math.max(0,+$('misc').value||0);
     const gift=$('giftOn').checked?20:0;
     const closes=Math.max(0,+$('closes').value||0), closeVal=Math.max(0,+$('closeVal').value||0);
 
@@ -224,7 +238,7 @@
     const fees=nP*(pP*STRIPE_PCT+STRIPE_FLAT) + nW*(pW*STRIPE_PCT+STRIPE_FLAT);
     const netTickets=gross-fees;
     const gifts=att*gift;
-    const fixed=venue+ad;                 // costs that don't scale with a marginal ticket (gift does)
+    const fixed=venue+ins+cat+eq+misc+ad; // costs that don't scale with a marginal ticket (gift does)
     const eventNet=netTickets - fixed - gifts;
 
     // blended net per ticket at current mix (fallback to presale price if no tickets yet)
@@ -242,6 +256,10 @@
     $('fees').textContent='−'+money(fees).replace('−','');
     $('netTickets').textContent=money(netTickets);
     $('oVenue').textContent='−'+money(venue).replace('−','');
+    $('oIns').textContent='−'+money(ins).replace('−','');
+    $('oCat').textContent='−'+money(cat).replace('−','');
+    $('oEq').textContent='−'+money(eq).replace('−','');
+    $('oMisc').textContent='−'+money(misc).replace('−','');
     $('oAd').textContent='−'+money(ad).replace('−','');
     $('oGift').textContent='−'+money(gifts).replace('−','');
     $('eventNet').textContent=money(eventNet);
