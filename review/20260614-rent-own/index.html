@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buy vs Rent — Decision Brief</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:#2a3240;
+    --txt:#e6edf3; --mut:#9aa7b4; --dim:#6e7b8a;
+    --grn:#3fb950; --grn2:#1f6f37; --red:#f85149; --amb:#d29922; --blu:#58a6ff;
+    --acc:#7c5cff;
+    --hi:#3fb950; --med:#d29922; --lo:#f85149;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.55;font-size:16px;-webkit-text-size-adjust:100%}
+  .wrap{max-width:920px;margin:0 auto;padding:18px 16px 80px}
+  h1{font-size:1.5rem;letter-spacing:-.02em;margin-bottom:2px}
+  h2{font-size:1.18rem;margin:34px 0 12px;letter-spacing:-.01em;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  h3{font-size:1rem;margin:18px 0 8px;color:var(--blu)}
+  p{margin:0 0 10px;color:var(--txt)}
+  .sub{color:var(--mut);font-size:.82rem;margin-bottom:18px}
+  .muted{color:var(--mut)}
+  strong{color:#fff}
+  a{color:var(--blu);text-decoration:none;word-break:break-word}
+  a:hover{text-decoration:underline}
+
+  .tldr{background:linear-gradient(135deg,#13251a,#161b22);border:1px solid var(--grn2);border-left:4px solid var(--grn);border-radius:12px;padding:20px 18px;margin:14px 0 8px}
+  .tldr .badge{display:inline-block;background:var(--grn);color:#06210f;font-weight:800;font-size:.72rem;letter-spacing:.06em;padding:4px 10px;border-radius:6px;margin-bottom:10px}
+  .tldr p{font-size:1.06rem;color:#fff;font-weight:500}
+  .tldr .trigger{margin-top:12px;font-size:.95rem;color:var(--txt);background:#0d1117;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+
+  .gate{border-radius:12px;padding:16px;margin:10px 0;border:1px solid var(--line)}
+  .gate.pass{background:#10210f;border-color:var(--grn2)}
+  .gate.cond{background:#241e08;border-color:#5a4708}
+  .gate.fail{background:#2a1213;border-color:#5a1f20}
+  .verdict{font-weight:800;font-size:1.1rem;letter-spacing:.02em}
+  .verdict.pass{color:var(--grn)} .verdict.cond{color:var(--amb)} .verdict.fail{color:var(--red)}
+
+  .grid{display:grid;gap:12px}
+  @media(min-width:680px){.grid.c2{grid-template-columns:1fr 1fr}.grid.c3{grid-template-columns:1fr 1fr 1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .stat{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+  .stat.g{color:var(--grn)} .stat.r{color:var(--red)} .stat.a{color:var(--amb)} .stat.b{color:var(--blu)}
+  .lbl{font-size:.74rem;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+
+  .cf{display:inline-block;font-size:.62rem;font-weight:800;letter-spacing:.05em;padding:2px 6px;border-radius:4px;vertical-align:middle;margin-left:6px}
+  .cf.hi{background:#10300f;color:var(--hi);border:1px solid var(--grn2)}
+  .cf.med{background:#2a2208;color:var(--med);border:1px solid #5a4708}
+  .cf.lo{background:#2a1011;color:var(--lo);border:1px solid #5a1f20}
+
+  table{width:100%;border-collapse:collapse;font-size:.86rem;margin:6px 0}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px}
+  th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{background:var(--panel2);color:var(--mut);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+  tr:last-child td{border-bottom:none}
+  td.g{color:var(--grn);font-weight:700} td.r{color:var(--red);font-weight:700} td.a{color:var(--amb);font-weight:700}
+  .pick{background:#11210f}
+  .pick td:first-child{border-left:3px solid var(--grn)}
+
+  ul{margin:0 0 10px 18px} li{margin-bottom:6px}
+  .callout{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:8px;padding:12px 14px;margin:12px 0}
+  .danger{border-left-color:var(--red);background:#1c1213}
+  .warn{border-left-color:var(--amb);background:#1c1808}
+
+  .src{font-size:.78rem;color:var(--mut)}
+  .src li{margin-bottom:5px}
+  .next{position:sticky;bottom:0;margin-top:30px}
+  .nextbox{background:linear-gradient(135deg,#1a1430,#161b22);border:1px solid var(--acc);border-radius:12px;padding:16px}
+  .nextbox .k{font-size:.72rem;color:var(--acc);text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+  .nextbox p{font-size:1.08rem;font-weight:700;color:#fff;margin:4px 0 0}
+  hr{border:none;border-top:1px solid var(--line);margin:26px 0}
+  .small{font-size:.8rem}
+
+  /* ── Tooltips ─────────────────────────────────────────── */
+  .tl{position:relative;display:inline-flex;align-items:center;gap:5px}
+  .ti{width:15px;height:15px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);
+      color:var(--mut);font-size:.6rem;font-weight:900;cursor:pointer;
+      display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;user-select:none;line-height:1}
+  .ti:hover,.ti.open{background:var(--acc);color:#fff;border-color:var(--acc)}
+  .tb{display:none;position:absolute;bottom:calc(100% + 8px);left:0;width:260px;
+      background:#1c2535;border:1px solid #3a4a60;border-radius:8px;
+      padding:10px 12px;font-size:.75rem;color:var(--txt);z-index:300;
+      line-height:1.55;box-shadow:0 6px 24px rgba(0,0,0,.55);pointer-events:none}
+  .tb::before{content:'';position:absolute;top:100%;left:14px;
+              border:5px solid transparent;border-top-color:#1c2535}
+  .ti:hover ~ .tb,.ti.open ~ .tb{display:block}
+  .tb b{color:#fff}
+
+  /* ── Calculator shell ─────────────────────────────────── */
+  .pcalc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .pc-grid{display:grid;gap:14px;margin-bottom:14px}
+  @media(min-width:580px){.pc-grid.c2{grid-template-columns:1fr 1fr}}
+  .pc-field{display:flex;flex-direction:column;gap:5px}
+  .pc-label{display:flex;align-items:center;gap:5px;font-size:.82rem;color:var(--mut)}
+  .pc-label strong{color:var(--txt);font-weight:600}
+  .pc-val{font-weight:800;color:var(--blu);font-size:.9rem;min-width:72px;text-align:right}
+  .pc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
+  input[type=range]{accent-color:var(--blu);width:100%;margin:0}
+  select.pc-sel{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+                padding:6px 10px;color:var(--txt);font-size:.88rem;width:100%}
+  .pc-num{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+           padding:6px 8px;color:var(--txt);font-size:.9rem;font-weight:700;
+           width:100%;text-align:right}
+  .pc-num:focus{outline:none;border-color:var(--blu)}
+
+  /* income input with unit toggle */
+  .inc-row{display:flex;gap:6px;align-items:stretch}
+  .inc-row .pc-num{flex:1}
+  .unit-tog{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;flex-shrink:0}
+  .unit-tog button{background:var(--panel2);border:none;color:var(--mut);font-size:.72rem;
+                    font-weight:800;padding:0 10px;cursor:pointer}
+  .unit-tog button.active{background:var(--blu);color:#fff}
+  .inc-derived{font-size:.72rem;color:var(--mut);margin-top:3px}
+
+  /* down payment dual row */
+  .dp-dual{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;margin-bottom:14px}
+  .dp-dual .pc-field{gap:4px}
+
+  /* qualification banner */
+  .qual{border-radius:10px;padding:12px 14px;margin:14px 0;border:1px solid var(--line);font-size:.86rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .qual.ok{background:#10210f;border-color:var(--grn2)}
+  .qual.warn{background:#241e08;border-color:#5a4708}
+  .qual.bad{background:#2a1213;border-color:#5a1f20}
+  .qual .qbadge{font-weight:800;font-size:.7rem;letter-spacing:.05em;padding:3px 9px;border-radius:5px;text-transform:uppercase}
+  .qual.ok .qbadge{background:var(--grn);color:#06210f}
+  .qual.warn .qbadge{background:var(--amb);color:#1a1400}
+  .qual.bad .qbadge{background:var(--red);color:#fff}
+
+  /* payment output */
+  .pmt-out{background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-top:6px;overflow:hidden}
+  .pmt-line{display:flex;justify-content:space-between;align-items:center;
+             padding:8px 14px;border-bottom:1px solid var(--line);font-size:.86rem}
+  .pmt-line:last-child{border-bottom:none}
+  .pmt-line.total-line{background:#111923;font-weight:800;font-size:.96rem;padding:10px 14px}
+  .pmt-key{color:var(--mut)}
+  .pmt-val{font-weight:700}
+  .pmt-val.g{color:var(--grn)} .pmt-val.a{color:var(--amb)} .pmt-val.r{color:var(--red)}
+  .pmt-val.dim{color:var(--grn);font-size:.8rem}
+  .pmt-note{font-size:.73rem;color:var(--mut);margin-top:8px;line-height:1.45;padding:0 2px}
+
+  /* preset + action buttons */
+  .btn-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0}
+  .btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+       padding:8px 14px;color:var(--txt);font-size:.84rem;font-weight:700;cursor:pointer;transition:all .12s}
+  .btn:hover{border-color:var(--blu);color:var(--blu)}
+  .btn.active{background:var(--blu);border-color:var(--blu);color:#fff}
+  .btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-size:.9rem;padding:10px 18px}
+  .btn.primary:hover{background:#9479ff;border-color:#9479ff;color:#fff}
+  .btn-lbl{font-size:.78rem;color:var(--mut);margin-right:2px;font-weight:700}
+
+  /* recommendation box (from Find Ideal) */
+  .reco{background:linear-gradient(135deg,#1a1430,#0d1117);border:1px solid var(--acc);
+        border-radius:12px;padding:16px 18px;margin:14px 0;display:none}
+  .reco.show{display:block}
+  .reco .rk{font-size:.7rem;color:var(--acc);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:6px}
+  .reco .rmain{font-size:1.12rem;font-weight:800;color:#fff;margin-bottom:8px}
+  .reco .rdetail{font-size:.88rem;color:var(--txt);line-height:1.6}
+  .reco .rdetail b{color:var(--blu)}
+
+  /* ── Scenario Engine ──────────────────────────────────── */
+  .scinput{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .scinput-title{font-size:.75rem;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:12px}
+  .sc-grid{display:grid;gap:14px;margin-bottom:0}
+  @media(min-width:580px){.sc-grid.c2{grid-template-columns:1fr 1fr}.sc-grid.c3{grid-template-columns:1fr 1fr 1fr}}
+
+  .hz-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .hz-label{font-size:.8rem;color:var(--mut);font-weight:700}
+  .hz-btn{background:var(--panel);border:1px solid var(--line);border-radius:6px;
+           padding:5px 16px;color:var(--mut);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .12s}
+  .hz-btn.active{background:var(--acc);border-color:var(--acc);color:#fff}
+  .hz-btn:hover:not(.active){border-color:var(--acc);color:var(--acc)}
+
+  .sc-cards{display:grid;gap:12px}
+  @media(min-width:560px){.sc-cards{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:1000px){.sc-cards{grid-template-columns:repeat(4,1fr)}}
+  .badge-d{background:#2a1030;color:#e07ad0;border:1px solid #5a2a60}
+  .sc-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .sc-card.winner{border-color:var(--grn);background:#0d1f0d}
+  .sc-card-badge{font-size:.65rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+                  padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:6px}
+  .badge-a{background:#13193a;color:#7aa4ff;border:1px solid #2a3a60}
+  .badge-b{background:#1a2410;color:#7acf80;border:1px solid #2a5030}
+  .badge-c{background:#2a1f08;color:#d4a040;border:1px solid #5a4020}
+  .sc-card-title{font-size:.96rem;font-weight:800;color:#fff;margin-bottom:10px}
+  .sc-row{display:flex;justify-content:space-between;align-items:baseline;
+           font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--line)}
+  .sc-row:last-child{border-bottom:none}
+  .sc-k{color:var(--mut)}
+  .sc-v{font-weight:700}
+  .sc-v.g{color:var(--grn)} .sc-v.a{color:var(--amb)} .sc-v.r{color:var(--red)} .sc-v.b{color:var(--blu)}
+  .win-tag{font-size:.6rem;font-weight:800;background:var(--grn);color:#06210f;
+            border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle}
+
+  /* Decision matrix */
+  .dm{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:16px;font-size:.82rem}
+  .dm-row{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr}
+  .dm-row:not(:last-child){border-bottom:1px solid var(--line)}
+  .dm-cell{padding:8px 10px}
+  .dm-head .dm-cell{background:var(--panel2);color:var(--mut);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+  .dm-cell.win{color:var(--grn);font-weight:700}
+  .dm-cell.ok{color:var(--amb)}
+  .dm-cell.lose{color:var(--red)}
+</style>
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://plausible.io/js/pa-qHouHjbduluIk5vNgeIOx.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Buy vs Rent — Decision Brief</h1>
+  <div class="sub">South Jordan / Herriman corridor, UT · modeled June 2026 · household = one $55K W-2 teacher + one pre-revenue owner-operator (~$450K liquid assets)</div>
+
+  <div class="tldr">
+    <span class="badge">VERDICT · BUY (CONDITIONAL)</span>
+    <p>Buy — but only the big-down-payment version. The $150K-down / ~$300K-loan plan is the single path that both qualifies and lands near the $3K payment; the low-down "keep liquidity" versions either fail underwriting on a $55K salary or blow past $3K. The number that should scare you isn't the price — it's runway dropping from ~51 months (rent) to ~25 months (buy) right when you have no revenue.</p>
+    <div class="trigger"><strong>Buy IF</strong> (a) ~12+ months of business runway is secured outside the $300K taxable account, <strong>and</strong> (b) a lender confirms asset-depletion income stacks on Vania's W-2. <strong>Otherwise: 12-month rental bridge</strong>, then buy summer 2027 from first-revenue or a proven asset-depletion approval. <strong>Use the live calculators below to test your own income ramp.</strong></div>
+  </div>
+
+  <h2>Gate: Mortgage Qualification</h2>
+  <div class="gate cond">
+    <div class="verdict cond">CONDITIONAL PASS — qualifies ONLY with large down payment + asset-depletion stacking</div>
+    <p class="small muted" style="margin-top:8px">Vania's $55K W-2 <strong>alone cannot</strong> carry a $400K+ purchase. It works only because the $150K down payment shrinks the loan to ~$300K, and asset-depletion income is added on top to clear DTI.</p>
+  </div>
+
+  <div class="grid c3">
+    <div class="card"><div class="stat r">~$338K</div><div class="lbl">Max price, $55K W-2 alone, 20% down, DTI 45% <span class="cf hi">HIGH</span></div></div>
+    <div class="card"><div class="stat r">~$269K</div><div class="lbl">Max price, $55K alone, 5% down +PMI <span class="cf hi">HIGH</span></div></div>
+    <div class="card"><div class="stat a">~$403K</div><div class="lbl">Max price WITH asset-depletion stacked (÷360) <span class="cf med">MED</span></div></div>
+  </div>
+
+  <h3>The six gate questions, answered</h3>
+  <div class="scroll">
+  <table>
+    <tr><th>#</th><th>Question</th><th>Answer</th><th>Conf</th></tr>
+    <tr><td>1</td><td>$55K W-2 alone qualify $350–420K?</td><td class="r">NO. ~$338K cap at 20% down (DTI 45%), ~$379K only at a 50% DTI stretch. Asset depletion required to reach $400K.</td><td>HIGH</td></tr>
+    <tr><td>2</td><td>DTI / max loan on $55K @ ~6.55%</td><td>$4,583/mo gross × 45% = <strong>$2,063 max housing</strong> → loan ≈ <strong>$270K</strong> (20% down). 43% cap = $1,971.</td><td>HIGH</td></tr>
+    <tr><td>3</td><td>Self-employment: help or hurt?</td><td class="a">Pre-revenue self-employment adds <strong>zero income</strong> and can require 2-yr returns. But assets work: lenders ADD asset-depletion income on top of the W-2 spouse.</td><td>MED</td></tr>
+    <tr><td>4</td><td>Utah teacher / UHC programs</td><td class="a">UHC FirstHome income limit (~$80K–$126K by county) — Vania well under, qualifies. BUT 3% conventional DPA keeps the loan large = DTI fails. Teacher grants ($9K) are small but free.</td><td>MED</td></tr>
+    <tr><td>5</td><td>Non-QM asset depletion backup</td><td>÷120 math = <strong>+$2,417/mo</strong> qualifying income (3x conventional ÷360). Rate penalty +0.5–2% (~mid-7s). Viable fallback if conventional won't stack.</td><td>MED</td></tr>
+    <tr><td>6</td><td>FHA 3.5% vs conventional</td><td class="r">FHA loses here. With good credit + a big down payment, conventional PMI is cheaper and cancellable; FHA MIP is permanent under 10% down and adds 1.75% upfront.</td><td>HIGH</td></tr>
+  </table>
+  </div>
+
+  <h2>Vania's W-2 — The Pivot Point</h2>
+  <p>Her salary is what makes any of this possible — and also what caps it. A self-employed pre-revenue borrower with no W-2 typically can't get an agency loan at all without 2 years of returns. Vania's W-2 is the qualifying spine; Boubacar's assets are the booster. <strong>Both incomes are now live inputs in the calculator below.</strong></p>
+  <div class="grid c2">
+    <div class="card">
+      <h3 style="margin-top:0">What her $55K unlocks</h3>
+      <ul class="small">
+        <li>A conventional loan exists at all (vs none on assets-only agency loans).</li>
+        <li>~$270K loan on her income alone (DTI 45%, ~$0 other debt).</li>
+        <li>Eligibility for UHC FirstHome + teacher grants (income under limits).</li>
+        <li>Asset-depletion income from Boubacar's ~$290K eligible assets <em>stacks on top</em>: +$806/mo (conventional ÷360) → combined qualifying income ≈ $5,389/mo → supports ~$403K at 20% down.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">What it does NOT do</h3>
+      <ul class="small">
+        <li>Cannot reach $450–550K conventionally on a small down payment — full stop.</li>
+        <li>Cannot offset a high loan balance: the math only works because $150K down crushes the loan to ~$300K (PITI ~$2,306).</li>
+        <li>Any car loan / student loan eats directly into the $2,063 budget — confirm her existing debt is near zero.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout warn small"><strong>Action before anything else:</strong> get a lender letter confirming they will (a) stack asset-depletion income on Vania's W-2, and (b) at what depletion divisor. That one answer decides $403K-conventional vs needing a higher-rate non-QM loan. <span class="cf med">MED until a lender confirms in writing</span></div>
+
+  <h2>All Six Scenarios</h2>
+  <p class="small muted">PITI modeled at 6.55% / 30yr, ~0.60% effective property tax (Utah primary-residence 45% exemption applied), $1,500/yr insurance, $50/mo HOA. Daughter at Herriman High in ~2 yrs → ~4-yr hold → ~6-yr horizon.</p>
+  <div class="scroll">
+  <table>
+    <tr><th>Scenario</th><th>Loan</th><th>Monthly (PITI+HOA)</th><th>Liquidity kept</th><th>Runway</th><th>Qualifies?</th><th>Risk</th></tr>
+    <tr><td>1 · Less down — $425K, 5% ($21K) +PMI</td><td>$404K</td><td class="r">$3,155</td><td class="g">~$279K</td><td>~46 mo</td><td class="r">NO on $55K alone; needs non-QM</td><td class="a">Med — PMI + over budget</td></tr>
+    <tr class="pick"><td>2 · Proposed — $450K, $150K down (33%) ✅</td><td>$300K</td><td class="g">$2,306</td><td class="a">~$150K</td><td>~25 mo</td><td class="g">YES (W-2 + depletion)</td><td class="a">Med — runway compression</td></tr>
+    <tr><td>3 · More down — $450K, $200K down (44%)</td><td>$250K</td><td class="g">$1,988</td><td class="r">~$100K</td><td class="r">~17 mo</td><td class="g">YES</td><td class="r">High — runway too thin</td></tr>
+    <tr><td>4 · Rental bridge — rent ~$2,900, buy 2027</td><td>—</td><td class="a">$2,900</td><td class="g">~$300K</td><td class="g">~51 mo</td><td>N/A</td><td class="g">Low — but a 2nd move</td></tr>
+    <tr><td>5 · House hack — $475K +legal ADU ($150K down)</td><td>$325K</td><td class="g">$2,477 → <strong>~$1,500 net</strong> after $900 rent</td><td class="a">~$150K</td><td>~38 mo</td><td class="g">YES (ADU income aids)</td><td class="a">Med — tenant + scarce inventory</td></tr>
+    <tr><td>6 · Retirement provisions for down pmt</td><td colspan="6">Use $10K IRA penalty-free (still taxed as income) to top up; <strong>do NOT</strong> raid 401k (10% penalty + tax). Cheaper than expected; minor lever, not a strategy.</td></tr>
+  </table>
+  </div>
+  <p class="small muted">✅ = recommended. Scenario 5 (house hack) is the dark-horse winner if a legal-basement-apartment listing turns up — same down payment, net payment drops to ~$1,500, and the rental income helps qualification.</p>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <h2>Payment Calculator <span class="cf med">live</span></h2>
+  <p class="small muted">Your actual monthly cost breakdown. Every field has a tooltip (hover or tap <strong>?</strong>). PMI appears automatically when down payment is below 20%. Income drives the qualification check below.</p>
+
+  <div class="pcalc">
+
+    <!-- INCOME (both people) -->
+    <div class="scinput-title" style="margin-bottom:10px">Household income — enter $/yr or $/mo for each</div>
+    <div class="pc-grid c2" style="margin-bottom:6px">
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Spouse income (Vania, W-2)</strong><span class="ti">?</span><span class="tb"><b>Spouse W-2 income</b><br>Vania's teacher salary — the qualifying spine of the whole deal. Default $55,000/yr ($4,583/mo). Toggle yr/mo. This is the income lenders can use today; your business income can't be used until it has 2 yrs of returns.</span></span>
+        </div>
+        <div class="inc-row">
+          <input type="number" class="pc-num" id="spouseInc" min="0" step="500" value="55000">
+          <div class="unit-tog" data-for="spouse">
+            <button data-unit="yr" class="active">/yr</button>
+            <button data-unit="mo">/mo</button>
+          </div>
+        </div>
+        <div class="inc-derived" id="spouseDerived">= $4,583/mo</div>
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Your income (business)</strong><span class="ti">?</span><span class="tb"><b>Your business income</b><br>Model your ramp. $0 = pre-revenue (today). Use the preset buttons below to jump to $3K / $5K / $10K per month and watch the recommendation change. Note: this helps CASH FLOW and RUNWAY immediately, but lenders won't count it toward qualification until you have ~2 yrs of tax returns.</span></span>
+        </div>
+        <div class="inc-row">
+          <input type="number" class="pc-num" id="selfInc" min="0" step="250" value="0">
+          <div class="unit-tog" data-for="self">
+            <button data-unit="yr" class="active">/yr</button>
+            <button data-unit="mo">/mo</button>
+          </div>
+        </div>
+        <div class="inc-derived" id="selfDerived">= $0/mo</div>
+        <div class="pc-label" style="margin-top:8px">
+          <span class="tl"><strong>Lender-verifiable?</strong><span class="ti">?</span><span class="tb"><b>Can a lender USE this income to qualify you?</b><br>Business income normally needs <b>2 years of filed tax returns</b> before a conventional lender counts it. Until then it helps your CASH FLOW and RUNWAY but does NOT raise your max loan. Set this to "Yes" to model the world where you have the 2-yr track record — watch the loan type and max price jump.</span></span>
+        </div>
+        <div class="unit-tog" id="verifTog" style="width:fit-content">
+          <button data-verif="no" class="active">No (pre-revenue)</button>
+          <button data-verif="yes">Yes (2+ yr returns)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- income presets -->
+    <div class="btn-row">
+      <span class="btn-lbl">Jump your income to:</span>
+      <button class="btn" data-bizpreset="0">$0/mo (now)</button>
+      <button class="btn" data-bizpreset="5000">$5K/mo</button>
+      <button class="btn" data-bizpreset="10000">$10K/mo (focus)</button>
+      <button class="btn" data-bizpreset="20000">$20K/mo</button>
+      <button class="btn" data-bizpreset="30000">$30K/mo (1-yr target)</button>
+    </div>
+
+    <div class="pc-grid c2" style="margin-bottom:14px">
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Monthly living expenses (non-housing)</strong><span class="ti">?</span><span class="tb"><b>Living burn rate — everything EXCEPT housing</b><br>Food, utilities, car, insurance, kids, etc. Boubacar's ≈ <b>$3,500</b> (total is ~$6,500/mo including rent, so non-housing ≈ $3,500). Housing is added separately per scenario. If income − housing − this is negative, you're drawing down savings — runway counts how long that lasts. Until business income arrives, this + rent comes out of your stock portfolio.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">$2K</span><span class="pc-val" id="vBurn">$3,500</span><span style="font-size:.8rem;color:var(--mut)">$12K</span></div>
+        <input type="range" id="burn" min="2000" max="12000" step="250" value="3500">
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Other monthly debt</strong><span class="ti">?</span><span class="tb"><b>Other monthly debt payments</b><br>Car loans, student loans, minimum credit-card payments, etc. Lenders add these to your housing payment when calculating DTI — every $1 of debt cuts $1 from what you can spend on a mortgage. Confirm this is near zero for the plan to work.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">$0</span><span class="pc-val" id="vDebt">$0</span><span style="font-size:.8rem;color:var(--mut)">$2K</span></div>
+        <input type="range" id="debt" min="0" max="2000" step="50" value="0">
+      </div>
+    </div>
+
+    <hr style="margin:16px 0">
+
+    <!-- Price + rate -->
+    <div class="pc-grid c2">
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Home price</strong><span class="ti">?</span><span class="tb"><b>Home price</b><br>Purchase price of the home. The analysis is built around $450K in the Herriman/South Jordan corridor, but adjust for any listing you're evaluating (up to $750K).</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">$300K</span><span class="pc-val" id="vPrice">$450,000</span><span style="font-size:.8rem;color:var(--mut)">$1M</span></div>
+        <input type="range" id="price" min="300000" max="1000000" step="5000" value="450000">
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Mortgage rate</strong><span class="ti">?</span><span class="tb"><b>Mortgage rate (annual)</b><br>Current 30yr conventional rate as of June 2026: ~6.52–6.60%. Use 6.55% for the recommended scenario. Add 0.5–2% for non-QM / asset-depletion loans.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">4%</span><span class="pc-val" id="vRate">6.55%</span><span style="font-size:.8rem;color:var(--mut)">10%</span></div>
+        <input type="range" id="rate" min="4" max="10" step="0.05" value="6.55">
+      </div>
+    </div>
+
+    <!-- Down payment dual -->
+    <div class="pc-field" style="margin-bottom:14px">
+      <div class="pc-label">
+        <span class="tl"><strong>Down payment</strong><span class="ti">?</span><span class="tb"><b>Down payment</b><br>Edit either the % or the $ — they update each other automatically. Below 20% triggers PMI. $150K (33.3%) is the recommended scenario: it shrinks the loan to ~$300K and keeps PITI near $2,300.</span></span>
+      </div>
+      <div class="dp-dual">
+        <div class="pc-field">
+          <div class="pc-row"><span style="font-size:.78rem;color:var(--mut)">3%</span><span class="pc-val" id="vDownPct">33.3%</span><span style="font-size:.78rem;color:var(--mut)">60%</span></div>
+          <input type="range" id="downPct" min="3" max="60" step="0.1" value="33.3">
+          <div style="font-size:.72rem;color:var(--mut);margin-top:2px">drag % slider</div>
+        </div>
+        <div class="pc-field">
+          <label style="font-size:.78rem;color:var(--mut);margin-bottom:4px">or type $ amount</label>
+          <input type="number" class="pc-num" id="downAmt" min="0" step="1000" value="150000">
+          <div style="font-size:.72rem;color:var(--mut);margin-top:2px">updates % above</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Term + ptax -->
+    <div class="pc-grid c2" style="margin-bottom:14px">
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Loan term</strong><span class="ti">?</span><span class="tb"><b>Loan term</b><br>30yr is the most common. 15yr cuts total interest roughly in half but raises monthly payments ~40%. At a $300K loan, 15yr adds ~$700/mo vs 30yr — significant on a $55K W-2 DTI.</span></span>
+        </div>
+        <select class="pc-sel" id="term">
+          <option value="30" selected>30 years</option>
+          <option value="20">20 years</option>
+          <option value="15">15 years</option>
+        </select>
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Property tax rate</strong><span class="ti">?</span><span class="tb"><b>Property tax rate (% of home value / year)</b><br>Salt Lake County effective rate ~0.51–0.67%. Utah primary residences get a 45% taxable-value exemption, so effective rate on a primary home runs ~0.55–0.60%. Enter the annual rate as a %; it's divided by 12 for monthly.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">0.3%</span><span class="pc-val" id="vPtax">0.60%</span><span style="font-size:.8rem;color:var(--mut)">1.5%</span></div>
+        <input type="range" id="ptax" min="0.3" max="1.5" step="0.05" value="0.60">
+      </div>
+    </div>
+
+    <!-- Insurance + HOA -->
+    <div class="pc-grid c2" style="margin-bottom:14px">
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Home insurance ($/yr)</strong><span class="ti">?</span><span class="tb"><b>Homeowner's insurance (annual)</b><br>Typical SL County: $1,200–$1,800/yr. $1,500 is the mid-point estimate used in all scenarios. This is divided by 12 for your monthly PITI.</span></span>
+        </div>
+        <input type="number" class="pc-num" id="ins" min="500" max="5000" step="100" value="1500">
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>HOA ($/mo)</strong><span class="ti">?</span><span class="tb"><b>HOA monthly fee</b><br>$0–$80/mo for older subdivisions. $150–$300/mo for newer Herriman/Daybreak communities. Verify per listing — it goes directly into your monthly cost.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">$0</span><span class="pc-val" id="vHoa">$0</span><span style="font-size:.8rem;color:var(--mut)">$400</span></div>
+        <input type="range" id="hoa" min="0" max="400" step="10" value="0">
+      </div>
+    </div>
+
+    <!-- Maintenance + ADU -->
+    <div class="pc-grid c2" style="margin-bottom:14px">
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Maintenance (%/yr of value)</strong><span class="ti">?</span><span class="tb"><b>Home maintenance &amp; repairs</b><br>The cost renters never pay. Rule of thumb: ~1%/yr of home value (roof, HVAC, water heater, landscaping, the surprise $4K plumbing job). On a $450K home that's ~$375/mo. Omitting this is the #1 way buy-vs-rent calcs lie in favor of buying.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">0%</span><span class="pc-val" id="vMaint">1.0%</span><span style="font-size:.8rem;color:var(--mut)">2%</span></div>
+        <input type="range" id="maint" min="0" max="2" step="0.1" value="1.0">
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>ADU income ($/mo)</strong><span class="ti">?</span><span class="tb"><b>Accessory Dwelling Unit rental income</b><br>If the home has a legal basement apartment, this income offsets your housing cost. The house-hack scenario assumes ~$900/mo, dropping net cost to ~$1,500. Income also strengthens your DTI with many lenders.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">$0</span><span class="pc-val" id="vAdu">$0</span><span style="font-size:.8rem;color:var(--mut)">$1,500</span></div>
+        <input type="range" id="adu" min="0" max="1500" step="50" value="0">
+      </div>
+    </div>
+
+    <!-- Cap gains -->
+    <div class="pc-field" style="margin-bottom:6px">
+      <div class="pc-label">
+        <span class="tl"><strong>Cap gains tax on liquidation</strong><span class="ti">?</span><span class="tb"><b>Effective capital gains tax rate on selling stock for down payment</b><br>Fed LTCG 15% + Utah 4.45% flat = ~19.45% combined at full gain. But your effective rate depends on your actual embedded gain (cost basis). If basis is high, effective drag is lower. Used to calculate the true gross amount you must sell.</span></span>
+      </div>
+      <div class="pc-row" style="max-width:340px"><span style="font-size:.8rem;color:var(--mut)">0%</span><span class="pc-val" id="vCapGains">12%</span><span style="font-size:.8rem;color:var(--mut)">25%</span></div>
+      <input type="range" id="capGains" min="0" max="25" step="1" value="12" style="max-width:340px">
+    </div>
+
+    <!-- Qualification banner -->
+    <div class="qual" id="qualBanner">
+      <span class="qbadge" id="qualBadge">—</span>
+      <span id="qualText">—</span>
+    </div>
+
+    <!-- Loan type + programs (income-driven) -->
+    <div class="card" style="margin-top:12px;padding:0;overflow:hidden">
+      <div style="background:var(--panel2);padding:8px 14px;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);font-weight:700;border-bottom:1px solid var(--line)">
+        Loan type &amp; programs you'd qualify for <span class="cf med" style="margin-left:4px">live</span>
+      </div>
+      <div style="padding:12px 14px">
+        <div class="pmt-line" style="padding:6px 0;border-color:var(--line)">
+          <span class="pmt-key">Best loan type at this income</span>
+          <span class="pmt-val" id="oLoanType" style="text-align:right;max-width:60%">—</span>
+        </div>
+        <div class="pmt-line" style="padding:6px 0;border-color:var(--line)">
+          <span class="pmt-key">Est. rate impact</span>
+          <span class="pmt-val" id="oLoanRate">—</span>
+        </div>
+        <div class="pmt-line" style="padding:6px 0;border:none">
+          <span class="pmt-key">Programs in reach</span>
+          <span class="pmt-val" id="oPrograms" style="text-align:right;max-width:62%;font-weight:600;color:var(--txt)">—</span>
+        </div>
+        <div class="pmt-note" id="loanNote" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- Minimum-to-buy -->
+    <div class="card" style="margin-top:12px;padding:0;overflow:hidden;border-color:var(--acc)">
+      <div style="background:#1a1430;padding:8px 14px;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--acc);font-weight:800;border-bottom:1px solid var(--line)">
+        If you want to buy THIS home — minimum you must hit
+      </div>
+      <div style="padding:12px 14px" id="minBuyBox">
+        <div class="pmt-note" style="margin-top:0">—</div>
+      </div>
+    </div>
+
+    <!-- Payment output -->
+    <div class="pmt-out">
+      <div class="pmt-line">
+        <span class="pmt-key">
+          <span class="tl">Principal &amp; Interest<span class="ti">?</span><span class="tb"><b>P&amp;I payment</b><br>Calculated as: <b>P × r(1+r)^n / ((1+r)^n − 1)</b> where P=loan, r=monthly rate, n=number of months. This is the portion that goes toward paying off your loan.</span></span>
+        </span>
+        <span class="pmt-val" id="oPI">—</span>
+      </div>
+      <div class="pmt-line">
+        <span class="pmt-key">
+          <span class="tl">Property Tax<span class="ti">?</span><span class="tb"><b>Monthly property tax</b><br>= Home price × tax rate % ÷ 12. Lenders escrow this. Utah primary residences get a 45% reduction on taxable value before the rate applies — factored into the 0.60% default.</span></span>
+        </span>
+        <span class="pmt-val" id="oTax">—</span>
+      </div>
+      <div class="pmt-line">
+        <span class="pmt-key">
+          <span class="tl">Home Insurance<span class="ti">?</span><span class="tb"><b>Homeowner's insurance (monthly)</b><br>Your annual premium ÷ 12. Lenders require and escrow this. Same coverage can vary $200–$500/yr between carriers — shop it.</span></span>
+        </span>
+        <span class="pmt-val" id="oIns">—</span>
+      </div>
+      <div class="pmt-line" id="maintRow">
+        <span class="pmt-key">
+          <span class="tl">Maintenance<span class="ti">?</span><span class="tb"><b>Maintenance reserve (monthly)</b><br>= Home price × maintenance % ÷ 12. Not a bill you pay monthly, but money you must set aside. Renters don't carry this — it's a true cost of owning.</span></span>
+        </span>
+        <span class="pmt-val" id="oMaint">—</span>
+      </div>
+      <div class="pmt-line" id="hoaRow">
+        <span class="pmt-key">HOA</span>
+        <span class="pmt-val" id="oHoa">$0</span>
+      </div>
+      <div class="pmt-line" id="pmiRow" style="display:none">
+        <span class="pmt-key">
+          <span class="tl">PMI <span style="font-size:.72rem;color:var(--amb)">(down &lt; 20%)</span><span class="ti">?</span><span class="tb"><b>Private Mortgage Insurance</b><br>Required when loan-to-value exceeds 80% (down &lt; 20%). ~0.85%/yr of the loan ÷ 12. Auto-removed when the balance hits 80% of the original price.</span></span>
+        </span>
+        <span class="pmt-val a" id="oPmi">—</span>
+      </div>
+      <div class="pmt-line" id="aduRow" style="display:none">
+        <span class="pmt-key">ADU income offset</span>
+        <span class="pmt-val dim" id="oAdu">—</span>
+      </div>
+      <div class="pmt-line total-line">
+        <span class="pmt-key">Total Monthly (all-in carry)</span>
+        <span class="pmt-val" id="oTotal">—</span>
+      </div>
+    </div>
+    <div class="pmt-note" id="pmiNote" style="display:none"></div>
+    <div class="pmt-note" id="grossNote" style="margin-top:6px"></div>
+
+    <!-- Payoff accelerator -->
+    <hr style="margin:16px 0">
+    <div class="pc-field" style="margin-bottom:8px">
+      <div class="pc-label">
+        <span class="tl"><strong>Pay off early — extra principal $/mo</strong><span class="ti">?</span><span class="tb"><b>Extra principal payment per month</b><br>Money paid on top of P&amp;I goes straight to principal, killing the loan years early and erasing future interest. Paying extra earns a <b>guaranteed</b> return equal to your mortgage rate. The question: is that better than investing the same money at your (riskier, higher) market return? This box does both maths.</span></span>
+      </div>
+      <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">$0</span><span class="pc-val" id="vExtra">$0</span><span style="font-size:.8rem;color:var(--mut)">$6K</span></div>
+      <input type="range" id="extra" min="0" max="6000" step="100" value="0">
+      <div class="btn-row" style="margin:6px 0 0">
+        <span class="btn-lbl">Target payoff:</span>
+        <button class="btn" data-payoff="15" style="padding:4px 10px;font-size:.76rem">15 yr</button>
+        <button class="btn" data-payoff="10" style="padding:4px 10px;font-size:.76rem">10 yr</button>
+      </div>
+    </div>
+    <div class="pmt-out" id="payoffOut" style="display:none">
+      <div class="pmt-line"><span class="pmt-key">Loan gone in</span><span class="pmt-val g" id="oPayoffYrs">—</span></div>
+      <div class="pmt-line"><span class="pmt-key">Total interest paid</span><span class="pmt-val" id="oIntFast">—</span></div>
+      <div class="pmt-line"><span class="pmt-key">Interest saved vs full term</span><span class="pmt-val g" id="oIntSaved">—</span></div>
+      <div class="pmt-line total-line"><span class="pmt-key">Pay-down vs invest the extra</span><span class="pmt-val" id="oPayoffVerd">—</span></div>
+    </div>
+    <div class="pmt-note" id="payoffNote" style="margin-top:8px"></div>
+
+  </div><!-- end .pcalc -->
+
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <h2>Scenario Engine <span class="cf med">live</span></h2>
+  <p class="small muted">Three paths compared at your chosen horizon, using the income + cost inputs above. Hit <strong>Find my ideal move</strong> for a recommendation and the optimal bridge length.</p>
+
+  <div class="scinput">
+    <div class="scinput-title">Scenario assumptions</div>
+    <div class="sc-grid c2" style="margin-bottom:14px">
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Rent alternative ($/mo)</strong><span class="ti">?</span><span class="tb"><b>Monthly rent for equivalent home</b><br>What you'd pay to rent a comparable home in the corridor. ~$2,900/mo is the estimate. This is the cost you compare against owning.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">$1.5K</span><span class="pc-val" id="vRent">$2,900</span><span style="font-size:.8rem;color:var(--mut)">$4.5K</span></div>
+        <input type="range" id="rent" min="1500" max="4500" step="50" value="2900">
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Rent inflation (%/yr)</strong><span class="ti">?</span><span class="tb"><b>Annual rent increase</b><br>US rent inflation ~3–4%/yr. SL County ran hotter (5–8%) but is normalizing. 3% is the base case. Compounds every year you stay renting, making rent progressively worse vs a fixed-rate mortgage.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">0%</span><span class="pc-val" id="vRentInfl">3.0%</span><span style="font-size:.8rem;color:var(--mut)">8%</span></div>
+        <input type="range" id="rentInfl" min="0" max="8" step="0.25" value="3">
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Home appreciation (%/yr)</strong><span class="ti">?</span><span class="tb"><b>Annual home value appreciation</b><br>Corridor ran +1.7–4.9% YoY recently. Long-run Utah ~3–4%. 2.5% is conservative. Higher appreciation favors buying sooner.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">0%</span><span class="pc-val" id="vApp">2.5%</span><span style="font-size:.8rem;color:var(--mut)">8%</span></div>
+        <input type="range" id="app" min="0" max="8" step="0.25" value="2.5">
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Market return (%/yr)</strong><span class="ti">?</span><span class="tb"><b>Annual investment return on liquid assets</b><br>Goldman 10yr S&amp;P forecast ~6.5%. Historical S&amp;P ~10%. A growth-tilted portfolio (your GEV / Tesla / Nvidia / SpaceX / Anthropic / OpenAI + index mix) could aim higher — but higher return = higher risk and not guaranteed. Use the presets to test ranges. This is the opportunity cost of locking money in a home.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">0%</span><span class="pc-val" id="vMkt">6.5%</span><span style="font-size:.8rem;color:var(--mut)">20%</span></div>
+        <input type="range" id="mkt" min="0" max="20" step="0.25" value="6.5">
+        <div class="btn-row" style="margin:6px 0 0">
+          <span class="btn-lbl">Preset:</span>
+          <button class="btn" data-mkt="6.5" style="padding:4px 10px;font-size:.76rem">6.5% Goldman</button>
+          <button class="btn" data-mkt="10" style="padding:4px 10px;font-size:.76rem">10% S&amp;P hist</button>
+          <button class="btn" data-mkt="15" style="padding:4px 10px;font-size:.76rem">15% growth tilt*</button>
+        </div>
+      </div>
+    </div>
+    <div class="sc-grid c2">
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Bridge months (rent, then buy)</strong><span class="ti">?</span><span class="tb"><b>Rental bridge period (Scenario B)</b><br>How many months you rent before buying. During the bridge: assets stay invested, business income accumulates, home prices drift up. After it, B buys with the same down payment on a pricier home. Use "Find my ideal move" to solve for the best length automatically.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">0</span><span class="pc-val" id="vBridge">12 mo</span><span style="font-size:.8rem;color:var(--mut)">36</span></div>
+        <input type="range" id="bridge" min="0" max="36" step="1" value="12">
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Total liquid assets today</strong><span class="ti">?</span><span class="tb"><b>Your total liquid/taxable assets right now</b><br>Taxable brokerage + cash. Do NOT include 401k/IRA. From the analysis: ~$300K taxable + $150K earmarked for down = ~$450K. Scenarios use this as the starting pool.</span></span>
+        </div>
+        <input type="number" class="pc-num" id="assets" min="0" step="10000" value="450000" style="width:170px;margin-top:6px">
+        <div style="font-size:.72rem;color:var(--mut);margin-top:4px">A deploys the down payment from this. B+C keep it invested.</div>
+      </div>
+    </div>
+    <div class="sc-grid c2" style="margin-top:14px">
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Dream home price (Scenario D)</strong><span class="ti">?</span><span class="tb"><b>Your dream-build / forever-home price</b><br>The home you'd wait and build. Scenario D rents cheap now, lets income season for the wait period, then buys/builds this at your (by-then verifiable) income. Set it as high as you want — up to $1M.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">$400K</span><span class="pc-val" id="vDreamPrice">$650,000</span><span style="font-size:.8rem;color:var(--mut)">$1M</span></div>
+        <input type="range" id="dreamPrice" min="400000" max="1000000" step="10000" value="650000">
+      </div>
+      <div class="pc-field">
+        <div class="pc-label">
+          <span class="tl"><strong>Dream wait (months renting first)</strong><span class="ti">?</span><span class="tb"><b>How long you rent before building the dream home</b><br>Time for your business income to become real and lender-verifiable (≈24 mo of returns) and for assets to compound. Scenario D rents this long, then buys the dream home with seasoned income.</span></span>
+        </div>
+        <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">6</span><span class="pc-val" id="vDreamWait">24 mo</span><span style="font-size:.8rem;color:var(--mut)">48</span></div>
+        <input type="range" id="dreamWait" min="6" max="48" step="1" value="24">
+      </div>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="btn-row">
+    <button class="btn primary" id="findIdeal">▶ Find my ideal move</button>
+    <button class="btn" id="solveBridge">Solve optimal bridge length</button>
+  </div>
+
+  <!-- Recommendation -->
+  <div class="reco" id="reco">
+    <div class="rk">Recommended move</div>
+    <div class="rmain" id="recoMain">—</div>
+    <div class="rdetail" id="recoDetail">—</div>
+  </div>
+
+  <!-- Biggest levers -->
+  <div class="callout" style="border-left-color:var(--blu)">
+    <p class="small" style="margin-bottom:6px"><strong>The 5 levers that actually move this decision</strong> (in order of impact):</p>
+    <ol class="small" style="margin:0 0 0 18px">
+      <li><strong>Your monthly income + when it starts.</strong> This flips everything — qualification, runway, and the verdict. Going from $0 to ~$5K/mo turns a runway crisis into self-sustaining.</li>
+      <li><strong>Verifiable vs not.</strong> Income you can't document doesn't raise your max loan. The "2+ yr returns" toggle is the difference between a clean conventional loan and a higher-rate bank-statement loan.</li>
+      <li><strong>Down payment size.</strong> Bigger down = smaller loan = lower payment = easier qualification, but it drains the runway you're living on. The core tension.</li>
+      <li><strong>Bridge length.</strong> A few months of renting lets income arrive and assets compound before you lock up $150K. "Solve optimal bridge" finds the sweet spot.</li>
+      <li><strong>Living burn + future car payments.</strong> Every $500/mo of spend cuts months off your runway. Model the cars before they're real.</li>
+    </ol>
+  </div>
+
+  <!-- Horizon selector -->
+  <div class="hz-row">
+    <span class="hz-label"><span class="tl">Snapshot year:<span class="ti">?</span><span class="tb"><b>How many years into the future to project</b><br>Every Net worth, Liquid, Equity and "overage → FV" number is calculated as of this many years from today. Longer = more compounding on invested money AND more home equity built (and more rent paid in the rent paths). Switch it and watch all four cards re-compute — the winner can change with time.</span></span></span>
+    <button class="hz-btn" data-hz="1">1 yr</button>
+    <button class="hz-btn" data-hz="2">2 yr</button>
+    <button class="hz-btn" data-hz="3">3 yr</button>
+    <button class="hz-btn active" data-hz="5">5 yr</button>
+    <button class="hz-btn" data-hz="7">7 yr</button>
+    <button class="hz-btn" data-hz="10">10 yr</button>
+  </div>
+  <p class="small muted" id="hzNote" style="margin-top:-4px;margin-bottom:12px">Showing where each path leaves you <strong>5 years</strong> from today.</p>
+
+  <!-- 3 scenario cards -->
+  <div class="sc-cards">
+    <div class="sc-card" id="cardA">
+      <span class="sc-card-badge badge-a">A · Buy Now</span>
+      <div class="sc-card-title">Deploy down payment today</div>
+      <div class="sc-row"><span class="sc-k">Housing carry/mo</span><span class="sc-v" id="aCarry">—</span></div>
+      <div class="sc-row"><span class="sc-k">+ Living → total out/mo</span><span class="sc-v" id="aTotalOut">—</span></div>
+      <div class="sc-row"><span class="sc-k">Cash flow/mo (after living)</span><span class="sc-v" id="aFlow">—</span></div>
+      <div class="sc-row"><span class="sc-k">Home equity @ horizon</span><span class="sc-v" id="aEquity">—</span></div>
+      <div class="sc-row"><span class="sc-k">Liquid @ horizon</span><span class="sc-v" id="aLiquid">—</span></div>
+      <div class="sc-row"><span class="sc-k">Net worth</span><span class="sc-v" id="aNW" style="font-size:1rem">—</span></div>
+      <div class="sc-row"><span class="sc-k">Runway (months)</span><span class="sc-v" id="aRunway">—</span></div>
+      <div class="sc-row"><span class="sc-k">Overage invested → FV</span><span class="sc-v" id="aInvest">—</span></div>
+    </div>
+    <div class="sc-card" id="cardB">
+      <span class="sc-card-badge badge-b">B · Rent Bridge</span>
+      <div class="sc-card-title" id="bTitle">Rent 12 mo, then buy</div>
+      <div class="sc-row"><span class="sc-k">Housing carry/mo (now, rent)</span><span class="sc-v" id="bCarry">—</span></div>
+      <div class="sc-row"><span class="sc-k">+ Living → total out/mo</span><span class="sc-v" id="bTotalOut">—</span></div>
+      <div class="sc-row"><span class="sc-k">Cash flow/mo (after living)</span><span class="sc-v" id="bFlow">—</span></div>
+      <div class="sc-row"><span class="sc-k">Home equity @ horizon</span><span class="sc-v" id="bEquity">—</span></div>
+      <div class="sc-row"><span class="sc-k">Liquid @ horizon</span><span class="sc-v" id="bLiquid">—</span></div>
+      <div class="sc-row"><span class="sc-k">Net worth</span><span class="sc-v" id="bNW" style="font-size:1rem">—</span></div>
+      <div class="sc-row"><span class="sc-k">Runway (months)</span><span class="sc-v" id="bRunway">—</span></div>
+      <div class="sc-row"><span class="sc-k">Overage invested → FV</span><span class="sc-v" id="bInvest">—</span></div>
+    </div>
+    <div class="sc-card" id="cardC">
+      <span class="sc-card-badge badge-c">C · Rent + Invest</span>
+      <div class="sc-card-title">Never buy, stay invested</div>
+      <div class="sc-row"><span class="sc-k">Housing carry/mo (rent)</span><span class="sc-v" id="cCarry">—</span></div>
+      <div class="sc-row"><span class="sc-k">+ Living → total out/mo</span><span class="sc-v" id="cTotalOut">—</span></div>
+      <div class="sc-row"><span class="sc-k">Cash flow/mo (after living)</span><span class="sc-v" id="cFlow">—</span></div>
+      <div class="sc-row"><span class="sc-k">Home equity @ horizon</span><span class="sc-v g">$0</span></div>
+      <div class="sc-row"><span class="sc-k">Liquid @ horizon</span><span class="sc-v" id="cLiquid">—</span></div>
+      <div class="sc-row"><span class="sc-k">Net worth</span><span class="sc-v" id="cNW" style="font-size:1rem">—</span></div>
+      <div class="sc-row"><span class="sc-k">Runway (months)</span><span class="sc-v" id="cRunway">—</span></div>
+      <div class="sc-row"><span class="sc-k">Overage invested → FV</span><span class="sc-v" id="cInvest">—</span></div>
+    </div>
+    <div class="sc-card" id="cardD">
+      <span class="sc-card-badge badge-d">D · Dream Build</span>
+      <div class="sc-card-title" id="dTitle">Rent 24 mo → build $650K</div>
+      <div class="sc-row"><span class="sc-k">Carry now (rent)</span><span class="sc-v" id="dCarry">—</span></div>
+      <div class="sc-row"><span class="sc-k">+ Living → total out/mo</span><span class="sc-v" id="dTotalOut">—</span></div>
+      <div class="sc-row"><span class="sc-k">Cash flow/mo (now)</span><span class="sc-v" id="dFlow">—</span></div>
+      <div class="sc-row"><span class="sc-k">Dream-home equity @ horizon</span><span class="sc-v" id="dEquity">—</span></div>
+      <div class="sc-row"><span class="sc-k">Liquid @ horizon</span><span class="sc-v" id="dLiquid">—</span></div>
+      <div class="sc-row"><span class="sc-k">Net worth</span><span class="sc-v" id="dNW" style="font-size:1rem">—</span></div>
+      <div class="sc-row"><span class="sc-k">Runway now (months)</span><span class="sc-v" id="dRunway">—</span></div>
+    </div>
+  </div>
+
+  <!-- Decision matrix -->
+  <div class="dm">
+    <div class="dm-row dm-head">
+      <div class="dm-cell">Dimension</div>
+      <div class="dm-cell">A · Buy Now</div>
+      <div class="dm-cell">B · Rent Bridge</div>
+      <div class="dm-cell">C · Rent + Invest</div>
+    </div>
+    <div class="dm-row">
+      <div class="dm-cell" style="color:var(--txt)">Monthly cash outflow</div>
+      <div class="dm-cell" id="dmA-cost">—</div>
+      <div class="dm-cell" id="dmB-cost">—</div>
+      <div class="dm-cell" id="dmC-cost">—</div>
+    </div>
+    <div class="dm-row">
+      <div class="dm-cell" style="color:var(--txt)">Net worth at horizon</div>
+      <div class="dm-cell" id="dmA-nw">—</div>
+      <div class="dm-cell" id="dmB-nw">—</div>
+      <div class="dm-cell" id="dmC-nw">—</div>
+    </div>
+    <div class="dm-row">
+      <div class="dm-cell" style="color:var(--txt)">Runway today</div>
+      <div class="dm-cell" id="dmA-rw">—</div>
+      <div class="dm-cell" id="dmB-rw">—</div>
+      <div class="dm-cell" id="dmC-rw">—</div>
+    </div>
+    <div class="dm-row">
+      <div class="dm-cell" style="color:var(--txt)">School stability (Herriman HS)</div>
+      <div class="dm-cell win">Locked in</div>
+      <div class="dm-cell ok">Needs 2nd move</div>
+      <div class="dm-cell lose">No guarantee</div>
+    </div>
+    <div class="dm-row">
+      <div class="dm-cell" style="color:var(--txt)">Liquidity / flexibility</div>
+      <div class="dm-cell lose">Low (illiquid home)</div>
+      <div class="dm-cell ok">Medium</div>
+      <div class="dm-cell win">High</div>
+    </div>
+  </div>
+  <p class="small muted" style="margin-top:10px">Runway = months your liquid assets last if cash flow is negative, at your current living burn (ignores investment growth — a conservative floor). "Self-sustaining" means income covers housing + living with money left over. Net worth applies a 6% selling cost to home equity so paths are comparable. <strong>"Overage invested → FV"</strong> is your monthly surplus (income − housing − living) compounded at the market return to the horizon — the reward for keeping housing cheap.</p>
+
+  <div class="callout" id="thrownAway" style="border-left-color:var(--amb)">—</div>
+
+  <div class="callout" style="border-left-color:var(--grn)">
+    <p class="small" style="margin-bottom:6px"><strong>Where to put the overage (does it cut taxes?)</strong> <span class="cf med">verify w/ CPA — limits change yearly</span></p>
+    <ul class="small" style="margin:0 0 0 18px">
+      <li><strong>Utah my529 (kids' schooling) — clearest tax win.</strong> Utah gives a state income-tax <em>credit</em> (~4.85% of contributions, up to a per-beneficiary cap). Grows tax-free for education. The one bucket that pays you back on your state return.</li>
+      <li><strong>HSA (if on a high-deductible health plan) — best dollar there is.</strong> Triple tax-advantaged: deductible going in, grows tax-free, tax-free out for medical. Fund this before a taxable account if eligible.</li>
+      <li><strong>Traditional IRA — deduction is conditional.</strong> It lowers taxable income ONLY if you're under the MFJ phaseout (and that kicks in early if either spouse is covered by a workplace plan — Vania likely is). Once your businesses scale into six figures, the deduction is effectively gone. ~$7K each / ~$14K couple/yr.</li>
+      <li><strong>Roth IRA — no deduction, tax-free growth.</strong> Direct contributions phase out at higher MFJ income, so at your target income you'd use a <em>backdoor Roth</em>. No tax cut today, but tax-free forever — strongest exactly when you expect much higher future income, which you do.</li>
+      <li><strong>Taxable brokerage — the catch-all.</strong> No upfront break, but full liquidity (this is your runway). Long-term gains taxed at 15% fed + 4.45% UT.</li>
+    </ul>
+    <p class="small muted" style="margin-top:8px">Short answer to "does IRA maxing help with taxes?": <strong>a Traditional IRA helps only at lower income; once your businesses scale it stops cutting taxes</strong> (use a backdoor Roth then). The bigger Utah-specific tax wins are <strong>my529</strong> (state credit) and an <strong>HSA</strong> if you qualify.</p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <h2>Market vs House — bigger home, or invest the difference? <span class="cf med">live</span></h2>
+  <p class="small muted">Two questions answered live, both off your inputs above. (1) Does a bigger house pay off, or should you stay smaller and invest the gap? (2) On the same dollars, does the market or the house grow your money faster?</p>
+
+  <div class="scinput">
+    <div class="scinput-title">Compare your home price against an alternative (higher OR lower)</div>
+    <div class="pc-field">
+      <div class="pc-row"><span style="font-size:.8rem;color:var(--mut)">$300K</span><span class="pc-val" id="vCmpPrice">$450,000</span><span style="font-size:.8rem;color:var(--mut)">$1.5M</span></div>
+      <input type="range" id="cmpPrice" min="300000" max="1500000" step="5000" value="450000">
+      <div style="font-size:.72rem;color:var(--mut);margin-top:4px">Starts at your calculator price (<span id="cmpBase">$450,000</span>) and follows it until you move this slider. <button class="btn" id="cmpSync" style="padding:2px 8px;font-size:.72rem;margin-left:4px">= calculator price</button></div>
+    </div>
+  </div>
+
+  <div class="sc-cards" style="grid-template-columns:1fr 1fr">
+    <div class="sc-card">
+      <span class="sc-card-badge badge-a" id="mvhSmallLbl">Your home: $450K</span>
+      <div class="sc-row"><span class="sc-k">Monthly housing carry</span><span class="sc-v" id="mvhSmallCarry">—</span></div>
+      <div class="sc-row"><span class="sc-k">Δ carry vs alternative</span><span class="sc-v" id="mvhDiffMo">—</span></div>
+      <div class="sc-row"><span class="sc-k">Home equity → FV</span><span class="sc-v b" id="mvhDiffFV">—</span></div>
+      <div class="sc-row"><span class="sc-k">Net worth @ horizon</span><span class="sc-v" id="mvhSmallNW" style="font-size:1rem">—</span></div>
+    </div>
+    <div class="sc-card">
+      <span class="sc-card-badge badge-c" id="mvhBigLbl">Alternative: $600K</span>
+      <div class="sc-row"><span class="sc-k">Monthly housing carry</span><span class="sc-v" id="mvhBigCarry">—</span></div>
+      <div class="sc-row"><span class="sc-k">Δ carry vs your home</span><span class="sc-v" id="mvhExtraMo">—</span></div>
+      <div class="sc-row"><span class="sc-k">Home equity → FV</span><span class="sc-v b" id="mvhBigEq">—</span></div>
+      <div class="sc-row"><span class="sc-k">Net worth @ horizon</span><span class="sc-v" id="mvhBigNW" style="font-size:1rem">—</span></div>
+    </div>
+  </div>
+  <div class="verd" id="mvhVerdict" style="margin-top:12px;padding:12px 14px;border-radius:10px;font-weight:700;text-align:center">—</div>
+
+  <h3 style="margin-top:22px">Same dollars (your <span id="mvhDownAmt">$150K</span> down payment): market vs house</h3>
+  <div class="grid c3">
+    <div class="card"><div class="stat b" id="mvhMktFV">—</div><div class="lbl">Your down pmt invested in market @ <span id="mvhMktPct">6.5</span>%/yr</div></div>
+    <div class="card"><div class="stat a" id="mvhHomeFV">—</div><div class="lbl">Same $ as home equity (appreciation + principal paid, net of 6% sale)</div></div>
+    <div class="card"><div class="stat" id="mvhSpread">—</div><div class="lbl" id="mvhSpreadLbl">Spread</div></div>
+  </div>
+  <p class="small muted" id="mvhNote" style="margin-top:8px"></p>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <h2>The Light at the End of the Tunnel — 7 ways to buy BEFORE 2 years</h2>
+  <div class="callout" style="border-left-color:var(--grn)">
+    <p class="small"><strong>Correct the core assumption first:</strong> the 2-year rule only applies to using YOUR business income to qualify. It does <strong>not</strong> block you from getting a mortgage — multiple real paths qualify you on your spouse's W-2 and your assets, with zero business income. You almost certainly can buy this year.</p>
+  </div>
+  <div class="scroll">
+  <table>
+    <tr><th>#</th><th>Path</th><th>How it works</th><th>Fit for you</th></tr>
+    <tr class="pick"><td>1</td><td><strong>Spouse-only + bigger down</strong></td><td>Vania's $55K W-2 alone carries ~$270K loan. On a modest home at ~30-35% down, the loan drops below that — qualifies on her income alone. Buy in her name.</td><td class="g">Simplest. No business income, no exotic loan. Best first call.</td></tr>
+    <tr class="pick"><td>2</td><td><strong>Asset-depletion / asset-utilization loan</strong></td><td>Lender converts your ~$300K+ portfolio into "income" (÷360 conventional; non-QM divisors much lower). Some asset-utilization loans need NO income at all.</td><td class="g">You qualify TODAY on assets. Rate: market to +0.5-2%.</td></tr>
+    <tr><td>3</td><td><strong>Pledged-asset mortgage / SBLOC</strong></td><td>Borrow AGAINST your brokerage (Schwab PAL, Merrill, Morgan Stanley, etc.) instead of selling. Keeps assets invested and avoids the ~$12-18K cap-gains hit.</td><td class="a">Powerful, but margin-call risk if the market drops — keep the pledged % conservative.</td></tr>
+    <tr><td>4</td><td><strong>Bank-statement loan at ~12 months</strong></td><td>Once a business has ~12 months of deposits, non-QM lenders use the deposits, not tax returns. Halves the wait.</td><td class="a">Cuts "2 years" to ~1. Rate +1-3%.</td></tr>
+    <tr><td>5</td><td><strong>Delayed financing (buy cash, refi in 6mo)</strong></td><td>Buy with cash to win a deal, then Fannie's delayed-financing rule lets you cash-out refi right away (up to purchase price) once a qualifying path exists.</td><td class="a">Stops rent now, recovers liquidity later. Only if you'd buy cash anyway.</td></tr>
+    <tr><td>6</td><td><strong>Lease-option / rent-to-own</strong></td><td>Lock a purchase price now; rent with a portion credited toward the buy. Turns "wasted rent" into equity.</td><td class="a">Directly fixes the rent gripe. Needs the right seller; read the contract hard.</td></tr>
+    <tr><td>7</td><td><strong>Seller financing</strong></td><td>Seller carries the note — no bank, no income docs. Common on homes owned outright.</td><td class="a">Rare but real. Negotiable terms.</td></tr>
+  </table>
+  </div>
+  <div class="callout danger">
+    <p class="small" style="margin-bottom:6px"><strong>On "invest 2 years, then buy cash or 60%+ down":</strong></p>
+    <ul class="small" style="margin:0 0 0 18px">
+      <li><strong>Paying cash is the single worst use of your capital.</strong> It buries money in a ~2.5%/yr asset while your portfolio targets 6.5-15%+. You'd forfeit exactly the compounding that is your whole thesis — see the "Market vs House" module above. A mortgage is cheap leverage; cash throws it away.</li>
+      <li><strong>60%+ down is "cash-lite" — same mistake, smaller.</strong> Only justified if it's the ONLY way to qualify. It isn't (paths 1-2 qualify you at a normal down payment).</li>
+      <li><strong>You don't have to wait 2 years.</strong> Paths 1 and 2 work right now with no business income. The wait is a myth for YOUR situation (W-2 spouse + strong assets).</li>
+    </ul>
+    <p class="small" style="margin-top:8px"><strong>The move:</strong> buy a home you'll love at a normal down payment (20-35%) using your spouse's W-2 and/or an asset-depletion loan, keep the bulk of your capital compounding, and stop renting on your timeline — not the lender's. If you'd rather wait for the dream build, the cheapest "stop-renting" bridge still beats a cash purchase. Either way: confirm paths 1-2 with one mortgage broker who does non-QM. That call is the light at the end of the tunnel.</p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <h2>SBLOC &amp; Pledged Assets — the "buy, borrow, die" play <span class="cf med">read this</span></h2>
+  <p>Yes — this is exactly how the wealthy use stock without selling it. Worth understanding deeply, because at your asset level it may be your best move.</p>
+  <div class="grid c2">
+    <div class="card">
+      <h3 style="margin-top:0">What it is</h3>
+      <ul class="small">
+        <li><strong>SBLOC = Securities-Based Line of Credit.</strong> A bank (Schwab Pledged Asset Line, Morgan Stanley, Merrill, IBKR margin) lends you ~50-70% of your portfolio's value, using the stock as collateral. You never sell.</li>
+        <li><strong>Why "buy, borrow, die":</strong> selling triggers cap-gains tax; <em>borrowing against</em> assets does not — a loan isn't income. You spend the borrowed cash tax-free, the stock keeps compounding, and at death heirs get a <strong>stepped-up basis</strong> that erases the gain entirely. The rich literally never sell.</li>
+        <li><strong>For your home:</strong> fund the down payment (or more) from an SBLOC instead of liquidating. You skip the ~$12-18K cap-gains hit AND keep ~$150K compounding in the market.</li>
+        <li><strong>Pledged-Asset Mortgage</strong> (Schwab/Morgan Stanley): pledge securities <em>in place of</em> a cash down payment — finance the home with little/no cash down, no PMI, no stock sale.</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:#5a1f20">
+      <h3 style="margin-top:0;color:var(--red)">The real risks (don't skip)</h3>
+      <ul class="small">
+        <li><strong>Margin call.</strong> If your portfolio drops below the maintenance line, the bank force-sells your shares at the worst possible time — and triggers the exact cap-gains you were dodging. This is the killer risk.</li>
+        <li><strong>Variable rate.</strong> SBLOC rates float (SOFR + ~1-3%, varies by balance). If rates rise, your cost rises — unlike a fixed mortgage.</li>
+        <li><strong>Concentration kills lending value.</strong> Volatile single names (Tesla, Nvidia, GEV) get low loan-to-value and high call risk. <strong>Private shares (SpaceX, Anthropic, OpenAI) generally can't be pledged at all.</strong> Only your diversified/index + large-cap liquid holdings count.</li>
+        <li><strong>It's leverage on leverage</strong> if you also carry a mortgage. Compounds both upside and downside.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout">
+    <p class="small" style="margin:0"><strong>My honest read for you:</strong> use an SBLOC <em>narrowly and conservatively</em> — to cover the down payment and dodge the cap-gains drag, pledging only your diversified/large-cap liquid holdings and keeping the drawn amount well under ~30% of that pledged value so a market dip can't trigger a call. Do <strong>not</strong> buy a whole house on margin, and don't pledge concentrated growth names you're emotionally attached to. Best-case combo for your goals: <strong>modest fixed-rate mortgage (cheap leverage) + small SBLOC for the down payment (no tax hit, stock keeps compounding) + aggressive principal payoff once your $30K/mo income lands</strong>. That gets you the leverage, the tax dodge, AND the "kill the interest fast" outcome you want. Confirm exact LTV, rate, and pledge-eligible holdings with the brokerage. <span class="cf med">mechanics solid; rates/LTV vary — verify</span></p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ -->
+  <h2>Capital Gains on the $150K Liquidation</h2>
+  <p>Married filing jointly (treat household as MFJ given Vania's income). 2026 LTCG: 0% up to $98,900 taxable income, 15% up to $613,700. With a $55K base + a $90K gain, you stay in the <strong>15%</strong> bracket. Utah taxes all gains as ordinary income at a flat <strong>4.45%</strong>.</p>
+  <div class="scroll">
+  <table>
+    <tr><th>Cost basis assumption</th><th>Embedded gain</th><th>Fed 15%</th><th>UT 4.45%</th><th>Total tax drag</th><th>Net to deploy</th></tr>
+    <tr><td>40% basis (high gain)</td><td>$90,000</td><td>$13,500</td><td>$4,005</td><td class="r">$17,505</td><td>$132,495</td></tr>
+    <tr><td>60% basis (mid)</td><td>$60,000</td><td>$9,000</td><td>$2,670</td><td class="a">$11,670</td><td>$138,330</td></tr>
+    <tr><td>80% basis (low gain)</td><td>$30,000</td><td>$4,500</td><td>$1,335</td><td class="g">$5,835</td><td>$144,165</td></tr>
+  </table>
+  </div>
+  <p class="small muted"><span class="cf lo">LOW</span> Actual basis unknown — this swings the drag from ~$6K to ~$18K. <strong>Pull your brokerage cost-basis report before liquidating</strong> and sell highest-basis lots first to minimize the gain. To net a clean $150K, plan to liquidate ~$160–168K.</p>
+  <div class="callout" id="capGainsLive" style="border-left-color:var(--blu)">—</div>
+
+  <h2>What You're Emotionally Avoiding</h2>
+  <div class="callout danger">
+    <p><strong>The real question isn't (B) "stop bleeding rent and build equity." It's (A) "own a home in Herriman High's boundary for my daughter."</strong> The numbers say so.</p>
+    <p class="small">Pure financial logic (B) says <strong>rent the bridge</strong>: keep $300K liquid, keep ~51 months of runway while pre-revenue, and let the market compound the $150K (~$219K in 6 yrs at 6.5% vs ~$72K of home appreciation on a $450K house). Renting wins the spreadsheet by a wide margin while you have no income.</p>
+    <p class="small">But you're not optimizing a spreadsheet — you're anchoring your daughter for the 4 highest-stakes years of her schooling and refusing a second move. That's a legitimate goal. <strong>Just name it.</strong> If you call it "building equity," you'll over-index on price and under-index on the runway risk that can actually sink you.</p>
+    <p class="small"><strong>The thing you're not saying out loud:</strong> deploying $150K of your only liquid runway into an illiquid asset, with zero W-2 of your own and a business that hasn't earned a dollar, converts 51 months of survival into 25. If the business takes 18 months to revenue, a buy decision puts you ~7 months from forced sale. The house isn't the risk. The runway is.</p>
+  </div>
+
+  <h2>Herriman High Feeder — Verify Before You Offer</h2>
+  <p>Herriman High (Jordan School District, 11917 S 6000 W, Herriman 84096) draws from <strong>Herriman, parts of South Jordan, and parts of Riverton</strong>. But the district also runs Mountain Ridge and other high schools in the same cities — <strong>boundaries split mid-city</strong>. A South Jordan or Riverton address does NOT guarantee Herriman High. <span class="cf med">MED</span></p>
+  <div class="callout warn small"><strong>Do this:</strong> for every candidate address, run the exact street through the Jordan District boundary lookup at <a href="https://jordandistrict.org">jordandistrict.org</a> before writing an offer. Do not trust the city name or ZIP (84096 spans multiple charter + traditional boundaries).</div>
+
+  <h2>Local Market (mid-2026)</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>City</th><th>Median (Zillow ZHVI)</th><th>Notes</th><th>Conf</th></tr>
+    <tr><td>Herriman</td><td class="a">~$604K</td><td>+1.7% YoY; pending ~48 days. Above the $400–550K band — entry homes only.</td><td>HIGH</td></tr>
+    <tr><td>South Jordan</td><td class="a">~$599K</td><td>+4.9% YoY. Hottest of the four; boundary-check critical.</td><td>HIGH</td></tr>
+    <tr><td>Riverton</td><td class="a">~$630K</td><td>Zillow ZHVI; sale medians run higher ($674K Redfin Mar). Pricey.</td><td>MED</td></tr>
+    <tr><td>West Jordan</td><td class="g">~$565K</td><td>Cheapest of the four; some sub-$525K inventory. Confirm Herriman-feeder pockets.</td><td>HIGH</td></tr>
+  </table>
+  </div>
+  <ul class="small">
+    <li><strong>Property tax:</strong> SL County effective ~0.51–0.67%; Utah primary residence gets a 45% taxable-value exemption, so effective on a primary home runs ~0.55–0.60%. <span class="cf med">MED</span></li>
+    <li><strong>Insurance:</strong> ~$1,200–$1,800/yr typical SL County. <span class="cf med">MED</span></li>
+    <li><strong>HOA:</strong> $0–$80/mo older subdivisions; $150–$300/mo newer Herriman/Daybreak communities. Verify per listing. <span class="cf lo">LOW</span></li>
+    <li><strong>$3,000 all-in achievable?</strong> YES — at ~$450K with $150K down (PITI ~$2,306) you're comfortably under. At $425K / 5% down you're OVER ($3,155). The down payment, not the price, gets you to $3K. <span class="cf hi">HIGH</span></li>
+  </ul>
+
+  <h2>Utah DPA &amp; Programs</h2>
+  <ul class="small">
+    <li><strong>UHC FirstHome / HomeAgain / Score:</strong> income limits ~$80K–$126,200 and price limits ~$349K–$537,700 by county — Vania's $55K is well within, so income does NOT cap you out. But UHC pairs with only 3% conventional DPA, leaving a large loan that fails DTI on $55K. <em>Programs help low-down buyers; your edge is the opposite (big down).</em> <span class="cf med">MED</span></li>
+    <li><strong>Teacher Next Door (Utah):</strong> up to ~$9K grant + up to $24K DPA for educators — free money, worth an application even with the big-down plan. <span class="cf med">MED</span></li>
+    <li><strong>Verdict on DPA:</strong> mostly irrelevant to the recommended path. Your strategy is "large down → small loan," the inverse of what DPA optimizes. Take the teacher grant if granted; skip building the plan around UHC. <span class="cf hi">HIGH</span></li>
+  </ul>
+
+  <h2>Opportunity Cost — $150K Over 6 Years</h2>
+  <div class="grid c3">
+    <div class="card"><div class="stat b">~$219K</div><div class="lbl">$150K in S&amp;P @6.5% (Goldman 10-yr fwd) <span class="cf med">MED</span></div></div>
+    <div class="card"><div class="stat b">~$266K</div><div class="lbl">$150K in S&amp;P @10% (historical avg) <span class="cf lo">LOW</span></div></div>
+    <div class="card"><div class="stat a">~$72K</div><div class="lbl">Home equity gain on $450K @2.5%/yr appreciation <span class="cf med">MED</span></div></div>
+  </div>
+  <p class="small muted">Market growth on the down payment (~$69–116K of gain) outruns home appreciation (~$72K) over 6 years in most scenarios — plus you keep liquidity. This is the strongest financial argument for renting the bridge. It only flips if Herriman-corridor appreciation surprises to the upside (recently +2–5% YoY, not enough) OR you value the locked-in school + no-second-move outcome above the spread.</p>
+
+  <hr>
+  <ul class="src">
+    <li><strong>Mortgage rates (6.34–6.6%, used 6.55%):</strong> <a href="https://www.nerdwallet.com/mortgages/mortgage-rates">NerdWallet</a> · <a href="https://www.freddiemac.com/pmms">Freddie Mac PMMS (6.52%)</a> · <a href="https://money.usnews.com/loans/mortgages/articles/mortgage-rates-today-june-12-2026">US News (6.6%)</a></li>
+    <li><strong>DTI 43–45% conventional:</strong> <a href="https://admortgage.com/blog/conventional-loan-requirements/">AD Mortgage</a> · <a href="https://www.zeitro.com/blog/max-dti-for-mortgage">Zeitro Max DTI 2026</a></li>
+    <li><strong>Asset depletion (÷360 conv / ÷120 non-QM, +0.5–2% rate):</strong> <a href="https://www.jvmlending.com/blog/asset-depletion-mortgage/">JVM Lending</a> · <a href="https://defymortgage.com/non-qm-rates/">Defy Non-QM rates</a></li>
+    <li><strong>UHC FirstHome limits ($80K–$126,200 income; $349K–$537,700 price):</strong> <a href="https://www.refiguide.org/utah-first-time-home-buyer-programs/">RefiGuide</a> · <a href="https://citycreekmortgage.com/purchase/first-time-home-buyer-programs/">City Creek Mortgage</a></li>
+    <li><strong>Teacher Next Door ($9K grant / $24K DPA):</strong> <a href="https://www.teachernextdoor.us/Utah-Housing-Grants">Teacher Next Door Utah</a></li>
+    <li><strong>FHA MIP vs PMI:</strong> <a href="https://www.amerisave.com/learn/mip-vs-pmi-in-what-every-home-buyer-needs-to-know-about-mortgage-insurance">Amerisave MIP vs PMI 2026</a></li>
+    <li><strong>2026 LTCG brackets (0/15/20%, MFJ):</strong> <a href="https://www.kiplinger.com/taxes/irs-updates-capital-gains-tax-thresholds">Kiplinger</a> · <a href="https://taxfoundation.org/data/all/federal/2026-tax-brackets/">Tax Foundation</a></li>
+    <li><strong>Utah flat 4.45% income/cap-gains tax:</strong> <a href="https://taxfoundation.org/location/utah/">Tax Foundation Utah</a> · <a href="https://www.aarp.org/states/utah/state-tax-guide/">AARP Utah</a></li>
+    <li><strong>City medians:</strong> <a href="https://www.zillow.com/home-values/5138/herriman-ut/">Herriman</a> · <a href="https://www.zillow.com/home-values/27177/south-jordan-ut/">South Jordan</a> · <a href="https://www.zillow.com/home-values/26779/riverton-ut/">Riverton</a> · <a href="https://www.redfin.com/city/20569/UT/West-Jordan/housing-market">West Jordan</a></li>
+    <li><strong>Property tax / 45% primary-res exemption:</strong> <a href="https://www.tax-rates.org/utah/salt_lake_county_property_tax">Salt Lake County</a> · <a href="https://propertytaxrates.org/exemptions/utah/">UT exemptions</a></li>
+    <li><strong>S&amp;P 10-yr forecast (6.5% Goldman; 11% historical):</strong> <a href="https://www.goldmansachs.com/insights/articles/s-and-p-500-forecast-to-climb-as-earnings-growth-powers-stocks-higher">Goldman Sachs</a></li>
+  </ul>
+
+  <div class="next">
+    <div class="nextbox">
+      <div class="k">Single fastest next action</div>
+      <p>Call one local lender this week and ask exactly: "On a $55K W-2 plus my spouse's ~$290K in assets, will you stack asset-depletion income, at what divisor, and what's my max conventional loan?" — that one answer decides buy-now vs rent-bridge.</p>
+    </div>
+  </div>
+
+</div><!-- end .wrap -->
+
+<script>
+(function(){
+  var G = function(id){ return document.getElementById(id); };
+  var fmt = function(n){ return (n<0?'-':'') + '$' + Math.round(Math.abs(n)).toLocaleString(); };
+  var fmtK = function(n){ return (n<0?'-':'') + '$' + (Math.abs(n)/1000).toFixed(0) + 'K'; };
+
+  // ── Financial helpers ──────────────────────────────────
+  function calcPI(P, annualRate, termYrs){
+    var r = annualRate/12, n = termYrs*12;
+    if (r < 0.00001) return P/n;
+    return P * r * Math.pow(1+r,n) / (Math.pow(1+r,n) - 1);
+  }
+  function loanBal(P, annualRate, termYrs, months){
+    var r = annualRate/12, n = termYrs*12;
+    if (months >= n) return 0;
+    if (r < 0.00001) return P - (P/n)*months;
+    return P * (Math.pow(1+r,n) - Math.pow(1+r,months)) / (Math.pow(1+r,n) - 1);
+  }
+  function fv(val, annualRate, yrs){ return val * Math.pow(1+annualRate, yrs); }
+  function annuityFV(pmtMo, annualRate, yrs){
+    var r = annualRate/12, n = yrs*12;
+    if (n <= 0) return 0;
+    if (r < 0.00001) return pmtMo*n;
+    return pmtMo * (Math.pow(1+r,n) - 1) / r;
+  }
+
+  // ── State ───────────────────────────────────────────────
+  var spouseUnit = 'yr', selfUnit = 'yr';
+  var verifState = false;
+  var cmpTouched = false;
+  var _hz = 5;
+  var DTI = 0.45;            // max housing+debt / gross
+  var SELL_COST = 0.06;      // selling cost applied to home value at horizon
+  var QUAL_RUNWAY_FLOOR = 12; // months — below this, "buy now" is flagged risky
+
+  // Cache of all live inputs
+  function inputs(){
+    var spouseRaw = +G('spouseInc').value || 0;
+    var selfRaw   = +G('selfInc').value || 0;
+    var spouseMo  = spouseUnit==='yr' ? spouseRaw/12 : spouseRaw;
+    var selfMo    = selfUnit==='yr'   ? selfRaw/12   : selfRaw;
+    return {
+      spouseMo: spouseMo, selfMo: selfMo, incomeMo: spouseMo + selfMo,
+      verif:   verifState,
+      burn:    +G('burn').value,
+      debt:    +G('debt').value,
+      price:   +G('price').value,
+      down:    +G('downAmt').value,
+      term:    +G('term').value,
+      rate:    +G('rate').value/100,
+      ptax:    +G('ptax').value/100,
+      ins:     +G('ins').value,
+      hoa:     +G('hoa').value,
+      maint:   +G('maint').value/100,
+      adu:     +G('adu').value,
+      capGains:+G('capGains').value/100,
+      rent:    +G('rent').value,
+      rentInfl:+G('rentInfl').value/100,
+      app:     +G('app').value/100,
+      mkt:     +G('mkt').value/100,
+      bridge:  +G('bridge').value,
+      assets:  +G('assets').value,
+      dreamPrice: +G('dreamPrice').value,
+      dreamWait:  +G('dreamWait').value
+    };
+  }
+
+  // Monthly owning carry for a given price/down/loan
+  function owningCarry(price, down, I){
+    var loan = Math.max(0, price - down);
+    var pi = calcPI(loan, I.rate, I.term);
+    var tax = price * I.ptax/12;
+    var ins = I.ins/12;
+    var maint = price * I.maint/12;
+    var pmi = (loan/price > 0.80) ? loan*0.0085/12 : 0;
+    return { pi:pi, tax:tax, ins:ins, maint:maint, pmi:pmi, loan:loan,
+             total: pi+tax+ins+maint+I.hoa+pmi - I.adu };
+  }
+
+  // Net worth + runway for OWNING from t=0 over horizon
+  function ownPath(price, down, I, horizon){
+    var carry = owningCarry(price, down, I).total;
+    var flow  = I.incomeMo - carry - I.burn;          // monthly surplus/deficit
+    var taxDrag = down * I.capGains/(1 - I.capGains);
+    var liqStart = I.assets - down - taxDrag;
+    var liqEnd = fv(liqStart, I.mkt, horizon) + annuityFV(flow, I.mkt, horizon);
+    var homeVal = fv(price, I.app, horizon);
+    var bal = loanBal(price-down, I.rate, I.term, horizon*12);
+    var equity = Math.max(0, homeVal*(1-SELL_COST) - bal);
+    var nw = liqEnd + equity;
+    var runway = flow >= 0 ? Infinity : liqStart / (-flow);
+    return { carry:carry, flow:flow, liqStart:liqStart, liqEnd:liqEnd,
+             equity:equity, nw:nw, runway:runway };
+  }
+
+  // Net worth + runway for RENTING the whole horizon (Scenario C)
+  function rentPath(I, horizon){
+    var flow = I.incomeMo - I.rent - I.burn;
+    var liqEnd = fv(I.assets, I.mkt, horizon) + annuityFV(flow, I.mkt, horizon);
+    var rentNow = I.rent * Math.pow(1+I.rentInfl, horizon);
+    var runway = flow >= 0 ? Infinity : I.assets / (-flow);
+    return { carry:I.rent, flow:flow, liqEnd:liqEnd, equity:0, nw:liqEnd,
+             runway:runway, rentNow:rentNow };
+  }
+
+  // Bridge: rent for m months, then buy same down on appreciated home, hold to horizon.
+  // priceArg lets the Dream-Build card target a different home than the current price.
+  function bridgePath(I, horizon, bridgeMo, priceArg){
+    var baseP = priceArg || I.price;
+    var bYr = bridgeMo/12;
+    if (bYr >= horizon) {            // never actually buy within horizon
+      var rp = rentPath(I, horizon);
+      return { carry:I.rent, flow:rp.flow, liqEnd:rp.liqEnd, equity:0, nw:rp.nw,
+               runway:rp.runway, boughtPrice:null, bridgeMo:bridgeMo };
+    }
+    // phase 1: rent
+    var flowRent = I.incomeMo - I.rent - I.burn;
+    var liqAtBuy = fv(I.assets, I.mkt, bYr) + annuityFV(flowRent, I.mkt, bYr);
+    // buy on appreciated home
+    var buyPrice = fv(baseP, I.app, bYr);
+    var down = I.down;                         // same dollar down payment
+    var taxDrag = down * I.capGains/(1-I.capGains);
+    var liqStart2 = liqAtBuy - down - taxDrag;
+    var carry2 = owningCarry(buyPrice, down, I).total;
+    var flow2 = I.incomeMo - carry2 - I.burn;
+    var rem = horizon - bYr;
+    var liqEnd = fv(liqStart2, I.mkt, rem) + annuityFV(flow2, I.mkt, rem);
+    var homeVal = fv(buyPrice, I.app, rem);
+    var bal = loanBal(buyPrice-down, I.rate, I.term, rem*12);
+    var equity = Math.max(0, homeVal*(1-SELL_COST) - bal);
+    var nw = liqEnd + equity;
+    // runway TODAY = while renting (phase 1 cash flow)
+    var runway = flowRent >= 0 ? Infinity : I.assets/(-flowRent);
+    return { carry:I.rent, flow:flowRent, liqEnd:liqEnd, equity:equity, nw:nw,
+             runway:runway, boughtPrice:buyPrice, liqStart2:liqStart2, bridgeMo:bridgeMo };
+  }
+
+  // Solve the bridge length (0..36 mo) that maximizes net worth at horizon,
+  // subject to runway-at-buy >= floor. Returns {best, nw, runwayOk}.
+  function solveBridge(I, horizon){
+    var best = 0, bestNW = -Infinity, bestRunway = 0;
+    for (var m=0; m<=36; m++){
+      var bp = bridgePath(I, horizon, m);
+      // require that AT the buy moment, post-down liquid covers >= floor months of deficit
+      var okRunway = true;
+      if (bp.boughtPrice){
+        var carry2 = owningCarry(bp.boughtPrice, I.down, I).total;
+        var flow2 = I.incomeMo - carry2 - I.burn;
+        if (flow2 < 0){
+          var rwAtBuy = bp.liqStart2 / (-flow2);
+          okRunway = rwAtBuy >= QUAL_RUNWAY_FLOOR;
+        }
+      }
+      if (bp.nw > bestNW && okRunway){ bestNW = bp.nw; best = m; bestRunway = bp.runway; }
+    }
+    // fallback: if nothing meets the floor, pick max-NW ignoring floor
+    if (bestNW === -Infinity){
+      for (var m2=0; m2<=36; m2++){
+        var bp2 = bridgePath(I, horizon, m2);
+        if (bp2.nw > bestNW){ bestNW = bp2.nw; best = m2; }
+      }
+    }
+    return { best:best, nw:bestNW };
+  }
+
+  // Split income into what lenders can USE (verifiable) vs what funds cash flow.
+  function incomes(I){
+    var qualVerif = I.spouseMo + (I.verif ? I.selfMo : 0);   // spouse W-2 always; biz only if verifiable
+    var eligibleAssets = Math.max(0, I.assets - I.down);     // assets left after down payment
+    return {
+      qualVerif: qualVerif,
+      cashflow: I.incomeMo,                                   // spouse + self regardless of verifiability
+      adConv: eligibleAssets/360,                             // conventional asset-depletion (÷360)
+      adNonQM: eligibleAssets/120                             // non-QM asset-depletion (÷120, ~3x)
+    };
+  }
+
+  // Max loan supported by a given monthly QUALIFYING income at this price/down (DTI, PITI+HOA only).
+  function loanFromIncome(qIncomeMo, I){
+    var housingBudget = Math.max(0, qIncomeMo*DTI - I.debt);
+    var c = owningCarry(I.price, I.down, I);
+    var nonPI_dti = c.tax + c.ins + I.hoa + c.pmi;            // lenders count PITI+HOA, not maintenance/ADU
+    var maxPI = Math.max(0, housingBudget - nonPI_dti);
+    var r=I.rate/12, n=I.term*12;
+    return r<0.00001 ? maxPI*n : maxPI*(Math.pow(1+r,n)-1)/(r*Math.pow(1+r,n));
+  }
+
+  // Cheapest loan TYPE that supports the current loan, walking up the cost ladder.
+  function loanPlan(I){
+    var inc = incomes(I);
+    var L = Math.max(0, I.price - I.down);
+    var mW2 = loanFromIncome(inc.qualVerif, I);
+    var mAD = loanFromIncome(inc.qualVerif + inc.adConv, I);
+    var mNQ = loanFromIncome(inc.qualVerif + inc.adNonQM, I);
+    if (L <= mW2) return { type:'Conventional (best rate)', rate:'market (~'+(I.rate*100).toFixed(2)+'%)', ok:true,
+      note:'Documented income alone covers the '+fmt(L)+' loan. Cleanest, cheapest path — PMI cancellable above 20% down.' };
+    if (L <= mAD) return { type:'Conventional + asset-depletion (÷360)', rate:'market to +0.25%', ok:true,
+      note:'Spouse W-2 plus ~'+fmt(inc.adConv)+'/mo of asset-depletion income closes the gap. Get a lender to confirm in writing that they stack it.' };
+    if (L <= mNQ) return { type:'Non-QM asset-depletion (÷120)', rate:'+0.5–2% (~mid-7s)', ok:true,
+      note:'Needs the aggressive ÷120 divisor (~'+fmt(inc.adNonQM)+'/mo qualifying). Higher rate, but works with no 2-yr business returns.' };
+    if (I.selfMo>0 && !I.verif) return { type:'Bank-statement / non-QM', rate:'+1–3%', ok:'maybe',
+      note:'Uses 12–24 months of business deposits instead of tax returns. May close the gap once the business has a deposit history — confirm with a non-QM broker.' };
+    return { type:'Not financeable at this price yet', rate:'—', ok:false,
+      note:'Income + assets don’t support a '+fmt(L)+' loan. Raise the down payment, lower the price, or build verifiable income.' };
+  }
+
+  // Programs in reach given income + down.
+  function programs(I){
+    var out = ['Teacher Next Door (~$9K grant — Vania qualifies)'];
+    var annual = I.incomeMo*12;
+    if (annual <= 126200 && I.price <= 537700) out.push('UHC FirstHome (income OK — but pairs with small down)');
+    if ((I.down/I.price) < 0.10) out.push('FHA 3.5% (low down, but MIP permanent)');
+    return out;
+  }
+
+  // Legacy qualify() used by reco — now backed by verifiable income.
+  function qualify(I){
+    var inc = incomes(I);
+    var maxLoan = loanFromIncome(inc.qualVerif, I);
+    var maxLoanAD = loanFromIncome(inc.qualVerif + inc.adConv, I);
+    var currentLoan = Math.max(0, I.price - I.down);
+    return {
+      maxHousing: inc.qualVerif*DTI - I.debt,
+      maxLoan: maxLoan, maxLoanAD: maxLoanAD,
+      maxPrice: maxLoan + I.down,
+      qualifies: currentLoan <= maxLoan,
+      qualifiesAD: currentLoan <= maxLoanAD,
+      currentLoan: currentLoan
+    };
+  }
+
+  // Minimum thresholds to buy THIS home.
+  function minBuyHTML(I){
+    var inc = incomes(I);
+    var c = owningCarry(I.price, I.down, I);
+    var L = Math.max(0, I.price - I.down);
+    var pitiDTI = c.pi + c.tax + c.ins + I.hoa + c.pmi;
+    var reqQualMo = (pitiDTI + I.debt)/DTI;                       // verifiable income to FINANCE
+    var reqFlowMo = c.total + I.burn;                            // total income to STOP draining
+    var verifNow = inc.qualVerif;
+    var withAD = verifNow + inc.adConv;
+    var financed = L <= loanFromIncome(verifNow, I) ? 'with documented income alone'
+                 : L <= loanFromIncome(withAD, I) ? 'once asset-depletion is stacked (~'+fmt(inc.adConv)+'/mo)'
+                 : 'NOT yet — even with asset-depletion you’re short';
+    var drain = Math.max(0, c.total + I.burn - I.incomeMo);
+    var runwayNow = drain>0 ? I.assets/drain : Infinity;
+    var lines = [];
+    lines.push('<div class="pmt-line" style="padding:6px 0;border-color:var(--line)"><span class="pmt-key">1 · Verifiable income to FINANCE</span><span class="pmt-val b">&ge; '+fmt(reqQualMo)+'/mo ('+fmt(reqQualMo*12)+'/yr)</span></div>');
+    lines.push('<div class="pmt-line" style="padding:6px 0;border-color:var(--line)"><span class="pmt-key">Status</span><span class="pmt-val '+(financed.indexOf('NOT')===0?'r':'g')+'" style="text-align:right;max-width:62%;font-size:.78rem">'+financed+'</span></div>');
+    lines.push('<div class="pmt-line" style="padding:6px 0;border-color:var(--line)"><span class="pmt-key">2 · Total income to STOP draining stocks</span><span class="pmt-val b">&ge; '+fmt(reqFlowMo)+'/mo</span></div>');
+    lines.push('<div class="pmt-line" style="padding:6px 0;border-color:var(--line)"><span class="pmt-key">At today’s income you’d drain</span><span class="pmt-val '+(drain>0?'a':'g')+'">'+(drain>0?fmt(drain)+'/mo → '+(runwayNow===Infinity?'n/a':Math.round(runwayNow)+' mo runway'):'$0 — self-sustaining')+'</span></div>');
+    lines.push('<div class="pmt-line" style="padding:6px 0;border:none"><span class="pmt-key">3 · Reserve floor (keep outside down pmt)</span><span class="pmt-val b">&ge; '+fmt(reqFlowMo*12)+' (12 mo)</span></div>');
+    lines.push('<div class="pmt-note" style="margin-top:8px">Bottom line: to buy this '+fmt(I.price)+' home you need <b>~'+fmt(reqQualMo)+'/mo verifiable</b> to get the loan, and ideally <b>~'+fmt(reqFlowMo)+'/mo total</b> so you stop spending down savings. Your $10K/mo near-term focus clears the runway bar; your $30K/mo 1-yr target clears both with huge room — the gap until then is making business income <b>lender-verifiable</b> (2 yrs of returns, or a bank-statement / asset-depletion loan in the meantime).</div>');
+    return lines.join('');
+  }
+
+  // ── Tooltip mobile tap ──────────────────────────────────
+  document.addEventListener('click', function(e){
+    var ti = e.target.closest ? e.target.closest('.ti') : null;
+    if (ti){
+      var was = ti.classList.contains('open');
+      document.querySelectorAll('.ti.open').forEach(function(t){ t.classList.remove('open'); });
+      if (!was) ti.classList.add('open');
+      e.stopPropagation();
+    } else {
+      document.querySelectorAll('.ti.open').forEach(function(t){ t.classList.remove('open'); });
+    }
+  });
+
+  // ── Income unit toggles ─────────────────────────────────
+  document.querySelectorAll('.unit-tog').forEach(function(tog){
+    var who = tog.dataset.for;
+    tog.querySelectorAll('button').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var newUnit = this.dataset.unit;
+        var field = who==='spouse' ? G('spouseInc') : G('selfInc');
+        var oldUnit = who==='spouse' ? spouseUnit : selfUnit;
+        if (newUnit === oldUnit) return;
+        var val = +field.value || 0;
+        // convert displayed value to new unit
+        field.value = newUnit==='mo' ? Math.round(val/12) : Math.round(val*12);
+        if (who==='spouse') spouseUnit = newUnit; else selfUnit = newUnit;
+        tog.querySelectorAll('button').forEach(function(b){ b.classList.remove('active'); });
+        this.classList.add('active');
+        recalc();
+      });
+    });
+  });
+
+  // ── Verifiable-income toggle ────────────────────────────
+  document.querySelectorAll('#verifTog button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      verifState = this.dataset.verif === 'yes';
+      document.querySelectorAll('#verifTog button').forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      recalc();
+    });
+  });
+
+  // ── Income presets (your business income) ───────────────
+  document.querySelectorAll('[data-bizpreset]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var mo = +this.dataset.bizpreset;
+      selfUnit = 'mo';
+      G('selfInc').value = mo;
+      // sync self toggle UI
+      var tog = document.querySelector('.unit-tog[data-for="self"]');
+      tog.querySelectorAll('button').forEach(function(b){ b.classList.toggle('active', b.dataset.unit==='mo'); });
+      document.querySelectorAll('[data-bizpreset]').forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      recalc();
+      runIdeal();   // presets auto-run the recommendation so suggestions appear
+    });
+  });
+
+  // ── Down payment bidirectional sync ─────────────────────
+  G('price').addEventListener('input', function(){
+    var pct = +G('downPct').value;
+    G('downAmt').value = Math.round(+this.value * pct/100);
+    if (!cmpTouched) G('cmpPrice').value = this.value;   // compare-price follows your price until you move it
+    recalc();
+  });
+  G('cmpPrice').addEventListener('input', function(){ cmpTouched = true; });
+  G('cmpSync').addEventListener('click', function(){
+    cmpTouched = false; G('cmpPrice').value = G('price').value; recalc();
+  });
+  G('downPct').addEventListener('input', function(){
+    var price = +G('price').value;
+    G('downAmt').value = Math.round(price * (+this.value)/100);
+    recalc();
+  });
+  G('downAmt').addEventListener('input', function(){
+    var price = +G('price').value;
+    var pct = +this.value / price * 100;
+    G('downPct').value = Math.min(60, Math.max(3, pct));
+    recalc();
+  });
+
+  // ── Generic input listeners ─────────────────────────────
+  ['spouseInc','selfInc','burn','debt','rate','ptax','ins','hoa','maint','adu','capGains',
+   'rent','rentInfl','app','mkt','bridge','assets','term','cmpPrice','dreamPrice','dreamWait','extra'].forEach(function(id){
+    var el = G(id); if (!el) return;
+    el.addEventListener('input', recalc);
+    el.addEventListener('change', recalc);
+  });
+
+  // ── Target-payoff buttons (solve extra principal for N-yr payoff) ──
+  document.querySelectorAll('[data-payoff]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var I = inputs();
+      var L = Math.max(0, I.price - I.down);
+      var basePI = calcPI(L, I.rate, I.term);
+      var targetPI = calcPI(L, I.rate, +this.dataset.payoff);
+      G('extra').value = Math.max(0, Math.round(targetPI - basePI));
+      document.querySelectorAll('[data-payoff]').forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      recalc();
+    });
+  });
+
+  // ── Market-return presets ───────────────────────────────
+  document.querySelectorAll('[data-mkt]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      G('mkt').value = this.dataset.mkt;
+      document.querySelectorAll('[data-mkt]').forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      recalc();
+    });
+  });
+
+  // ── Horizon ─────────────────────────────────────────────
+  document.querySelectorAll('.hz-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.hz-btn').forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      _hz = +this.dataset.hz;
+      recalc();
+    });
+  });
+
+  // ── Buttons ─────────────────────────────────────────────
+  G('findIdeal').addEventListener('click', runIdeal);
+  G('solveBridge').addEventListener('click', function(){
+    var I = inputs();
+    var sol = solveBridge(I, _hz);
+    G('bridge').value = sol.best;
+    G('vBridge').textContent = sol.best + ' mo';
+    recalc();
+    var reco = G('reco'); reco.classList.add('show');
+    G('recoMain').textContent = sol.best===0 ? 'Optimal bridge: buy now (0 months)' : 'Optimal bridge: rent '+sol.best+' months, then buy';
+    G('recoDetail').innerHTML = sol.best===0
+      ? 'At your inputs, renting first does NOT help — the rent you’d pay outweighs the extra market growth, so buying now maximizes net worth at the '+_hz+'-yr mark. (Scenario B card updated to 0 months.) Raise your income ramp or the market return and a longer bridge can start to win.'
+      : 'Renting '+sol.best+' months first maximizes your '+_hz+'-yr net worth while keeping post-purchase runway above '+QUAL_RUNWAY_FLOOR+' months — assets compound and income seasons before you lock up the down payment. (Scenario B card updated.)';
+  });
+
+  // ── Display helpers ─────────────────────────────────────
+  function setV(id, txt, cls){
+    var el = G(id); if (!el) return;
+    el.textContent = txt;
+    if (cls) el.className = 'sc-v ' + cls;
+  }
+  function flowTxt(flow){ return (flow>=0?'+':'') + fmt(flow) + '/mo'; }
+  function runwayTxt(rw){ return rw===Infinity ? 'self-sustaining' : Math.round(rw)+' mo'; }
+  function runwayCls(rw){ return rw===Infinity || rw>24 ? 'g' : rw>12 ? 'a' : 'r'; }
+
+  // ── Main recalc ─────────────────────────────────────────
+  function recalc(){
+    var I = inputs();
+
+    // sync display chrome
+    G('vPrice').textContent    = fmt(I.price);
+    G('vDownPct').textContent  = (I.down/I.price*100).toFixed(1)+'%';
+    G('vRate').textContent     = (I.rate*100).toFixed(2)+'%';
+    G('vPtax').textContent     = (I.ptax*100).toFixed(2)+'%';
+    G('vHoa').textContent      = '$'+I.hoa;
+    G('vMaint').textContent    = (I.maint*100).toFixed(1)+'%';
+    G('vAdu').textContent      = '$'+I.adu;
+    G('vCapGains').textContent = (I.capGains*100).toFixed(0)+'%';
+    G('vBurn').textContent     = fmt(I.burn);
+    G('vDebt').textContent     = '$'+I.debt;
+    G('vRent').textContent     = fmt(I.rent);
+    G('vRentInfl').textContent = (I.rentInfl*100).toFixed(2)+'%';
+    G('vApp').textContent      = (I.app*100).toFixed(1)+'%';
+    G('vMkt').textContent      = (I.mkt*100).toFixed(1)+'%';
+    G('vBridge').textContent   = G('bridge').value + ' mo';
+    G('spouseDerived').textContent = '= '+fmt(I.spouseMo)+'/mo';
+    G('selfDerived').textContent   = '= '+fmt(I.selfMo)+'/mo';
+    G('vDreamPrice').textContent   = fmt(I.dreamPrice);
+    G('vDreamWait').textContent    = I.dreamWait + ' mo';
+    G('hzNote').innerHTML          = 'Showing where each path leaves you <strong>'+_hz+' year'+(_hz>1?'s':'')+'</strong> from today.';
+
+    // Payment breakdown (buy now at current price)
+    var c = owningCarry(I.price, I.down, I);
+    G('oPI').textContent   = fmt(c.pi);
+    G('oTax').textContent  = fmt(c.tax);
+    G('oIns').textContent  = fmt(c.ins);
+    G('oMaint').textContent= fmt(c.maint);
+    G('oHoa').textContent  = '$'+I.hoa;
+    if (c.pmi > 0){
+      G('pmiRow').style.display = '';
+      G('oPmi').textContent = fmt(c.pmi);
+      var target=I.price*0.80, bal=c.loan, r=I.rate/12, m=0;
+      while (bal>target && m<I.term*12){ bal=bal*(1+r)-c.pi; m++; }
+      G('pmiNote').style.display='';
+      G('pmiNote').textContent='PMI drops when balance reaches '+fmt(I.price*0.80)+' (80% LTV) — est. '+m+' months ('+(m/12).toFixed(1)+' yrs).';
+    } else { G('pmiRow').style.display='none'; G('pmiNote').style.display='none'; }
+    if (I.adu > 0){ G('aduRow').style.display=''; G('oAdu').textContent='-'+fmt(I.adu); }
+    else { G('aduRow').style.display='none'; }
+    var tot = G('oTotal');
+    tot.textContent = fmt(c.total);
+    tot.className = 'pmt-val ' + (c.total<=2400?'g':c.total<=3000?'a':'r');
+    var gross = I.down/(1-I.capGains);
+    G('grossNote').textContent = 'To deploy '+fmt(I.down)+' net after '+(I.capGains*100).toFixed(0)+'% cap-gains tax, liquidate ~'+fmt(gross)+' of stock (tax drag ~'+fmt(gross-I.down)+').';
+    var cgEl = G('capGainsLive');
+    if (cgEl) cgEl.innerHTML = '<p class="small" style="margin:0"><strong>Live, on YOUR '+fmt(I.down)+' down payment</strong> (not the fixed $150K table above): at '+(I.capGains*100).toFixed(0)+'% effective cap-gains, you’d liquidate ~<b>'+fmt(gross)+'</b> of stock, losing ~<b>'+fmt(gross-I.down)+'</b> to tax. This is the single biggest argument for an <b>SBLOC / pledged-asset loan</b> instead — borrow against the shares and you pay <b>$0</b> of this tax and keep the position compounding. See the SBLOC section below.</p>';
+
+    // Qualification banner (verifiable income basis)
+    var q = qualify(I);
+    var inc = incomes(I);
+    var qb = G('qualBanner'), qbadge = G('qualBadge'), qtext = G('qualText');
+    var state = q.qualifies ? 'ok' : (q.qualifiesAD ? 'warn' : 'bad');
+    qb.className = 'qual ' + state;
+    qbadge.textContent = q.qualifies ? 'QUALIFIES' : (q.qualifiesAD ? 'QUALIFIES W/ ASSETS' : 'OVER BUDGET');
+    var verifLabel = I.verif ? 'documented W-2 + business' : 'documented W-2 only (business not yet verifiable)';
+    if (q.qualifies){
+      qtext.innerHTML = 'On '+fmt(inc.qualVerif)+'/mo '+verifLabel+' (DTI '+(DTI*100)+'%), max loan ≈ <b>'+fmt(q.maxLoan)+'</b> (max price ≈ '+fmt(q.maxPrice)+'). Your '+fmt(q.currentLoan)+' loan fits.';
+    } else if (q.qualifiesAD){
+      qtext.innerHTML = 'Documented income alone caps the loan at ~'+fmt(q.maxLoan)+', short of '+fmt(q.currentLoan)+' — but <b>stacking asset-depletion</b> (~'+fmt(inc.adConv)+'/mo) lifts it to ~'+fmt(q.maxLoanAD)+', which covers it. Confirm a lender will stack it.';
+    } else {
+      qtext.innerHTML = 'On '+fmt(inc.qualVerif)+'/mo verifiable income, max loan ≈ '+fmt(q.maxLoan)+' (with asset-depletion ~'+fmt(q.maxLoanAD)+'), but you need '+fmt(q.currentLoan)+'. Raise the down payment, lower the price, or make business income verifiable.';
+    }
+
+    // Loan type + programs
+    var plan = loanPlan(I);
+    G('oLoanType').textContent = plan.type;
+    G('oLoanType').className = 'pmt-val ' + (plan.ok===true?'g':plan.ok==='maybe'?'a':'r');
+    G('oLoanRate').textContent = plan.rate;
+    G('oPrograms').innerHTML = programs(I).join('<br>');
+    G('loanNote').textContent = plan.note;
+
+    // Minimum to buy
+    G('minBuyBox').innerHTML = minBuyHTML(I);
+
+    // Payoff accelerator
+    payoffPlan(I);
+
+    // Market vs House module
+    marketVsHouse(I);
+
+    // ── Scenarios ──
+    var bridgeMo = +G('bridge').value;
+    var A = ownPath(I.price, I.down, I, _hz);
+    var B = bridgePath(I, _hz, bridgeMo);
+    var C = rentPath(I, _hz);
+    var D = bridgePath(I, _hz, I.dreamWait, I.dreamPrice);
+    G('bTitle').textContent = bridgeMo===0 ? 'Buy now (0 mo wait)' : 'Rent '+bridgeMo+' mo, then buy';
+    G('dTitle').textContent = 'Rent '+I.dreamWait+' mo → build '+fmt(I.dreamPrice);
+
+    // Card A
+    setV('aCarry', fmt(A.carry), A.carry<2400?'g':A.carry<3000?'a':'r');
+    setV('aFlow', flowTxt(A.flow), A.flow>=0?'g':'r');
+    setV('aEquity', fmt(A.equity), 'b');
+    setV('aLiquid', fmtK(A.liqEnd), A.liqEnd>0?'b':'r');
+    setV('aNW', fmtK(A.nw), A.nw>0?'g':'r');
+    setV('aRunway', runwayTxt(A.runway), runwayCls(A.runway));
+    // Card B
+    setV('bCarry', fmt(B.carry), 'a');
+    setV('bFlow', flowTxt(B.flow), B.flow>=0?'g':'r');
+    setV('bEquity', B.equity>0?fmt(B.equity):'none yet', B.equity>0?'b':'a');
+    setV('bLiquid', fmtK(B.liqEnd), B.liqEnd>0?'b':'r');
+    setV('bNW', fmtK(B.nw), B.nw>0?'g':'r');
+    setV('bRunway', runwayTxt(B.runway), runwayCls(B.runway));
+    // Card C
+    setV('cCarry', fmt(I.rent), 'a');
+    setV('cFlow', flowTxt(C.flow), C.flow>=0?'g':'r');
+    setV('cLiquid', fmtK(C.liqEnd), C.liqEnd>0?'b':'r');
+    setV('cNW', fmtK(C.nw), C.nw>0?'g':'r');
+    setV('cRunway', runwayTxt(C.runway), runwayCls(C.runway));
+    // Card D (dream build)
+    setV('dCarry', fmt(I.rent), 'a');
+    setV('dFlow', flowTxt(D.flow), D.flow>=0?'g':'r');
+    setV('dEquity', D.equity>0?fmt(D.equity):'none yet', D.equity>0?'b':'a');
+    setV('dLiquid', fmtK(D.liqEnd), D.liqEnd>0?'b':'r');
+    setV('dNW', fmtK(D.nw), D.nw>0?'g':'r');
+    setV('dRunway', runwayTxt(D.runway), runwayCls(D.runway));
+
+    // Total monthly outflow (housing + living) — shown on every card incl. rent
+    setV('aTotalOut', fmt(A.carry + I.burn), 'a');
+    setV('bTotalOut', fmt(B.carry + I.burn), 'a');
+    setV('cTotalOut', fmt(I.rent + I.burn), 'a');
+    setV('dTotalOut', fmt(I.rent + I.burn), 'a');
+
+    // Overage invested → future value (the surplus compounded at market return)
+    function investTxt(flow){
+      if (flow <= 0) return '— drawing down';
+      return fmtK(annuityFV(flow, I.mkt, _hz)) + ' (+'+fmt(flow)+'/mo)';
+    }
+    setV('aInvest', investTxt(A.flow), A.flow>0?'g':'a');
+    setV('bInvest', investTxt(B.flow), B.flow>0?'g':'a');
+    setV('cInvest', investTxt(C.flow), C.flow>0?'g':'a');
+
+    // winner highlight (now 4 cards)
+    ['cardA','cardB','cardC','cardD'].forEach(function(id){ G(id).classList.remove('winner'); });
+    var ranked = [[A.nw,'cardA'],[B.nw,'cardB'],[C.nw,'cardC'],[D.nw,'cardD']].sort(function(a,b){return b[0]-a[0];});
+    G(ranked[0][1]).classList.add('winner');
+
+    // ── Thrown-away analysis (answers "rent is wasted money") ──
+    var firstInterest = (I.price - I.down) * I.rate / 12;
+    var principalMo = Math.max(0, c.pi - firstInterest);
+    var ownWaste = firstInterest + c.tax + c.ins + c.maint + I.hoa + c.pmi - I.adu; // non-equity $ of owning
+    var rentMo = I.rent;
+    var wasteVerdict = ownWaste < rentMo
+      ? 'Here owning "wastes" <b>'+fmt(ownWaste)+'/mo</b> vs rent\'s <b>'+fmt(rentMo)+'/mo</b> — owning is the better deal on pure thrown-away money, AND you build ~'+fmt(principalMo)+'/mo of equity on top.'
+      : 'Here owning "wastes" <b>'+fmt(ownWaste)+'/mo</b> vs rent\'s <b>'+fmt(rentMo)+'/mo</b> — owning\'s non-equity cost is actually higher, but you also build ~'+fmt(principalMo)+'/mo of equity, which rent never does.';
+    var cVsA = C.nw - A.nw;
+    var neverBuy = cVsA > 0
+      ? 'At these exact inputs, never-buying (C) ends ~'+fmtK(cVsA)+' ahead — but ONLY because the market return ('+(I.mkt*100).toFixed(1)+'%) so badly beats home appreciation ('+(I.app*100).toFixed(1)+'%) and you invest every spare dollar with discipline. Nudge appreciation up, the market down, or stretch the horizon and buying wins. For a 5-10 year hold in a home you love, buying almost always wins once appreciation is realistic.'
+      : 'At these inputs, BUYING beats never-renting by ~'+fmtK(-cVsA)+' — your instinct is right. Renting forever only wins when the market wildly outruns home appreciation and you reinvest every dollar.';
+    G('thrownAway').innerHTML = '<p class="small" style="margin-bottom:6px"><strong>"Is rent really thrown away?" — the honest math.</strong></p>'
+      + '<p class="small">Both rent AND owning throw money away — owning just hides it. Of your '+fmt(c.total)+'/mo payment, only the <b>principal (~'+fmt(principalMo)+'/mo)</b> builds equity. The rest — mortgage interest ('+fmt(firstInterest)+'), property tax, insurance, maintenance'+(I.hoa>0?', HOA':'')+' — is gone, same as rent. '+wasteVerdict+'</p>'
+      + '<p class="small" style="margin-bottom:0"><b>On never buying (Scenario C):</b> '+neverBuy+'</p>';
+
+    // decision matrix
+    var minCost = Math.min(A.carry, C.rentNow);
+    [['dmA-cost',A.carry],['dmB-cost',C.carry],['dmC-cost',C.rentNow]].forEach(function(x){
+      var el=G(x[0]); el.textContent=fmt(x[1]); el.className='dm-cell '+(x[1]<=minCost+1?'win':'ok');
+    });
+    var maxNW = Math.max(A.nw,B.nw,C.nw);
+    [['dmA-nw',A.nw],['dmB-nw',B.nw],['dmC-nw',C.nw]].forEach(function(x){
+      var el=G(x[0]); el.textContent=fmtK(x[1]); el.className='dm-cell '+(x[1]===maxNW?'win':x[1]>0?'ok':'lose');
+    });
+    [['dmA-rw',A.runway],['dmB-rw',B.runway],['dmC-rw',C.runway]].forEach(function(x){
+      var el=G(x[0]); el.textContent=runwayTxt(x[1]);
+      el.className='dm-cell '+(x[1]===Infinity||x[1]>24?'win':x[1]>12?'ok':'lose');
+    });
+  }
+
+  // ── Payoff accelerator: extra principal vs investing it ──
+  function payoffPlan(I){
+    var L = Math.max(0, I.price - I.down);
+    var r = I.rate/12;
+    var basePI = calcPI(L, I.rate, I.term);
+    var extra = +G('extra').value;
+    G('vExtra').textContent = '$'+extra.toLocaleString();
+    var out = G('payoffOut'), note = G('payoffNote');
+    if (extra <= 0 || L <= 0){
+      out.style.display = 'none';
+      note.innerHTML = 'Add extra principal (or hit a target-payoff button) to see how fast the loan dies, the interest you erase, and whether paying it down beats investing the same money at your '+(I.mkt*100).toFixed(1)+'% market return.';
+      return;
+    }
+    out.style.display = '';
+    // amortize with extra principal
+    var bal = L, m = 0, totalInt = 0, pay = basePI + extra, cap = I.term*12;
+    while (bal > 0 && m < cap){
+      var intM = bal*r, prinM = pay - intM;
+      if (prinM <= 0){ m = cap; break; }          // never pays off
+      bal -= prinM; totalInt += intM; m++;
+    }
+    var baseTotalInt = basePI*cap - L;
+    var saved = baseTotalInt - totalInt;
+    var yrs = (m/12);
+    // FAIR comparison — equal monthly outlay (basePI+extra) for the full term, both end owning the house:
+    //  PAYDOWN: pay basePI+extra until loan dies (month m), then invest basePI+extra to term-end.
+    //  INVEST : pay basePI on the loan for full term, invest extra/mo the whole time.
+    var paydownTerminal = annuityFV(basePI + extra, I.mkt, Math.max(0, (cap - m)/12));
+    var investTerminal  = annuityFV(extra, I.mkt, I.term);
+    var diff = investTerminal - paydownTerminal;
+    G('oPayoffYrs').textContent = yrs.toFixed(1)+' yrs (vs '+I.term+')';
+    G('oIntFast').textContent = fmt(totalInt);
+    G('oIntSaved').textContent = fmt(saved)+' saved';
+    var verd = G('oPayoffVerd');
+    if (diff > 0){
+      verd.textContent = 'Invest the extra — ahead ~'+fmtK(diff);
+      verd.className = 'pmt-val b';
+    } else {
+      verd.textContent = 'Pay it down — ahead ~'+fmtK(-diff);
+      verd.className = 'pmt-val g';
+    }
+    note.innerHTML = 'Paying <b>'+fmt(extra)+'/mo</b> extra kills the loan in <b>'+yrs.toFixed(1)+' yrs</b> and erases <b>'+fmt(saved)+'</b> of interest. '
+      + 'Now the fair fight (same '+fmt(basePI+extra)+'/mo out either way, both end owning the home): '
+      + '<b>pay-down-then-invest-the-freed-payment ends ~'+fmtK(paydownTerminal)+'</b> vs <b>invest-the-extra-the-whole-time ends ~'+fmtK(investTerminal)+'</b> in the side account at year '+I.term+'. '
+      + (diff > 0
+          ? 'Because your '+(I.mkt*100).toFixed(1)+'% market return beats the '+(I.rate*100).toFixed(2)+'% mortgage rate, <b>investing wins by ~'+fmtK(diff)+'</b>. Mathematically, carry the cheap fixed loan and invest — the gurus who say "never carry a mortgage" are optimizing for peace of mind, not returns. Your instinct to kill it fast is the lower-risk, guaranteed play; it costs you ~'+fmtK(diff)+' of expected upside for that certainty. Valid if the certainty is worth it to you.'
+          : 'Here the mortgage rate meets/beats your assumed return, so <b>paying it down wins by ~'+fmtK(-diff)+'</b> — kill the loan. (Raise the market preset to your growth tilt and it flips: investing wins.)');
+  }
+
+  // ── Market vs House module (solvency-aware, no double-count) ──
+  function marketVsHouse(I){
+    var big = +G('cmpPrice').value;
+    G('vCmpPrice').textContent = fmt(big);
+    G('cmpBase').textContent = fmt(I.price);
+    var signMo = function(x){ return (x>=0?'+':'-')+'$'+Math.round(Math.abs(x)).toLocaleString()+'/mo'; };
+    G('mvhSmallLbl').textContent = 'Your home: '+fmt(I.price);
+    G('mvhBigLbl').textContent = 'Alternative: '+fmt(big);
+
+    var small = ownPath(I.price, I.down, I, _hz);
+    var bigP  = ownPath(big, I.down, I, _hz);
+    var carrySmall = owningCarry(I.price, I.down, I).total;
+    var carryBig   = owningCarry(big, I.down, I).total;
+
+    var smallInsolvent = small.liqEnd < 0;
+    var bigInsolvent   = bigP.liqEnd < 0;
+    var inc = incomes(I);
+    var maxLoan = loanFromIncome(inc.qualVerif + inc.adConv, I);
+    var altLoan = Math.max(0, big - I.down);
+    var altQualifies = altLoan <= maxLoan;
+
+    G('mvhSmallCarry').textContent = fmt(carrySmall);
+    G('mvhDiffMo').textContent = signMo(carrySmall - carryBig);
+    G('mvhDiffMo').className = 'sc-v ' + (carrySmall<=carryBig?'g':'r');
+    G('mvhDiffFV').textContent = fmtK(small.equity);
+    G('mvhSmallNW').textContent = fmtK(small.nw) + (smallInsolvent?' ⚠':'');
+    G('mvhSmallNW').className = 'sc-v ' + (smallInsolvent?'r':'g');
+
+    G('mvhBigCarry').textContent = fmt(carryBig);
+    G('mvhExtraMo').textContent = signMo(carryBig - carrySmall);
+    G('mvhExtraMo').className = 'sc-v ' + (carryBig<=carrySmall?'g':'r');
+    G('mvhBigEq').textContent = fmtK(bigP.equity);
+    G('mvhBigNW').textContent = fmtK(bigP.nw) + (bigInsolvent?' ⚠':'');
+    G('mvhBigNW').className = 'sc-v ' + (bigInsolvent?'r':'b');
+
+    var v = G('mvhVerdict');
+    function setVerd(bg,col,bd,txt){ v.style.background=bg; v.style.color=col; v.style.border='1px solid '+bd; v.innerHTML=txt; }
+    var gap = small.nw - bigP.nw;   // + => your price wins
+    if (big === I.price){
+      setVerd('#1c2230','var(--mut)','var(--line)','This matches your calculator price — slide it up OR down to compare an alternative home.');
+    } else if (big>I.price && bigInsolvent && !smallInsolvent){
+      setVerd('#2a1213','var(--red)','#5a1f20','<b>You can’t sustain the '+fmt(big)+' home.</b> Its '+fmt(carryBig)+'/mo carry drains cash to NEGATIVE ('+fmtK(bigP.liqEnd)+') by year '+_hz+' — a forced sale, not a richer net worth. Your '+fmt(I.price)+' home stays solvent.');
+    } else if (big>I.price && !altQualifies){
+      setVerd('#241e08','var(--amb)','#5a4708','The '+fmt(big)+' home needs a '+fmt(altLoan)+' loan — above your ~'+fmt(maxLoan)+' max (W-2 + asset-depletion). Not financeable yet at this income/down.');
+    } else if (Math.abs(gap) < 1000){
+      setVerd('#1c2230','var(--txt)','var(--line)','Near-tie: '+fmt(I.price)+' and '+fmt(big)+' land within ~$1K of each other at '+_hz+' yrs.');
+    } else if (gap > 0){
+      setVerd('#10210f','var(--grn)','var(--grn2)','<b>Your '+fmt(I.price)+' home wins</b> by ~'+fmtK(gap)+' at '+_hz+' yrs vs '+fmt(big)+' — the lower carry leaves more cash to compound at '+(I.mkt*100).toFixed(1)+'%, beating the extra appreciation.'+(big<I.price?' (Going cheaper than your pick barely moves the needle once you’re solvent.)':''));
+    } else {
+      setVerd('#10210f','var(--grn)','var(--grn2)','<b>The '+fmt(big)+' home wins</b> by ~'+fmtK(-gap)+' at '+_hz+' yrs — appreciation on the bigger base outruns investing the carry difference, and you can sustain it. Sensitive to appreciation vs market return.');
+    }
+
+    // Same down payment: market vs home equity (dynamic to the calculator's down)
+    G('mvhDownAmt').textContent = fmt(I.down);
+    var mktFV = fv(I.down, I.mkt, _hz);
+    var mktGain = mktFV - I.down;
+    var homeEqGain = small.equity - I.down;
+    G('mvhMktFV').textContent = fmtK(mktFV);
+    G('mvhMktPct').textContent = (I.mkt*100).toFixed(1);
+    G('mvhHomeFV').textContent = fmtK(small.equity);
+    var spread = mktGain - homeEqGain;
+    G('mvhSpread').textContent = (spread>=0?'+':'-')+fmtK(Math.abs(spread));
+    G('mvhSpread').className = 'stat ' + (spread>=0?'b':'a');
+    G('mvhSpreadLbl').textContent = spread>=0 ? 'Market ahead on the same '+fmt(I.down) : 'House ahead (leverage)';
+    G('mvhNote').innerHTML = spread>=0
+      ? 'On equal cash out of pocket, the market grows your '+fmt(I.down)+' by ~'+fmtK(mktGain)+' vs ~'+fmtK(homeEqGain)+' of home-equity gain — <b>market wins by ~'+fmtK(spread)+'</b> at '+(I.mkt*100).toFixed(1)+'% vs '+(I.app*100).toFixed(1)+'% appreciation. Your instinct is right. The house still buys leverage, forced savings, and a place to live the market can’t.'
+      : 'Here the leveraged house wins: your '+fmt(I.down)+' controls a '+fmt(I.price)+' asset, so appreciation on the full price (~'+fmtK(homeEqGain)+') beats the market’s ~'+fmtK(mktGain)+' on the same cash. Raise the market-return preset to your growth tilt and it crosses back over.';
+  }
+
+  // ── Find ideal move ─────────────────────────────────────
+  function runIdeal(){
+    var I = inputs();
+    var sol = solveBridge(I, _hz);          // best bridge months
+    var A = ownPath(I.price, I.down, I, _hz);
+    var B = bridgePath(I, _hz, sol.best);
+    var C = rentPath(I, _hz);
+    var q = qualify(I);
+
+    // Decision logic: respect the runway floor for buy-now.
+    var buyNowSafe = A.runway === Infinity || A.runway >= QUAL_RUNWAY_FLOOR;
+    var paths = [
+      { key:'A', name:'Buy now', nw:A.nw, runway:A.runway, safe:buyNowSafe },
+      { key:'B', name:(sol.best===0?'Buy now':'Rent '+sol.best+' mo, then buy'), nw:B.nw, runway:B.runway, safe:true },
+      { key:'C', name:'Keep renting + invest', nw:C.nw, runway:C.runway, safe:true }
+    ];
+    // prefer highest net worth among SAFE paths
+    var safe = paths.filter(function(p){ return p.safe; }).sort(function(a,b){ return b.nw-a.nw; });
+    var pick = safe[0] || paths.sort(function(a,b){return b.nw-a.nw;})[0];
+
+    // income-tier guidance
+    var sm = I.selfMo, tier;
+    if (sm < 1000)       tier = 'Pre-revenue: the runway risk dominates. Until the business throws off cash, every dollar of the $150K down payment is a dollar of survival time you can’t get back. Rent the bridge.';
+    else if (sm < 3500)  tier = 'At ~$3K/mo: you roughly cover rent, not a mortgage + living. Buying still compresses runway. Bridge a bit, then buy once you have 12+ months of reserve outside the down payment.';
+    else if (sm < 7000)  tier = 'At ~$5K/mo: cash flow turns positive even while owning. Buy-now becomes viable — runway stops shrinking because income covers the carry. Confirm qualification (lenders still want 2 yrs of returns on business income).';
+    else                 tier = 'At ~$10K/mo: runway is no longer the constraint. Buy now comfortably; you could even put LESS down and keep more compounding in the market, since cash flow easily covers a larger payment.';
+
+    var reco = G('reco');
+    reco.classList.add('show');
+    var mainTxt;
+    if (pick.key==='A' || (pick.key==='B' && sol.best===0)) mainTxt = 'Buy now';
+    else if (pick.key==='B') mainTxt = 'Rent '+sol.best+' months, then buy';
+    else mainTxt = 'Keep renting and stay invested';
+    G('recoMain').textContent = mainTxt + '  ·  best of the three at your ' + _hz + '-yr horizon';
+
+    var bridgeNote = sol.best===0
+      ? 'Optimal bridge length solved to <b>0 months</b> (buy immediately is best at these inputs).'
+      : 'Optimal bridge length solved to <b>'+sol.best+' months</b> of renting first — that maximizes net worth while keeping at least '+QUAL_RUNWAY_FLOOR+' months of post-purchase runway.';
+
+    var buyFlag = !buyNowSafe
+      ? ' <b style="color:#f85149">Buy-now runway is only '+Math.round(A.runway)+' mo</b> — below the '+QUAL_RUNWAY_FLOOR+'-mo floor, so it’s flagged risky regardless of net worth.'
+      : '';
+
+    G('recoDetail').innerHTML =
+      tier + '<br><br>' +
+      bridgeNote + buyFlag + '<br><br>' +
+      'Net worth @ '+_hz+'yr: Buy-now <b>'+fmtK(A.nw)+'</b> (runway '+runwayTxt(A.runway)+') · '+
+      'Bridge '+sol.best+'mo <b>'+fmtK(B.nw)+'</b> · Rent+invest <b>'+fmtK(C.nw)+'</b>. ' +
+      (q.qualifies ? 'You currently qualify for the '+fmt(q.currentLoan)+' loan.' :
+       'Heads up: at this income you do <b>not</b> yet qualify for the '+fmt(q.currentLoan)+' loan on W-2 alone (max ~'+fmt(q.maxLoan)+') — asset-depletion stacking or a bigger down payment is required.');
+  }
+
+  // ── Init ────────────────────────────────────────────────
+  G('downPct').value = (150000/450000*100).toFixed(1);
+  G('cmpPrice').value = G('price').value;   // compare-price starts at your chosen price
+  recalc();
+})();
+</script>
+</body>
+</html>
