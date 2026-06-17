@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Invisible Scribe</title>
+<meta name="description" content="Premium ghostwriting that builds your authority while you stay in the build. The voice behind the founder." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;1,300&family=Public+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --night:#06070d;
+    --night-2:#080a13;
+    --silver:#d8e0f0;
+    --silver-dim:#8b93a8;
+    --gold:#f4d58a;
+    --gold-soft:#e9c98c;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{
+    width:100%;height:100%;
+    max-width:100%;max-height:100%;
+    background:var(--night);
+    overflow:hidden;
+    overscroll-behavior:none;
+  }
+  body{
+    font-family:'Spectral',Georgia,serif;
+    color:var(--silver);
+    position:fixed;inset:0;
+    cursor:none;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  /* radial atmosphere behind the silk */
+  .atmosphere{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(ellipse 60% 55% at 50% 46%, rgba(34,40,66,0.55) 0%, rgba(10,12,22,0.0) 60%),
+      radial-gradient(circle at 50% 48%, rgba(244,213,138,0.05) 0%, rgba(6,7,13,0) 45%),
+      linear-gradient(180deg, #04050a 0%, #06070d 50%, #04050a 100%);
+    z-index:0;
+  }
+  /* subtle film grain */
+  .grain{
+    position:absolute;inset:0;
+    width:100%;height:100%;
+    z-index:2;pointer-events:none;opacity:0.045;
+    background-size:160px 160px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grainShift 7s steps(6) infinite;
+  }
+  @keyframes grainShift{
+    0%{background-position:0 0}20%{background-position:-30px 20px}40%{background-position:24px -24px}
+    60%{background-position:-18px 12px}80%{background-position:12px -30px}100%{background-position:0 0}
+  }
+  canvas#web{position:absolute;inset:0;z-index:1;display:block;}
+
+  /* content layer — words resolve out of the web */
+  .stage{
+    position:absolute;inset:0;z-index:3;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;pointer-events:none;padding:6vw;
+  }
+  .eyebrow{
+    font-family:'Public Sans',system-ui,sans-serif;
+    font-weight:400;
+    letter-spacing:0.52em;
+    text-transform:uppercase;
+    font-size:clamp(0.56rem,0.5rem + 0.5vw,0.78rem);
+    color:var(--gold-soft);
+    opacity:0;
+    margin-bottom:clamp(1.1rem,2.4vh,2.1rem);
+    padding-left:0.52em;
+    filter:drop-shadow(0 0 12px rgba(244,213,138,0.35));
+  }
+  h1{
+    font-family:'Spectral',serif;
+    font-weight:300;
+    font-size:clamp(2.7rem,1.6rem + 7.4vw,7.6rem);
+    line-height:0.98;
+    letter-spacing:0.005em;
+    color:var(--silver);
+    opacity:0;
+    text-shadow:0 0 38px rgba(216,224,240,0.28), 0 0 90px rgba(120,140,200,0.18);
+  }
+  h1 .em{
+    font-style:italic;font-weight:300;
+    color:var(--gold);
+    text-shadow:0 0 34px rgba(244,213,138,0.45), 0 0 70px rgba(244,213,138,0.2);
+  }
+  .sub{
+    font-family:'Spectral',serif;
+    font-style:italic;font-weight:300;
+    font-size:clamp(1rem,0.8rem + 1.1vw,1.6rem);
+    color:var(--silver);
+    opacity:0;
+    margin-top:clamp(1rem,2.6vh,2rem);
+    letter-spacing:0.01em;
+  }
+  .what{
+    font-family:'Public Sans',system-ui,sans-serif;
+    font-weight:300;
+    font-size:clamp(0.82rem,0.72rem + 0.5vw,1.02rem);
+    line-height:1.62;
+    color:var(--silver-dim);
+    opacity:0;
+    max-width:34ch;
+    margin-top:clamp(1.4rem,3vh,2.4rem);
+    letter-spacing:0.012em;
+  }
+  .contact{
+    pointer-events:auto;
+    opacity:0;
+    margin-top:clamp(1.8rem,4vh,3rem);
+    font-family:'Public Sans',system-ui,sans-serif;
+    font-weight:400;
+    letter-spacing:0.26em;
+    text-transform:uppercase;
+    font-size:clamp(0.62rem,0.56rem + 0.3vw,0.74rem);
+  }
+  .contact a{
+    color:var(--silver);
+    text-decoration:none;
+    position:relative;
+    padding:0.55em 0.2em 0.6em;
+    transition:color 0.6s cubic-bezier(0.22,1,0.36,1);
+  }
+  .contact a .thread{
+    position:absolute;left:0;right:0;bottom:0.2em;height:1px;
+    background:linear-gradient(90deg,transparent,var(--gold-soft) 22%,var(--gold) 50%,var(--gold-soft) 78%,transparent);
+    transform:scaleX(0.18);opacity:0.5;
+    transform-origin:center;
+    transition:transform 0.7s cubic-bezier(0.22,1,0.36,1),opacity 0.7s ease;
+    filter:drop-shadow(0 0 5px rgba(244,213,138,0.5));
+  }
+  .contact a:hover{color:var(--gold);}
+  .contact a:hover .thread{transform:scaleX(1);opacity:1;}
+
+  /* custom cursor — a glowing silk node */
+  .cursor-dot,.cursor-ring{
+    position:fixed;top:0;left:0;z-index:9;pointer-events:none;
+    border-radius:50%;will-change:transform;
+  }
+  .cursor-dot{
+    width:5px;height:5px;margin:-2.5px 0 0 -2.5px;
+    background:var(--gold);
+    box-shadow:0 0 10px 2px rgba(244,213,138,0.8);
+  }
+  .cursor-ring{
+    width:30px;height:30px;margin:-15px 0 0 -15px;
+    border:1px solid rgba(216,224,240,0.4);
+    transition:width .35s ease,height .35s ease,margin .35s ease,border-color .35s ease;
+  }
+  body.touch .cursor-dot,body.touch .cursor-ring{display:none;}
+
+  @media (max-width:640px){
+    body{cursor:auto;}
+    .what{max-width:28ch;}
+    .eyebrow{letter-spacing:0.4em;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .grain{animation:none;}
+  }
+</style>
+</head>
+<body>
+  <div class="atmosphere"></div>
+  <canvas id="web"></canvas>
+  <div class="grain"></div>
+
+  <main class="stage">
+    <p class="eyebrow" id="eyebrow">The voice behind the founder</p>
+    <h1 id="title">Invisible <span class="em">Scribe</span></h1>
+    <p class="sub" id="sub">The unseen hand behind the story.</p>
+    <p class="what" id="what">Premium ghostwriting that builds your authority while you stay in the build.</p>
+    <p class="contact" id="contact">
+      <a href="mailto:boubacar@catalystworks.consulting">boubacar@catalystworks.consulting<span class="thread"></span></a>
+    </p>
+  </main>
+
+  <div class="cursor-ring" id="ring"></div>
+  <div class="cursor-dot" id="dot"></div>
+
+<script>
+(function(){
+  'use strict';
+  var canvas = document.getElementById('web');
+  var ctx = canvas.getContext('2d');
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var W=0, H=0, CX=0, CY=0;
+  var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(isTouch){ document.body.classList.add('touch'); }
+
+  // ---- pointer (real cursor on desktop, auto-orbit on touch) ----
+  var pointer = { x:0, y:0, tx:0, ty:0, active:false };
+  var autoAngle = 0;
+
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    CX = W*0.5; CY = H*0.46;
+    canvas.width = W*DPR; canvas.height = H*DPR;
+    canvas.style.width = W+'px'; canvas.style.height = H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    buildWeb();
+    pointer.x = pointer.tx = CX; pointer.y = pointer.ty = CY;
+  }
+
+  // ---- WEB GEOMETRY: radial anchors + concentric rings = orb web ----
+  var spokes = [];      // {angle, len, ax, ay (anchor end), nodes:[{r}]}
+  var rings = [];       // ring radii (fraction of maxR)
+  var threads = [];     // weavable segments: {ax,ay,bx,by, grow:0..1, delay, dur, kind}
+  var motes = [];       // drifting particles of light
+  var maxR = 0;
+
+  function buildWeb(){
+    spokes.length=0; rings.length=0; threads.length=0; motes.length=0;
+    var shortSide = Math.min(W,H);
+    maxR = shortSide * (W < 640 ? 0.46 : 0.52);
+
+    var SPOKES = W < 640 ? 11 : 16;
+    var RINGS  = W < 640 ? 5 : 7;
+
+    // irregular ring radii so it feels hand-spun, not mechanical
+    for(var r=1;r<=RINGS;r++){
+      var base = (r/RINGS);
+      var jitter = (Math.sin(r*1.7)*0.018);
+      rings.push(maxR * (0.16 + base*0.84 + jitter));
+    }
+
+    // spokes radiate from a slightly-off center, each with organic length + sag
+    for(var s=0;s<SPOKES;s++){
+      var a = (s/SPOKES)*Math.PI*2 + Math.sin(s*0.9)*0.04;
+      var lenMul = 0.9 + Math.sin(s*2.3)*0.12;
+      var len = maxR*lenMul;
+      spokes.push({
+        angle:a,
+        len:len,
+        ax:CX + Math.cos(a)*len,
+        ay:CY + Math.sin(a)*len,
+        wob: Math.sin(s*3.1)   // per-spoke wobble seed
+      });
+    }
+
+    // ---- compose threads in weaving order ----
+    // 1) spokes grow outward first
+    for(var i=0;i<spokes.length;i++){
+      var sp=spokes[i];
+      threads.push({
+        ax:CX, ay:CY, bx:sp.ax, by:sp.ay,
+        kind:'spoke', spoke:i,
+        delay: 200 + i*55,
+        dur: 900,
+        grow:0
+      });
+    }
+    // 2) capture spiral: connect ring points between adjacent spokes, ring by ring
+    var spokeStart = threads.length;
+    for(var ri=0; ri<rings.length; ri++){
+      for(var si=0; si<spokes.length; si++){
+        var sA = spokes[si];
+        var sB = spokes[(si+1)%spokes.length];
+        var rr = rings[ri];
+        // pinch the ring radius slightly per-spoke for a living, uneven catch-thread
+        var rA = rr * (1 + sA.wob*0.03);
+        var rB = rr * (1 + sB.wob*0.03);
+        threads.push({
+          ax: CX + Math.cos(sA.angle)*rA, ay: CY + Math.sin(sA.angle)*rA,
+          bx: CX + Math.cos(sB.angle)*rB, by: CY + Math.sin(sB.angle)*rB,
+          kind:'capture', ring:ri,
+          delay: 1100 + ri*420 + si*14,
+          dur: 520,
+          grow:0,
+          sag: 0.10 + (ri/rings.length)*0.06   // outer rings sag more
+        });
+      }
+    }
+
+    // 3) light motes drift along the silk
+    var moteCount = W < 640 ? 26 : 46;
+    for(var m=0;m<moteCount;m++){
+      motes.push(seedMote());
+    }
+  }
+
+  function seedMote(){
+    var ri = Math.floor(Math.random()*rings.length);
+    return {
+      ring: ri,
+      ang: Math.random()*Math.PI*2,
+      speed: (0.00006 + Math.random()*0.00016) * (Math.random()<0.5?1:-1),
+      size: 0.6 + Math.random()*1.5,
+      twk: Math.random()*Math.PI*2,
+      alpha: 0.2 + Math.random()*0.5
+    };
+  }
+
+  // quadratic point helper for sag
+  function qpoint(ax,ay,bx,by,sag,t){
+    var mx=(ax+bx)/2, my=(ay+by)/2;
+    // sag toward center for a gravity-pulled silk look
+    var dx=CX-mx, dy=CY-my;
+    var cx=mx + dx*sag, cy=my + dy*sag;
+    var it=1-t;
+    return {
+      x: it*it*ax + 2*it*t*cx + t*t*bx,
+      y: it*it*ay + 2*it*t*cy + t*t*by
+    };
+  }
+
+  // ---- animation clock ----
+  var startT = null;
+  var revealed = { eyebrow:false, title:false, sub:false, what:false, contact:false };
+
+  function fadeIn(id, delay, transY){
+    var el = document.getElementById(id);
+    el.style.transition = 'opacity 1.8s cubic-bezier(0.22,1,0.36,1) '+delay+'ms, transform 1.8s cubic-bezier(0.22,1,0.36,1) '+delay+'ms';
+    el.style.transform = 'translateY('+(transY||0)+'px)';
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        el.style.opacity = (id==='what'||id==='contact'||id==='sub'||id==='eyebrow')?'1':'1';
+        el.style.transform = 'translateY(0)';
+      });
+    });
+  }
+
+  var wordsTriggered = false;
+  function triggerWords(){
+    if(wordsTriggered) return; wordsTriggered = true;
+    fadeIn('eyebrow', 0, -8);
+    fadeIn('title', 260, 14);
+    fadeIn('sub', 760, 10);
+    fadeIn('what', 1080, 10);
+    fadeIn('contact', 1420, 8);
+  }
+
+  function draw(now){
+    if(startT===null) startT = now;
+    var T = now - startT;
+
+    // pointer easing
+    if(isTouch || (!pointer.active && T<1)){ /* keep center until interaction */ }
+    autoAngle += 0.0016;
+    if(isTouch || !pointer.active){
+      // gentle auto-orbit so mobile + idle desktop still feels alive
+      pointer.tx = CX + Math.cos(autoAngle*0.9)*maxR*0.30;
+      pointer.ty = CY + Math.sin(autoAngle*1.3)*maxR*0.20;
+    }
+    pointer.x += (pointer.tx - pointer.x)*0.06;
+    pointer.y += (pointer.ty - pointer.y)*0.06;
+
+    ctx.clearRect(0,0,W,H);
+    ctx.lineCap='round';
+
+    // breathing factor for the whole web
+    var breathe = 1 + Math.sin(T*0.0006)*0.006;
+
+    // --- draw threads ---
+    var allDone = true;
+    for(var i=0;i<threads.length;i++){
+      var th = threads[i];
+      var local = T - th.delay;
+      if(local < 0){ allDone=false; continue; }
+      var g = Math.min(1, local/th.dur);
+      // ease-out grow
+      th.grow = 1 - Math.pow(1-g, 3);
+      if(g < 1) allDone=false;
+
+      drawThread(th, breathe, T);
+    }
+
+    // when the web is essentially complete, resolve the words
+    if(allDone && !wordsTriggered){ triggerWords(); }
+    // safety: trigger words by time even if something stalls
+    if(T > 4200 && !wordsTriggered){ triggerWords(); }
+
+    // --- draw light motes riding the silk ---
+    for(var m=0;m<motes.length;m++){
+      var mo = motes[m];
+      if(mo.ring >= rings.length) { motes[m]=seedMote(); continue; }
+      mo.ang += mo.speed*16.7;
+      var rr = rings[mo.ring]*breathe;
+      // pull motes toward cursor slightly (shimmer response)
+      var mx = CX + Math.cos(mo.ang)*rr;
+      var my = CY + Math.sin(mo.ang)*rr;
+      var dx = pointer.x-mx, dy=pointer.y-my;
+      var d2 = dx*dx+dy*dy;
+      var pull = Math.min(1, 9000/(d2+9000));
+      mx += dx*pull*0.10; my += dy*pull*0.10;
+      var tw = (Math.sin(T*0.004 + mo.twk)*0.5+0.5);
+      var a = mo.alpha * (0.4+0.6*tw) * (wordsTriggered?1:Math.min(1,(T-th_first_delay())/1200));
+      ctx.beginPath();
+      ctx.arc(mx,my, mo.size*(0.8+tw*0.7), 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(244,219,160,'+ (a*0.9).toFixed(3) +')';
+      ctx.shadowColor='rgba(244,213,138,0.9)';
+      ctx.shadowBlur=8;
+      ctx.fill();
+      ctx.shadowBlur=0;
+    }
+
+    // central node glow (the unseen weaver's anchor)
+    var pulse = 0.5+0.5*Math.sin(T*0.0014);
+    var grd = ctx.createRadialGradient(CX,CY,0,CX,CY, 60+pulse*18);
+    grd.addColorStop(0,'rgba(244,213,138,'+(0.18+pulse*0.12).toFixed(3)+')');
+    grd.addColorStop(0.4,'rgba(216,224,240,0.05)');
+    grd.addColorStop(1,'rgba(6,7,13,0)');
+    ctx.fillStyle=grd;
+    ctx.beginPath();ctx.arc(CX,CY,78,0,Math.PI*2);ctx.fill();
+
+    requestAnimationFrame(draw);
+  }
+
+  function th_first_delay(){ return 200; }
+
+  function drawThread(th, breathe, T){
+    // cursor proximity makes silk shimmer brighter + tremble
+    var midx=(th.ax+th.bx)/2, midy=(th.ay+th.by)/2;
+    var dx=pointer.x-midx, dy=pointer.y-midy;
+    var dist=Math.sqrt(dx*dx+dy*dy);
+    var prox = Math.max(0, 1 - dist/(maxR*0.6));   // 0..1 near cursor
+    prox = prox*prox;
+
+    var sag = th.sag || 0;
+    var tremble = prox * 6 * Math.sin(T*0.012 + th.delay);
+
+    // endpoints scaled by breathe around center
+    var ax = CX + (th.ax-CX)*breathe;
+    var ay = CY + (th.ay-CY)*breathe;
+    var bx = CX + (th.bx-CX)*breathe;
+    var by = CY + (th.by-CY)*breathe;
+
+    var steps = 18;
+    var endStep = Math.max(1, Math.floor(steps*th.grow));
+
+    // base silver silk + gold shimmer when near cursor
+    var baseA = (th.kind==='spoke'?0.42:0.30);
+    var alpha = baseA + prox*0.5;
+    var glow = 1.4 + prox*5.0;
+
+    ctx.beginPath();
+    for(var s=0;s<=endStep;s++){
+      var t = s/steps;
+      var p = qpoint(ax,ay,bx,by,sag,t);
+      // perpendicular tremble near cursor
+      if(tremble){
+        var nx = -(by-ay), ny=(bx-ax);
+        var nl = Math.hypot(nx,ny)||1;
+        var off = Math.sin(t*Math.PI)*tremble;
+        p.x += (nx/nl)*off; p.y += (ny/nl)*off;
+      }
+      if(s===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    }
+    // gold shimmer overlay near cursor, silver elsewhere
+    var r = Math.round(216 + (244-216)*prox);
+    var g = Math.round(224 + (213-224)*prox);
+    var b = Math.round(240 + (138-240)*prox);
+    ctx.strokeStyle='rgba('+r+','+g+','+b+','+alpha.toFixed(3)+')';
+    ctx.lineWidth = (th.kind==='spoke'?0.8:0.6) + prox*0.9;
+    ctx.shadowColor='rgba(180,200,255,'+(0.25+prox*0.6)+')';
+    ctx.shadowBlur=glow;
+    ctx.stroke();
+    ctx.shadowBlur=0;
+
+    // dewdrop nodes at growing tip
+    if(th.grow>0.05 && th.grow<1){
+      var tip=qpoint(ax,ay,bx,by,sag,th.grow);
+      ctx.beginPath();
+      ctx.arc(tip.x,tip.y, 1.1+prox*1.4,0,Math.PI*2);
+      ctx.fillStyle='rgba(244,219,160,'+(0.6+prox*0.4)+')';
+      ctx.shadowColor='rgba(244,213,138,0.9)';ctx.shadowBlur=6;
+      ctx.fill();ctx.shadowBlur=0;
+    }
+  }
+
+  // ---- cursor element easing ----
+  var dotEl=document.getElementById('dot'), ringEl=document.getElementById('ring');
+  var cur={x:0,y:0}, ring={x:0,y:0};
+  function cursorLoop(){
+    cur.x += (pointer.tx-cur.x)*0.35; cur.y += (pointer.ty-cur.y)*0.35;
+    ring.x += (pointer.tx-ring.x)*0.14; ring.y += (pointer.ty-ring.y)*0.14;
+    if(dotEl) dotEl.style.transform='translate('+pointer.tx+'px,'+pointer.ty+'px)';
+    if(ringEl) ringEl.style.transform='translate('+ring.x+'px,'+ring.y+'px)';
+    requestAnimationFrame(cursorLoop);
+  }
+
+  window.addEventListener('mousemove', function(e){
+    pointer.active=true;
+    pointer.tx=e.clientX; pointer.ty=e.clientY;
+  }, {passive:true});
+  window.addEventListener('mouseleave', function(){ pointer.active=false; });
+  window.addEventListener('touchmove', function(e){
+    if(e.touches && e.touches[0]){
+      pointer.active=true;
+      pointer.tx=e.touches[0].clientX; pointer.ty=e.touches[0].clientY;
+    }
+  }, {passive:true});
+  window.addEventListener('touchend', function(){ pointer.active=false; });
+
+  window.addEventListener('resize', resize, {passive:true});
+
+  // boot
+  resize();
+  requestAnimationFrame(draw);
+  if(!isTouch) requestAnimationFrame(cursorLoop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Invisible Scribe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Mr+Dafoe&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --void:#0a0907;
+    --void-2:#13110d;
+    --gold:#d9a84e;
+    --gold-soft:#caa05a;
+    --ink:#e8e2d4;
+    --ink-dim:#9a917f;
+    --paper:#f2 ;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;width:100%;overflow:hidden;background:var(--void);}
+  body{
+    font-family:'Cormorant Garamond', serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    position:fixed;inset:0;
+  }
+
+  /* ---- The scene ---- */
+  .stage{
+    position:absolute;inset:0;
+    display:grid;
+    place-items:center;
+    background:
+      radial-gradient(120% 90% at 50% 42%, rgba(217,168,78,0.16) 0%, rgba(217,168,78,0.05) 26%, rgba(10,9,7,0.0) 55%),
+      radial-gradient(140% 120% at 50% 120%, #16130d 0%, var(--void) 60%),
+      var(--void);
+  }
+  /* breathing warm pool of light */
+  .pool{
+    position:absolute;
+    top:42%;left:50%;
+    width:min(70vw,720px);height:min(70vw,720px);
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 50% 50%, rgba(228,196,128,0.22) 0%, rgba(217,168,78,0.10) 30%, rgba(10,9,7,0) 62%);
+    filter:blur(8px);
+    animation:breathe 7s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes breathe{
+    0%,100%{opacity:.82;transform:translate(-50%,-50%) scale(1);}
+    50%{opacity:1;transform:translate(-50%,-50%) scale(1.06);}
+  }
+  /* film grain */
+  .grain{
+    position:absolute;inset:-50%;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    opacity:.05;
+    mix-blend-mode:overlay;
+    pointer-events:none;
+    animation:grain 1.4s steps(2) infinite;
+  }
+  @keyframes grain{0%{transform:translate(0,0)}50%{transform:translate(-2%,1%)}100%{transform:translate(1%,-1%)}}
+
+  /* ---- writing composition ---- */
+  .composition{
+    position:relative;
+    width:min(86vw,640px);
+    z-index:3;
+    transform:translateY(-2vh);
+  }
+  .writing-wrap{position:relative;width:100%;}
+  svg.write{width:100%;height:auto;display:block;overflow:visible;}
+
+  /* script brand word, real font face */
+  .scribe-text{
+    font-family:'Mr Dafoe', cursive;
+    font-size:118px;
+    fill:transparent;
+    stroke:var(--ink);
+    stroke-width:1.1;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    filter:drop-shadow(0 0 7px rgba(217,168,78,0.32));
+    /* draw-on via dash offset; --len set precisely in JS from getComputedTextLength scaled */
+    stroke-dasharray:var(--len, 2600);
+    stroke-dashoffset:var(--len, 2600);
+    animation:draw 6.4s ease-in-out 1s forwards, inkfill 2.2s ease 6.4s forwards;
+  }
+  /* warm gold bleed sitting under the ink */
+  .ink-bleed-text{
+    font-family:'Mr Dafoe', cursive;
+    font-size:118px;
+    fill:transparent;
+    stroke:rgba(217,168,78,0.28);
+    stroke-width:5;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    filter:blur(3px);
+    stroke-dasharray:var(--len, 2600);
+    stroke-dashoffset:var(--len, 2600);
+    animation:draw 6.4s ease-in-out 1.05s forwards;
+  }
+  @keyframes draw{ to{ stroke-dashoffset:0; } }
+  /* once written, let the ink settle into a filled, warmer stroke */
+  @keyframes inkfill{ to{ fill:rgba(232,226,212,0.94); stroke-width:0.5; } }
+
+  /* the composition fades in once and holds (the write itself is the motion) */
+  .composition{ opacity:1; }
+
+  /* ---- the floating pen ---- */
+  .pen{
+    position:absolute;
+    top:0;left:0;
+    width:clamp(90px,16vw,150px);
+    transform-origin:88% 92%;
+    z-index:5;
+    will-change:transform;
+    filter:drop-shadow(0 14px 22px rgba(0,0,0,0.6));
+    /* travels left-to-right tracing the word as it is written, then drifts up + rests */
+    animation:penTravel 13.4s cubic-bezier(.45,0,.55,1) forwards, penBob 3.6s ease-in-out infinite;
+    pointer-events:none;
+  }
+  /* nib glow tracks the active writing window (1s -> 7.4s) */
+  .pen .nib-glow{ animation:nibGlow 13.4s ease-in-out forwards; }
+  @keyframes nibGlow{
+    0%,6%{opacity:0;}
+    9%{opacity:1;}
+    52%{opacity:1;}
+    60%,100%{opacity:0;}
+  }
+  /* nib (bottom tip) sweeps across the word during the 1s..7.4s draw window, then lifts away */
+  @keyframes penTravel{
+    0%   { transform:translate(-30%, 4%)  rotate(-20deg); }
+    7%   { transform:translate(-26%, 8%)  rotate(-19deg); }  /* draw begins */
+    18%  { transform:translate(-12%, 5%)  rotate(-18deg); }
+    30%  { transform:translate(4%, 9%)    rotate(-20deg); }
+    42%  { transform:translate(22%, 5%)   rotate(-17deg); }
+    52%  { transform:translate(40%, 9%)   rotate(-19deg); }  /* draw ends ~55% */
+    58%  { transform:translate(52%, 3%)   rotate(-22deg); }
+    /* lift + drift up to rest, top-right */
+    74%  { transform:translate(58%, -28%) rotate(-28deg); }
+    100% { transform:translate(58%, -28%) rotate(-30deg); }
+  }
+  @keyframes penBob{
+    0%,100%{ margin-top:0; }
+    50%{ margin-top:-6px; }
+  }
+
+  /* ---- supporting text ---- */
+  .tagline{
+    position:relative;
+    z-index:3;
+    text-align:center;
+    margin-top:1.6rem;
+    opacity:0;
+    animation:rise 2.4s ease 6.6s forwards;
+  }
+  @keyframes rise{ from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
+  .tagline .lead{
+    font-style:italic;
+    font-size:clamp(1.05rem,2.4vw,1.5rem);
+    color:var(--gold-soft);
+    letter-spacing:.02em;
+  }
+  .tagline .what{
+    margin-top:1rem;
+    font-size:clamp(0.82rem,1.5vw,1.02rem);
+    line-height:1.7;
+    color:var(--ink-dim);
+    letter-spacing:.06em;
+    max-width:30rem;
+    margin-left:auto;margin-right:auto;
+    font-weight:400;
+  }
+
+  /* ---- contact CTA (persistent, subtle, bottom) ---- */
+  .contact{
+    position:absolute;
+    left:50%;bottom:clamp(1.4rem,4vh,2.6rem);
+    transform:translateX(-50%);
+    z-index:8;
+    text-align:center;
+    opacity:0;
+    animation:contactIn 2.4s ease 2.6s forwards;
+  }
+  @keyframes contactIn{ to{opacity:1;} }
+  .contact a{
+    color:var(--ink-dim);
+    text-decoration:none;
+    font-size:clamp(0.78rem,1.4vw,0.95rem);
+    letter-spacing:.34em;
+    text-transform:uppercase;
+    padding:.4rem 0;
+    position:relative;
+    transition:color .5s ease;
+  }
+  .contact a::after{
+    content:"";
+    position:absolute;left:0;bottom:-2px;
+    width:100%;height:1px;
+    background:linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+    transform:scaleX(0);
+    transform-origin:center;
+    transition:transform .6s cubic-bezier(.2,.8,.2,1);
+  }
+  .contact a:hover{ color:var(--gold); }
+  .contact a:hover::after{ transform:scaleX(1); }
+
+  /* corner mark */
+  .mark{
+    position:absolute;top:clamp(1.2rem,3vh,2rem);left:50%;
+    transform:translateX(-50%);
+    z-index:8;
+    font-size:.66rem;
+    letter-spacing:.5em;
+    text-transform:uppercase;
+    color:rgba(154,145,127,0.55);
+    padding-left:.5em;
+  }
+
+  /* vignette to deepen the cinema */
+  .vignette{
+    position:absolute;inset:0;z-index:6;pointer-events:none;
+    background:radial-gradient(120% 100% at 50% 45%, transparent 48%, rgba(0,0,0,0.55) 100%);
+  }
+
+  @media (max-width:480px){
+    .composition{ width:92vw; transform:translateY(-1vh); }
+    .tagline{ margin-top:1.4rem; }
+    .pen{ width:clamp(74px,24vw,110px); }
+    .contact a{ letter-spacing:.18em; font-size:.72rem; }
+    .mark{ letter-spacing:.34em; font-size:.6rem; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .pool,.grain{animation:none;}
+    .draw{animation-duration:.01s;}
+    .composition,.tagline,.pen{animation:none;opacity:1;}
+    .pen{transform:translate(70%,-14%) rotate(-30deg);}
+  }
+</style>
+</head>
+<body>
+  <main class="stage" role="img" aria-label="A fountain pen writing the words Invisible Scribe in a single pool of warm light.">
+    <div class="pool" aria-hidden="true"></div>
+
+    <div class="composition">
+      <div class="writing-wrap">
+        <!-- The brand word in a real script face, drawn on as the pen sweeps. -->
+        <svg class="write" viewBox="0 0 640 200" aria-hidden="true">
+          <!-- soft gold ink-bleed underlayer -->
+          <text class="ink-bleed-text" x="320" y="120" text-anchor="middle">Invisible<tspan dx="26">Scribe</tspan></text>
+          <!-- the stroked, draw-on script -->
+          <text id="scribeText" class="scribe-text" x="320" y="120" text-anchor="middle">Invisible<tspan dx="26">Scribe</tspan></text>
+        </svg>
+      </div>
+
+      <!-- Accessible engraved wordmark beneath the script for legibility + SEO -->
+      <h1 style="position:relative;z-index:4;text-align:center;margin-top:0.4rem;font-family:'Cormorant Garamond',serif;font-weight:500;letter-spacing:.42em;text-transform:uppercase;font-size:clamp(0.82rem,1.8vw,1.02rem);color:var(--gold);opacity:.78;padding-left:.42em;">
+        Invisible&nbsp;Scribe
+      </h1>
+
+      <div class="tagline">
+        <div class="lead">The voice behind the founder.</div>
+        <p class="what">Premium ghostwriting that builds your authority while you stay in the build.</p>
+      </div>
+    </div>
+
+    <!-- The floating pen, no hand -->
+    <svg class="pen" viewBox="0 0 120 360" aria-hidden="true">
+      <defs>
+        <linearGradient id="barrel" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#2a2620"/>
+          <stop offset=".45" stop-color="#0d0b08"/>
+          <stop offset=".55" stop-color="#1c1814"/>
+          <stop offset="1" stop-color="#050403"/>
+        </linearGradient>
+        <linearGradient id="trim" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#f0d18a"/>
+          <stop offset=".5" stop-color="#c79a45"/>
+          <stop offset="1" stop-color="#8a6a2c"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#ffe9b0" stop-opacity="0.9"/>
+          <stop offset="1" stop-color="#ffe9b0" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <!-- body -->
+      <rect x="44" y="20" width="32" height="210" rx="16" fill="url(#barrel)"/>
+      <!-- cap band -->
+      <rect x="44" y="58" width="32" height="10" fill="url(#trim)" opacity=".9"/>
+      <!-- clip -->
+      <path d="M70 26 q14 4 12 40 q-1 18 -8 22" fill="none" stroke="url(#trim)" stroke-width="4" stroke-linecap="round"/>
+      <!-- grip section -->
+      <path d="M48 230 q-2 30 12 52 q14 -22 12 -52 Z" fill="#171410"/>
+      <!-- gold nib -->
+      <path d="M52 250 q-4 44 8 86 q12 -42 8 -86 Z" fill="url(#trim)"/>
+      <line x1="60" y1="262" x2="60" y2="318" stroke="#5a4416" stroke-width="1.4"/>
+      <circle cx="60" cy="296" r="3" fill="#5a4416"/>
+      <!-- nib tip glow (ink point) -->
+      <circle class="nib-glow" cx="60" cy="338" r="20" fill="url(#glow)"/>
+      <circle class="nib-glow" cx="60" cy="338" r="3.4" fill="#ffe9b0"/>
+    </svg>
+
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <div class="mark">Invisible Scribe</div>
+
+    <nav class="contact">
+      <a href="mailto:boubacar@catalystworks.consulting">boubacar@catalystworks.consulting</a>
+    </nav>
+  </main>
+
+  <script>
+    // Measure the script text length so the draw-on dash animation is exact.
+    // Must run AFTER the Mr Dafoe font loads, else length is wrong + restart is needed.
+    function calibrate(){
+      try{
+        var t = document.getElementById('scribeText');
+        if(!t || !t.getComputedTextLength) return;
+        var len = t.getComputedTextLength();
+        if(!len || !isFinite(len)) return;
+        // text outline perimeter is ~2.6x the baseline length for a flowing script
+        var dash = Math.ceil(len * 2.6);
+        document.querySelectorAll('.scribe-text, .ink-bleed-text').forEach(function(el){
+          el.style.setProperty('--len', dash);
+          // restart the animation so the new dash length takes effect cleanly
+          el.style.animation = 'none';
+          void el.getBoundingClientRect();
+          el.style.animation = '';
+        });
+      }catch(e){}
+    }
+    function whenFontReady(name, cb){
+      if(document.fonts && document.fonts.ready){
+        Promise.all([
+          document.fonts.load('118px "Mr Dafoe"'),
+          document.fonts.ready
+        ]).then(cb).catch(cb);
+      } else { window.addEventListener('load', cb); }
+    }
+    whenFontReady('Mr Dafoe', calibrate);
+  </script>
+</body>
+</html>

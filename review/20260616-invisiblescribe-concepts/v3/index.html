@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invisible Scribe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;0,6..96,900;1,6..96,400&family=Archivo:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B0B0C;
+    --bone:#EDE8DC;
+    --bone-dim:rgba(237,232,220,0.55);
+    --bone-faint:rgba(237,232,220,0.16);
+    --accent:#A8956F;        /* muted manuscript gold */
+    --ease:cubic-bezier(0.22,1,0.36,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;width:100%;overflow:hidden;background:var(--ink);}
+  body{
+    font-family:'Archivo',sans-serif;
+    color:var(--bone);
+    -webkit-font-smoothing:antialiased;
+    position:relative;
+  }
+
+  /* paper grain + vignette over the whole black field */
+  .field{
+    position:fixed;inset:0;overflow:hidden;
+    background:
+      radial-gradient(120% 90% at 50% 42%, rgba(168,149,111,0.07), transparent 60%),
+      radial-gradient(140% 120% at 50% 120%, rgba(0,0,0,0.55), transparent 55%),
+      var(--ink);
+  }
+  .grain{
+    position:fixed;inset:-50%;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    opacity:0.05;mix-blend-mode:screen;pointer-events:none;z-index:60;
+    animation:grainShift 7s steps(6) infinite;
+  }
+  @keyframes grainShift{
+    0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}
+    40%{transform:translate(2%,-3%)}60%{transform:translate(-2%,1%)}
+    80%{transform:translate(3%,2%)}100%{transform:translate(0,0)}
+  }
+
+  /* THE GHOST PRESENCE — the absent author drifting behind the type */
+  .presence{
+    position:fixed;left:50%;top:46%;
+    width:min(54vh,46vw);height:min(54vh,46vw);
+    transform:translate(-50%,-50%);
+    z-index:1;pointer-events:none;
+    will-change:transform,opacity;
+  }
+  .presence svg{width:100%;height:100%;overflow:visible;}
+  .presence path{
+    fill:none;stroke:var(--accent);stroke-width:0.6;
+    opacity:0.20;
+    animation:breathe 9s var(--ease) infinite;
+  }
+  @keyframes breathe{
+    0%,100%{opacity:0.10;transform:scale(0.97)}
+    50%{opacity:0.26;transform:scale(1.03)}
+  }
+
+  /* MAIN STAGE */
+  .stage{
+    position:relative;z-index:10;
+    height:100%;width:100%;
+    display:flex;flex-direction:column;
+    justify-content:center;align-items:center;
+    padding:clamp(20px,4vw,64px);
+    text-align:center;
+  }
+
+  /* eyebrow */
+  .eyebrow{
+    font-size:clamp(0.6rem,0.9vw,0.78rem);
+    letter-spacing:0.42em;text-transform:uppercase;
+    color:var(--accent);font-weight:600;
+    margin-bottom:clamp(14px,2.4vh,30px);
+    opacity:0;animation:fadeUp 1.1s var(--ease) 0.2s forwards;
+  }
+
+  /* THE KINETIC GHOST WORDMARK */
+  .word-wrap{position:relative;width:100%;display:flex;justify-content:center;}
+  .word{
+    font-family:'Bodoni Moda',serif;
+    font-weight:900;
+    line-height:0.82;
+    letter-spacing:-0.02em;
+    text-transform:uppercase;
+    font-size:clamp(3.4rem,15.5vw,15rem);
+    position:relative;
+    will-change:transform;
+  }
+  .word .line{display:block;position:relative;}
+  .word .line.two{
+    font-style:italic;font-weight:400;
+    letter-spacing:0.005em;
+    color:transparent;
+    -webkit-text-stroke:1px var(--bone-dim);
+    text-stroke:1px var(--bone-dim);
+  }
+  /* per-letter cells for the breathing morph */
+  .ltr{
+    display:inline-block;position:relative;
+    transform:translateY(110%);
+    will-change:transform,opacity;
+  }
+  .js-ready .ltr.hidden{transform:translateY(110%);}
+  /* without JS letters are visible (no translate applied by default after reveal) */
+
+  /* the quill living in the negative space, masked by the word's center */
+  .quill{
+    position:absolute;left:50%;top:50%;
+    transform:translate(-50%,-50%) rotate(-32deg);
+    width:clamp(120px,17vw,300px);height:auto;
+    z-index:-1;pointer-events:none;
+    opacity:0;
+  }
+  .quill path,.quill line{
+    stroke:var(--accent);stroke-width:1.4;fill:none;
+    stroke-linecap:round;stroke-linejoin:round;
+  }
+
+  /* subline / what-it-is */
+  .sub{
+    margin-top:clamp(20px,3.6vh,46px);
+    max-width:46ch;
+    font-size:clamp(0.84rem,1.15vw,1.06rem);
+    line-height:1.55;
+    color:var(--bone-dim);
+    font-weight:400;
+    opacity:0;animation:fadeUp 1.2s var(--ease) 1.05s forwards;
+  }
+  .sub .em{color:var(--bone);font-weight:500;}
+
+  /* contact CTA */
+  .contact{
+    margin-top:clamp(20px,3.4vh,40px);
+    display:inline-flex;align-items:center;gap:0.7em;
+    font-size:clamp(0.72rem,0.95vw,0.86rem);
+    letter-spacing:0.16em;text-transform:uppercase;
+    color:var(--bone);text-decoration:none;font-weight:500;
+    padding-bottom:5px;position:relative;
+    cursor:pointer;
+    opacity:0;animation:fadeUp 1.2s var(--ease) 1.35s forwards;
+  }
+  .contact .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 0 rgba(168,149,111,0.6);animation:pulse 2.6s var(--ease) infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(168,149,111,0.45)}70%{box-shadow:0 0 0 9px rgba(168,149,111,0)}100%{box-shadow:0 0 0 0 rgba(168,149,111,0)}}
+  .contact::after{content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;
+    background:var(--accent);transform:scaleX(0.001);transform-origin:left;
+    transition:transform 0.5s var(--ease);}
+  .contact:hover::after{transform:scaleX(1);}
+  .contact:hover{color:var(--accent);}
+  .contact:focus-visible{outline:2px solid var(--accent);outline-offset:6px;}
+
+  /* corner marks — editorial framing without a box */
+  .mark{position:fixed;z-index:20;font-family:'Archivo';font-size:0.62rem;
+    letter-spacing:0.28em;text-transform:uppercase;color:var(--bone-faint);
+    opacity:0;animation:fadeUp 1s var(--ease) 1.6s forwards;}
+  .mark.tl{top:clamp(18px,3vh,34px);left:clamp(18px,3vw,40px);}
+  .mark.br{bottom:clamp(18px,3vh,34px);right:clamp(18px,3vw,40px);text-align:right;}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+  .word .line{white-space:nowrap;}
+  @media (max-width:640px){
+    .word{font-size:clamp(2.5rem,13.2vw,4.4rem);line-height:0.9;}
+    .presence{width:78vw;height:78vw;top:43%;}
+    .sub{font-size:0.86rem;max-width:30ch;margin-top:26px;}
+    .eyebrow{letter-spacing:0.34em;}
+    .mark{display:none;}
+  }
+  @media (max-width:400px){
+    .word{font-size:clamp(2.3rem,12vw,3.6rem);}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:0.001s !important;animation-iteration-count:1 !important;}
+    .ltr{transform:none !important;}
+  }
+</style>
+</head>
+<body>
+  <div class="field"></div>
+
+  <!-- the absent author: a slow concentric quill-stroke field -->
+  <div class="presence" id="presence">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M50 8 C72 8 90 26 90 50 C90 74 72 92 50 92 C28 92 10 74 10 50 C10 26 28 8 50 8Z"/>
+      <path d="M50 20 C66 20 78 33 78 50 C78 67 66 80 50 80 C34 80 22 67 22 50 C22 33 34 20 50 20Z" style="animation-delay:-2s"/>
+      <path d="M50 32 C60 32 66 40 66 50 C66 60 60 68 50 68 C40 68 34 60 34 50 C34 40 40 32 50 32Z" style="animation-delay:-4s"/>
+    </svg>
+  </div>
+
+  <main class="stage">
+    <p class="eyebrow">The voice behind the founder</p>
+
+    <div class="word-wrap" id="wordwrap">
+      <h1 class="word" id="word">
+        <span class="line one" data-text="INVISIBLE">INVISIBLE</span>
+        <span class="line two" data-text="SCRIBE">SCRIBE
+          <!-- quill nested in the negative space of the italic outline word -->
+          <svg class="quill" id="quill" viewBox="0 0 100 120" aria-hidden="true">
+            <path d="M78 10 C50 26 30 52 22 96"/>
+            <path d="M78 10 C70 30 58 42 40 50 C54 50 64 46 70 40"/>
+            <path d="M22 96 L16 110"/>
+            <line x1="22" y1="96" x2="30" y2="92"/>
+          </svg>
+        </span>
+      </h1>
+    </div>
+
+    <p class="sub"><span class="em">Premium ghostwriting that builds your authority</span> while you stay in the build. The thinking is yours. The sentences are mine. No one ever knows I was here.</p>
+
+    <a class="contact" href="mailto:boubacar@catalystworks.consulting">
+      <span class="dot"></span>
+      boubacar@catalystworks.consulting
+    </a>
+  </main>
+
+  <span class="mark tl">Invisible Scribe</span>
+  <span class="mark br">Ghostwriting &nbsp;/&nbsp; B2B founders &amp; operators</span>
+  <div class="grain"></div>
+
+<script>
+(function(){
+  document.documentElement.classList.add('js-ready');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* split each line into letter cells */
+  function splitLine(el){
+    var text = el.getAttribute('data-text');
+    var quill = el.querySelector('.quill');
+    // wipe text nodes only, keep nested svg
+    Array.from(el.childNodes).forEach(function(n){ if(n.nodeType===3) el.removeChild(n); });
+    var cells=[];
+    var frag=document.createDocumentFragment();
+    for(var i=0;i<text.length;i++){
+      var ch=text[i];
+      var outer=document.createElement('span');
+      outer.style.cssText='display:inline-block;overflow:hidden;vertical-align:top;';
+      var inner=document.createElement('span');
+      inner.className='ltr';
+      inner.textContent=ch;
+      outer.appendChild(inner);
+      frag.appendChild(outer);
+      cells.push(inner);
+    }
+    el.insertBefore(frag, el.firstChild);
+    return cells;
+  }
+
+  var lineOne=document.querySelector('.line.one');
+  var lineTwo=document.querySelector('.line.two');
+  var cells=splitLine(lineOne).concat(splitLine(lineTwo));
+
+  if(reduce){
+    cells.forEach(function(c){c.style.transform='none';});
+    document.getElementById('quill').style.opacity='0.55';
+    return;
+  }
+
+  /* reveal: rise each letter from below */
+  cells.forEach(function(c,i){
+    c.style.transition='transform 0.95s cubic-bezier(0.22,1,0.36,1)';
+    c.style.transitionDelay=(0.25 + i*0.035)+'s';
+    requestAnimationFrame(function(){ c.style.transform='translateY(0)'; });
+  });
+
+  /* quill fades into the negative space after the word lands */
+  var quill=document.getElementById('quill');
+  setTimeout(function(){
+    quill.style.transition='opacity 2.2s ease';
+    quill.style.opacity='0.5';
+    // slow draw shimmer
+    var strokes=quill.querySelectorAll('path,line');
+    strokes.forEach(function(s){
+      var len=200;
+      try{ len=s.getTotalLength(); }catch(e){}
+      s.style.strokeDasharray=len;
+      s.style.strokeDashoffset=len;
+      s.style.transition='stroke-dashoffset 2.4s cubic-bezier(0.22,1,0.36,1)';
+      requestAnimationFrame(function(){ s.style.strokeDashoffset='0'; });
+    });
+  }, 1500);
+
+  /* breathing morph of the wordmark — slow continuous tracking + weight drift */
+  var word=document.getElementById('word');
+  var t=0;
+  function breathe(){
+    t+=0.006;
+    var s=Math.sin(t);
+    word.style.letterSpacing=(-0.02 + s*0.012)+'em';
+    word.style.transform='translateY('+(s*6)+'px)';
+    requestAnimationFrame(breathe);
+  }
+  setTimeout(function(){ requestAnimationFrame(breathe); }, 1600);
+
+  /* cursor-reactive parallax — type and presence drift in opposite depths */
+  var presence=document.getElementById('presence');
+  var wrap=document.getElementById('wordwrap');
+  var tx=0,ty=0,cx=0,cy=0;
+  window.addEventListener('pointermove',function(e){
+    tx=(e.clientX/window.innerWidth - 0.5);
+    ty=(e.clientY/window.innerHeight - 0.5);
+  });
+  function loop(){
+    cx += (tx-cx)*0.05; cy += (ty-cy)*0.05;
+    wrap.style.transform='translate('+(cx*-22)+'px,'+(cy*-14)+'px)';
+    presence.style.transform='translate(calc(-50% + '+(cx*40)+'px), calc(-50% + '+(cy*30)+'px))';
+    quill.style.marginLeft=(cx*18)+'px';
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+</script>
+</body>
+</html>
