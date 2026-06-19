@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Upwork Job Board -- review, bid, apply</title>
+<style>
+ :root {
+ --bg: #0f1117;
+ --card: #1a1d27;
+ --card-2: #161922;
+ --card-border: #252836;
+ --teal: #00B7C2;
+ --clay: #B47C57;
+ --text: #e8eaf0;
+ --text-muted: #8b90a0;
+ --text-dim: #6b7080;
+ --green: #22c55e;
+ --amber: #f59e0b;
+ --red: #ef4444;
+ --gray: #4b5563;
+ --blue: #3b82f6;
+ --purple: #a855f7;
+ }
+
+ * { box-sizing: border-box; margin: 0; padding: 0; }
+
+ body {
+ background: var(--bg);
+ color: var(--text);
+ font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+ font-size: 15px;
+ line-height: 1.5;
+ min-height: 100vh;
+ -webkit-font-smoothing: antialiased;
+ }
+
+ .page-wrap {
+ max-width: 760px;
+ margin: 0 auto;
+ padding: 20px 16px 80px;
+ }
+
+ /* ORGANIC ACCENT RIBBON */
+ .ink-ribbon { display:block; width:100%; height:14px; margin: 4px 0 18px; opacity:0.85; }
+
+ /* HEADER */
+ .header { padding: 22px 0 18px; margin-bottom: 8px; }
+ .header-top { display:flex; align-items:flex-start; gap:12px; margin-bottom:14px; }
+ .cw-badge {
+ background: var(--teal); color:#0f1117; font-weight:700; font-size:11px;
+ letter-spacing:0.08em; padding:5px 9px; border-radius:5px; white-space:nowrap;
+ margin-top:3px; flex-shrink:0;
+ }
+ .header h1 { font-size:21px; font-weight:700; line-height:1.3; }
+ .header h1 span { color:var(--text-muted); font-weight:400; font-size:13.5px; display:block; margin-top:4px; }
+
+ .counts { display:flex; gap:9px; flex-wrap:wrap; margin-top:14px; }
+ .count-pill {
+ background:var(--card); border:1px solid var(--card-border); border-radius:20px;
+ padding:5px 13px; font-size:13px; display:flex; align-items:center; gap:6px;
+ }
+ .count-pill .num { font-weight:700; font-size:15px; }
+ .count-pill .label { color:var(--text-muted); }
+ .count-pill.apply .num { color:var(--green); }
+ .count-pill.skip .num { color:var(--red); }
+ .count-pill.flag .num { color:var(--amber); }
+
+ .note-strip {
+ background:var(--card-2); border:1px solid var(--card-border); border-radius:9px;
+ padding:11px 14px; font-size:12.5px; color:var(--text-muted); margin-bottom:18px;
+ line-height:1.55;
+ }
+ .note-strip b { color:var(--text); }
+
+ /* FILTER BAR */
+ .filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+ .filter-btn {
+ background:var(--card); border:1px solid var(--card-border); color:var(--text-muted);
+ border-radius:8px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer;
+ font-family:inherit; transition:all .15s var(--ease,ease);
+ }
+ .filter-btn:hover { border-color:var(--teal); color:var(--text); }
+ .filter-btn.active { background:var(--teal); color:#0f1117; border-color:var(--teal); }
+
+ /* SECTION LABEL */
+ .sec-label {
+ font-size:11px; letter-spacing:0.13em; text-transform:uppercase; color:var(--text-dim);
+ font-weight:700; margin:26px 0 12px;
+ }
+
+ /* RANKING TABLE */
+ .rank-wrap { border:1px solid var(--card-border); border-radius:12px; overflow:hidden; margin-bottom:8px; }
+ table.rank { width:100%; border-collapse:collapse; font-size:13px; }
+ table.rank thead th {
+ background:var(--card-2); color:var(--text-dim); font-weight:700; text-transform:uppercase;
+ letter-spacing:0.05em; font-size:10.5px; text-align:left; padding:10px 10px;
+ border-bottom:1px solid var(--card-border);
+ }
+ table.rank tbody tr {
+ border-bottom:1px solid var(--card-border); cursor:pointer; transition:background .12s ease;
+ }
+ table.rank tbody tr:last-child { border-bottom:none; }
+ table.rank tbody tr:hover { background:var(--card); }
+ table.rank td { padding:11px 10px; vertical-align:middle; }
+ table.rank td.rk { font-weight:700; color:var(--teal); font-size:14px; width:30px; }
+ table.rank td.role { font-weight:600; color:var(--text); line-height:1.35; }
+ table.rank td.role .who { display:block; color:var(--text-dim); font-weight:400; font-size:11px; margin-top:2px; }
+ table.rank td.rate { white-space:nowrap; font-variant-numeric:tabular-nums; color:var(--text); font-weight:600; }
+ .fitchip {
+ display:inline-block; padding:3px 8px; border-radius:5px; font-size:10.5px; font-weight:700;
+ letter-spacing:0.03em; white-space:nowrap;
+ }
+ .fit-top { background:rgba(34,197,94,0.16); color:#4ade80; }
+ .fit-green { background:rgba(34,197,94,0.10); color:#86efac; }
+ .fit-yellow { background:rgba(245,158,11,0.13); color:#fbbf24; }
+ .fit-skip { background:rgba(239,68,68,0.13); color:#f87171; }
+ .fit-flag { background:rgba(168,85,247,0.14); color:#c084fc; }
+
+ /* STATUS CHIP (shared) */
+ .status-chip {
+ display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:20px;
+ font-size:10.5px; font-weight:700; letter-spacing:0.03em; white-space:nowrap;
+ border:1px solid transparent;
+ }
+ .st-suggested { background:rgba(75,85,99,0.2); color:#9ca3af; border-color:#374151; }
+ .st-applied { background:rgba(0,183,194,0.14); color:var(--teal); border-color:rgba(0,183,194,0.4); }
+ .st-won { background:rgba(34,197,94,0.16); color:#4ade80; border-color:rgba(34,197,94,0.45); }
+ .st-lost { background:rgba(239,68,68,0.14); color:#f87171; border-color:rgba(239,68,68,0.4); }
+ .st-skip { background:rgba(75,85,99,0.15); color:#6b7280; border-color:#2d3340; }
+
+ /* JOB CARDS */
+ .cards { margin-top:6px; }
+ .job-card {
+ background:var(--card); border:1px solid var(--card-border); border-radius:12px;
+ margin-bottom:11px; overflow:hidden; transition:border-color .15s ease;
+ }
+ .job-card.hl { border-color:var(--teal); box-shadow:0 0 0 1px rgba(0,183,194,0.25); }
+ .job-head {
+ display:flex; align-items:flex-start; gap:12px; padding:15px 16px; cursor:pointer;
+ user-select:none;
+ }
+ .job-head:hover { background:var(--card-2); }
+ .jh-rank {
+ font-weight:700; color:var(--teal); font-size:15px; min-width:24px; padding-top:1px;
+ font-variant-numeric:tabular-nums;
+ }
+ .jh-main { flex:1; min-width:0; }
+ .jh-role { font-weight:700; font-size:15px; line-height:1.35; margin-bottom:3px; }
+ .jh-who { color:var(--text-dim); font-size:12px; margin-bottom:8px; }
+ .jh-meta { display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
+ .jh-rate { font-size:12px; color:var(--text-muted); font-weight:600; font-variant-numeric:tabular-nums; }
+ .chev {
+ flex-shrink:0; color:var(--text-dim); transition:transform .2s ease; padding-top:2px;
+ }
+ .job-card.open .chev { transform:rotate(90deg); }
+ .job-card.open .job-head { background:var(--card-2); }
+
+ .job-body { display:none; padding:4px 16px 18px; border-top:1px solid var(--card-border); }
+ .job-card.open .job-body { display:block; }
+
+ .blk { margin-top:16px; }
+ .blk-label {
+ font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--teal);
+ font-weight:700; margin-bottom:7px;
+ }
+ .blk-label.warn { color:var(--amber); }
+ .blk p { font-size:13.5px; color:var(--text); line-height:1.6; margin-bottom:8px; }
+ .blk p:last-child { margin-bottom:0; }
+ .blk ul { margin:6px 0 6px 2px; list-style:none; }
+ .blk li { font-size:13px; color:var(--text-muted); line-height:1.55; padding-left:16px; position:relative; margin-bottom:5px; }
+ .blk li::before { content:"-"; position:absolute; left:0; color:var(--clay); }
+
+ .flagline {
+ background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:8px;
+ padding:10px 13px; font-size:12.5px; color:var(--amber); line-height:1.55; margin-top:12px;
+ }
+ .flagline b { color:#fcd34d; }
+ .readgate {
+ background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.35); border-radius:8px;
+ padding:10px 13px; font-size:12.5px; color:#c084fc; line-height:1.5; margin-top:12px;
+ }
+ .readgate b { color:#d8b4fe; }
+
+ /* NESTED TOGGLE (job post) */
+ .nested-toggle {
+ background:var(--card-2); border:1px solid var(--card-border); border-radius:8px;
+ padding:10px 13px; cursor:pointer; display:flex; align-items:center; gap:8px;
+ font-size:12.5px; font-weight:600; color:var(--text-muted); user-select:none;
+ }
+ .nested-toggle:hover { color:var(--text); }
+ .nested-toggle .nt-chev { transition:transform .2s ease; color:var(--text-dim); }
+ .nested-toggle.open .nt-chev { transform:rotate(90deg); }
+ .nested-body { display:none; padding:12px 4px 2px; }
+ .nested-toggle.open + .nested-body { display:block; }
+ .nested-body p { font-size:12.5px; color:var(--text-muted); line-height:1.6; margin-bottom:8px; }
+
+ /* COPY BLOCK */
+ .copy-block { margin-top:8px; }
+ .copy-field {
+ background:#0c0e14; border:1px solid var(--card-border); border-radius:9px;
+ margin-bottom:10px; overflow:hidden;
+ }
+ .copy-field-head {
+ display:flex; align-items:center; justify-content:space-between; gap:10px;
+ padding:8px 12px; background:var(--card-2); border-bottom:1px solid var(--card-border);
+ }
+ .copy-field-name { font-size:11px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-dim); }
+ .copy-btn {
+ background:var(--teal); color:#0f1117; border:none; border-radius:6px; padding:5px 12px;
+ font-size:11.5px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;
+ transition:background .15s ease;
+ }
+ .copy-btn:hover { background:#19cdd8; }
+ .copy-btn.done { background:var(--green); }
+ .copy-text {
+ padding:13px 14px; font-size:13px; line-height:1.65; color:#d4d8e2; white-space:pre-wrap;
+ font-family:inherit; max-height:none;
+ }
+ .copy-text.rate-text { font-weight:700; color:var(--text); font-size:14px; }
+
+ /* STATUS CONTROL */
+ .status-control { margin-top:18px; padding-top:14px; border-top:1px solid var(--card-border); }
+ .sc-label { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); font-weight:700; margin-bottom:9px; }
+ .sc-btns { display:flex; gap:7px; flex-wrap:wrap; }
+ .sc-btn {
+ background:var(--card-2); border:1px solid var(--card-border); color:var(--text-muted);
+ border-radius:7px; padding:7px 13px; font-size:12px; font-weight:600; cursor:pointer;
+ font-family:inherit; transition:all .12s ease;
+ }
+ .sc-btn:hover { border-color:var(--teal); color:var(--text); }
+ .sc-btn.sel[data-st="suggested"] { background:var(--gray); color:#fff; border-color:var(--gray); }
+ .sc-btn.sel[data-st="applied"] { background:var(--teal); color:#0f1117; border-color:var(--teal); }
+ .sc-btn.sel[data-st="won"] { background:var(--green); color:#0f1117; border-color:var(--green); }
+ .sc-btn.sel[data-st="lost"] { background:var(--red); color:#fff; border-color:var(--red); }
+ .sc-btn.sel[data-st="skip"] { background:#2d3340; color:#9ca3af; border-color:#3a4150; }
+
+ .extras { display:flex; gap:7px; flex-wrap:wrap; margin-top:12px; }
+ .extra-pill {
+ background:var(--card-2); border:1px solid var(--card-border); border-radius:6px;
+ padding:5px 10px; font-size:11.5px; color:var(--text-muted);
+ }
+ .extra-pill b { color:var(--text); font-weight:600; }
+
+ .ondemand {
+ font-size:12.5px; color:var(--text-dim); font-style:italic; margin-top:14px;
+ padding:9px 13px; background:var(--card-2); border-radius:8px; border:1px dashed var(--card-border);
+ }
+
+ .hidden { display:none !important; }
+
+ footer {
+ margin-top:34px; padding-top:18px; border-top:1px solid var(--card-border);
+ font-size:11.5px; color:var(--text-dim); line-height:1.6;
+ }
+ footer b { color:var(--text-muted); }
+
+ @media (max-width:560px) {
+ table.rank td.rate, table.rank th.rate-h { display:none; }
+ .page-wrap { padding:16px 12px 70px; }
+ }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+ <header class="header">
+ <div class="header-top">
+ <span class="cw-badge">UPWORK</span>
+ <h1>Upwork Job Board - 15 jobs reviewed
+ <span>Hand-scored against your real strengths. Ranked best-fit first. Tap a row to open the card. Status saves on this device.</span>
+ </h1>
+ </div>
+ <div class="counts">
+ <div class="count-pill apply"><span class="num">9</span><span class="label">apply</span></div>
+ <div class="count-pill flag"><span class="num">2</span><span class="label">flag / values</span></div>
+ <div class="count-pill skip"><span class="num">4</span><span class="label">skip</span></div>
+ </div>
+ </header>
+
+ <svg class="ink-ribbon" viewBox="0 0 760 14" preserveAspectRatio="none" aria-hidden="true">
+ <path d="M2 8 C 80 3, 150 11, 240 7 S 420 2, 540 9 S 690 5, 758 7" stroke="#00B7C2" stroke-width="3.2" fill="none" stroke-linecap="round" opacity="0.9"/>
+ <path d="M40 10 C 130 6, 210 12, 320 8 S 560 5, 720 9" stroke="#B47C57" stroke-width="1.6" fill="none" stroke-linecap="round" opacity="0.55"/>
+ </svg>
+
+ <div class="note-strip">
+ <b>How to use this:</b> the 3 hot jobs (#13, #11, #3) have full submit-ready proposals with copy buttons and per-field copy for screening questions. #1 is already applied (your submitted letter is shown). The other 11 carry a fit summary, rate, and status. Honor every read-gate verbatim on the first line. Truth-only on every claim. Connects are real money, so bid where the fit is real.
+ </div>
+
+ <!-- FILTER BAR -->
+ <div class="filter-bar">
+ <button class="filter-btn active" data-filter="all">All 15</button>
+ <button class="filter-btn" data-filter="apply">Apply</button>
+ <button class="filter-btn" data-filter="skip">Skip / flag</button>
+ </div>
+
+ <!-- RANKING TABLE -->
+ <div class="sec-label">Ranking - best fit first</div>
+ <div class="rank-wrap">
+ <table class="rank">
+ <thead>
+ <tr>
+ <th>#</th>
+ <th>Role / client</th>
+ <th>Fit</th>
+ <th class="rate-h">Bid</th>
+ <th>Status</th>
+ </tr>
+ </thead>
+ <tbody id="rankBody"><!-- JS fills --></tbody>
+ </table>
+ </div>
+ <div class="ondemand" style="margin-top:10px;">Rank order: the three co-top hot jobs (#13, #11, #3) lead, then the deep-fit builds, then yellow/flag/skip at the bottom. Your own read from the rubric drives the order.</div>
+
+ <!-- JOB CARDS -->
+ <div class="sec-label">Job cards - tap to expand</div>
+ <div class="cards" id="cardsWrap"><!-- JS fills --></div>
+
+ <footer>
+ <b>Source:</b> upwork-job-fit-rubric-2026-06-19.md (your 15 hand-reviewed verdicts) + the submitted proposal for #1.<br>
+ <b>Persistence:</b> status + filter save to this browser only (localStorage). A database-backed version replaces this later. No data leaves the device.<br>
+ <b>Differentiation baked into every draft:</b> you built a real Claude-native operating system (Skills, MCP, Claude Code, custom agents). Operator and MBA and 15 years HR at a Fortune 100. You authored an AI acceptable-use policy. Plain teacher. Honest advisor who will say when AI is not the answer. Under-promise, over-deliver.
+ </footer>
+
+</div>
+
+<script>
+/* ============ DATA ============ */
+const JOBS = [
+ {
+ id: 13, rank: 1, fit: "TOP", fitClass: "fit-top", apply: true,
+ role: "Executive AI Enablement Lead",
+ who: "AIVC - $297K spent, 5.0 rating, 7 interviewing",
+ rate: "$110-125/hr", bid: "$110-125/hr",
+ defStatus: "suggested",
+ clientFlags: "Serious client ($297K spent, 5.0). Contract-to-hire. Travel required (you are Utah). Hot: 7 interviewing, move fast.",
+ post: "The role: make executives genuine Claude power users across Skills, Claude Code, MCP, Cowork, and custom agents. They want someone pushing the edges of every Claude surface, not a generic AI trainer. 5+ years experience bar. Required: Python, prompt engineering, Claude, AI agents, MCP, automated workflow. Contract-to-hire, travel required.",
+ why: "This is arguably your single best fit in the batch. The entire role is making execs fluent across the exact Claude surfaces you have actually built on: Skills, Claude Code, MCP, custom agents. Almost no applicant has built Skills and MCP. You have. Pair that with teaching non-technical execs (the live workshop is current proof) and 15 years of senior HR speaking to executives. Honest gap: your exec-coaching and curriculum résumé is lighter, so lead with what you built and the workshop, never a fabricated coaching portfolio.",
+ hasProposal: true,
+ proposal: {
+ cover: `I build on Claude every day, and not the surface of it. I have built Claude Skills, wired MCP integrations, run work through Claude Code, and stood up a set of custom agents that run my own business: my email, my contacts and follow-ups, content, research, and the dashboards I check each morning. Most people who call themselves AI experts have never built a Skill or an MCP server. I have, and I run them in production.
+
+That is the part of your post that pulled me in. You do not want a generic AI trainer. You want someone who has actually pushed the edges of every Claude surface and can take an executive there. That is the work I want.
+
+Here is how I would approach it. Executives do not need a tour of features. They need one or two real workflows that save them time this week, built in front of them, then the confidence to keep going. I would start by watching how a leader actually spends their day, find the highest-friction repeat task, and build a Claude assistant or a Skill around it live. Then widen out: MCP to connect their real tools, Claude Code where it earns its place, custom agents for the work that repeats. Adoption sticks when the first win is theirs, not a demo.
+
+I should be straight with you on one thing. My background is fifteen years in HR at a Fortune 100 and an operator who built his own Claude-native system, not a career exec coach with a curriculum library. What I bring instead is rare: I have actually built the things you want your execs using, and I have spent fifteen years explaining systems to people who only care that it works. I teach a live workshop on putting AI to work for non-technical business audiences, so the teaching is current, not theoretical.
+
+If it helps, point me at one executive workflow you wish ran on Claude. A short call or a written note would tell us both quickly whether I am the right person to lead this.`,
+ rate: "$118/hr (range $110-125). Clears the seriousness bar for a $297K client without overreaching on the lighter coaching résumé. You set the final. Floor $110.",
+ screening: [
+ { q: "How many years of hands-on experience do you have with Claude and AI agents? (5+ required)", a: `I have been deep in Claude daily for over two years and built a working multi-agent system on it that runs my business: Skills, MCP integrations, Claude Code, custom agents. Add fifteen years leading at a Fortune 100 and an MBA, and the operator judgment behind the build is well past five years. The Claude-native depth is the rarer half.` },
+ { q: "Have you built with Claude Skills and MCP? Describe one.", a: `Yes. I built a contacts-and-outreach system where a custom agent researches a new lead, drafts a personal first message in my voice, and logs everything, work that used to eat most of a morning. It uses MCP to reach my real email and data, a Skill to hold the voice and rules, and Claude Code to wire it together. My part dropped from hours to a quick review and send. I can walk an exec through how it was built.` }
+ ],
+ connects: "Connects: ~6. Worth it. This is your deepest-fit role in the batch and the client is serious. The Claude-builder opening is the differentiator almost no other applicant can make truthfully."
+ }
+ },
+ {
+ id: 11, rank: 2, fit: "TOP", fitClass: "fit-green", apply: true,
+ role: "AI Delivery Partner for Financial Services Firms",
+ who: "Contract-to-hire - 13 interviewing, moving fast",
+ rate: "$100/hr", bid: "$100/hr",
+ defStatus: "suggested",
+ readGate: 'Start your reply with the word "Agentic" - verbatim, first line.',
+ clientFlags: "Hot: 13 interviewing, move fast. They reject 'learning on the job' - apply as a proven builder, not someone gaining experience. Contract-to-hire upside.",
+ post: "They sell to financial-services firms; you build and deliver the AI work and run the weekly client meeting. They own sales, pricing, and the top of the relationship. Mandatory: AI agent development, AI consulting, automation, prompt engineering. They explicitly do not want someone learning on the job. Read-gate: start your proposal with 'Agentic'.",
+ why: "This is exactly the setup you want: they sell, you build and deliver. Mandatory skills (AI agent dev, consulting, automation, prompt engineering) are your core, and your own operating system is the proof you are a builder, not a learner. The one honest thin spot is external-client delivery reps, covered by your HR and stakeholder background and plain communication. The read-gate is non-negotiable: first word must be 'Agentic'.",
+ hasProposal: true,
+ proposal: {
+ cover: `Agentic systems are what I build, and I build them in production, not in theory.
+
+I run a multi-agent setup that handles my own business day to day: research, outreach, content, email triage, and the dashboards I check each morning. I built the agents, wired the integrations through MCP, and put the prompt and Skill libraries behind them. So when you put me in front of a financial-services client, I am not figuring it out as I go. I have already shipped the thing.
+
+That matters because your post is clear: you do not want someone learning on the job. Good. I would rather you hold me to that. I am the builder who has done it for himself first, which is the hardest client there is.
+
+The split you describe fits how I want to work. You own the sales, the pricing, and the top of the relationship. I build the AI and agentic systems, deliver them, and run the weekly client meeting so the client always knows where things stand and what is next. Fifteen years in HR at a Fortune 100 taught me how to sit across from a stakeholder, translate technical work into plain terms, and keep a project moving without drama. That is the part of delivery most builders are weak on. It is the part I am strong on.
+
+I will also tell a client the truth. If AI is not the right answer for a given process, or a cleaner workflow beats another agent, I say so. That honesty protects your name with the client, which is the asset you are really renting to them.
+
+Point me at the kind of work your first financial-services client needs delivered. I will tell you straight whether it is in my lane and how I would build it.`,
+ rate: "$100/hr - matches their stated rate exactly. No reason to discount; the build-and-deliver-plus-run-the-meeting scope earns it.",
+ screening: [
+ { q: "What is the most relevant system you have built? Describe it.", a: `I built and run a multi-agent operating system for my own business. One agent researches a new lead and drafts a personal first message in my voice; another handles email triage and follow-ups; others run content and feed the dashboards I check each morning. It is built on Claude with MCP integrations to my real tools, custom agents, and a Skill and prompt library behind them. It runs daily and replaced hours of manual work with a quick review and send. It is the clearest proof I can offer that I deliver agentic systems, not slideware.` },
+ { q: "Are you comfortable leading client calls?", a: `Yes, and it is a strength, not a stretch. Fifteen years in HR at a Fortune 100 was largely sitting with stakeholders, explaining a system to people who only care that it works, and keeping the work moving. I run a client call the same way: where we are, what shipped, what is next, what I need from you. Plain language, no jargon, no surprises.` },
+ { q: "How do you build? Walk us through your process.", a: `I start by watching how the work actually happens, not how it is described. I find the one process that touches three or four tools and quietly eats an hour a day. I map it, then build the smallest thing that removes the friction: usually a Claude agent tied to the client's real data through MCP, with a Skill holding the rules and voice. I ship a first working version fast, get it in the client's hands, then harden it. I do not over-build, and I will tell the client when AI is not the answer.` }
+ ],
+ connects: "Connects: ~6. Worth it, and move fast (13 interviewing). The read-gate word 'Agentic' must be the first word of the cover letter, exactly. The proof-of-build opening directly answers their 'no learning on the job' rule."
+ }
+ },
+ {
+ id: 3, rank: 3, fit: "TOP", fitClass: "fit-green", apply: true,
+ role: "Claude AI Tutor / Advisor",
+ who: "Retired investor - 5.0 verified client, 100% hire rate",
+ rate: "$125/hr", bid: "$100-200/hr (bid $125)",
+ defStatus: "suggested",
+ clientFlags: "5.0 verified client, 100% hire rate. Light application expected. Fast, safe, high rate.",
+ post: "A retired investor wants a Claude tutor and advisor: one-on-one, hands-on help getting genuinely good at Claude for his own use. Rate posted $100-200/hr. 5.0 verified client, 100% hire rate.",
+ why: "Pure Claude practitioner work, and the 'operator, not a developer' angle is your exact differentiator. You use Claude hands-on every day for real business decisions, which is precisely what an investor wants to learn: not how to code, but how to think with the tool. Fast, safe, high rate, light application. One of your three strongest fits.",
+ hasProposal: true,
+ proposal: {
+ cover: `I use Claude hands-on every day to run an actual business, not to write code. That is the difference that probably matters most to you.
+
+A lot of people can teach you Claude as a developer would. I would teach it the way you would actually use it: as an operator making real decisions. I built a system on Claude that handles my email, my contacts, my research, and the dashboards I check each morning, so I have already worked out where it earns its place and where it does not. You would get the shortcuts and the judgment, not a feature tour.
+
+For someone managing investments and their own time, two use cases come to mind fast. One, a research and reading assistant that digests long documents, filings, and letters and pulls out what actually matters to you, in your terms. Two, a thinking partner you can pressure-test a decision against before you act, the way I run my own choices through Claude before committing. We would build both around how you actually work, not a generic setup.
+
+I will also tell you the truth about the tool. Where Claude is genuinely useful for you, I will show you exactly how. Where it is not the right answer, I will say so rather than dress it up. That honesty is the whole point of having an advisor instead of a sales pitch.
+
+On logistics: I am in Utah, Mountain time, and flexible on scheduling for regular one-on-one sessions. My rate is $125/hr.
+
+If you tell me one thing you wish Claude could do for you right now, I will tell you whether it can, and roughly how we would set it up.`,
+ rate: "$125/hr - comfortably inside their $100-200 band, positioned as a senior operator-advisor without topping out. Leaves room if he wants ongoing weekly sessions. You set the final.",
+ screening: [
+ { q: "Why are you the right person to tutor me on Claude?", a: `Because I teach it as an operator, not a developer. I use Claude every day to run a real business and built a working system on it, so I can show you the judgment, not just the buttons: when it helps, when it does not, and how to think with it on your own decisions. I also teach a live workshop on putting AI to work for non-technical people, so explaining this clearly is what I do.` }
+ ],
+ connects: "Connects: ~4. Strong yes. Fast, high rate, verified 100%-hire client, light application. The 'operator not developer' opening is your cleanest differentiator and lands immediately for an investor."
+ }
+ },
+ {
+ id: 7, rank: 4, fit: "TOP", fitClass: "fit-green", apply: true,
+ role: "AI Solutions Architect",
+ who: "26ers - $75-100/hr, contract-to-hire",
+ rate: "$75-100/hr", bid: "$90-100/hr",
+ defStatus: "suggested",
+ clientFlags: "Flag: payment unverified - confirm before any unpaid work.",
+ post: "AI Solutions Architect for 'Human + AI operating systems.' Multi-agent, CrewAI, MCP, founder mindset, institutional-knowledge systems. Contract-to-hire.",
+ why: "Literally describes your own system: 'Human + AI operating systems,' multi-agent, CrewAI, MCP, founder, institutional knowledge all hit. You can show a real artifact, which most applicants cannot. Deepest-fit build role. Only caution: payment is unverified, so confirm terms before doing unpaid work.",
+ hasProposal: false,
+ ondemand: "Full proposal on demand. Lead with the real artifact: your multi-agent operating system (CrewAI, MCP, institutional-knowledge memory). Confirm payment-verified status before any spec work."
+ },
+ {
+ id: 14, rank: 5, fit: "HIGH", fitClass: "fit-green", apply: true,
+ role: "AI Governance & Enablement Consultant",
+ who: "Enterprise GenAI rollout (advisory) - $50-250/hr",
+ rate: "$50-250/hr", bid: "$125-150/hr",
+ defStatus: "suggested",
+ clientFlags: "Client light spender ($25/hr avg, $4.7K total) - eyes open on budget.",
+ post: "Advisory for an enterprise GenAI rollout: policy, governance, change management, data-risk, employee adoption. Must-haves: have written and deployed an AI acceptable-use policy; plain language not consultant-speak. 'Familiar with' Microsoft Copilot/Azure (advisory bar, not a hands-on build bar). Must-have: led an enterprise GenAI rollout under 250 people.",
+ why: "Your rare edge: policy + governance + change management + data-risk + employee adoption is your 15-year HR and org wheelhouse, which most AI-governance consultants (security/tech people) lack. The must-have 'written and deployed an AI acceptable-use policy' you have actually done. 'Plain language not consultant-speak' is your voice. Honest gap: 'led an enterprise GenAI rollout' as one branded company-wide program is not something you have done end to end; be candid about scope, do not overclaim. Microsoft here is advisory-familiarity, manageable.",
+ hasProposal: false,
+ ondemand: "Full proposal on demand. Lead with the rare combo: 15-year Fortune-100 HR plus you authored an AI acceptable-use policy plus plain-language teaching. Be candid that the 'one branded enterprise-wide rollout' is the honest scope gap; you have done the components at scale."
+ },
+ {
+ id: 2, rank: 6, fit: "GREEN", fitClass: "fit-green", apply: true,
+ role: "AI Architect / Developer (phased, fixed-price)",
+ who: "Skagit Sign",
+ rate: "Fixed-price (phased)", bid: "Phase-1 discovery scoped",
+ defStatus: "suggested",
+ clientFlags: "Phased fixed-price. Phase-1 workflow-map discovery is a clean entry.",
+ post: "AI architect/developer, phased fixed-price. Phase 1 is a workflow-map discovery; later phases build, including email-data-extraction.",
+ why: "Phase-1 workflow-map discovery is your consulting strength, and email-data-extraction is real build work you have shipped. Clean green. Phased fixed-price lets you scope the discovery first and prove value before the bigger build.",
+ hasProposal: false,
+ ondemand: "Full proposal on demand. Lead with workflow-mapping as the discovery deliverable plus your real email-data-extraction build. Scope Phase 1 tightly as a paid discovery."
+ },
+ {
+ id: 9, rank: 7, fit: "TOP TIER", fitClass: "fit-green", apply: true,
+ role: "Claude Trainer & Automation Expert",
+ who: "Train my team on Claude - $50-300/hr, contract-to-hire",
+ rate: "$50-300/hr", bid: "$125-150/hr",
+ defStatus: "suggested",
+ clientFlags: "Client 5.0/verified/45% hire + contract-to-hire upside. But $16/hr avg paid = premium-pay yellow flag. Screening Qs probe a training portfolio you are light on.",
+ post: "Train a team on Claude plus build automations; advisor role. Contract-to-hire. Screening question 7: 'what differentiates you from other AI trainers?' Other screening questions probe a training portfolio (orgs trained, programs designed, links to training videos).",
+ why: "Claude-specific plus automation plus advisor is squarely your lane. Question 7 ('what differentiates you from other AI trainers') is a gift: you are the operator who built it, you teach the framework not the tool. The caveat: the screening questions probe a training portfolio you are light on (orgs trained, programs designed, video links). Answer honestly with the live workshop, real automations, and operator-not-academic. Never fabricate a corporate-training history.",
+ hasProposal: false,
+ ondemand: "Full proposal on demand. Lead Q7 with operator-who-built-it and framework-not-tool. On portfolio questions, answer with the live workshop plus real automations; be candid that you are a practitioner, not a career trainer. Bid $125-150."
+ },
+ {
+ id: 4, rank: 8, fit: "YELLOW", fitClass: "fit-yellow", apply: true,
+ role: "AI Trainer - 2hr B2B sales",
+ who: "NobleProg (reseller) - $75-125",
+ rate: "$75-125", bid: "Scope to session",
+ defStatus: "suggested",
+ clientFlags: "Reseller client (12% hire, $24 avg paid). Low priority. Value = door into the NobleProg national roster.",
+ post: "Two-hour AI training for a B2B sales audience, via NobleProg (a reseller/staffing firm with many duplicate trainer posts).",
+ why: "Yellow on trainer framing (truth-only: lead with the live workshop and real practitioner work, never inflate an L&D résumé). Reseller client with low hire rate and low average paid. Real value is the door into the NobleProg national roster, which pays well on the right post. Low priority on its own.",
+ hasProposal: false,
+ ondemand: "Full proposal on demand. Lead with the live workshop and tailored B2B-sales AI examples. Truth-only on trainer framing. Treat as a roster door, not the prize."
+ },
+ {
+ id: 15, rank: 9, fit: "YELLOW", fitClass: "fit-yellow", apply: true,
+ role: "AI Champions Workshop Facilitator",
+ who: "PHARMA, Irvine CA - NobleProg, $800 fixed",
+ rate: "$800 fixed", bid: "$1,500-2,500 w/ travel",
+ defStatus: "suggested",
+ clientFlags: "Pharma experience is a REQUIRED qual + #1 selection criterion - you have none. NobleProg reseller (12% hire, $24 avg paid). $800 low for 4hr onsite. Irvine CA = travel from Utah.",
+ post: "Facilitate an 'AI Champions' interactive workshop for a pharma audience, onsite in Irvine CA, via NobleProg. Pharma/life-sciences experience is a required qualification and the top selection criterion. $800 fixed, roughly 4 hours onsite.",
+ why: "The role type is your joy and strength: interactive AI workshop facilitation for business audiences. But pharma/life-sciences experience is a required qual and the #1 selection factor, and you have none, which is a real disadvantage against pharma-experienced applicants. Reseller, low pay, travel from Utah. Apply only if willing to compete on facilitation-over-domain, and bid with travel.",
+ hasProposal: false,
+ ondemand: "Full proposal on demand, optional/mid priority. Compete on facilitation method that adapts to any industry; be honest about no pharma background. Bid $1,500-2,500 to cover travel; $800 flat is too low for onsite."
+ },
+ {
+ id: 1, rank: 10, fit: "GREEN", fitClass: "fit-green", apply: true,
+ role: "AI Implementation Specialist (ongoing)",
+ who: "Ongoing help across owner's business - $9-160/hr",
+ rate: "$9-160/hr", bid: "$60/hr (submitted)",
+ defStatus: "applied",
+ clientFlags: "135 hires at $15.56/hr avg - buyer may negotiate. Ongoing 6mo+. Already submitted at $60.",
+ post: "Ongoing help putting AI to work across an owner's business: assistant, automations, idea-filtering, the works. Owner has several open roles (handwritten-letter mailing, niche-trades research, imagery) and wants one steady go-to person.",
+ why: "Your lane: build and advise. Already submitted at $60. The letter leads with a personal proof-of-concept on the idea-filter, reads as an honest advisor not a salesman, proves you read the owner's other roles, and ends on a low-friction invite.",
+ hasProposal: true,
+ submitted: true,
+ proposal: {
+ cover: `open circuit
+
+I built a system that runs my own business day to day before I taught any of it to other owners. It handles my email, my contacts and follow-ups, content scheduling, research, and the dashboards I check each morning. I lived the friction first, so I know where it actually hides.
+
+Here is what I would set up first for you.
+
+A way to capture and filter your ideas, before any tool. I am an idea machine, same as you. For a long time that scattered me. Every new idea pulled my attention somewhere else and I stayed busy without moving. What fixed it was one filter I run every idea through: does this move revenue or the main goal? If yes, build it now. If no, park it instead of letting it chase me all week. That single habit gave me my focus back. It is a way of thinking, not software, and I can set it up for you this week. You named the real problem yourself: too many things AI could do, too many moving parts, no hours. The fix starts there, not with the tools.
+
+Then the tools that earn their place. A Claude assistant tied to your real email, calendar, and documents, so it carries the small repeat decisions. A workflow for the one process that touches three or four apps and quietly eats an hour a day. I do not push one platform. AI is one lever. Sometimes a cleaner process or the right off-the-shelf tool is the better answer, and I will tell you that instead of selling you more code.
+
+One I already built: researching each lead, writing a personal first message, and logging it took most of a morning for a handful of people. I built a workflow that does the research and drafting and logs everything automatically. My part dropped from hours to a quick review-and-send.
+
+I read your other open roles too. The handwritten letter mailing setup, the niche-trades research, the imagery work. The through-line is clear: you want one steady person who can take a fuzzy need, pick the right approach, and get it running. That is the work I want, the go-to who sticks around and is easy to reach, not the one who builds something and disappears.
+
+If it helps, point me at one bottleneck eating your time. A short call or a written note would tell us both quickly whether I am the right fit.`,
+ rate: "$60/hr (submitted). Range was $55-65, floor $50. The client's $15.56/hr average signals a negotiator; $60 reads serious without tripping the filter.",
+ screening: [
+ { q: "Describe your experience with AI tools and automation.", a: `I built and run my own system that handles content scheduling, my contacts and follow-ups, a lot of my email, research, and simple dashboards for my business. It runs daily. I work across Claude, n8n, Make, and custom assistants, whatever fits the job. I also run an AI consulting practice and teach a live workshop on putting AI to work for small-business owners.` },
+ { q: "What is your approach to working with a client who is not technical?", a: `I start by learning how you actually work, not how you describe it. Most owners feel the pain clearly but have not mapped the process. That is fine, that is my job. I turn "this takes forever" into a working setup, explain it in plain words, and hand it over running with a walkthrough you can follow. Fifteen years in HR at a Fortune 100 taught me how to explain a system to someone who only cares that it works.` }
+ ],
+ connects: "Connects: 27 (submitted). A generic submission would be invisible against 50+ proposals at a $15.56/hr average. This one stands out on the idea-filter proof and honest-advisor tone."
+ }
+ },
+ {
+ id: 6, rank: 11, fit: "CONDITIONAL", fitClass: "fit-yellow", apply: false,
+ role: "AI Trainer & Adoption",
+ who: "Beazer Homes - $40-50/hr, through 2027",
+ rate: "$40-50/hr", bid: "Only if you have Copilot Studio",
+ defStatus: "skip",
+ clientFlags: "Strong HR/change-mgmt/adoption fit + direct client + long (through 2027). BUT Microsoft Copilot Studio is REQUIRED.",
+ post: "AI trainer and adoption lead, direct client (Beazer Homes), engagement runs through 2027. Strong change-management and adoption scope. Microsoft Copilot Studio is a required skill.",
+ why: "The adoption and change-management scope is your real edge, the client is direct, and it is long. But Microsoft Copilot Studio is a required tool and you are Claude/Python/n8n-centric. Apply only if you genuinely have Copilot Studio and can claim it truthfully. Otherwise skip: truth-only beats a long contract you cannot staff honestly.",
+ hasProposal: false,
+ ondemand: "Decision gate, not a draft. Apply ONLY if you truthfully have Microsoft Copilot Studio. If yes, the HR/adoption fit is strong and the contract is long. If no, skip - do not claim the MS stack."
+ },
+ {
+ id: 12, rank: 12, fit: "LEAN SKIP", fitClass: "fit-skip", apply: false,
+ role: "Fractional Legal AI Strategist & Solutions Architect",
+ who: "Construction law firm - $80-130/hr",
+ rate: "$80-130/hr", bid: "Skip unless ramping MS + legal",
+ defStatus: "skip",
+ clientFlags: "Mountain-Time-preferred (+) and Rising-Talent-OK (+). BUT two stacked required gaps the screening Qs hard-probe.",
+ post: "Fractional legal AI strategist for a construction law firm: advisory, architecture, build-vs-buy, governance. Mountain-Time preferred. Required: legal-industry experience AND Microsoft Power Platform / Copilot Studio / Power Automate / SharePoint.",
+ why: "The advisory, architecture, build-vs-buy, and governance work is genuinely your lane, and Mountain Time plus Rising-Talent-OK help. But two stacked required gaps the screening questions hard-probe: legal-industry experience (none) and the Microsoft Power Platform stack (you are Claude/Python/n8n). Two truth-only gaps central to the role mean low odds versus clean fits. Skip unless you want to ramp the MS stack and accept both gaps.",
+ hasProposal: false,
+ ondemand: "Skip recommended. Two stacked truth-only gaps (legal industry + Microsoft Power Platform) are both central to the role. Revisit only if you decide to ramp the MS stack."
+ },
+ {
+ id: 8, rank: 13, fit: "SKIP", fitClass: "fit-skip", apply: false,
+ role: "Conversational Voice/Chat Bot Designer",
+ who: "Amazon Lex - $65-85/hr",
+ rate: "$65-85/hr", bid: "Skip (skill-fit gap)",
+ defStatus: "skip",
+ clientFlags: "Client excellent (4.9, 100% hire, verified) - this is a SKILL-fit gap, not a client gap.",
+ post: "Design a conversational voice and chat bot. Mandatory stack: Amazon Lex, AWS Connect, ASR, voicebot specialist work.",
+ why: "Adjacent-but-specialized. It looks like a fit (LLM, conversational AI, prompt) but the mandatory stack is AWS Lex/Connect/ASR/voicebot specialist work you do not own. Keyword adjacency to 'AI' is not fit. The client is excellent, so this is purely a skill-fit gap. Apply only if your pipeline is thin and you frame it as an LLM-architecture advisor, accepting lower odds. Your own read ranks it low.",
+ hasProposal: false,
+ ondemand: "Skip recommended. Mandatory AWS Lex/Connect/ASR specialist stack you do not own. Apply only as a thin-pipeline long shot, framed strictly as an LLM-architecture advisor, never claiming the specialist tool."
+ },
+ {
+ id: 10, rank: 14, fit: "VALUES FLAG", fitClass: "fit-flag", apply: false,
+ role: "AI Prompt Engineer & Knowledge Strategist",
+ who: '"Education civil rights" - $30-60/hr, NDA',
+ rate: "$30-60/hr", bid: "Your explicit call only",
+ defStatus: "skip",
+ clientFlags: "VALUES FLAG - your explicit yes/no only. New client, 0 reviews, maybe partly filled. Low rate.",
+ post: "AI prompt engineer and knowledge strategist for an 'education civil rights' domain, under NDA. New client, no reviews.",
+ why: "Skill-fit is fine (prompt plus knowledge strategy plus Claude). But the deciding factor is the topic/values screen: politically-sensitive, NDA'd, advocacy-adjacent, and it brushes your no-politics rule. This is flagged for your explicit call, never auto-suggested. Add a low rate and a new client with no reviews. Surfaced here only so you decide; not recommended over cleaner fits.",
+ hasProposal: false,
+ ondemand: "Values decision, yours alone. Skill-fit is fine; the topic is politically-sensitive and advocacy-adjacent, which brushes your no-politics rule even under NDA. Flagged, not suggested. Cleaner fits exist."
+ },
+ {
+ id: 5, rank: 15, fit: "SKIP", fitClass: "fit-skip", apply: false,
+ role: "Claude Trainer (CA/CO location-locked)",
+ who: "NobleProg - $1,100-1,200/day",
+ rate: "$1,100-1,200/day", bid: "Hard DQ (location)",
+ defStatus: "skip",
+ clientFlags: "RED. Location-locked CA/CO; you are Utah. Hard DQ. Do not burn Connects.",
+ post: "Claude trainer at $1,100-1,200/day, but location-locked to California or Colorado. NobleProg roster.",
+ why: "Hard DQ on location: the post is locked to CA/CO and you are in Utah. Do not burn Connects on a disqualifier. Note the upside: the NobleProg roster pays $1,100/day, so pursue that pay through a non-gated or remote NobleProg post instead.",
+ hasProposal: false,
+ ondemand: "Skip - hard location DQ (CA/CO only, you are Utah). Do not spend Connects. Chase the NobleProg $1,100/day rate through a remote or non-location-gated post instead."
+ }
+];
+
+/* ============ STATE ============ */
+const LS_KEY = "upwork_review_2026_06_19";
+function loadState(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch(e){ return {}; } }
+function saveState(s){ try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch(e){} }
+let state = loadState();
+function getStatus(id){
+ if (state[id]) return state[id];
+ const j = JOBS.find(x=>x.id===id);
+ return j ? j.defStatus : "suggested";
+}
+function setStatus(id, st){ state[id] = st; saveState(state); }
+
+const STATUS_LABEL = { suggested:"Suggested", applied:"Applied", won:"Won", lost:"Lost", skip:"Skip" };
+const STATUS_CLASS = { suggested:"st-suggested", applied:"st-applied", won:"st-won", lost:"st-lost", skip:"st-skip" };
+
+let activeFilter = "all";
+
+/* ============ HELPERS ============ */
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function statusChip(id){
+ const st = getStatus(id);
+ return `<span class="status-chip ${STATUS_CLASS[st]}" data-chip="${id}">${STATUS_LABEL[st]}</span>`;
+}
+
+/* ============ RANKING TABLE ============ */
+function renderRank(){
+ const body = document.getElementById("rankBody");
+ body.innerHTML = JOBS.map(j => `
+ <tr data-jump="${j.id}" data-apply="${j.apply}">
+ <td class="rk">${j.rank}</td>
+ <td class="role">${esc(j.role)}<span class="who">#${j.id} · ${esc(j.who)}</span></td>
+ <td><span class="fitchip ${j.fitClass}">${esc(j.fit)}</span></td>
+ <td class="rate">${esc(j.bid)}</td>
+ <td>${statusChip(j.id)}</td>
+ </tr>
+ `).join("");
+ body.querySelectorAll("tr[data-jump]").forEach(tr => {
+ tr.addEventListener("click", () => {
+ const id = +tr.getAttribute("data-jump");
+ const card = document.getElementById("job-"+id);
+ if (card){
+ if (!card.classList.contains("open")) card.classList.add("open");
+ card.scrollIntoView({behavior:"smooth", block:"start"});
+ card.classList.add("hl");
+ setTimeout(()=>card.classList.remove("hl"), 1600);
+ }
+ });
+ });
+}
+
+/* ============ JOB CARDS ============ */
+function proposalHTML(j){
+ const p = j.proposal;
+ if (!p) return "";
+ let fields = "";
+ // Cover letter
+ fields += copyField("Cover letter", p.cover);
+ // Rate
+ fields += copyField("Hourly rate", p.rate, true);
+ // Screening questions (per-field copy)
+ if (p.screening && p.screening.length){
+ p.screening.forEach((sq, i) => {
+ fields += copyField("Screening Q" + (i+1) + ": " + sq.q, sq.a);
+ });
+ }
+ const connects = p.connects ? `<div class="extra-pill" style="margin-top:10px;display:inline-block;">${esc(p.connects)}</div>` : "";
+ const banner = j.submitted
+ ? `<div class="readgate" style="color:var(--teal);border-color:rgba(0,183,194,0.4);background:rgba(0,183,194,0.07);"><b>Status: applied.</b> This is the letter you already submitted, shown here as the voice and style template for the rest.</div>`
+ : "";
+ return `<div class="blk">
+ <div class="blk-label">${j.submitted ? "Submitted proposal" : "Submit-ready proposal - copy per field"}</div>
+ ${banner}
+ <div class="copy-block">${fields}</div>
+ ${connects}
+ </div>`;
+}
+
+function copyField(name, text, isRate){
+ const id = "cp_" + Math.random().toString(36).slice(2);
+ return `<div class="copy-field">
+ <div class="copy-field-head">
+ <span class="copy-field-name">${esc(name)}</span>
+ <button class="copy-btn" data-copy="${id}">Copy</button>
+ </div>
+ <div class="copy-text${isRate?' rate-text':''}" id="${id}">${esc(text)}</div>
+ </div>`;
+}
+
+function renderCards(){
+ const wrap = document.getElementById("cardsWrap");
+ wrap.innerHTML = JOBS.map(j => {
+ const readGate = j.readGate ? `<div class="readgate"><b>READ-GATE:</b> ${esc(j.readGate)}</div>` : "";
+ const flags = j.clientFlags ? `<div class="flagline"><b>Client / flags:</b> ${esc(j.clientFlags)}</div>` : "";
+ const post = j.post ? `
+ <div class="blk">
+ <div class="nested-toggle" data-nest><svg class="nt-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg> The full job post</div>
+ <div class="nested-body"><p>${esc(j.post)}</p></div>
+ </div>` : "";
+ const why = j.why ? `<div class="blk"><div class="blk-label">Why it fits you</div><p>${esc(j.why)}</p></div>` : "";
+ const proposal = j.hasProposal ? proposalHTML(j) : (j.ondemand ? `<div class="ondemand">${esc(j.ondemand)}</div>` : "");
+
+ return `<div class="job-card" id="job-${j.id}" data-apply="${j.apply}">
+ <div class="job-head" data-toggle="${j.id}">
+ <span class="jh-rank">${j.rank}</span>
+ <div class="jh-main">
+ <div class="jh-role">${esc(j.role)}</div>
+ <div class="jh-who">#${j.id} · ${esc(j.who)}</div>
+ <div class="jh-meta">
+ <span class="fitchip ${j.fitClass}">${esc(j.fit)}</span>
+ <span class="jh-rate">${esc(j.bid)}</span>
+ ${statusChip(j.id)}
+ </div>
+ </div>
+ <span class="chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></span>
+ </div>
+ <div class="job-body">
+ ${readGate}
+ ${flags}
+ ${post}
+ ${why}
+ ${proposal}
+ <div class="extras">
+ <span class="extra-pill">Fit: <b>${esc(j.fit)}</b></span>
+ <span class="extra-pill">Bid: <b>${esc(j.bid)}</b></span>
+ ${j.readGate ? `<span class="extra-pill">Read-gate: <b>yes</b></span>` : ``}
+ </div>
+ <div class="status-control">
+ <div class="sc-label">Status (saves on this device)</div>
+ <div class="sc-btns" data-status="${j.id}">
+ ${["suggested","applied","won","lost","skip"].map(s =>
+ `<button class="sc-btn" data-st="${s}">${STATUS_LABEL[s]}</button>`
+ ).join("")}
+ </div>
+ </div>
+ </div>
+ </div>`;
+ }).join("");
+
+ // Wire toggles
+ wrap.querySelectorAll(".job-head[data-toggle]").forEach(head => {
+ head.addEventListener("click", e => {
+ if (e.target.closest("button")) return;
+ head.closest(".job-card").classList.toggle("open");
+ });
+ });
+ // Nested job-post toggles
+ wrap.querySelectorAll(".nested-toggle[data-nest]").forEach(nt => {
+ nt.addEventListener("click", () => nt.classList.toggle("open"));
+ });
+ // Copy buttons
+ wrap.querySelectorAll(".copy-btn[data-copy]").forEach(btn => {
+ btn.addEventListener("click", () => {
+ const el = document.getElementById(btn.getAttribute("data-copy"));
+ const txt = el ? el.innerText : "";
+ navigator.clipboard.writeText(txt).then(() => {
+ const old = btn.textContent;
+ btn.textContent = "Copied";
+ btn.classList.add("done");
+ setTimeout(()=>{ btn.textContent = old; btn.classList.remove("done"); }, 1500);
+ }).catch(()=>{
+ // fallback
+ const ta = document.createElement("textarea");
+ ta.value = txt; document.body.appendChild(ta); ta.select();
+ try { document.execCommand("copy"); } catch(e){}
+ document.body.removeChild(ta);
+ btn.textContent = "Copied"; btn.classList.add("done");
+ setTimeout(()=>{ btn.textContent="Copy"; btn.classList.remove("done"); }, 1500);
+ });
+ });
+ });
+ // Status controls
+ wrap.querySelectorAll(".sc-btns[data-status]").forEach(grp => {
+ const id = +grp.getAttribute("data-status");
+ const cur = getStatus(id);
+ grp.querySelectorAll(".sc-btn").forEach(b => {
+ if (b.getAttribute("data-st") === cur) b.classList.add("sel");
+ b.addEventListener("click", () => {
+ const st = b.getAttribute("data-st");
+ setStatus(id, st);
+ grp.querySelectorAll(".sc-btn").forEach(x => x.classList.remove("sel"));
+ b.classList.add("sel");
+ // update all chips for this id
+ document.querySelectorAll(`[data-chip="${id}"]`).forEach(chip => {
+ chip.className = "status-chip " + STATUS_CLASS[st];
+ chip.textContent = STATUS_LABEL[st];
+ chip.setAttribute("data-chip", id);
+ });
+ });
+ });
+ });
+}
+
+/* ============ FILTER ============ */
+function applyFilter(){
+ document.querySelectorAll("[data-apply]").forEach(el => {
+ const isApply = el.getAttribute("data-apply") === "true";
+ let show = true;
+ if (activeFilter === "apply") show = isApply;
+ else if (activeFilter === "skip") show = !isApply;
+ el.classList.toggle("hidden", !show);
+ });
+}
+document.querySelectorAll(".filter-btn").forEach(btn => {
+ btn.addEventListener("click", () => {
+ document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+ btn.classList.add("active");
+ activeFilter = btn.getAttribute("data-filter");
+ applyFilter();
+ });
+});
+
+/* ============ INIT ============ */
+renderRank();
+renderCards();
+applyFilter();
+</script>
+</body>
+</html>
