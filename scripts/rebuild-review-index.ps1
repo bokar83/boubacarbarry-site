@@ -20,9 +20,14 @@ $cards = ""
 foreach ($item in $active) {
     $created = [datetime]::ParseExact($item.created, "yyyy-MM-dd", $null)
     $age = ($today - $created).Days
-    $staleClass = if ($age -gt 10) { " stale" } else { "" }
-    $dateLabel = "Created $($item.created)"
-    if ($age -gt 13) { $dateLabel += " — auto-close pending" }
+    $isKeep = ($item.PSObject.Properties.Name -contains 'keep') -and $item.keep
+    $staleClass = if (-not $isKeep -and $age -gt 10) { " stale" } else { "" }
+    if ($isKeep) {
+        $dateLabel = "Permanent (keep)"
+    } else {
+        $dateLabel = "Created $($item.created)"
+        if ($age -gt 13) { $dateLabel += " — auto-close pending" }
+    }
     $cards += @"
 
     <a class="review-card$staleClass" href="/review/$($item.slug)/">

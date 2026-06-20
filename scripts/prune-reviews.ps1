@@ -23,6 +23,12 @@ $archived = @()
 foreach ($item in $manifest) {
     if ($item.archived) { continue }
 
+    # Permanent entries (keep=true) are never auto-closed or archived.
+    if (($item.PSObject.Properties.Name -contains 'keep') -and $item.keep) {
+        Write-Host "KEEP (permanent): $($item.slug)"
+        continue
+    }
+
     $created = [datetime]::ParseExact($item.created, "yyyy-MM-dd", $null)
     $ageCreated = ($Today - $created).Days
 
