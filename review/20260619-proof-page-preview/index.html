@@ -64,10 +64,12 @@ a{color:inherit}
 .seam{display:block;width:100%;height:60px;line-height:0}
 .seam svg{display:block;width:100%;height:100%}
 
-/* reveal: visible by default, JS only adds a subtle pre-state once ready */
+/* reveal: ALWAYS visible. Entrance is a pure enhancement that animates IN
+   from a hidden keyframe only when .in is added; the resting state is visible,
+   so screenshots, link previews, reduced-motion, and slow JS always show content. */
 .reveal{opacity:1;transform:none}
-.js-ready .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
-.js-ready .reveal.in{opacity:1;transform:none}
+@keyframes revealIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.js-ready .reveal.in{animation:revealIn .7s var(--ease) both}
 
 /* ======================= HERO ======================= */
 .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;
@@ -340,7 +342,6 @@ a{color:inherit}
         <p class="lead dim" style="margin:0;font-size:.95rem">A sanitized view of the operating system I run. Described by what each part does, not by its internal names.</p>
         <div class="map-controls">
           <button class="btn-run" id="run-flow"><span class="tri" aria-hidden="true"></span>Run the lead flow</button>
-          <button class="btn-ghost" id="reset-map">Reset</button>
         </div>
       </div>
 
@@ -472,8 +473,8 @@ a{color:inherit}
     <div class="reveal">
       <span class="section-num">04 / Things I have shipped</span>
       <svg class="ribbon" viewBox="0 0 220 14" aria-hidden="true"><path d="M4 7 C 44 11, 74 2, 108 9 S 176 12, 216 6"/></svg>
-      <h2 id="apps-h">Live, deployed, mine.</h2>
-      <p class="dim" style="max-width:50ch;margin-top:14px">Not concepts. Real sites and apps running in production right now. Open any of them.</p>
+      <h2 id="apps-h">Built, deployed, mine.</h2>
+      <p class="dim" style="max-width:50ch;margin-top:14px">Not concepts. Real sites and apps I designed and shipped, live ones plus a demo build. Open any of them.</p>
     </div>
 
     <div class="apps-lane reveal">
@@ -729,7 +730,7 @@ a{color:inherit}
     function clearLit(){ for(var k in edgeEls) edgeEls[k].classList.remove('lit'); }
 
     // Run-the-flow: animate a light token leads -> operator, then reveal the sequence
-    var runBtn=document.getElementById('run-flow'), resetBtn=document.getElementById('reset-map');
+    var runBtn=document.getElementById('run-flow');
     var running=false;
     var flowSteps=[
       {id:'leads', label:'New lead arrives', title:'A new lead comes in',
@@ -768,19 +769,7 @@ a{color:inherit}
       }
       requestAnimationFrame(step);
     }
-    function resetMap(){
-      running=false; clearLit();
-      while(gFlow.firstChild) gFlow.removeChild(gFlow.firstChild);
-      gNodes.querySelectorAll('.node-g').forEach(function(el){el.classList.remove('active');});
-      readout.classList.remove('show');
-      setTimeout(function(){
-        rcLabel.textContent='Hover a node'; rcTitle.textContent='Five jobs, one operator';
-        rcBody.textContent='Everything orbits one rule: the system does the work, I do a quick review and send. Hover any node to see what it handles, or run the flow to watch a new lead become a ready-to-send message.';
-        rcReplaced.innerHTML='';
-      },300);
-    }
     runBtn.addEventListener('click',runFlow);
-    resetBtn.addEventListener('click',resetMap);
   })();
 
   /* ---------- IDEA FILTER ---------- */
