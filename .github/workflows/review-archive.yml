@@ -1,0 +1,31 @@
+name: Review Hub Daily Archive
+# Daily trigger for the 21-day auto-archive sweep. The rebuild script only runs on deploy,
+# which is not daily, so the age-based cutoff needs its own daily run. This regenerates the
+# hub (self-populate + auto-archive + prune) and commits the result if anything changed.
+# Archive is move-not-delete: aged pages move to review/archive/ and stay in the repo.
+on:
+  schedule:
+    - cron: '17 9 * * *'   # 09:17 UTC daily
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  archive-sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run rebuild (self-populate + auto-archive)
+        shell: pwsh
+        run: ./scripts/rebuild-review-index.ps1
+      - name: Commit changes if any
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain review/)" ]; then
+            git config user.name "review-bot"
+            git config user.email "review-bot@users.noreply.github.com"
+            git add review/
+            git commit -m "chore(review): daily auto-archive sweep [skip ci]"
+            git push
+          else
+            echo "No review changes today."
+          fi
