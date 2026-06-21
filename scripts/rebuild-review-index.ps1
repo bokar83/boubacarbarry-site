@@ -61,7 +61,10 @@ $newHtml = [regex]::Replace($html, $pattern, { param($m) $replacement })
 Set-Content $IndexPath $newHtml -Encoding UTF8
 
 # Verify the written hub card count matches the active manifest count, or fail loud.
-$written = ([regex]::Matches((Get-Content $IndexPath -Raw), 'class="review-card"')).Count
+# Match both fresh ("review-card") and stale ("review-card stale") cards; counting only
+# the exact class undercounted once any active item aged past the stale threshold, which
+# falsely failed the build and blocked the rebuild (incident 2026-06-21).
+$written = ([regex]::Matches((Get-Content $IndexPath -Raw), 'class="review-card( stale)?"')).Count
 if ($written -ne $active.Count) {
     Write-Error "Hub card mismatch: wrote $written cards but manifest has $($active.Count) active. Do NOT deploy."
     exit 1
