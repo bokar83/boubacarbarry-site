@@ -79,15 +79,26 @@ function Format-Card($item, [bool]$isArchived) {
         if ($remaining -le 3 -and $remaining -ge 0) { $dateLabel += " -- archives in ${remaining}d" }
     }
     $pin = if ($isKeep -and -not $isArchived) { ' <span class="pin">Kept</span>' } else { "" }
+    if ($isArchived) {
+        $actions = '<button class="rc-btn unarch" type="button" data-act="unarchive" data-slug="' + $item.slug + '">Restore</button>'
+    } else {
+        $keepLabel = if ($isKeep) { 'Kept' } else { 'Keep' }
+        $keepOn = if ($isKeep) { ' on' } else { '' }
+        $actions = '<button class="rc-btn keep' + $keepOn + '" type="button" data-act="keep" data-slug="' + $item.slug + '">' + $keepLabel + '</button>' +
+                   '<button class="rc-btn arch" type="button" data-act="archive" data-slug="' + $item.slug + '">Archive</button>'
+    }
     return @"
 
-    <a class="$classes" href="/review/$($item.slug)/">
-      <div class="meta">
-        <div class="title">$($item.title)$pin</div>
-        <div class="date">$dateLabel</div>
-      </div>
-      <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
-    </a>
+    <div class="$classes" data-slug="$($item.slug)">
+      <a class="rc-link" href="/review/$($item.slug)/">
+        <div class="meta">
+          <div class="title">$($item.title)$pin</div>
+          <div class="date">$dateLabel</div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+      </a>
+      <div class="rc-actions">$actions</div>
+    </div>
 "@
 }
 
