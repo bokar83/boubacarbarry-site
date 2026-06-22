@@ -78,21 +78,26 @@ function Format-Card($item, [bool]$isArchived) {
         $remaining = $ArchiveAfterDays - $age
         if ($remaining -le 3 -and $remaining -ge 0) { $dateLabel += " -- archives in ${remaining}d" }
     }
-    $pin = if ($isKeep -and -not $isArchived) { ' <span class="pin">Kept</span>' } else { "" }
+    # SVG glyphs: bookmark (keep), box-arrow (archive), undo (restore). Stroke = currentColor.
+    $svgKeep = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5V21l-7-4.2L5 21V4.5z"/></svg>'
+    $svgArch = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></svg>'
+    $svgUnarch = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7v6h6"/><path d="M3.5 13a9 9 0 1 0 2.3-9.3L3 7"/></svg>'
+    # Single state indicator = the Keep pill (filled when kept). No duplicate text badge by the title.
     if ($isArchived) {
-        $actions = '<button class="rc-btn unarch" type="button" data-act="unarchive" data-slug="' + $item.slug + '">Restore</button>'
+        $actions = '<button class="rc-btn unarch" type="button" data-act="unarchive" data-slug="' + $item.slug + '" aria-label="Restore" title="Restore to active">' + $svgUnarch + '<span class="lbl">Restore</span></button>'
     } else {
         $keepLabel = if ($isKeep) { 'Kept' } else { 'Keep' }
         $keepOn = if ($isKeep) { ' on' } else { '' }
-        $actions = '<button class="rc-btn keep' + $keepOn + '" type="button" data-act="keep" data-slug="' + $item.slug + '">' + $keepLabel + '</button>' +
-                   '<button class="rc-btn arch" type="button" data-act="archive" data-slug="' + $item.slug + '">Archive</button>'
+        $keepAria = if ($isKeep) { 'Kept (click to unpin)' } else { 'Keep (pin to top)' }
+        $actions = '<button class="rc-btn keep' + $keepOn + '" type="button" data-act="keep" data-slug="' + $item.slug + '" aria-pressed="' + $(if ($isKeep) { 'true' } else { 'false' }) + '" aria-label="' + $keepAria + '" title="' + $keepAria + '">' + $svgKeep + '<span class="lbl">' + $keepLabel + '</span></button>' +
+                   '<button class="rc-btn arch" type="button" data-act="archive" data-slug="' + $item.slug + '" aria-label="Archive" title="Archive (hide)">' + $svgArch + '<span class="lbl">Archive</span></button>'
     }
     return @"
 
     <div class="$classes" data-slug="$($item.slug)">
       <a class="rc-link" href="/review/$($item.slug)/">
         <div class="meta">
-          <div class="title">$($item.title)$pin</div>
+          <div class="title">$($item.title)</div>
           <div class="date">$dateLabel</div>
         </div>
         <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
