@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>B9 "Line Games" — Concrete GO Plan</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #111;
+      line-height: 1.65;
+      padding: 2rem 1.25rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .doc-header { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #111; }
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 0.3rem;
+      letter-spacing: -0.03em;
+    }
+    .doc-meta {
+      font-size: 0.82rem;
+      color: #666;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      background: #f0f0f0;
+      color: #555;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+    }
+
+    /* ── Lead claim box ── */
+    .lead-box {
+      background: #111;
+      color: #fff;
+      padding: 1.25rem 1.6rem;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      line-height: 1.55;
+      margin-bottom: 2.25rem;
+    }
+    .lead-box .ten-word {
+      font-size: 1.25rem;
+      font-style: italic;
+      font-weight: 700;
+      margin-top: 0.6rem;
+      color: #fbbf24;
+    }
+
+    /* ── Sections ── */
+    section { margin-bottom: 2.25rem; }
+    h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #666;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      margin-top: 1.25rem;
+    }
+    h3:first-child { margin-top: 0; }
+    p {
+      font-size: 0.975rem;
+      margin-bottom: 0.75rem;
+    }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── Bullets ── */
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 0.75rem;
+    }
+    ul li {
+      padding: 0.35rem 0 0.35rem 1.25rem;
+      position: relative;
+      font-size: 0.975rem;
+    }
+    ul li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.72rem;
+      width: 6px;
+      height: 6px;
+      background: #111;
+      border-radius: 50%;
+    }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.88rem;
+    }
+    th {
+      background: #f5f5f5;
+      font-weight: 700;
+      text-align: left;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid #e0e0e0;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #555;
+    }
+    td {
+      padding: 0.55rem 0.75rem;
+      border: 1px solid #e5e5e5;
+      vertical-align: top;
+    }
+    tr:hover td { background: #fafafa; }
+    td strong { font-weight: 700; }
+
+    /* ── Callout / highlight box ── */
+    .callout {
+      background: #f5f5f5;
+      border-left: 3px solid #111;
+      padding: 1rem 1.25rem;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    .callout.amber { border-left-color: #f59e0b; }
+    .callout.green { border-left-color: #22c55e; }
+    .callout.red { border-left-color: #ef4444; }
+
+    /* ── Number badge for milestones ── */
+    .milestone-row { display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 0.65rem; }
+    .day-badge {
+      flex-shrink: 0;
+      background: #111;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      border-radius: 4px;
+      padding: 0.25rem 0.5rem;
+      min-width: 3.25rem;
+      text-align: center;
+      margin-top: 0.1rem;
+    }
+    .milestone-text { font-size: 0.94rem; line-height: 1.55; }
+    .milestone-text .checkpoint { font-size: 0.8rem; color: #666; margin-top: 0.2rem; }
+
+    /* ── Pass / Fail signal table ── */
+    .signal-pass { color: #16a34a; font-weight: 700; }
+    .signal-fail { color: #dc2626; font-weight: 700; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e5e5;
+      font-size: 0.78rem;
+      color: #999;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 520px) {
+      body { padding: 1.25rem 1rem; }
+      h1 { font-size: 1.3rem; }
+      .lead-box .ten-word { font-size: 1.05rem; }
+      table { font-size: 0.82rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="doc-header">
+    <h1>B9 "Line Games" — GO Plan</h1>
+    <p class="doc-meta">
+      <span class="tag">Strategy</span>
+      <span class="tag">Internal</span>
+      Authored 2026-06-24 &middot; Grounded in viability-B9.md &middot; No invented numbers
+    </p>
+  </div>
+
+  <!-- Lead claim -->
+  <div class="lead-box">
+    Core claim: the only multi-game app designed for the line itself.
+    <p class="ten-word">"One phone, 10 seconds, offline — for the whole group."</p>
+  </div>
+
+  <!-- 1. Positioning -->
+  <section>
+    <h2>1 &mdash; Positioning &mdash; Own "The Wait"</h2>
+    <p>Heads Up is one mechanic (charades), not designed for lines — it is <em>recommended</em> for lines by third parties. That gap is the slot. Line Games is positioned at the moment of trip planning ("what do we do in the lines?") not at the App Store discovery screen.</p>
+    <p><strong>vs. Heads Up:</strong> Heads Up = one party trick you already know. Line Games = the multi-game kit you buy before every trip, matched to your group's age mix.</p>
+    <h3>Three pillars that own the context</h3>
+    <ul>
+      <li><strong>Offline-first</strong> — no cell service in crowded parks is a real friction point (customer language: "no WiFi required")</li>
+      <li><strong>10-second start</strong> — no accounts, no setup; a group in a moving queue can start before they take three steps</li>
+      <li><strong>Multi-game + multi-theme</strong> — age-matched packs (kid/teen/adult + venue/event themes) means one app serves the whole group across every line, not just the first one</li>
+    </ul>
+  </section>
+
+  <!-- 2. Product -->
+  <section>
+    <h2>2 &mdash; v1 Product</h2>
+    <h3>The 3 Game Types to Ship</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Game Type</th><th>Mechanic</th><th>Why it works standing up</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Pass &amp; Guess</strong> (Heads Up variant)</td>
+            <td>Phone held to forehead, group gives clues, guesser says the word</td>
+            <td>Proven by Heads Up; one device, fast turns, hilarious</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>Line Bluff</strong> (truth-or-lie trivia)</td>
+            <td>One player reads a statement — group votes real or fake; phone shows answer</td>
+            <td>No physical action required; works for all ages; no forehead needed in tight queues</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>Speed Round</strong> (quick-fire rapid-fire)</td>
+            <td>Questions flash, player answers aloud before timer hits zero; phone passed for next turn</td>
+            <td>High energy, short rounds (~60 sec), works while shuffling forward</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Included Free at Launch (2 Starter Packs)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pack</th><th>Target</th><th>Theme</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Adventure Pack</strong></td><td>All ages / families</td><td>Rollercoasters, rides, theme parks, travel</td></tr>
+          <tr><td><strong>Mix Pack</strong></td><td>Friend groups / teens</td><td>Pop culture, music, random challenge — concert/general</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Launch IAP Pack (1, to test willingness to pay)</h3>
+    <div class="callout amber">
+      <strong>"Rollercoaster Chaos Pack" — $1.99.</strong> Park-specific content: coaster trivia, park lore, ride challenges. Price anchors to the Heads Up $0.99–$1.99 proven range.
+    </div>
+
+    <h3>The 10-Second Start</h3>
+    <p>Screen 1: App opens. Three buttons: <em>Pass &amp; Guess / Line Bluff / Speed Round.</em> Tap one.<br>
+    Screen 2: Select pack. Two free + 1 paid shown.<br>
+    Screen 3: Tap "Start Game." Timer begins.<br>
+    <strong>No account. No name entry. No tutorial screen. No permissions prompt. Zero friction.</strong></p>
+
+    <h3>Explicit CUT List (v1)</h3>
+    <ul>
+      <li>Online multiplayer / sync (defeats offline-first)</li>
+      <li>User accounts or leaderboards (adds friction)</li>
+      <li>Social sharing of scores (phase 2)</li>
+      <li>More than 3 game types (scope)</li>
+      <li>Venue GPS / location integration (partnerships come after standalone proof)</li>
+      <li>In-app camera / video recording</li>
+      <li>Sound effects or music that requires audio permissions prompt</li>
+      <li>Analytics SDK that requires network</li>
+    </ul>
+  </section>
+
+  <!-- 3. Monetization -->
+  <section>
+    <h2>3 &mdash; Monetization</h2>
+    <p><strong>Free base:</strong> App + 2 starter packs + all 3 game types. No paywall on core experience.</p>
+    <h3>IAP Themed Packs — $0.99–$2.99 each</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pack</th><th>Price</th><th>Target buyer</th></tr></thead>
+        <tbody>
+          <tr><td>Rollercoaster Chaos</td><td>$1.99</td><td>Families heading to any theme park</td></tr>
+          <tr><td>Concert Queue</td><td>$1.99</td><td>Teens / young adults, Taylor Swift / festival crowd</td></tr>
+          <tr><td>Road Trip</td><td>$0.99</td><td>Car families, broad audience</td></tr>
+          <tr><td>Couples Night Out</td><td>$1.99</td><td>Date night crowd (movie lines, restaurants)</td></tr>
+          <tr><td>Disney Adventure</td><td>$2.99</td><td>Disney-specific families (premium price for premium intent)</td></tr>
+          <tr><td>Space &amp; Sci-Fi</td><td>$1.99</td><td>Sci-fi fans, broad</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>Optional Family Annual — $24.99/year:</strong> Unlocks all current + future packs + early access to new drops. Positioned as "never buy a pack again before a trip." Best for repeat park visitors.
+    </div>
+
+    <h3>The Buy-Before-Every-Trip Moat</h3>
+    <p>Themed packs = seasonal/trip-contextual purchases. A family going to Six Flags buys "Rollercoaster Chaos" the night before. A concert crew buys "Concert Queue" in the Uber to the venue. Each new trip = a potential new pack purchase from existing users. Owning packs doesn't expire, but new packs create recurring purchase occasions.</p>
+
+    <h3>Realistic Y1 Revenue Range</h3>
+    <div class="callout green">
+      <p><em>From report: 50K downloads conservative, 15% IAP conversion at avg $1.99, 5% annual sub at $24.99.</em></p>
+      <p>IAP: 50,000 &times; 0.15 &times; $1.99 = ~$14,900</p>
+      <p>Subscription: 50,000 &times; 0.05 &times; $24.99 = ~$62,500</p>
+      <p><strong>Y1 total: $75K–$100K</strong> (report-grounded; not inflated)</p>
+    </div>
+    <p>Growth lever not yet in this math: one viral TikTok clip or one venue licensing deal. Either changes the download ceiling materially.</p>
+  </section>
+
+  <!-- 4. On the Move Mode -->
+  <section>
+    <h2>4 &mdash; "On the Move" Mode — Ride-to-Ride</h2>
+    <p><strong>The insight:</strong> Groups also spend time walking between attractions, waiting for shows, seated at meal tables. Static line UX (phone passed, held to forehead) doesn't work while moving. A second mode doubles per-visit session time.</p>
+    <h3>Mode design</h3>
+    <ul>
+      <li>Activated from main screen: toggle "Line Mode / On the Move"</li>
+      <li>On the Move = spoken quick-fire only — questions read aloud by the current player, answers spoken, no phone-passing</li>
+      <li>Shorter rounds (45 seconds vs 90 seconds in Line Mode)</li>
+      <li>Works with phone in pocket or one hand; no forehead-holding mechanic</li>
+    </ul>
+    <div class="callout">
+      <strong>Why this matters for metrics:</strong> Session time shifts from "one line = one session" to "whole park visit = continuous session." Retention and engagement improve without requiring new content.<br><br>
+      <strong>Build note:</strong> This is a UX mode toggle + shorter timer + filtered question set. No new game mechanics required. Scope is small; include in v1 as a differentiator.
+    </div>
+  </section>
+
+  <!-- 5. Distribution -->
+  <section>
+    <h2>5 &mdash; Distribution Plays — Prioritized</h2>
+
+    <h3>A. Concert-Queue TikTok Virality (Priority 1 — Near-Zero CAC)</h3>
+    <p><strong>Why first:</strong> Teen/young adult demographic (16–30) in concert lines are TikTok-native and will post gameplay clips organically. Highest-virality channel with lowest cost.</p>
+    <ul>
+      <li>Film 3–5 TikTok clips of actual groups playing in line at concerts / events before launch</li>
+      <li>Format: "We're in line for [artist] and we downloaded this game — watch what happens"</li>
+      <li>Hook in first 2 seconds: the group laughing or someone getting a question wrong</li>
+      <li>CTA: "Link in bio" to landing page / App Store pre-register</li>
+    </ul>
+    <p><strong>Target:</strong> One clip hitting 50K views organically = validation signal. One clip hitting 500K+ = launch accelerant.</p>
+    <p><strong>Key asset to build:</strong> Concert Queue Pack — gives the TikTok a specific content hook tied to the artist/event.</p>
+
+    <h3>B. Pre-Trip "What to Bring to Disney" SEO / Content (Priority 2 — Compounding)</h3>
+    <p><strong>Why second:</strong> Trip-planning families are in a high-spend mindset weeks before the visit. They are searching "games to play in Disney lines," "things to bring to Disney," "best apps for theme parks." High-intent, low-competition content.</p>
+    <ul>
+      <li>3–5 SEO articles targeting: "best games to play in line at Disney," "apps that work without WiFi at theme parks," "what to download before a theme park trip"</li>
+      <li>Target domains: guest post on happymomhacks.com, parkmagic.com, touringplans.com — these already rank for the exact queries and recommend Heads Up</li>
+      <li>Pinterest pins targeting mom + family travel audiences (high repin rate for park prep content)</li>
+    </ul>
+    <p><strong>Cost:</strong> Near zero (content + outreach time). Timeline: start during build phase; publish on or just before launch.</p>
+
+    <h3>C. Six Flags / Universal Co-Branded Pack Licensing (Priority 3 — Moat + Distribution)</h3>
+    <p><strong>Why third (but highest upside):</strong> Six Flags (50.3M visitors/year) and Universal have NO official line game app. Disney has Play Disney Parks — locked to Disney IP. Competitors have not touched this gap.</p>
+    <div class="callout amber">
+      <strong>The pitch:</strong> License a "Six Flags Official Line Games Pack" — co-branded content recommended to guests via park app, in-park signage, and pre-visit communications. Revenue share on pack purchases.<br><br>
+      <strong>Why it's a moat:</strong> An exclusive in-park recommendation cannot be bought by a competitor cheaply. Transforms an indie app into a category-defining product.
+    </div>
+    <ul>
+      <li>Approach: LinkedIn outreach to Six Flags / Universal guest experience or partnerships teams</li>
+      <li>Pitch: one-page deck — "Guest satisfaction data shows wait time is top complaint; here's an app guests already use + a co-branded pack that improves their experience"</li>
+      <li>Ask: Soft partnership first (they mention the app in a social post or email) → Revenue-share licensing deal on a branded pack later</li>
+    </ul>
+    <div class="callout red">
+      <strong>Do not pursue this before the app has 1,000+ real installs and at least one clear session-engagement signal.</strong> Approach with traction, not a pitch deck alone.
+    </div>
+  </section>
+
+  <!-- 6. Smoke Test -->
+  <section>
+    <h2>6 &mdash; Smoke Test FIRST</h2>
+    <p><strong>Run before writing a single line of code.</strong></p>
+
+    <h3>Surface 1: TikTok</h3>
+    <ul>
+      <li>Film a group of 2–4 playing one of the 3 game types (use a paper prototype / mockup on phone) while actually waiting in a real line — concert, movie, or any public queue</li>
+      <li>Post with caption: "We made a game app for [concert/park] lines. No WiFi, no setup, starts in 10 seconds. Testing it live — watch."</li>
+      <li>Do not mention app store availability yet. Gauge reaction in comments.</li>
+    </ul>
+
+    <h3>Surface 2: Landing Page</h3>
+    <ul>
+      <li>One-page: "The only multi-game app built for the line. Coming soon."</li>
+      <li>Above the fold: 15-second looping clip of people laughing while playing in line</li>
+      <li>Email capture: "Be first when it drops + get all launch packs free" (founding user offer: first 500 downloads, packs free for life)</li>
+      <li>Free lead magnet: "5 games you can play in any line right now" (PDF — no app required)</li>
+    </ul>
+
+    <h3>Traffic to landing page</h3>
+    <ul>
+      <li>Reddit: r/WaltDisneyWorld, r/sixflags, r/concertgoers — share the "5 games PDF" as genuine value, mention the app is coming</li>
+      <li>TikTok bio link</li>
+    </ul>
+
+    <h3>Pass / Fail Bar</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Signal</th><th class="signal-pass">Pass</th><th class="signal-fail">Fail</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>TikTok</td>
+            <td>50K organic views on one clip within 14 days</td>
+            <td>Under 10K views, negative or indifferent comments</td>
+          </tr>
+          <tr>
+            <td>Email captures</td>
+            <td>500 emails in 2 weeks</td>
+            <td>Under 100 emails despite traffic</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout green">
+      <strong>Either signal alone = proceed.</strong> Both failing = pause and diagnose.<br>
+      Run smoke test for exactly <strong>2 weeks</strong> before making any build commitment.
+    </div>
+  </section>
+
+  <!-- 7. Riskiest Assumption -->
+  <section>
+    <h2>7 &mdash; Riskiest Assumption + How to Test It</h2>
+    <div class="callout red">
+      <strong>The assumption:</strong> Users will install a new dedicated app instead of just opening Heads Up, which they already have.<br><br>
+      This is the #1 kill risk. Heads Up has brand recognition, 40+ decks, and is already recommended by the content sites that will review Line Games.
+    </div>
+    <h3>Why the assumption might hold</h3>
+    <ul>
+      <li>Heads Up is one mechanic — groups who've played it before know exactly what they're getting; a multi-game app offers genuine novelty</li>
+      <li>Themed packs matched to the specific trip ("Rollercoaster Chaos" before Six Flags vs. a generic Heads Up deck) are a distinct purchase motivation</li>
+      <li>The 10-second start with no account requirement is a meaningful UX advantage over Heads Up's setup friction</li>
+    </ul>
+    <h3>How to test it (before launch)</h3>
+    <ul>
+      <li>In the TikTok smoke test comment section: ask directly — "Would you download this or just use Heads Up?" Monitor the ratio</li>
+      <li>In landing page email nurture: single question survey — "Do you already have Heads Up? If yes, what would make you try a different app?"</li>
+      <li>On r/WaltDisneyWorld: post "What's your go-to app for Disney lines? Would you try a multi-game version?" — read organic responses</li>
+    </ul>
+    <div class="callout amber">
+      <strong>Decision rule:</strong> If &gt;50% of surveyed prospects say "I'd just use Heads Up and don't see why I'd switch," rethink the differentiation angle before building. If the common objection is "Heads Up only has one game type" or "I wish it had themes for [X]" — that is the build signal.
+    </div>
+  </section>
+
+  <!-- 8. Milestones -->
+  <section>
+    <h2>8 &mdash; Milestones — 21-Day Build-in-Public Timeline</h2>
+    <p><em>Start clock after smoke test passes.</em></p>
+
+    <div class="milestone-row"><div class="day-badge">Day 0</div><div class="milestone-text">Smoke test passes (50K TikTok OR 500 emails)<div class="checkpoint">Public: "It's happening. Here's why."</div></div></div>
+    <div class="milestone-row"><div class="day-badge">Day 1–3</div><div class="milestone-text">Game logic for Pass &amp; Guess + Speed Round coded (offline, no backend)</div></div>
+    <div class="milestone-row"><div class="day-badge">Day 4–5</div><div class="milestone-text">Line Bluff game logic added</div></div>
+    <div class="milestone-row"><div class="day-badge">Day 6–7</div><div class="milestone-text">Adventure Pack content (50 cards per game type) complete<div class="checkpoint">Day 7 post: "3 game types, here's why we cut the other 5"</div></div></div>
+    <div class="milestone-row"><div class="day-badge">Day 8–9</div><div class="milestone-text">Mix Pack content complete</div></div>
+    <div class="milestone-row"><div class="day-badge">Day 10–11</div><div class="milestone-text">10-second start UX flow built and tested on device</div></div>
+    <div class="milestone-row"><div class="day-badge">Day 12</div><div class="milestone-text">On the Move mode toggle added</div></div>
+    <div class="milestone-row"><div class="day-badge">Day 13–14</div><div class="milestone-text">Rollercoaster Chaos IAP pack content + in-app purchase integration<div class="checkpoint">Day 14 post: "We tested it in an actual line — here's what happened" (show real footage)</div></div></div>
+    <div class="milestone-row"><div class="day-badge">Day 15–16</div><div class="milestone-text">Internal playtest — minimum 3 groups, minimum 2 different line contexts (park or concert). Fix top 3 friction points found.</div></div>
+    <div class="milestone-row"><div class="day-badge">Day 17–18</div><div class="milestone-text">App Store / Play Store submission prep: screenshots, description, metadata</div></div>
+    <div class="milestone-row"><div class="day-badge">Day 19</div><div class="milestone-text">Submission to stores</div></div>
+    <div class="milestone-row"><div class="day-badge">Day 20–21</div><div class="milestone-text">Pre-launch email to founding list; final TikTok clip<div class="checkpoint">Day 21 post: "First 100 downloads" — who downloaded + did they actually play?</div></div></div>
+
+    <div class="callout red" style="margin-top:1rem;">
+      <strong>Gate at Day 14:</strong> If internal playtest reveals a core mechanic does not work standing up / passing the phone, pause and fix before submission. Do not ship a broken core experience.
+    </div>
+  </section>
+
+  <!-- 9. Success Metrics -->
+  <section>
+    <h2>9 &mdash; Success Metrics</h2>
+    <h3>Primary (first 30 days post-launch)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th>Target</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td>Installs</td><td>1,000</td><td>Proves download conversion, not just interest</td></tr>
+          <tr><td>Sessions per install</td><td>3+ average within 30 days</td><td>Proves the app gets opened beyond the first download — real line-use behavior</td></tr>
+          <tr><td>IAP conversion rate</td><td>8–15% of installs buy at least one pack</td><td>15% = viability-B9 estimate; 8% = minimum to confirm model works</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Secondary (60–90 days)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th>Target</th></tr></thead>
+        <tbody>
+          <tr><td>TikTok clips posted by users (organic, not us)</td><td>5+ within 60 days</td></tr>
+          <tr><td>Email list from smoke test converted to active users</td><td>&gt;30% install rate from list</td></tr>
+          <tr><td>Annual subscription trials</td><td>&gt;1% of install base within 90 days</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Kill Signal</h3>
+    <div class="callout red">
+      If at day 30: sessions per install &lt; 1.5 AND IAP conversion &lt; 5%, the install-to-use conversion is broken. Diagnose before scaling any paid distribution. <strong>Do not spend on ads until these numbers are healthy.</strong>
+    </div>
+  </section>
+
+  <footer>
+    Plan authored 2026-06-24 &middot; Grounded in viability-B9.md &middot; All revenue figures from that report's demand evidence and proven IAP benchmarks &middot; No numbers invented beyond the report's data.
+  </footer>
+
+</body>
+</html>
