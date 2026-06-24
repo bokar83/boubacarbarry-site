@@ -135,44 +135,16 @@ nav.tnav a.here{color:#58a6ff;border-color:#0d419d}
 <div class="toast" id="toast"></div>
 
 <script>
-// CONFIG / AUTH
+// CONFIG
 const STORAGE_KEY = "absorb_triage_state_v1";
 const NOTES_KEY = "absorb_triage_notes_v1";
 const ORC_BASE = "https://agentshq.boubacarbarry.com/api/orc";
-const TOKEN_KEY = "atlas_token";
-const TOKEN_TS_KEY = "atlas_token_ts";
-const TOKEN_TTL_MS = 4 * 60 * 60 * 1000;
 
 let ITEMS = [];
 let STATE = {};
 let NOTES = {};
 let FILTER = "";
-let _TOKEN = null;
 let dragCard = null;
-
-// Sub-page auth: read atlas_token from sessionStorage, redirect to /atlas if missing/expired.
-(function boot() {
-  // Cross-origin token delivery via ?token= query param.
-  // sessionStorage on agentshq.boubacarbarry.com is invisible here on boubacarbarry.com,
-  // so the Atlas dashboard hands the token over in the URL.
-  const _urlParams = new URLSearchParams(location.search);
-  const _qToken = _urlParams.get('token');
-  if (_qToken) {
-    _TOKEN = _qToken;
-    sessionStorage.setItem(TOKEN_KEY, _qToken);
-    sessionStorage.setItem(TOKEN_TS_KEY, Date.now().toString());
-    // Clean token from URL bar without reload
-    history.replaceState({}, '', location.pathname);
-    return;
-  }
-  const t = sessionStorage.getItem(TOKEN_KEY);
-  const ts = sessionStorage.getItem(TOKEN_TS_KEY);
-  if (t && ts && Date.now() - parseInt(ts, 10) < TOKEN_TTL_MS) {
-    _TOKEN = t;
-    return;
-  }
-  window.location.href = "https://agentshq.boubacarbarry.com/atlas?next=" + encodeURIComponent(location.pathname + location.search);
-})();
 
 try { STATE = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (e) { STATE = {}; }
 try { NOTES = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}"); } catch (e) { NOTES = {}; }
@@ -432,16 +404,8 @@ function onDrop(e, targetBucket) {
 function loadItems() {
   const meta = document.getElementById("meta-line");
   meta.textContent = "Loading...";
-  fetch(ORC_BASE + "/atlas/absorb-triage-items", {
-    headers: { Authorization: "Bearer " + _TOKEN },
-  })
+  fetch(ORC_BASE + "/atlas/absorb-triage-items")
     .then(r => {
-      if (r.status === 401) {
-        sessionStorage.removeItem(TOKEN_KEY);
-        sessionStorage.removeItem(TOKEN_TS_KEY);
-        window.location.href = "https://agentshq.boubacarbarry.com/atlas?next=" + encodeURIComponent(location.pathname + location.search);
-        return null;
-      }
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     })
