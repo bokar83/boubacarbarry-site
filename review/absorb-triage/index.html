@@ -25,7 +25,9 @@ nav.tnav a.here{color:#58a6ff;border-color:#0d419d}
 .btn-primary{background:#238636;border-color:#2ea043;color:#fff}
 .btn-primary:hover{background:#2ea043}
 .stats{padding:8px 16px;font-size:12px;color:#8b949e;display:flex;gap:14px;flex-wrap:wrap;background:#0d1117;border-bottom:1px solid #21262d}
-.stats .stat{display:inline-flex;align-items:center;gap:5px}
+.stats .stat{display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:3px 8px;border:1px solid transparent;border-radius:6px;transition:border-color .12s,background .12s}
+.stats .stat:hover{border-color:#30363d}
+.stats .stat.active{border:2px solid #58a6ff;background:#0d419d22;padding:2px 7px}
 .stats .dot{display:inline-block;width:8px;height:8px;border-radius:50%}
 .dot.today{background:#3fb950}
 .dot.later{background:#d29922}
@@ -150,6 +152,7 @@ let ITEMS = [];
 let STATE = {};
 let NOTES = {};
 let FILTER = "";
+let activeFilter = null;
 let dragCard = null;
 
 try { STATE = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (e) { STATE = {}; }
@@ -349,6 +352,8 @@ function render() {
   });
 
   for (const it of filtered) {
+    const stateBucket = STATE[it.id] || "unset";
+    if (activeFilter && stateBucket !== activeFilter) continue;
     const bucket = STATE[it.id] || "today";
     const body = bodies[bucket] || bodies.today;
     body.appendChild(buildCard(it));
@@ -385,13 +390,20 @@ function renderStats() {
   ];
   for (const [cls, n, lbl] of labels) {
     const stat = document.createElement("span");
-    stat.className = "stat";
+    stat.className = "stat" + (activeFilter === cls ? " active" : "");
+    stat.title = activeFilter === cls ? "Click to show all" : "Click to show only " + lbl;
     const dot = document.createElement("span");
     dot.className = "dot " + cls;
     stat.appendChild(dot);
     stat.appendChild(document.createTextNode(" " + n + " " + lbl));
+    stat.addEventListener("click", () => setFilter(cls));
     stats.appendChild(stat);
   }
+}
+
+function setFilter(bucket) {
+  activeFilter = (activeFilter === bucket) ? null : bucket;
+  render();
 }
 
 // DRAG-AND-DROP
