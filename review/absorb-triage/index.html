@@ -161,6 +161,19 @@ function saveState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }
   catch (e) { showToast("State save failed"); }
 }
+
+// Persist a triage decision to the DB (fire-and-forget). Board buckets are
+// lowercase today/later/skip; the API expects uppercase TODAY/LATER/SKIP,
+// and null clears the decision (card back to Untriaged).
+const BUCKET_TO_STATUS = { today: "TODAY", later: "LATER", skip: "SKIP" };
+function pushTriage(itemId, bucket) {
+  const status = BUCKET_TO_STATUS[bucket] || null;
+  fetch(ORC_BASE + "/atlas/absorb-triage-items/" + itemId + "/triage", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: status }),
+  }).catch(err => console.warn("triage save failed:", err));
+}
 function saveNotes() {
   try { localStorage.setItem(NOTES_KEY, JSON.stringify(NOTES)); }
   catch (e) { showToast("Note save failed"); }
@@ -313,6 +326,7 @@ function buildCard(item) {
 function approveAndCopy(item, cardEl) {
   STATE[item.id] = "today";
   saveState();
+  pushTriage(item.id, "today");
 
   const whyStr = (item.why || []).join("; ");
   const note = NOTES[item.id] ? NOTES[item.id].replace(/\s*\n\s*/g, " ") : "";
@@ -414,6 +428,7 @@ function onDrop(e, targetBucket) {
   if (!dragCard) return;
   STATE[dragCard] = targetBucket;
   saveState();
+  pushTriage(dragCard, targetBucket);
   render();
 }
 
@@ -429,6 +444,18 @@ function loadItems() {
     .then(data => {
       if (!data) return;
       ITEMS = data.items || [];
+      // Restore DB-persisted triage decisions. localStorage wins if it already
+      // holds a decision for this id (preserves an unsaved local move); otherwise
+      // seed the bucket from item.triage_status (TODAY/LATER/SKIP -> lowercase).
+      const STATUS_TO_BUCKET = { TODAY: "today", LATER: "later", SKIP: "skip" };
+      let seeded = false;
+      for (const it of ITEMS) {
+        if (STATE[it.id] === undefined && it.triage_status) {
+          const b = STATUS_TO_BUCKET[it.triage_status];
+          if (b) { STATE[it.id] = b; seeded = true; }
+        }
+      }
+      if (seeded) saveState();
       const now = new Date();
       meta.textContent = ITEMS.length + " items pending | loaded " + now.toLocaleTimeString();
       render();
@@ -469,6 +496,10 @@ document.getElementById("filter").addEventListener("input", e => {
 
 document.getElementById("clear-state").addEventListener("click", () => {
   if (!confirm("Clear all triage selections?")) return;
+  // Clear DB too, else cleared decisions get re-restored on next load.
+  for (const it of ITEMS) {
+    if (it.triage_status || STATE[it.id]) pushTriage(it.id, null);
+  }
   STATE = {};
   saveState();
   render();
