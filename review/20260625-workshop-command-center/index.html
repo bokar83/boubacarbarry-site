@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workshop Command Center · AI Without Getting Burned</title>
+<meta name="description" content="Live operator command center for the AI Without Getting Burned workshop: to-do, gear test, slides, and rehearsal in one page.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800;9..144,900&family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800;9..144,900&family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap"></noscript>
+<style>
+  :root{
+    --paper:#f1e8d8;
+    --paper-2:#f7f0e3;
+    --card:#fbf6ec;
+    --ink:#20190f;
+    --ink-soft:#574a3a;
+    --ink-faint:#6b5d4b;
+    --ember:#bd3d12;
+    --ember-bright:#e35420;
+    --flame:#a51f14;
+    --signal:#2d6a48;
+    --signal-bg:#e7f0e6;
+    --line:rgba(32,25,15,.16);
+    --line-soft:rgba(32,25,15,.09);
+    --shadow:0 1px 0 rgba(32,25,15,.05), 0 10px 30px -18px rgba(32,25,15,.45);
+    --radius:9px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Hanken Grotesk",system-ui,sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    background-image:
+      radial-gradient(1200px 480px at 12% -8%, rgba(227,84,32,.10), transparent 60%),
+      radial-gradient(900px 420px at 100% 0%, rgba(45,106,72,.08), transparent 55%);
+    background-attachment:fixed;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+    mix-blend-mode:multiply;
+  }
+  .wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:0 20px 100px}
+
+  a{color:var(--ember)}
+  :focus-visible{outline:2.5px solid var(--ember);outline-offset:3px;border-radius:5px}
+  .todo input:focus-visible{outline-offset:2px}
+
+  /* ---------- sticky bar ---------- */
+  .bar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(241,232,216,.88);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .bar-in{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:9px 20px}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+  .spark{width:22px;height:22px;flex:0 0 auto;display:grid;place-items:center;background:var(--ink);color:var(--paper-2);border-radius:6px;font-family:"Fraunces";font-weight:900;font-size:14px}
+  .brand b{font-size:14px}
+  .brand span{color:var(--ink-faint);font-weight:600;font-size:12px}
+  .bar-spacer{flex:1}
+  .clock{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:var(--ink-soft);white-space:nowrap}
+  .mini-prog{display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .mini-prog .track{width:90px;height:7px;border-radius:99px;background:var(--line-soft);overflow:hidden;border:1px solid var(--line-soft)}
+  .mini-prog .fill{height:100%;width:0;background:linear-gradient(90deg,var(--ember),var(--signal));transition:width .4s ease}
+  .mini-prog b{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600}
+  @media(max-width:680px){.clock{display:none}.brand span{display:none}}
+
+  /* ---------- hero ---------- */
+  header.hero{padding:42px 0 14px}
+  .kicker{display:inline-flex;align-items:center;gap:9px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ember);margin-bottom:18px}
+  .kicker::before{content:"";width:26px;height:2px;background:var(--ember)}
+  h1.title{
+    font-family:"Fraunces",serif;font-weight:900;line-height:.94;letter-spacing:-.02em;
+    font-size:clamp(44px,8.4vw,86px);
+  }
+  h1.title .burn{font-style:italic;color:var(--ember);position:relative}
+  .lede{font-family:"Fraunces",serif;font-size:clamp(17px,2.5vw,22px);font-weight:400;font-style:italic;color:var(--ink-soft);margin-top:14px;max-width:40ch}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 13px;font-size:13px;font-weight:600;color:var(--ink-soft)}
+  .chip svg{width:13px;height:13px;color:var(--ember)}
+  .spine{
+    margin-top:24px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+    border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);padding:14px 0;
+  }
+  .spine .sm{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+  .spine .big{font-family:"Fraunces",serif;font-weight:800;font-size:clamp(20px,3.6vw,30px);letter-spacing:-.01em}
+
+  /* ---------- alert ---------- */
+  .alert{
+    display:flex;gap:14px;align-items:flex-start;margin-top:22px;
+    background:linear-gradient(180deg,#fff4ec,#fdeadf);
+    border:1.5px solid var(--ember);border-radius:var(--radius);
+    padding:15px 17px;box-shadow:var(--shadow);
+  }
+  .alert .ic{flex:0 0 auto;width:34px;height:34px;border-radius:8px;background:var(--ember);color:#fff;display:grid;place-items:center;font-weight:900;font-family:"Fraunces";font-size:18px}
+  .alert h3{font-size:15px;font-weight:800;letter-spacing:.01em}
+  .alert p{font-size:13.5px;color:var(--ink-soft);margin-top:3px}
+  .alert .when{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--flame)}
+
+  .note{background:var(--signal-bg);border:1px solid rgba(45,106,72,.5);border-radius:8px;padding:12px 15px;font-size:13.5px;color:#274f39;margin-top:16px}
+  .note b{color:var(--signal)}
+
+  /* ---------- readiness panel ---------- */
+  .ready{
+    margin-top:24px;background:var(--ink);color:var(--paper-2);border-radius:var(--radius);
+    padding:22px 24px;box-shadow:var(--shadow);
+    background-image:radial-gradient(600px 200px at 100% 0,rgba(227,84,32,.35),transparent 60%);
+  }
+  .ready .row{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+  .ready .lab{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#d8cab2}
+  .ready .num{font-family:"Fraunces",serif;font-weight:900;font-size:clamp(40px,9vw,62px);line-height:.9;letter-spacing:-.02em}
+  .ready .num small{font-size:.4em;color:#d8cab2;font-weight:600}
+  .ready .meta{font-size:13px;color:#d8cab2}
+  .ready .meta b{color:var(--paper-2)}
+  .bigtrack{margin-top:16px;height:14px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+  .bigfill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--ember-bright),#e8a317 55%,var(--signal));transition:width .5s cubic-bezier(.22,1,.36,1)}
+  .reset{margin-top:14px;font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:#d8cab2;background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:7px 13px;cursor:pointer;transition:.15s}
+  .reset:hover{background:rgba(255,255,255,.12);color:#fff}
+
+  /* ---------- section / details ---------- */
+  .sec-h{display:flex;align-items:center;gap:13px;margin:38px 0 4px}
+  .sec-h .n{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:#fff;background:var(--ember);border-radius:6px;padding:4px 9px}
+  .sec-h h2{font-family:"Fraunces",serif;font-weight:800;font-size:clamp(24px,4vw,34px);letter-spacing:-.015em}
+  .sec-sub{color:var(--ink-soft);font-size:14px;margin:0 0 14px 2px}
+
+  details{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    margin-top:12px;box-shadow:var(--shadow);overflow:hidden;
+  }
+  details[open]{border-color:rgba(32,25,15,.3)}
+  summary{
+    list-style:none;cursor:pointer;padding:15px 18px;display:flex;align-items:center;gap:12px;
+    font-weight:700;font-size:15.5px;user-select:none;transition:background .15s;
+  }
+  summary::-webkit-details-marker{display:none}
+  summary:hover{background:var(--paper-2)}
+  summary .chev{margin-left:auto;flex:0 0 auto;width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--line);border-radius:6px;transition:transform .25s;color:var(--ember)}
+  details[open] summary .chev{transform:rotate(90deg);background:var(--ember);color:#fff;border-color:var(--ember)}
+  summary .tagn{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;color:var(--ink-faint);background:var(--paper);border:1px solid var(--line-soft);padding:2px 8px;border-radius:5px}
+  summary .cnt{font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:600;color:var(--signal)}
+  .body{padding:4px 18px 20px}
+
+  /* ---------- todo ---------- */
+  .grp{margin-top:10px}
+  .grp + .grp{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line)}
+  .grp-h{display:flex;align-items:baseline;gap:7px;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ember);margin-bottom:9px;flex-wrap:wrap}
+  .grp-h .gc{color:var(--ink-faint)}
+  .todo{display:flex;gap:11px;align-items:flex-start;padding:9px 11px;border-radius:8px;transition:background .15s}
+  .todo:hover{background:var(--paper-2)}
+  .todo + .todo{margin-top:2px}
+  .todo input{appearance:none;-webkit-appearance:none;flex:0 0 auto;width:22px;height:22px;margin-top:1px;border:2px solid var(--ink-soft);border-radius:6px;cursor:pointer;position:relative;transition:.15s;background:var(--paper-2)}
+  .todo input:hover{border-color:var(--ember)}
+  .todo input:checked{background:var(--signal);border-color:var(--signal)}
+  .todo input:checked::after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+  .todo label{font-size:14.5px;cursor:pointer;line-height:1.4}
+  .todo label .hint{display:block;font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+  .todo.done label{color:var(--ink-faint);text-decoration:line-through;text-decoration-color:rgba(45,106,72,.6)}
+  .todo.done label .hint{text-decoration:none}
+
+  /* ---------- timeline ---------- */
+  .tl{margin-top:6px}
+  .tl-row{display:grid;grid-template-columns:118px 1fr;gap:14px;padding:11px 0;border-bottom:1px solid var(--line-soft);align-items:baseline}
+  .tl-row:last-child{border-bottom:none}
+  .tl-row .t{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--ember)}
+  .tl-row.go .t{color:var(--flame)}
+  .tl-row .d{font-size:14px}
+  .tl-row.go .d{font-weight:700}
+  @media(max-width:560px){.tl-row{grid-template-columns:90px 1fr;gap:10px}}
+
+  /* ---------- slides ---------- */
+  .frame{margin-top:14px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#000;box-shadow:var(--shadow)}
+  .frame .topbar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:var(--ink);color:var(--paper-2)}
+  .frame .dot{width:10px;height:10px;border-radius:99px;background:#5e5141}
+  .frame .topbar b{margin-left:8px;font-size:12px;font-weight:600;font-family:"IBM Plex Mono",monospace}
+  .frame iframe{display:block;width:100%;height:560px;border:0;background:#0b0b0b}
+  @media(max-width:560px){.frame iframe{height:360px}}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px;text-decoration:none;border-radius:8px;padding:11px 17px;cursor:pointer;transition:.15s;border:1.5px solid var(--ink)}
+  .btn.solid{background:var(--ink);color:var(--paper-2)}
+  .btn.solid:hover{background:var(--ember);border-color:var(--ember)}
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+
+  /* ---------- rehearse ---------- */
+  .principles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:8px}
+  @media(max-width:600px){.principles{grid-template-columns:1fr}}
+  .prin{display:flex;gap:11px;background:var(--paper-2);border:1px solid var(--line-soft);border-radius:8px;padding:12px 13px}
+  .prin .pn{font-family:"Fraunces",serif;font-weight:900;font-size:22px;color:var(--ember);line-height:1;flex:0 0 auto}
+  .prin p{font-size:13.5px;line-height:1.4}
+
+  .step{border:1px solid var(--line);border-top:3px solid var(--ember);border-radius:8px;background:var(--paper-2);margin-top:14px;overflow:hidden}
+  .step > summary{background:var(--paper-2)}
+  .step .body{padding:2px 16px 18px}
+  .stepkind{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--ember);padding:3px 9px;border-radius:5px}
+
+  .field{margin-top:14px}
+  .field .ft{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+  .field .ft .ico{color:var(--ember)}
+  .say{background:#fff;border:1px solid var(--ember);border-radius:8px;padding:11px 14px;font-family:"Fraunces",serif;font-style:italic;font-size:16px;color:var(--ink);line-height:1.4}
+  .say::before{content:"\201C";font-weight:900;color:var(--ember)}
+  .say::after{content:"\201D";font-weight:900;color:var(--ember)}
+  .seeexp{font-size:13.5px;color:var(--ink-soft);line-height:1.45}
+  .fallback{background:#fbeee6;border:1px solid rgba(165,31,20,.4);border-radius:8px;padding:11px 14px;font-size:13px;color:#6e2218}
+  .fallback b{color:var(--flame)}
+
+  .promptwrap{position:relative;margin-top:6px}
+  pre.code{
+    font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.55;
+    background:var(--ink);color:#f0e7d6;border-radius:8px;padding:15px 16px;
+    overflow-x:auto;white-space:pre-wrap;word-break:break-word;border:1px solid rgba(0,0,0,.3);
+  }
+  pre.code .ph{color:#f0b13a}
+  pre.code.short{background:#2a2118}
+  .copy{
+    position:absolute;top:9px;right:9px;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+    background:rgba(255,255,255,.12);color:#f0e7d6;border:1px solid rgba(255,255,255,.3);
+    border-radius:6px;padding:5px 10px;cursor:pointer;transition:.15s;backdrop-filter:blur(3px);
+  }
+  .copy:hover{background:var(--ember);border-color:var(--ember);color:#fff}
+  .copy.ok{background:var(--signal);border-color:var(--signal);color:#fff}
+
+  /* ---------- assets ---------- */
+  .assets{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-top:6px}
+  @media(max-width:600px){.assets{grid-template-columns:1fr}}
+  a.asset{display:flex;gap:12px;align-items:center;text-decoration:none;color:var(--ink);background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:13px 14px;transition:.15s}
+  a.asset:hover{background:#fff;border-color:var(--ember);transform:translateY(-1px)}
+  a.asset .ai{flex:0 0 auto;width:36px;height:36px;border-radius:8px;background:var(--ink);color:var(--paper-2);display:grid;place-items:center;font-family:"Fraunces";font-weight:900}
+  a.asset .at b{display:block;font-size:14px;font-weight:700;color:var(--ink)}
+  a.asset .at span{font-size:11.5px;color:var(--ink-soft);font-family:"IBM Plex Mono",monospace;word-break:break-all}
+  .pathnote{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-soft);background:var(--paper-2);border:1px solid var(--line-soft);border-radius:7px;padding:10px 12px;margin-top:10px;word-break:break-all;line-height:1.7}
+
+  footer.foot{margin-top:46px;text-align:center;color:var(--ink-soft);font-size:12.5px;border-top:1px solid var(--line);padding-top:20px}
+  footer.foot b{color:var(--ink)}
+
+  /* ---------- print ---------- */
+  @media print{
+    body{background:#fff;color:#000}
+    body::before,.bar,.ready .reset,.copy,.frame iframe,.btnrow{display:none!important}
+    .wrap{max-width:100%;padding:0}
+    .ready{background:#fff;color:#000;border:2px solid #000}
+    .ready .lab,.ready .meta,.ready .num small{color:#333}
+    details,.step,.prin,.todo,.alert,.note{break-inside:avoid;box-shadow:none}
+    summary .chev{display:none}
+    pre.code{background:#f4f4f4;color:#000;border:1px solid #999}
+    pre.code .ph{color:#a04000}
+    a.asset .at span,.pathnote{color:#333}
+    h1.title{font-size:40px}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand"><span class="spark">C</span><b>Command Center</b><span>· Catalyst Works</span></div>
+    <div class="bar-spacer"></div>
+    <div class="clock" id="clock">--:--</div>
+    <div class="mini-prog" title="Readiness">
+      <div class="track"><div class="fill" id="miniFill"></div></div>
+      <b id="miniPct">0%</b>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <header class="hero">
+    <div class="kicker">Operator brief · Thu June 25 · Live tonight</div>
+    <h1 class="title">AI Without<br>Getting <span class="burn">Burned</span></h1>
+    <p class="lede">Your one-stop deck for tonight: the to-do, the gear tests, the slides, and the full rehearsal, all in one page.</p>
+
+    <div class="chips">
+      <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Thu June 25</span>
+      <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>19:00 to 20:30 · doors 18:30</span>
+      <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>SLCC Miller · Bldg 2, Rm 105, Sandy</span>
+      <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>0 paid · recorded learning rep</span>
+    </div>
+
+    <div class="spine">
+      <span class="sm">The spine</span>
+      <span class="big">"Tools change. Principles don't."</span>
+    </div>
+
+    <div class="alert">
+      <div class="ic" aria-hidden="true">!</div>
+      <div>
+        <h3>Leave for Sandy by <span class="when">17:30</span></h3>
+        <p>Enter Bldg #1 through the "Event Today" doors. Construction means the normal entrance may be closed. Eat before you leave (meals by 7pm). Arrive 18:00, set up, pre-access 18:30.</p>
+      </div>
+    </div>
+
+    <div class="note"><b>North-star (0 paid seats):</b> the recording IS tonight's deliverable. It becomes the lead-magnet that justifies the whole rep. Prep lean for walk-ins, nail the capture. Bad room audio is the only failure that kills the asset, so protect audio first.</div>
+  </header>
+
+  <!-- READINESS -->
+  <section class="ready" id="readyPanel" aria-label="Readiness">
+    <div class="row">
+      <div>
+        <div class="lab">Readiness</div>
+        <div class="num"><span id="bigPct">0</span><small>%</small></div>
+      </div>
+      <div class="meta" style="text-align:right">
+        <div><b id="doneCount">0</b> of <b id="totalCount">0</b> done</div>
+        <div id="leaveCountdown" style="margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="bigtrack"><div class="bigfill" id="bigFill"></div></div>
+    <button class="reset" id="resetBtn" type="button">↺ Reset checklist</button>
+  </section>
+
+  <!-- 1. TIMELINE -->
+  <div class="sec-h"><span class="n">01</span><h2>Today's timeline</h2></div>
+  <p class="sec-sub">The shape of the day, top to bottom. Tap to collapse.</p>
+  <details open>
+    <summary><span class="tagn">RUN</span>Day plan · 11:45 to 19:00 GO<span class="chev" aria-hidden="true">›</span></summary>
+    <div class="body">
+      <div class="tl">
+        <div class="tl-row"><span class="t">11:45–13:00</span><span class="d">Digital lock: slide test, spectacle pre-bake, recording method, QR sheet.</span></div>
+        <div class="tl-row"><span class="t">13:00–14:30</span><span class="d">Print run (handouts, QR sheet, labels) plus Costco run (water, snacks, ~12 bottles). Overlap them.</span></div>
+        <div class="tl-row"><span class="t">14:30–16:00</span><span class="d">Apply labels, pack and test gear (HDMI, hotspot, loaners), dry-run the opening and the spectacle.</span></div>
+        <div class="tl-row"><span class="t">16:00–17:15</span><span class="d">Buffer. Eat before leaving. Final pack.</span></div>
+        <div class="tl-row"><span class="t">17:30</span><span class="d">Leave for Sandy. Enter Bldg #1 "Event Today" doors.</span></div>
+        <div class="tl-row"><span class="t">18:00</span><span class="d">Arrive, set up.</span></div>
+        <div class="tl-row"><span class="t">18:30</span><span class="d">Pre-access: helpers walk the room, get everyone INTO Claude.</span></div>
+        <div class="tl-row go"><span class="t">19:00</span><span class="d">GO. Record the whole thing.</span></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2. CHECKLIST -->
+  <div class="sec-h"><span class="n">02</span><h2>Check-off &amp; test list</h2></div>
+  <p class="sec-sub">Every box drives the readiness bar above. Checks are saved on this device. Close it, reopen it, they hold.</p>
+
+  <details open>
+    <summary><span class="tagn">PREP</span>Master checklist<span class="cnt" id="ckSummary"></span><span class="chev" aria-hidden="true">›</span></summary>
+    <div class="body">
+
+      <div class="grp">
+        <div class="grp-h">Digital pack <span class="gc">· done, verify still true</span></div>
+        <div class="todo"><input type="checkbox" data-k="dig-plan" data-default="1" id="dig-plan"><label for="dig-plan">Workshop plan locked &amp; canonical for the series</label></div>
+        <div class="todo"><input type="checkbox" data-k="dig-rec" data-default="1" id="dig-rec"><label for="dig-rec">Recording setup locked (Game Bar method documented)</label></div>
+        <div class="todo"><input type="checkbox" data-k="dig-runbook" data-default="1" id="dig-runbook"><label for="dig-runbook">Live-build runbook written (3 steps, paste-proof)</label></div>
+        <div class="todo"><input type="checkbox" data-k="dig-qr" data-default="1" id="dig-qr"><label for="dig-qr">QR close-sheet built &amp; quality-battery passed</label></div>
+        <div class="todo"><input type="checkbox" data-k="dig-slides" data-default="1" id="dig-slides"><label for="dig-slides">Slides slop-free + slide-7 QR in place</label></div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Print <span class="gc">· before you leave</span></div>
+        <div class="todo"><input type="checkbox" data-k="pr-cards" id="pr-cards"><label for="pr-cards">~10 sets × 3 skill cards<span class="hint">Decision Council · Simplicity Check · Business Brain</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="pr-qr" id="pr-qr"><label for="pr-qr">QR close-sheet<span class="hint">Free audit · $497 cohort · $297 kit</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="pr-labels" id="pr-labels"><label for="pr-labels">Water-bottle labels<span class="hint">Measure the real bottle first, then print</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="pr-brief" id="pr-brief"><label for="pr-brief">One generic demo brief<span class="hint">"What AI could do for your business" for the volunteer demo. No real attendee's gaps on screen.</span></label></div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Costco + 12 bottles <span class="gc">· right-sized</span></div>
+        <div class="todo"><input type="checkbox" data-k="co-bottles" id="co-bottles"><label for="co-bottles">Buy ~12 water bottles<span class="hint">Right-sized to 12, not 30</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="co-snacks" id="co-snacks"><label for="co-snacks">Sealed water + wrapped snacks<span class="hint">Jackie Jolly approved 6/22</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="co-apply" id="co-apply"><label for="co-apply">Apply labels to bottles (measure first)</label></div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Pack &amp; test gear</div>
+        <div class="todo"><input type="checkbox" data-k="gr-laptop" id="gr-laptop"><label for="gr-laptop">Laptop</label></div>
+        <div class="todo"><input type="checkbox" data-k="gr-charger" id="gr-charger"><label for="gr-charger">65W USB-C charger</label></div>
+        <div class="todo"><input type="checkbox" data-k="gr-hdmi" id="gr-hdmi"><label for="gr-hdmi">Native HDMI cable<span class="hint">USB-C does NOT carry video. Bring real HDMI.</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="gr-phone" id="gr-phone"><label for="gr-phone">Phone + tripod (room capture / B-roll)</label></div>
+        <div class="todo"><input type="checkbox" data-k="gr-hotspot" id="gr-hotspot"><label for="gr-hotspot">MiFi hotspot: ON &amp; tested<span class="hint">Never venue WiFi for the demo machine</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="gr-loaners" id="gr-loaners"><label for="gr-loaners">2 to 3 loaner devices, pre-logged into Claude</label></div>
+        <div class="todo"><input type="checkbox" data-k="gr-shots" id="gr-shots"><label for="gr-shots">Slide screenshot backup ready</label></div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Preflight tests <span class="gc">· run at home, do not leave until they pass</span></div>
+        <div class="todo"><input type="checkbox" data-k="pf-rec" id="pf-rec"><label for="pf-rec">Recording 60s test<span class="hint">Win+Alt+R · mic icon lit · talk 30s + 2 slides + 1 Claude prompt · play back: video shows slides (not black) AND audio is clear</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="pf-winp" id="pf-winp"><label for="pf-winp">Win+P → Duplicate<span class="hint">NOT "Second screen only". That blanks the laptop and the capture records black.</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="pf-hdmi" id="pf-hdmi"><label for="pf-hdmi">HDMI output over native HDMI<span class="hint">Slides in a window/borderless, laptop stays primary; projector duplicates it</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="pf-hotspot" id="pf-hotspot"><label for="pf-hotspot">Hotspot ON &amp; tested on the demo machine</label></div>
+        <div class="todo"><input type="checkbox" data-k="pf-loaners" id="pf-loaners"><label for="pf-loaners">Loaner devices logged in</label></div>
+        <div class="todo"><input type="checkbox" data-k="pf-arc" id="pf-arc"><label for="pf-arc">Full live-build arc run clean once at home<span class="hint">Council → premortem → Simplicity Check. Both Projects frozen + PARACHUTE.txt open in Notepad with all paste blocks + screenshots.</span></label></div>
+        <div class="todo"><input type="checkbox" data-k="pf-stage" id="pf-stage"><label for="pf-stage">Stage hygiene<span class="hint">Browser zoom 150%+ · close every other tab · Do Not Disturb ON</span></label></div>
+      </div>
+
+    </div>
+  </details>
+
+  <!-- 3. SLIDES -->
+  <div class="sec-h"><span class="n">03</span><h2>Slide viewer</h2></div>
+  <p class="sec-sub">The deck, live and clickable right here. Use the fullscreen button when you present.</p>
+  <div class="frame">
+    <div class="topbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><b>workshop-deck</b></div>
+    <iframe src="../workshop-deck/" title="Workshop slide deck" loading="lazy"></iframe>
+  </div>
+  <div class="btnrow">
+    <a class="btn solid" href="../workshop-deck/" target="_blank" rel="noopener">⤢ Open slides fullscreen</a>
+  </div>
+  <div class="note"><b>Present via Win+P → Duplicate</b> (not "Second screen only"). Keep the slides in a window so Game Bar captures them, with the laptop as the primary display.</div>
+
+  <!-- 4. REHEARSE -->
+  <div class="sec-h"><span class="n">04</span><h2>Rehearse the whole thing</h2></div>
+  <p class="sec-sub">Run-of-show, the six principles, and the live build. Every paste, every line, every fallback. Practice from this page.</p>
+
+  <details>
+    <summary><span class="tagn">FLOW</span>Run of show · 90 minutes<span class="chev" aria-hidden="true">›</span></summary>
+    <div class="body">
+      <div class="tl">
+        <div class="tl-row"><span class="t">0–6</span><span class="d"><b>The room runs itself.</b> "I'm not doing this. My agents are." Un-copyable proof.</span></div>
+        <div class="tl-row"><span class="t">6–16</span><span class="d"><b>What AI is + the real burn.</b> Plain-English LLM + agentic. The burn is lock-in. The escape is owning a portable system. Translate every jargon term or lose them by minute 15.</span></div>
+        <div class="tl-row"><span class="t">16–22</span><span class="d"><b>Set up your portable base.</b> Everyone opens Claude, drops the one-page Business Brain. Fast early win.</span></div>
+        <div class="tl-row go"><span class="t">22–50</span><span class="d"><b>HERO / FLOOR: install + run The Decision Council.</b> Paste a REAL decision, watch 5 advisors pressure-test it in 30s. Premortem bonus. Never cut.</span></div>
+        <div class="tl-row"><span class="t">50–60</span><span class="d"><b>Live mini-audit (WOW).</b> Agents pull public data, score AI-readiness on screen. The self-realized gap is the hook for the close.</span></div>
+        <div class="tl-row"><span class="t">60–72</span><span class="d"><b>The live build.</b> Use the Council to decide whether to build the Simplicity Check, then build it live. The system improves itself on stage.</span></div>
+        <div class="tl-row"><span class="t">72–82</span><span class="d"><b>Hand them The Simplicity Check + recap.</b> They leave with 2 daily tools + their brain file.</span></div>
+        <div class="tl-row"><span class="t">82–90</span><span class="d"><b>Close: "you saw the trailer."</b> Audit score is the hook. "Want the full movie? Book your audit." QR to calendar. Offer under 10 min, Q&amp;A after.</span></div>
+      </div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="tagn">SPINE</span>The six principles<span class="chev" aria-hidden="true">›</span></summary>
+    <div class="body">
+      <div class="principles">
+        <div class="prin"><span class="pn">1</span><p>An LLM predicts from what you give it. How you direct it (context plus clear instruction) is the real skill.</p></div>
+        <div class="prin"><span class="pn">2</span><p>Give it your context once, then reuse it (your brain file / memory).</p></div>
+        <div class="prin"><span class="pn">3</span><p>Turn what you repeat into a saved recipe you own: a "skill."</p></div>
+        <div class="prin"><span class="pn">4</span><p>Agentic means it DOES multi-step work, not just answers. You delegate, not just ask.</p></div>
+        <div class="prin"><span class="pn">5</span><p>Pressure-test and simplify your thinking. The Council and the Simplicity Check are meta-skills that ride any tool.</p></div>
+        <div class="prin"><span class="pn">6</span><p>Own it, move it. Never get locked in.</p></div>
+      </div>
+      <div class="note" style="margin-top:14px"><b>Proof line:</b> "I went from ChatGPT to Gemini to Claude, and other tools since, and never lost a step, because I kept the principles, not the product."</div>
+    </div>
+  </details>
+
+  <details open>
+    <summary><span class="tagn">BUILD</span>The live build: 3 steps<span class="chev" aria-hidden="true">›</span></summary>
+    <div class="body">
+      <div class="fallback" style="margin-top:6px"><b>Golden rule on stage:</b> every paste below also sits in PARACHUTE.txt in a second window. Never type from memory. If anything stalls, read the pre-recorded reveal off the screenshot and keep moving. The Council cannot "fail"; it just argues. Say the one-liner BEFORE you paste, so the room knows what to watch.</div>
+
+      <!-- STEP 1 -->
+      <details class="step" open>
+        <summary><span class="stepkind">Step 1</span> Install + run The Decision Council<span class="chev" aria-hidden="true">›</span></summary>
+        <div class="body">
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">▸</span> Paste: install prompt (into the Project's custom instructions)</div>
+            <div class="promptwrap">
+              <button class="copy" type="button" data-copy="p1">Copy</button>
+              <pre class="code" id="p1">You are my Decision Council. When I give you a decision, respond as five
+separate advisors, each in one short paragraph:
+
+1. THE CONTRARIAN: argue hard against the decision.
+2. FIRST PRINCIPLES: list the assumptions I am making and which ones are shaky.
+3. THE EXPANSIONIST: describe a bolder, bigger version of this.
+4. THE OUTSIDER: react with zero context, like a smart stranger hearing it cold.
+5. THE EXECUTOR: give the first concrete step and the single thing most likely to kill it.
+
+Then finish with VERDICT: proceed, change, or kill, in one sentence, and why.
+Be direct. No flattery. Do not agree with me by default.
+
+My decision is: <span class="ph">[paste your decision here]</span></pre>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">▸</span> Then paste a decision (ask the room first; use this sample if nobody bites)</div>
+            <div class="promptwrap">
+              <button class="copy" type="button" data-copy="p1d">Copy</button>
+              <pre class="code short" id="p1d">Should I hire a part-time VA or build an agent to handle my inbox?</pre>
+            </div>
+            <p class="seeexp" style="margin-top:8px">Coach the input out loud: "Give it a REAL decision with stakes, not 'should I use AI.' The sharper your decision, the sharper the council." Take a volunteer's only if it's specific.</p>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">◆</span> Say it out loud</div>
+            <div class="say">Watch: five real advisors are about to pressure-test a decision YOU could be making this week, and end with a verdict, in about ten seconds.</div>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">●</span> What the room sees / expected output</div>
+            <p class="seeexp">Five clearly separate, different voices in ~30s: one arguing against, one stripping to assumptions, one going bigger, one reacting cold, one naming the Monday move, then one blunt <b>VERDICT:</b> line. They visibly DISAGREE (the Contrarian actually pushes back). Short, scannable, under a page.</p>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">⚠</span> Fallback</div>
+            <div class="fallback"><b>Stall/error:</b> switch to PARACHUTE.txt, read the perfect run off the screenshot: "here's the exact run I did an hour ago." <b>Too agreeable:</b> add <i>"The advisors must disagree with each other, and the verdict must name the single biggest risk."</i> and re-run. <b>Login hiccup:</b> open the frozen Project from pre-flight. Never debug auth on stage.</div>
+          </div>
+        </div>
+      </details>
+
+      <!-- STEP 2 -->
+      <details class="step">
+        <summary><span class="stepkind">Step 2</span> Add the premortem<span class="chev" aria-hidden="true">›</span></summary>
+        <div class="body">
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">▸</span> Paste as a new message</div>
+            <div class="promptwrap">
+              <button class="copy" type="button" data-copy="p2">Copy</button>
+              <pre class="code" id="p2">Now add one more advisor: THE PREMORTEM. Assume this decision failed badly
+six months from now. Walk it back and tell me exactly why it failed and the
+earliest signal I would have seen. Then give me your updated VERDICT.</pre>
+            </div>
+            <p class="seeexp" style="margin-top:8px">Tighter version (also in PARACHUTE.txt):</p>
+            <div class="promptwrap">
+              <button class="copy" type="button" data-copy="p2s">Copy</button>
+              <pre class="code short" id="p2s">Assume this failed badly six months from now. Walk it back and tell me why.</pre>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">◆</span> Say it out loud</div>
+            <div class="say">One line, 'assume this already failed', and the same tool now catches the thing that would've cost you, before it costs you.</div>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">●</span> What the room sees / expected output</div>
+            <p class="seeexp">The same council reruns; a new <b>THE PREMORTEM</b> block imagines the failure already happened, names a concrete cause + the earliest warning signal, and the <b>VERDICT</b> shifts or hardens. The contrast is the point: it caught what round one missed.</p>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">⚠</span> Fallback</div>
+            <div class="fallback">The premortem IS the universal save. If Step 1 ran flat, this almost always produces real tension. If the whole thing errors, read the pre-recorded premortem screenshot. The message ("one sentence upgraded my tool") survives even from a screenshot.</div>
+          </div>
+        </div>
+      </details>
+
+      <!-- STEP 3 -->
+      <details class="step">
+        <summary><span class="stepkind">Step 3</span> Use the Council to build the Simplicity Check<span class="chev" aria-hidden="true">›</span></summary>
+        <div class="body">
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">▸</span> Move A: ask the Council (paste into the Decision Council project)</div>
+            <div class="promptwrap">
+              <button class="copy" type="button" data-copy="p3a">Copy</button>
+              <pre class="code" id="p3a">My decision is: should I build a second skill called the Simplicity Check —
+a tool that takes anything I am building or overthinking and finds the
+simplest version that still works, plus what to cut? Give me the full council
+and a verdict.</pre>
+            </div>
+            <div class="field">
+              <div class="ft"><span class="ico" aria-hidden="true">◆</span> Say it out loud</div>
+              <div class="say">I'm going to let the tool I just built decide whether the NEXT tool is worth building. The system is about to improve itself, live.</div>
+            </div>
+            <p class="seeexp">Room sees: the tool you built ten minutes ago evaluates its own next upgrade. Five advisors plus a verdict (almost certainly proceed). If it says "change," even better; follow its advice while building.</p>
+            <div class="ft" style="margin-top:10px"><span class="ico" aria-hidden="true">⚠</span> Fallback</div>
+            <div class="fallback">Move A errors: read the frozen Council-verdict screenshot: "it told me to build it, so let's build it." Momentum preserved.</div>
+          </div>
+
+          <div class="field" style="border-top:1px dashed var(--line);padding-top:14px">
+            <div class="ft"><span class="ico" aria-hidden="true">▸</span> Move B: build it (new Project "Simplicity Check", paste into custom instructions)</div>
+            <div class="promptwrap">
+              <button class="copy" type="button" data-copy="p3b">Copy</button>
+              <pre class="code" id="p3b">You are my Simplicity Check. When I give you a plan, a process, or something
+I am building, answer in four short parts:
+
+1. WHERE IT IS OVERCOMPLICATED: name the parts adding weight, not value.
+2. THE SIMPLEST VERSION THAT WORKS: describe the stripped-down core.
+3. AM I SKIPPING THE BASICS: call out any boring fundamental I am missing.
+4. CUT LIST: the specific things I can remove right now.
+
+Bias hard toward simple. Favor the plain version over the clever one.
+Be direct, no flattery.
+
+Here it is: <span class="ph">[paste what you are building here]</span></pre>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">▸</span> Run it on this (pre-baked sample)</div>
+            <div class="promptwrap">
+              <button class="copy" type="button" data-copy="p3s">Copy</button>
+              <pre class="code short" id="p3s">Here it is: my plan to get more clients is — start a newsletter, a podcast,
+a YouTube channel, post daily on three platforms, run paid ads, and build a
+referral program, all starting this month.</pre>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">◆</span> Say it out loud</div>
+            <div class="say">The council said build it, so we just built it, live, and now it's going to tell me what to throw away.</div>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">●</span> What the room sees / expected output</div>
+            <p class="seeexp">A brand-new tool created in under a minute, then it rips the overstuffed plan down to what matters and hands back a literal cut list. Four labeled parts (Where overcomplicated / Simplest version / Skipping basics / Cut list); the CUT LIST is concrete (e.g. "cut the podcast and the ads this month"); bias toward simple is obvious.</p>
+          </div>
+
+          <div class="field">
+            <div class="ft"><span class="ico" aria-hidden="true">⚠</span> Fallback</div>
+            <div class="fallback">Move B errors during the build: open the <b>Simplicity Check</b> Project frozen from pre-flight: "here's the one I built earlier, same prompt." Output thin: add <i>"Be specific to my situation, not generic"</i> and re-run. Either way the takeaway ("you now own two tools you built tonight") is intact.</div>
+          </div>
+        </div>
+      </details>
+
+      <div class="note" style="margin-top:16px"><b>The floor:</b> even if everything else fails, Step 1 + Step 2 alone (Council + premortem) is the minimum viable wow and must never be cut. One owned tool plus one "whoa, on MY decision" beats a feature parade. Nothing is built cold on stage. You're re-performing a known-good run, not gambling.</div>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="tagn">PREFLIGHT</span>60-second recording test (the night-before parachute)<span class="chev" aria-hidden="true">›</span></summary>
+    <div class="body">
+      <div class="tl">
+        <div class="tl-row"><span class="t">1</span><span class="d">Plug into the projector or any second monitor. Win+P → <b>Duplicate</b>.</span></div>
+        <div class="tl-row"><span class="t">2</span><span class="d">Open your slides + a Claude window exactly as you'll present.</span></div>
+        <div class="tl-row"><span class="t">3</span><span class="d">Win+Alt+R to start. Mic icon lit (not slashed)?</span></div>
+        <div class="tl-row"><span class="t">4</span><span class="d">Talk ~30s, click through 2 slides, run one quick Claude prompt. Start the phone recording too.</span></div>
+        <div class="tl-row"><span class="t">5</span><span class="d">Win+Alt+R to stop. Stop the phone.</span></div>
+        <div class="tl-row go"><span class="t">6</span><span class="d">Play BOTH back: video shows slide content (not black), voice clear on at least one track. Black means you're in "Second screen only", so switch to Duplicate and retest.</span></div>
+      </div>
+      <div class="note"><b>File lands at</b> C:\Users\HUAWEI\Videos\Captures\ (confirm the folder exists before you leave). After the workshop, copy to D:\Ai_Sandbox\agentsHQ\output\recordings\2026-06-25-ic-workshop\ and back up to Drive same night.</div>
+    </div>
+  </details>
+
+  <!-- 5. ASSETS -->
+  <div class="sec-h"><span class="n">05</span><h2>Assets &amp; links</h2></div>
+  <p class="sec-sub">Everything you might need to pull up or hand out, in one place.</p>
+  <div class="assets">
+    <a class="asset" href="../20260625-workshop-qr-close-sheet/" target="_blank" rel="noopener"><span class="ai" aria-hidden="true">Q</span><span class="at"><b>QR close-sheet</b><span>review/20260625-workshop-qr-close-sheet</span></span></a>
+    <a class="asset" href="../workshop-deck/" target="_blank" rel="noopener"><span class="ai" aria-hidden="true">▦</span><span class="at"><b>Slide deck</b><span>review/workshop-deck</span></span></a>
+  </div>
+  <div class="pathnote">
+    <b>Source docs (local, in the worktree):</b><br>
+    Live-build runbook · docs/handoff/2026-06-25-livebuild-runbook.md<br>
+    Recording setup · docs/handoff/2026-06-25-recording-setup.md<br>
+    Day run-sheet · docs/handoff/2026-06-25-workshop-day-runsheet.md<br>
+    Locked plan · docs/personal/ic-workshop-PLAN-LOCKED-2026-06-25.md<br>
+    QR close-sheet source · output/workshop/qr-close-sheet.html
+  </div>
+
+  <footer class="foot">
+    <b>AI Without Getting Burned</b> · Thu June 25 · SLCC Miller, Bldg 2 Rm 105, Sandy<br>
+    Tools change. Principles don't. · Catalyst Works
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  var KEY = "wcc-v2:";
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox][data-k]'));
+
+  function setProgress(){
+    var done = boxes.filter(function(b){return b.checked;}).length;
+    var total = boxes.length;
+    var pct = total ? Math.round(done/total*100) : 0;
+    document.getElementById('bigPct').textContent = pct;
+    document.getElementById('doneCount').textContent = done;
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('bigFill').style.width = pct + '%';
+    document.getElementById('miniFill').style.width = pct + '%';
+    document.getElementById('miniPct').textContent = pct + '%';
+    var ck = document.getElementById('ckSummary');
+    if(ck) ck.textContent = done + '/' + total;
+  }
+  function syncRow(b){
+    var row = b.closest('.todo');
+    if(row) row.classList.toggle('done', b.checked);
+  }
+
+  // seed defaults on first ever visit
+  if(!localStorage.getItem(KEY + '__seeded')){
+    boxes.forEach(function(b){
+      b.checked = b.getAttribute('data-default') === '1';
+      localStorage.setItem(KEY + b.dataset.k, b.checked ? '1' : '0');
+    });
+    localStorage.setItem(KEY + '__seeded', '1');
+  } else {
+    boxes.forEach(function(b){
+      var v = localStorage.getItem(KEY + b.dataset.k);
+      if(v !== null) b.checked = (v === '1');
+    });
+  }
+  boxes.forEach(function(b){
+    syncRow(b);
+    b.addEventListener('change', function(){
+      localStorage.setItem(KEY + b.dataset.k, b.checked ? '1' : '0');
+      syncRow(b);
+      setProgress();
+    });
+  });
+  setProgress();
+
+  // reset
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    if(!confirm('Reset the whole checklist back to defaults?')) return;
+    Object.keys(localStorage).forEach(function(k){ if(k.indexOf(KEY) === 0) localStorage.removeItem(k); });
+    location.reload();
+  });
+
+  // copy buttons
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var pre = document.getElementById(btn.getAttribute('data-copy'));
+      if(!pre) return;
+      var text = pre.innerText;
+      function done(){
+        var o = btn.textContent;
+        btn.textContent = 'Copied ✓';
+        btn.classList.add('ok');
+        setTimeout(function(){ btn.textContent = o; btn.classList.remove('ok'); }, 1500);
+      }
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done, legacy);
+      } else { legacy(); }
+      function legacy(){
+        var r = document.createRange(); r.selectNodeContents(pre);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        try{ document.execCommand('copy'); done(); }catch(e){}
+        s.removeAllRanges();
+      }
+    });
+  });
+
+  // live clock + leave-by countdown (local time)
+  function pad(n){ return (n<10?'0':'') + n; }
+  function tick(){
+    var now = new Date();
+    document.getElementById('clock').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    var leave = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 30, 0);
+    var go = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 19, 0, 0);
+    var el = document.getElementById('leaveCountdown');
+    if(!el) return;
+    var diff = leave - now;
+    if(diff > 0){
+      var h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000);
+      el.innerHTML = 'Leave by 17:30 in <b>' + h + 'h ' + m + 'm</b>';
+      el.style.color = diff < 3600000 ? '#ffb3a0' : '';
+    } else if(now < go){
+      el.innerHTML = '<b style="color:#ffb3a0">Past leave time, go now</b>';
+    } else {
+      el.innerHTML = '<b style="color:#9fe0b6">Showtime</b>';
+    }
+  }
+  tick(); setInterval(tick, 30000);
+
+  // expand all details for printing, restore after
+  var printOpened = [];
+  window.addEventListener('beforeprint', function(){
+    printOpened = [];
+    document.querySelectorAll('details').forEach(function(d){
+      if(!d.open){ d.open = true; printOpened.push(d); }
+    });
+  });
+  window.addEventListener('afterprint', function(){
+    printOpened.forEach(function(d){ d.open = false; });
+    printOpened = [];
+  });
+})();
+</script>
+</body>
+</html>
