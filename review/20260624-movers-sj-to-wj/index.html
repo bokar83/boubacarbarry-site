@@ -647,6 +647,54 @@
     }
     .company-card.called .called-badge { display: inline-block; }
 
+    /* ---- Per-company call checklist (in-card, persisted) ---- */
+    .cc-checklist {
+      margin-top: 14px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    .cc-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .cc-progress {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      background: var(--border);
+      border-radius: 20px;
+      padding: 2px 10px;
+      white-space: nowrap;
+    }
+    .cc-progress.done { color: var(--green); background: var(--green-dim); }
+    .cc-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 7px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .cc-item:hover { background: var(--accent-dim); }
+    .cc-item input {
+      margin-top: 3px;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      cursor: pointer;
+      accent-color: var(--green);
+    }
+    .cc-item span { font-size: 13px; color: var(--text); line-height: 1.45; }
+    .cc-item.checked { background: var(--green-dim); }
+    .cc-item.checked span { color: var(--green); text-decoration: line-through; }
+
     /* ---- Call tracker cards (verified shortlist) ---- */
     .tracker-card {
       background: var(--surface);
@@ -811,7 +859,7 @@
     </div>
 
     <!-- 1: Hall-a-Way Moving — 92 AV -->
-    <div class="company-card top">
+    <div class="company-card top" data-company-key="hall-a-way-moving" data-company-name="Hall-a-Way Moving">
       <div class="company-header">
         <div class="rank-badge top">1</div>
         <div>
@@ -848,7 +896,7 @@
     </div>
 
     <!-- 2: Moving Connections — 88 EST -->
-    <div class="company-card">
+    <div class="company-card" data-company-key="moving-connections" data-company-name="Moving Connections">
       <div class="company-header">
         <div class="rank-badge">2</div>
         <div>
@@ -886,7 +934,7 @@
     </div>
 
     <!-- 3: College HUNKS — 85 EST -->
-    <div class="company-card">
+    <div class="company-card" data-company-key="college-hunks" data-company-name="College HUNKS Hauling Junk and Moving">
       <div class="company-header">
         <div class="rank-badge">3</div>
         <div>
@@ -923,7 +971,7 @@
     </div>
 
     <!-- 4: Helping Hands Moving — 80 EST -->
-    <div class="company-card">
+    <div class="company-card" data-company-key="helping-hands-moving" data-company-name="Helping Hands Moving">
       <div class="company-header">
         <div class="rank-badge">4</div>
         <div>
@@ -960,7 +1008,7 @@
     </div>
 
     <!-- 5: Timpanogos Moving — 78 AV -->
-    <div class="company-card">
+    <div class="company-card" data-company-key="timpanogos-moving" data-company-name="Timpanogos Moving Company">
       <div class="company-header">
         <div class="rank-badge">5</div>
         <div>
@@ -997,7 +1045,7 @@
     </div>
 
     <!-- 6: Utah Valley Movers — 70 EST -->
-    <div class="company-card">
+    <div class="company-card" data-company-key="utah-valley-movers" data-company-name="Utah Valley Movers">
       <div class="company-header">
         <div class="rank-badge">6</div>
         <div>
@@ -1033,7 +1081,7 @@
     </div>
 
     <!-- 7: Two Men and a Truck — 65 EST -->
-    <div class="company-card">
+    <div class="company-card" data-company-key="two-men-and-a-truck" data-company-name="Two Men and a Truck (SLC)">
       <div class="company-header">
         <div class="rank-badge">7</div>
         <div>
@@ -1071,7 +1119,7 @@
     </div>
 
     <!-- 8: All My Sons — 57 EST -->
-    <div class="company-card">
+    <div class="company-card" data-company-key="all-my-sons" data-company-name="All My Sons Moving and Storage">
       <div class="company-header">
         <div class="rank-badge">8</div>
         <div>
@@ -1108,7 +1156,7 @@
     </div>
 
     <!-- 9: Best of Utah — 55 AV -->
-    <div class="company-card" style="border-color:var(--danger);">
+    <div class="company-card" style="border-color:var(--danger);" data-company-key="best-of-utah-moving" data-company-name="Best of Utah Moving Company LLC">
       <div class="company-header">
         <div class="rank-badge">9</div>
         <div>
@@ -1149,7 +1197,7 @@
   <!-- Call Checklist -->
   <div class="section">
     <h2>Call Checklist</h2>
-    <p style="font-size:13px; color:var(--muted); margin-bottom:14px;">Before and during every call, run this list. Check items off as you go.</p>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:14px;">Before and during every call, run this list. Check items off as you go. Each company card above also has its own saved checklist and notes.</p>
     <div class="checklist">
       <label class="check-item"><input type="checkbox"><span>Licensed and bonded in Utah? Get the USDOT number.</span></label>
       <label class="check-item"><input type="checkbox"><span>Do you offer full-service packing (materials included or extra cost)?</span></label>
@@ -1458,11 +1506,25 @@ Boubacar</pre>
 </script>
 
 <script>
-// Per-company call notes — persists to VPS Postgres via /api/orc/mover-notes.
+// Per-company call notes + checklist — persists to VPS Postgres via /api/orc/mover-notes.
 (function() {
   'use strict';
 
   var API = 'https://agentshq.boubacarbarry.com/api/orc/mover-notes';
+
+  // The 10 call-checklist items. Keys are stored in the checklist_state JSONB column.
+  var CHECKLIST = [
+    ['licensed',     'Licensed and bonded in Utah? (get USDOT number)'],
+    ['packing',      'Full-service packing offered? (materials included or extra?)'],
+    ['sameday',      'Same-day pack plus move available?'],
+    ['crew_count',   'How many movers on the crew?'],
+    ['rate_type',    'Hourly or flat rate? Any minimums?'],
+    ['extra_fees',   'Fuel, stair, or long-carry fees?'],
+    ['insurance',    "Insurance: what's covered if something breaks?"],
+    ['booking_lead', 'How far in advance to book?'],
+    ['availability', 'Available on my target move date?'],
+    ['boxes_only',   'Boxes-only delivery (no unpacking) confirmed?']
+  ];
 
   function fmtWhen(iso) {
     if (!iso) return '';
@@ -1481,12 +1543,14 @@ Boubacar</pre>
   cards.forEach(function(card) {
     var key = card.getAttribute('data-company-key');
     var name = card.getAttribute('data-company-name') || key;
+    // Only the 9 shortlist cards render the in-card checklist UI.
+    var hasChecklist = card.classList.contains('company-card');
 
-    // Per-card state — called_at is the source of truth for the "called" flag.
-    var state = { calledAt: null };
+    // Per-card state. called_at drives the "called" flag; checklist holds the box state.
+    var state = { calledAt: null, checklist: {} };
     var saveTimer = null;
 
-    // ---- Build UI ----
+    // ---- Build notes UI ----
     var block = document.createElement('div');
     block.className = 'notes-block';
 
@@ -1520,6 +1584,62 @@ Boubacar</pre>
     body.appendChild(calledRow);
     body.appendChild(area);
     body.appendChild(status);
+
+    // ---- Build checklist UI (shortlist cards only) ----
+    var boxes = {};
+    var itemEls = {};
+    var progressEl = null;
+
+    function updateProgress() {
+      if (!progressEl) return;
+      var done = 0;
+      CHECKLIST.forEach(function(it) { if (state.checklist[it[0]]) done++; });
+      progressEl.textContent = done + '/' + CHECKLIST.length + ' confirmed';
+      progressEl.classList.toggle('done', done === CHECKLIST.length && done > 0);
+    }
+
+    if (hasChecklist) {
+      var cl = document.createElement('div');
+      cl.className = 'cc-checklist';
+
+      var head = document.createElement('div');
+      head.className = 'cc-head';
+      var headLabel = document.createElement('span');
+      headLabel.textContent = 'Call checklist';
+      progressEl = document.createElement('span');
+      progressEl.className = 'cc-progress';
+      head.appendChild(headLabel);
+      head.appendChild(progressEl);
+      cl.appendChild(head);
+
+      CHECKLIST.forEach(function(it) {
+        var ckey = it[0];
+        var item = document.createElement('label');
+        item.className = 'cc-item';
+        var box = document.createElement('input');
+        box.type = 'checkbox';
+        box.setAttribute('data-ckey', ckey);
+        var span = document.createElement('span');
+        span.textContent = it[1];
+        item.appendChild(box);
+        item.appendChild(span);
+        cl.appendChild(item);
+        boxes[ckey] = box;
+        itemEls[ckey] = item;
+
+        box.addEventListener('change', function() {
+          state.checklist[ckey] = box.checked;
+          item.classList.toggle('checked', box.checked);
+          updateProgress();
+          // Checkboxes are instant — save immediately, no debounce.
+          if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+          save();
+        });
+      });
+
+      body.appendChild(cl);
+    }
+
     block.appendChild(toggle);
     block.appendChild(body);
     card.appendChild(block);
@@ -1543,6 +1663,16 @@ Boubacar</pre>
       calledWhen.textContent = fmtWhen(state.calledAt);
     }
 
+    function applyChecklistUI() {
+      CHECKLIST.forEach(function(it) {
+        var ckey = it[0];
+        var on = !!state.checklist[ckey];
+        if (boxes[ckey]) boxes[ckey].checked = on;
+        if (itemEls[ckey]) itemEls[ckey].classList.toggle('checked', on);
+      });
+      updateProgress();
+    }
+
     // ---- Toggle open/close ----
     toggle.addEventListener('click', function() {
       var open = body.classList.toggle('open');
@@ -1558,7 +1688,8 @@ Boubacar</pre>
         body: JSON.stringify({
           company_name: name,
           notes: area.value,
-          called_at: state.calledAt
+          called_at: state.calledAt,
+          checklist_state: state.checklist
         })
       }).then(function(r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -1572,7 +1703,7 @@ Boubacar</pre>
 
     function scheduleSave() {
       if (saveTimer) clearTimeout(saveTimer);
-      saveTimer = setTimeout(save, 1000);
+      saveTimer = setTimeout(save, 800);
     }
 
     // ---- Wire events ----
@@ -1596,8 +1727,12 @@ Boubacar</pre>
         if (!data) return;
         area.value = data.notes || '';
         state.calledAt = data.called_at || null;
+        state.checklist = data.checklist_state || {};
         applyCalledUI();
-        if ((data.notes && data.notes.length) || state.calledAt) {
+        applyChecklistUI();
+        var hasChecks = false;
+        CHECKLIST.forEach(function(it) { if (state.checklist[it[0]]) hasChecks = true; });
+        if ((data.notes && data.notes.length) || state.calledAt || hasChecks) {
           // Auto-open if there is something to show.
           body.classList.add('open');
           toggle.classList.add('open');
