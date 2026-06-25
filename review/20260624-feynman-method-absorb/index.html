@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feynman Method Absorb: Active Recall with AI</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222538;
+      --border: #2e3350;
+      --text: #e8eaf6;
+      --text-muted: #8b93c4;
+      --accent: #7c83ff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --orange: #f97316;
+      --red: #f87171;
+      --card-bg: #1e2130;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f4f5fb;
+        --surface: #ffffff;
+        --surface2: #eef0f8;
+        --border: #d0d4ec;
+        --text: #1a1d2e;
+        --text-muted: #5a6080;
+        --accent: #4f56d6;
+        --accent2: #7c3aed;
+        --card-bg: #ffffff;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    .meta-tag {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 36px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    h2 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+      margin-top: 48px;
+    }
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    p {
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .section {
+      margin-bottom: 48px;
+    }
+    /* Prompt cards */
+    .prompt-grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .prompt-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      position: relative;
+    }
+    .prompt-number {
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+    .prompt-card h3 {
+      font-size: 1rem;
+      margin-top: 4px;
+    }
+    .prompt-card p {
+      font-size: 0.9rem;
+      margin-bottom: 0;
+    }
+    .code-block {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: var(--accent2);
+      margin: 10px 0 4px;
+    }
+    /* Use cases */
+    .use-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .use-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .use-badge {
+      background: var(--surface2);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+    }
+    .use-card h3 {
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+    .use-card p {
+      font-size: 0.875rem;
+      margin-bottom: 0;
+    }
+    .status-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+    .status-hold { background: rgba(251,191,36,0.15); color: var(--yellow); }
+    .status-filed { background: rgba(124,131,255,0.15); color: var(--accent); }
+    .status-blocked { background: rgba(248,113,113,0.15); color: var(--red); }
+    .status-queued { background: rgba(52,211,153,0.1); color: var(--green); }
+    .status-idea { background: rgba(167,139,250,0.15); color: var(--accent2); }
+    /* Council verdict */
+    .verdict-grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .verdict-row {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .verdict-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      flex-shrink: 0;
+      min-width: 120px;
+      padding-top: 2px;
+    }
+    .verdict-row p {
+      font-size: 0.875rem;
+      margin: 0;
+    }
+    /* Carousel slides */
+    .carousel-grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .slide-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px 24px;
+      position: relative;
+    }
+    .slide-number {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .slide-card p {
+      font-size: 0.9rem;
+      color: var(--text);
+      margin: 0;
+    }
+    .slide-placeholder {
+      background: rgba(249, 115, 22, 0.08);
+      border: 2px dashed var(--orange);
+      border-radius: 12px;
+    }
+    .placeholder-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(249,115,22,0.15);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+    .placeholder-icon {
+      font-size: 1.2rem;
+    }
+    .placeholder-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--orange);
+      letter-spacing: 0.06em;
+    }
+    .slide-placeholder p {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    /* Next actions checklist */
+    .checklist {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .checklist li {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+    .check-num {
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .checklist p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .checklist p span {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+    /* Divider */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0 0;
+    }
+    .footer {
+      padding-top: 24px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    /* Illusion callout */
+    .callout {
+      background: var(--surface2);
+      border-left: 4px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+    .callout p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="meta-tag">Absorb · 2026-06-24</div>
+    <h1>Feynman Method Absorb: Active Recall with AI</h1>
+    <p class="subtitle">Structured absorb of Nav Toor's Feynman Method framework. Council + multi-lens. 5 identified uses.</p>
+
+    <!-- WHAT IT IS -->
+    <div class="section">
+      <h2>What It Is</h2>
+      <p>The Feynman Method applied to AI-assisted learning. Original insight from Nav Toor: most people use AI to consume (summaries, explanations) = fluency illusion. A few use AI for active recall = actual understanding. 20 minutes. One topic. Four prompts.</p>
+    </div>
+
+    <!-- FLUENCY ILLUSION -->
+    <div class="section">
+      <h2>The Fluency Illusion</h2>
+      <div class="callout">
+        <p>Reading feels like learning. It's not. You recognize ideas you've seen but can't explain them from scratch. AI summarization accelerates fluency illusion, not understanding.</p>
+      </div>
+      <p>The fix: switch from consume mode to recall mode. Recognition and recall are different cognitive outputs. AI makes recognition effortless — which makes the gap with actual understanding harder to notice.</p>
+    </div>
+
+    <!-- 4 PROMPTS -->
+    <div class="section">
+      <h2>The 4 Prompts (Core System)</h2>
+      <div class="prompt-grid">
+
+        <div class="prompt-card">
+          <div class="prompt-number">Prompt 1</div>
+          <h3>Concept Map</h3>
+          <div class="code-block">For [topic], give me: 5 core ideas, why each matters, one test question per idea.</div>
+          <p>Output: your learning scaffold. What to actually study. Forces explicit boundary-setting before passive reading begins.</p>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-number">Prompt 2</div>
+          <h3>Model + Your Version</h3>
+          <p>Claude writes plain-language model answers. Then <strong style="color:var(--text)">you</strong> write your own version without looking. Writing it yourself is where encoding happens. Reading Claude's answer = fluency. Writing your own = understanding.</p>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-number">Prompt 3</div>
+          <h3>Gap Finder</h3>
+          <p>Paste your explanations. Claude grades each: <strong style="color:var(--green)">STRONG</strong> / <strong style="color:var(--yellow)">WEAK</strong> / <strong style="color:var(--red)">WRONG</strong>. One idea to restudy surfaces immediately. No guessing where the gaps are.</p>
+        </div>
+
+        <div class="prompt-card">
+          <div class="prompt-number">Prompt 4</div>
+          <h3>Analogy Lock</h3>
+          <p>Two analogies per idea. Where each works, where each breaks. One sentence per idea to re-read the next morning. Spaced repetition hook. What sticks overnight is what you actually own.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- IDENTIFIED USES -->
+    <div class="section">
+      <h2>Identified Uses</h2>
+      <div class="use-grid">
+
+        <div class="use-card">
+          <div class="use-badge">USE 1</div>
+          <div>
+            <h3>HAW LinkedIn Carousel <span class="status-pill status-hold">HOLD</span></h3>
+            <p>7-slide carousel draft complete, 91/100 voice score. Slide 6 = placeholder (needs real book + retained concept). Do not ship until Boubacar fills slide 6.</p>
+          </div>
+        </div>
+
+        <div class="use-card">
+          <div class="use-badge">USE 2</div>
+          <div>
+            <h3>/feynman Claude Skill <span class="status-pill status-filed">FILED · SYS-FEYNMAN-A</span></h3>
+            <p>Build a single-command skill: <code style="font-size:0.85rem;color:var(--accent2)">/feynman [topic]</code> runs all 4 prompts in sequence. work_items id=22. Estimated: ~30 min build. Systems lane owns.</p>
+          </div>
+        </div>
+
+        <div class="use-card">
+          <div class="use-badge">USE 3</div>
+          <div>
+            <h3>agentsHQ Public Post <span class="status-pill status-blocked">BLOCKED on USE 2</span></h3>
+            <p>Build-in-public post: "I built the system that does this." Ship after the skill exists. Channels: X + LinkedIn.</p>
+          </div>
+        </div>
+
+        <div class="use-card">
+          <div class="use-badge">USE 4</div>
+          <div>
+            <h3>HAW Lead Magnet <span class="status-pill status-queued">QUEUED</span></h3>
+            <p>PDF gating the 4 prompts behind a Kit opt-in. Entry point for The Weekly Signal list. Not yet designed.</p>
+          </div>
+        </div>
+
+        <div class="use-card">
+          <div class="use-badge">USE 5</div>
+          <div>
+            <h3>IC Workshop Module <span class="status-pill status-idea">IDEA</span></h3>
+            <p>"Why your training doesn't stick" — maps Boubacar's 10yr HR background to CW's differentiator: operators who actually retain and apply AI skills. Idea stage.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- COUNCIL VERDICT -->
+    <div class="section">
+      <h2>Council Verdict (5-Angle, 2026-06-24)</h2>
+      <div class="verdict-grid">
+
+        <div class="verdict-row">
+          <div class="verdict-label">Execution Risk</div>
+          <p>Slide 6 placeholder = do not ship carousel without it. Real example required. A placeholder in a published carousel kills credibility faster than not posting.</p>
+        </div>
+
+        <div class="verdict-row">
+          <div class="verdict-label">Positioning</div>
+          <p>"Active recall" framing is the hook. Do not let it get summarized as "4 prompts to try." The contrast (consume vs own) is the whole idea — every channel touch should lead with the contrast.</p>
+        </div>
+
+        <div class="verdict-row">
+          <div class="verdict-label">Sequencing</div>
+          <p>Use 2 (skill) must ship before Use 3 (post). A post about a thing that doesn't exist yet = credibility gap. Build first, write about it second.</p>
+        </div>
+
+        <div class="verdict-row">
+          <div class="verdict-label">Lead Magnet</div>
+          <p>4 prompts as a PDF is a strong capture mechanism — simple to build, easy to share. Natural opt-in entry point for the newsletter.</p>
+        </div>
+
+        <div class="verdict-row">
+          <div class="verdict-label">IC Connection</div>
+          <p>HR-to-AI-retention story is a natural CW differentiator. Worth building into the workshop even before the module is formal. The "training that doesn't stick" angle is lived experience, not positioning.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CAROUSEL DRAFT -->
+    <div class="section">
+      <h2>Carousel Draft (ship-ready except Slide 6)</h2>
+      <div class="carousel-grid">
+
+        <div class="slide-card">
+          <div class="slide-number">Slide 1 — Hook</div>
+          <p>You buy the books. You save the threads. You watch the videos. And 31 days later, you can't explain any of it. That's not a motivation problem. That's a method problem.</p>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-number">Slide 2 — The Illusion</div>
+          <p>Reading feels like learning. It's not. There's a name for it: the fluency illusion. You recognize the idea when you see it. That's different from owning it. The people using AI to summarize are building fluency. The people using AI for active recall are building understanding. Different outputs. By a lot.</p>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-number">Slide 3 — The Gap</div>
+          <p>Most people are still using AI to consume. Ask it to summarize. Ask it to explain. Read the answer. Fast. Forgettable. A few switched to using it for recall instead. The outputs are not close. That window is still open. Not for long.</p>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-number">Slide 4 — The Method</div>
+          <p>He didn't highlight. He didn't take notes. He explained. If he couldn't explain it like a 12-year-old could follow, he didn't know it. That test surfaces what you actually missed. Faster than any review system I've used. That's the whole method.</p>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-number">Slide 5 — The System</div>
+          <p>20 minutes. One topic. Four prompts. Prompt 1: Build your concept map. Five ideas, why each matters, one test question per idea. Prompt 2: Claude writes model answers in plain words. Then YOU write your own version. Writing it yourself is where learning happens. Prompt 3: Paste your explanations. Claude grades them STRONG / WEAK / WRONG. One idea to restudy. Prompt 4: Two analogies per idea. Where they work. Where they break. One sentence you reread the next morning so it sticks instead of fading like everything else you read this week.</p>
+        </div>
+
+        <div class="slide-card slide-placeholder">
+          <div class="placeholder-banner">
+            <span class="placeholder-icon">⚠️</span>
+            <span class="placeholder-label">Action Required Before Publishing</span>
+          </div>
+          <div class="slide-number">Slide 6 — Real Example (PLACEHOLDER)</div>
+          <p>I ran this on [BOOK/TOPIC]. After 20 minutes I could explain [SPECIFIC CONCEPT] without notes. I still can.<br><br><em>Fill before publishing: pick a real book or topic you ran the method on. Specific concept. Specific retention result.</em></p>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-number">Slide 7 — CTA</div>
+          <p>Save this. Open Claude today. Drop one topic you've been sitting on. Not a whole subject. One idea you read about and can't actually explain yet. Run Prompt 1. See what you know.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NEXT ACTIONS -->
+    <div class="section">
+      <h2>Next Actions</h2>
+      <ul class="checklist">
+        <li>
+          <div class="check-num">1</div>
+          <p>Fill carousel Slide 6<br><span>Boubacar: pick a real book/topic you ran the method on. Specific retained concept. Required before carousel ships.</span></p>
+        </li>
+        <li>
+          <div class="check-num">2</div>
+          <p>Push carousel to Notion Content Board<br><span>Status=Draft, Type=Carousel, Brand=HAW. After Slide 6 is filled.</span></p>
+        </li>
+        <li>
+          <div class="check-num">3</div>
+          <p>Systems lane builds /feynman skill<br><span>SYS-FEYNMAN-A, work_items id=22. ~30 min build. One command, 4 chained prompts.</span></p>
+        </li>
+        <li>
+          <div class="check-num">4</div>
+          <p>Write the agentsHQ public post<br><span>After /feynman skill ships. "I built the system that does this." X + LinkedIn.</span></p>
+        </li>
+      </ul>
+    </div>
+
+    <hr>
+    <div class="footer">
+      Absorb date: 2026-06-24 · Source: Nav Toor, Feynman Method · Processing: council + multi-lens
+    </div>
+
+  </div>
+</body>
+</html>
