@@ -7,7 +7,8 @@
 param(
     [Parameter(Mandatory)][string]$SourceFile,
     [Parameter(Mandatory)][string]$Slug,
-    [string]$Title = ""
+    [string]$Title = "",
+    [string]$Version = "v1"
 )
 
 Set-StrictMode -Version Latest
@@ -39,6 +40,11 @@ if (Test-Path (Join-Path $SlugDir "index.html")) {
 
 New-Item -ItemType Directory -Path $SlugDir -Force | Out-Null
 Copy-Item $SourceFile (Join-Path $SlugDir "index.html") -Force
+
+# HARD RULE (feedback_review_pages_version_deploy_stamp): auto-inject the version +
+# deploy-timestamp stamp (upper-right) so every review page is stamped at publish time.
+# No one can forget it -- it is part of the flow, not a manual step.
+& (Join-Path $PSScriptRoot "inject-deploy-stamp.ps1") (Join-Path $SlugDir "index.html") $Version
 
 # Update manifest
 $manifest = if (Test-Path $ManifestPath) {
