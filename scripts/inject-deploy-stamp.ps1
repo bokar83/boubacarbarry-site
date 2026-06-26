@@ -30,8 +30,18 @@ $ver = $Version.Trim()
 if ($ver -notmatch '^[vV]') { $ver = "v$ver" }
 $ver = $ver.ToLower()
 
-# Timestamp from the local box. The build/deploy box runs America/Denver, so this is MT.
-$stamp = (Get-Date -Format "yyyy-MM-dd-HH:mm:ss") + " MT"
+# Timestamp in TRUE America/Denver time, converted from UTC so it is correct no matter
+# what timezone the build/deploy box runs in. (Bug fixed 2026-06-26: the deploy box runs
+# UTC, so the old "assume the box is MT" stamp showed a UTC time mislabeled "MT", e.g.
+# 20:55 instead of the real 14:55. TimeZoneInfo handles MST/MDT (DST) automatically.)
+$utcNow = [DateTime]::UtcNow
+try {
+    $denverTz = [System.TimeZoneInfo]::FindSystemTimeZoneById('America/Denver')        # Linux / pwsh
+} catch {
+    $denverTz = [System.TimeZoneInfo]::FindSystemTimeZoneById('Mountain Standard Time') # Windows id (DST-aware)
+}
+$mtNow = [System.TimeZoneInfo]::ConvertTimeFromUtc($utcNow, $denverTz)
+$stamp = $mtNow.ToString("yyyy-MM-dd-HH:mm:ss") + " MT"
 $label = "$ver " + [char]0x00B7 + " $stamp"   # e.g. "v3 . 2026-06-26-13:52:47 MT" (middle-dot separator)
 
 $startMarker = "<!-- DEPLOY_STAMP_START -->"
