@@ -98,6 +98,20 @@
     #backToTop.show { opacity: 1; visibility: visible; transform: translateY(0); }
     #backToTop:hover { background: var(--ember-bright); }
     @media (max-width: 580px) { h1 { font-size: 1.5rem; } .wrap { padding-left: 1rem; padding-right: 1rem; } }
+    /* PRINT / PDF-CLEAN: expand all sections, hide nav chrome, sensible page breaks */
+    @media print {
+      html, body { background: var(--bg) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .wrap { max-width: none; padding: 0.4rem 0.6rem 1rem; }
+      .toc, #backToTop { display: none !important; }
+      details.sec > summary .toggle-hint, details.sec > summary .chev { display: none !important; }
+      details.sec > summary { cursor: default; }
+      details.sec > .sec-body { display: block !important; }
+      #deploy-stamp { position: static !important; display: inline-block; margin: 0 0 0.5rem; }
+      a { color: var(--ink) !important; text-decoration: underline; }
+      .callout, .qa, .round, .why, .root { break-inside: avoid; }
+      details.sec { break-inside: auto; margin-bottom: 0.5rem; }
+      h1, h3, h4, details.sec > summary { break-after: avoid; }
+    }
   </style>
 </head>
 <body>
@@ -352,6 +366,15 @@
 
 <script>
   (function () {
+    var allDetails = document.querySelectorAll('details.sec');
+    var prevState = [];
+    var expandAll = function () { prevState = []; Array.prototype.forEach.call(allDetails, function (d, i) { prevState[i] = d.open; d.open = true; }); };
+    var restoreAll = function () { Array.prototype.forEach.call(allDetails, function (d, i) { d.open = prevState[i]; }); };
+    window.addEventListener('beforeprint', expandAll);
+    window.addEventListener('afterprint', restoreAll);
+    var mql = window.matchMedia && window.matchMedia('print');
+    if (mql && mql.addListener) { mql.addListener(function (m) { if (m.matches) { expandAll(); } else { restoreAll(); } }); }
+
     var btn = document.getElementById('backToTop');
     var onScroll = function () { if (window.pageYOffset > 480) { btn.classList.add('show'); } else { btn.classList.remove('show'); } };
     window.addEventListener('scroll', onScroll, { passive: true });
