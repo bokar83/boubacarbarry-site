@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catalyst Works -- Margin Diagnostic Sprint (Self-Engagement)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #141210; --panel: #1c1916; --card: #221e1a; --card-2: #2a251f;
+      --ink: #ece2d2; --ink-strong: #fbf4e8; --muted: #a59783; --faint: #7e7263;
+      --line: rgba(236, 226, 210, 0.12); --line-soft: rgba(236, 226, 210, 0.07);
+      --ember: #e3622f; --ember-bright: #ff7a45; --clay: #c4471d;
+      --green: #4fbf86; --green-soft: rgba(79, 191, 134, 0.12); --green-border: rgba(79, 191, 134, 0.4);
+      --amber: #e8a13a; --amber-soft: rgba(232, 161, 58, 0.12); --amber-border: rgba(232, 161, 58, 0.4);
+      --info: #6ea8e6; --info-soft: rgba(110, 168, 230, 0.12); --info-border: rgba(110, 168, 230, 0.38);
+      --red: #f06b4d;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(900px 400px at 8% -6%, rgba(227, 98, 47, 0.10), transparent 60%),
+        radial-gradient(800px 380px at 100% 0%, rgba(79, 191, 134, 0.06), transparent 55%);
+      background-attachment: fixed; color: var(--ink); line-height: 1.65; -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 820px; margin: 0 auto; padding: 2.2rem 1.25rem 6rem; position: relative; z-index: 1; }
+    a { color: var(--ember-bright); }
+
+    .doc-header { margin-bottom: 1.6rem; }
+    .tag { display: inline-block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.12em; padding: 0.2rem 0.58rem; border-radius: 999px; background: #2c2722;
+      color: var(--ink-strong); margin-right: 0.4rem; vertical-align: middle; border: 1px solid var(--line); }
+    .tag.aar { background: var(--clay); color: #fff; border-color: transparent; }
+    .tag.council { background: #2c3d6b; color: #fff; border-color: transparent; }
+    .tag.meta { background: #3a2c4d; color: #fff; border-color: transparent; }
+    h1 { font-size: 2.05rem; font-weight: 850; letter-spacing: -0.035em; margin: 0.75rem 0 0.3rem; line-height: 1.1; color: var(--ink-strong); }
+    .sub { color: var(--muted); font-size: 0.96rem; max-width: 64ch; }
+    .doc-meta { font-size: 0.78rem; color: var(--faint); margin-top: 0.75rem; }
+    .engagement-band { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin: 1.2rem 0 0; }
+    .eb { background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 0.7rem 0.85rem; }
+    .eb .k { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ember); margin-bottom: 0.25rem; }
+    .eb .v { font-size: 0.85rem; color: var(--ink); font-weight: 600; line-height: 1.4; }
+
+    .lead-box { background: linear-gradient(135deg, #241d17 0%, #1a1c2a 100%); border: 1px solid var(--line);
+      border-left: 4px solid var(--ember); color: var(--ink); padding: 1.55rem 1.75rem; border-radius: 14px; margin: 1.8rem 0; }
+    .lead-box .verdict-lbl { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ember-bright); margin-bottom: 0.55rem; }
+    .lead-box .verdict { font-size: 1.28rem; font-weight: 800; font-style: italic; letter-spacing: -0.02em; line-height: 1.32; color: var(--ink-strong); }
+    .lead-box .sub-verdict { color: var(--muted); font-size: 0.93rem; margin-top: 0.8rem; line-height: 1.6; }
+
+    .stat-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem; margin: 0 0 2rem; }
+    .stat { background: var(--card); border-radius: 10px; padding: 0.85rem 0.9rem; border: 1px solid var(--line); }
+    .stat .num { font-size: 1.55rem; font-weight: 850; letter-spacing: -0.03em; line-height: 1; margin-bottom: 0.18rem; color: var(--ink-strong); }
+    .stat .num.red { color: var(--ember-bright); }
+    .stat .lbl { font-size: 0.7rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .primer { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 1.5rem 1.6rem; margin: 0 0 1.4rem; }
+    .primer .pm-kicker { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ember-bright); margin-bottom: 0.5rem; }
+    .primer h2 { font-size: 1.35rem; font-weight: 840; letter-spacing: -0.02em; color: var(--ink-strong); border: none; padding: 0; margin: 0 0 0.4rem; }
+    .primer .pm-lede { color: var(--muted); font-size: 0.92rem; margin-bottom: 1.2rem; }
+    .primer h3 { font-size: 1.02rem; font-weight: 780; color: var(--ink-strong); margin: 1.3rem 0 0.5rem; }
+    .primer h3:first-of-type { margin-top: 0; }
+    .primer p { font-size: 0.95rem; margin-bottom: 0.75rem; }
+
+    /* MATURITY SCORE */
+    .maturity { display: flex; flex-direction: column; gap: 0.55rem; margin: 1rem 0 0.4rem; }
+    .mrow { display: grid; grid-template-columns: 11rem 1fr auto; gap: 0.8rem; align-items: center; }
+    .mrow .mlbl { font-size: 0.82rem; font-weight: 700; color: var(--ink-strong); }
+    .mbar { height: 0.7rem; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line-soft); overflow: hidden; }
+    .mfill { height: 100%; border-radius: 999px; }
+    .mfill.l1 { width: 25%; background: var(--red); }
+    .mfill.l2 { width: 50%; background: var(--amber); }
+    .mfill.l3 { width: 75%; background: var(--info); }
+    .mfill.l4 { width: 100%; background: var(--green); }
+    .mrow .mscore { font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+    .mscore.l1 { color: var(--red); } .mscore.l2 { color: var(--amber); } .mscore.l3 { color: var(--info); } .mscore.l4 { color: var(--green); }
+    @media (max-width: 580px) { .mrow { grid-template-columns: 1fr; gap: 0.25rem; } }
+
+    .circle-steps { list-style: none; margin: 0.6rem 0 0.4rem; padding: 0; counter-reset: cs; }
+    .circle-steps li { position: relative; padding: 0.55rem 0 0.55rem 2.5rem; border-bottom: 1px solid var(--line-soft); font-size: 0.93rem; }
+    .circle-steps li:last-child { border-bottom: none; }
+    .circle-steps li::before { counter-increment: cs; content: counter(cs); position: absolute; left: 0; top: 0.5rem;
+      width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--ember); color: #fff; font-weight: 800; font-size: 0.82rem;
+      display: flex; align-items: center; justify-content: center; }
+    .circle-steps li strong { color: var(--ink-strong); }
+
+    .decision { background: linear-gradient(135deg, #2a201a 0%, #21201a 100%); border: 1.5px solid var(--amber-border); border-radius: 12px; padding: 1.35rem 1.5rem; margin: 1.4rem 0 0.4rem; }
+    .decision .dc-head { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--amber); margin-bottom: 0.6rem; }
+    .decision .dc-title { font-size: 1.12rem; font-weight: 820; color: var(--ink-strong); margin-bottom: 0.9rem; }
+    .opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin: 0.5rem 0 0.9rem; }
+    .opt { border: 1px solid var(--line); border-radius: 10px; padding: 0.95rem 1.05rem; background: var(--card); }
+    .opt.pick { border-color: var(--green-border); background: var(--green-soft); }
+    .opt .opt-tag { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.3rem; }
+    .opt.pick .opt-tag { color: var(--green); }
+    .opt .opt-price { font-size: 1.4rem; font-weight: 850; letter-spacing: -0.02em; color: var(--ink-strong); line-height: 1.1; margin-bottom: 0.4rem; }
+    .opt p { font-size: 0.85rem; color: var(--muted); margin: 0; line-height: 1.5; }
+    .decision .dc-rec { font-size: 0.92rem; color: var(--ink); margin-top: 0.4rem; }
+    .decision .dc-rec strong { color: var(--ink-strong); }
+
+    section.sec-card, details.sec { margin-bottom: 0.8rem; scroll-margin-top: 5.5rem; }
+    .toc { position: sticky; top: 0; z-index: 40; display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0.7rem 0.75rem; margin: 1.4rem 0;
+      background: rgba(20, 18, 16, 0.92); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 12px; }
+    .toc .toc-lbl { width: 100%; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--faint); margin-bottom: 0.15rem; }
+    .toc a { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.76rem; font-weight: 700; text-decoration: none;
+      color: var(--ink); background: var(--card-2); border: 1px solid var(--line); padding: 0.34rem 0.7rem; border-radius: 999px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    .toc a .n { color: var(--ember); font-weight: 850; }
+    .toc a:hover { background: var(--ember); color: #fff; border-color: transparent; }
+    .toc a:hover .n { color: #fff; }
+
+    details.sec { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+    details.sec > summary { list-style: none; cursor: pointer; padding: 1.05rem 1.25rem; display: flex; align-items: center; gap: 0.65rem;
+      font-size: 1.16rem; font-weight: 820; letter-spacing: -0.02em; color: var(--ink-strong); user-select: none; background: var(--card-2); transition: background 0.16s, color 0.16s; }
+    details.sec > summary::-webkit-details-marker { display: none; }
+    details.sec > summary::marker { content: ""; }
+    details.sec > summary .chev { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem;
+      border-radius: 6px; background: var(--ember); color: #fff; font-size: 0.8rem; font-weight: 900; line-height: 1; transition: transform 0.22s ease; transform: rotate(0deg); }
+    details.sec[open] > summary .chev { transform: rotate(90deg); }
+    details.sec > summary .s-num { color: var(--ember); font-weight: 850; }
+    details.sec > summary .s-title { flex: 1; min-width: 0; }
+    details.sec > summary .toggle-hint { margin-left: auto; flex-shrink: 0; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0.22rem 0.6rem; }
+    details.sec > summary .toggle-hint::after { content: "Expand"; }
+    details.sec[open] > summary .toggle-hint::after { content: "Collapse"; }
+    details.sec > summary:hover { background: #332c24; color: var(--ember-bright); }
+    details.sec > summary:hover .toggle-hint { color: var(--ember-bright); border-color: var(--ember); }
+    details.sec[open] > summary { border-bottom: 1px solid var(--line); }
+    .sec-body { padding: 0.6rem 1.3rem 1.5rem; }
+
+    h2 { font-size: 1.26rem; font-weight: 820; letter-spacing: -0.02em; }
+    h2 .num { color: var(--ember); margin-right: 0.45rem; }
+    h3 { font-size: 1.0rem; font-weight: 760; margin: 1.4rem 0 0.45rem; color: var(--ink-strong); }
+    h4 { font-size: 0.86rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ember); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.85rem; font-size: 0.96rem; }
+    ul, ol { margin: 0.2rem 0 1rem 1.15rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.95rem; }
+    strong { font-weight: 700; color: var(--ink-strong); }
+    em { color: var(--ink); }
+    .lede { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.3rem; }
+
+    .callout { border-radius: 10px; padding: 1rem 1.15rem; margin: 1.1rem 0; font-size: 0.93rem; }
+    .callout .lbl { display: block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.35rem; }
+    .callout.green { background: var(--green-soft); border-left: 4px solid var(--green); } .callout.green .lbl { color: var(--green); }
+    .callout.amber { background: var(--amber-soft); border-left: 4px solid var(--amber); } .callout.amber .lbl { color: var(--amber); }
+    .callout.blue { background: var(--info-soft); border-left: 4px solid var(--info); } .callout.blue .lbl { color: var(--info); }
+    .callout.ember { background: rgba(227,98,47,0.10); border-left: 4px solid var(--ember); } .callout.ember .lbl { color: var(--ember-bright); }
+
+    .cause-stack { display: flex; flex-direction: column; gap: 0.65rem; margin: 1rem 0; }
+    .cause { display: flex; align-items: flex-start; gap: 0.9rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.9rem 1rem; background: var(--card); }
+    .cause .rank { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 800; color: #fff; }
+    .cause .rank.r1 { background: #d6452a; } .cause .rank.r2 { background: #e0682b; } .cause .rank.r3 { background: #d98a23; } .cause .rank.r4 { background: #6f9f37; } .cause .rank.r5 { background: #2f97c9; }
+    .cause .body { flex: 1; min-width: 0; }
+    .cause .body strong { display: block; font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .cause .body p { font-size: 0.87rem; color: var(--muted); margin: 0; line-height: 1.5; }
+    .cause .weight { flex-shrink: 0; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--faint); padding-top: 0.1rem; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin: 1rem 0; }
+    .fact-card { background: var(--card); border-radius: 10px; padding: 0.85rem 1rem; border: 1px solid var(--line); }
+    .fact-card .fc-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ember); margin-bottom: 0.35rem; }
+    .fact-card p { font-size: 0.87rem; color: var(--ink); margin: 0; line-height: 1.5; }
+
+    /* NINE AGENT AUDIT */
+    .agent { border: 1px solid var(--line); border-radius: 11px; padding: 0.95rem 1.1rem; margin: 0.7rem 0; background: var(--card); }
+    .agent .ag-head { display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+    .agent .ag-name { font-weight: 820; font-size: 0.98rem; color: var(--ink-strong); }
+    .agent .ag-flag { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.12rem 0.5rem; border-radius: 999px; }
+    .ag-flag.red { background: rgba(240,107,77,0.16); color: var(--red); border: 1px solid rgba(240,107,77,0.4); }
+    .ag-flag.amber { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-border); }
+    .ag-flag.info { background: var(--info-soft); color: var(--info); border: 1px solid var(--info-border); }
+    .agent p { font-size: 0.89rem; color: var(--ink); margin: 0.2rem 0 0; line-height: 1.55; }
+    .agent .ag-finding { color: var(--muted); }
+
+    .phase { border: 1px solid var(--line); border-radius: 12px; padding: 1.05rem 1.2rem; margin: 0.8rem 0; background: var(--card); }
+    .phase .ph-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.55rem; }
+    .phase .ph-name { font-weight: 820; font-size: 1.02rem; color: var(--ink-strong); }
+    .phase .ph-when { font-size: 0.76rem; color: var(--muted); font-weight: 700; background: var(--card-2); border-radius: 6px; padding: 0.1rem 0.45rem; }
+    .phase ul { margin: 0.2rem 0 0 1rem; }
+    .phase li { font-size: 0.89rem; margin-bottom: 0.3rem; color: var(--ink); }
+    .phase .note { font-size: 0.82rem; color: var(--muted); margin-top: 0.5rem; font-style: italic; }
+
+    .pressure-box { background: var(--amber-soft); border: 1px solid var(--amber-border); border-radius: 10px; padding: 1rem 1.15rem; margin: 1.3rem 0; font-size: 0.91rem; }
+    .pressure-box .pb-head { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--amber); margin-bottom: 0.5rem; }
+
+    .voice { border: 1px solid var(--line); border-radius: 11px; padding: 1rem 1.15rem; margin: 0.7rem 0; background: var(--card); }
+    .voice .v-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+    .voice .v-name { font-weight: 800; font-size: 0.92rem; color: var(--ink-strong); }
+    .voice .v-score { margin-left: auto; font-size: 0.74rem; font-weight: 850; color: var(--green); background: var(--green-soft); border: 1px solid var(--green-border); border-radius: 999px; padding: 0.15rem 0.55rem; }
+    .voice .v-pitch { font-size: 0.98rem; color: var(--ink); font-style: italic; line-height: 1.55; }
+    .voice.primary { border-color: var(--green-border); }
+
+    .scroll { overflow-x: auto; margin: 1rem 0; -webkit-overflow-scrolling: touch; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.85rem; min-width: 480px; }
+    th, td { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-weight: 750; background: var(--card-2); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td { color: var(--ink); }
+
+    .footer { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--faint); }
+    .footer p { font-size: 0.8rem; }
+
+    #backToTop { position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 60; width: 2.85rem; height: 2.85rem; border-radius: 50%;
+      border: 1px solid var(--line); background: var(--ember); color: #fff; cursor: pointer; font-size: 1.2rem; line-height: 1;
+      display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px -8px rgba(0,0,0,0.7);
+      opacity: 0; visibility: hidden; transform: translateY(10px); transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s, background 0.18s; }
+    #backToTop.show { opacity: 1; visibility: visible; transform: translateY(0); }
+    #backToTop:hover { background: var(--ember-bright); }
+    #backToTop:focus-visible { outline: 2.5px solid var(--ember-bright); outline-offset: 3px; }
+
+    @media (max-width: 580px) {
+      h1 { font-size: 1.62rem; }
+      .stat-bar { grid-template-columns: repeat(2, 1fr); }
+      .two-col, .opt-grid, .engagement-band { grid-template-columns: 1fr; }
+      .lead-box .verdict { font-size: 1.06rem; }
+      .wrap { padding-left: 1rem; padding-right: 1rem; }
+    }
+  </style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-06-26-14:11:57 MT</div><!-- DEPLOY_STAMP_END -->
+<div class="wrap">
+
+  <header class="doc-header">
+    <span class="tag aar">Margin Diagnostic Sprint</span>
+    <span class="tag council">5-Voice Council</span>
+    <span class="tag meta">Self-Engagement</span>
+    <h1>Catalyst Works: The Margin We Are Losing to Ourselves</h1>
+    <p class="sub">The Catalyst Works diagnostic, run on Catalyst Works. Same product a client pays for at the Margin Diagnostic Sprint tier, turned inward. The question on the table: why does a fully built consulting business generate roughly zero in consistent revenue, and what is the one constraint to fix first.</p>
+    <div class="engagement-band">
+      <div class="eb"><div class="k">Client</div><div class="v">Catalyst Works Consulting (self)</div></div>
+      <div class="eb"><div class="k">Engagement</div><div class="v">Margin Diagnostic Sprint, dogfooded</div></div>
+      <div class="eb"><div class="k">Method</div><div class="v">Nine-Agent Audit + ToC + 5-Voice Council</div></div>
+    </div>
+    <p class="doc-meta">Prepared 2026-06-26 &middot; Evidence: local repo + Drive + Notion + NotebookLM dossiers &middot; Multi-round Sankofa Council, premortem mode &middot; Confidential / internal</p>
+  </header>
+
+  <div class="stat-bar">
+    <div class="stat"><div class="num red">~$0</div><div class="lbl">Consistent Revenue</div></div>
+    <div class="stat"><div class="num red">0</div><div class="lbl">Closed Clients</div></div>
+    <div class="stat"><div class="num">1,047+</div><div class="lbl">Cold Sends (0 clients)</div></div>
+    <div class="stat"><div class="num">4+</div><div class="lbl">Live Funnels Built</div></div>
+  </div>
+
+  <!-- VERDICT (collapsible, open) -->
+  <details class="sec" id="sec00" open>
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">00</span> The Verdict -- One Sentence</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+    <div class="lead-box">
+    <div class="verdict-lbl">The Binding Constraint -- One Sentence</div>
+    <div class="verdict">Catalyst Works does not have a strategy problem, a proof problem, or a pricing problem. It has an execution problem: a coherent, well-researched go-to-market plan already exists on paper and has never been run, and until the owner commits one concentrated block of weeks to running that plan as written, revenue stays at zero.</div>
+    <div class="sub-verdict">The diagnostic surfaced something the scattered public artifacts hide: a sharp, documented strategy sits in the NotebookLM notebooks. A precise buyer (professional-services owner-operators, 5 to 200 people, check-writers who are found at BNI and the Chamber, not on X). An outcome-first positioning. A clean offer ladder. A discovery-call system. A revenue-sprint plan with conversion math. None of it was executed. In its place the owner built landing pages and tools and ran the cold, online, trustless channels the plan itself had already ruled out. That substitution, building instead of selling, cold instead of warm, is the constraint. The root underneath it is an unmade commitment: the owner was war-gaming a full-time job exit at the same time. You cannot run a relationship-led, in-person sales motion on the side of five other things.</div>
+    </div>
+    </div>
+  </details>
+
+  <!-- PRIMER (collapsible, open) -->
+  <details class="sec" id="secP" open>
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">&#9656;</span> Read First -- The Whole Diagnosis in Plain English</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+    <div class="primer">
+    <div class="pm-kicker">Read this first -- the whole diagnosis in plain English</div>
+    <h2>You wrote the plan that works. You never ran it.</h2>
+    <p class="pm-lede">Three ideas explain everything below. Get these and the deep sections are just the receipts.</p>
+
+    <h3>1. The strategy is not the problem. The strategy is good.</h3>
+    <p>Read from the outside, Catalyst Works looks like it changed its mind four times in ten weeks: AI governance, then generic operations consulting, then compliance, then a constraint diagnostic. Unstable. But the NotebookLM notebooks tell a different story. There is a coherent plan in there: one precise buyer, an outcome-first message, a four-rung offer ladder, a discovery-call script, and a 30-day revenue sprint with real conversion math. The churn was in the public website and the pitch, not in the thinking. The thinking is sound.</p>
+
+    <h3>2. The plan said go to the room. You went to the inbox.</h3>
+    <p>The documented plan is explicit: this buyer is not online. A managing partner at a CPA firm is at a BNI breakfast and a Chamber lunch, not scrolling X. The plan said take the BNI South Jordan seat, show up at four to six events a month, run relationship-led outreach, book discovery calls. Instead, the work that actually happened was 767 cold emails, 280 more, a $200 cold-ads workshop push, and a stack of landing pages. Every one of those is the channel the plan had already crossed out. You ran the opposite of your own plan.</p>
+
+    <h3>3. Building is the comfortable substitute for selling.</h3>
+    <p>An audit tool with white-label pricing. Ten short links. Five funnels. A scanner. Building is controllable, scalable, and safe. The in-person relationship work the plan calls for is none of those. It is slow, unscalable, and it can hear no. A divided owner, one who is also interviewing for a 165 to 185 thousand dollar job and modeling winding Catalyst Works down, will choose the comfortable work every time. That is not a character flaw. It is what divided attention does. The fix is not more strategy. It is a decision.</p>
+
+    <div class="decision">
+      <div class="dc-head">Decision needed first -- before any tactic</div>
+      <div class="dc-title">Commit 90 concentrated days to the plan you already wrote, or wind Catalyst Works down to a low-maintenance asset. Pick one.</div>
+      <div class="opt-grid">
+        <div class="opt pick">
+          <div class="opt-tag">Recommended if the answer is "build it"</div>
+          <div class="opt-price">90 days, all in</div>
+          <p>One buyer, one offer, the in-person motion run as written. No new pages, no new tools. The bar: at least one paying client by the existing August 4 internal target. Hit it and you have a business. Miss it after a real push and you have your answer.</p>
+        </div>
+        <div class="opt">
+          <div class="opt-tag">Honest alternative</div>
+          <div class="opt-price">Wind down</div>
+          <p>If the full-time role is the real priority, stop building. Freeze the site, keep the brand as a credential, take the job. That is a legitimate, even smart, call. What is not legitimate is half-running it for another ten weeks and calling the zero a marketing problem.</p>
+        </div>
+      </div>
+      <p class="dc-rec"><strong>The recommendation: commit to the 90-day push, on the condition below.</strong> The plan is good, the market is real, the window is open but closing. But the push only counts if it is concentrated. Half-effort produces another quarter of zero. If you cannot give it the weeks, choose wind-down on purpose, do not back into it.</p>
+    </div>
+    </div>
+    </div>
+  </details>
+
+  <!-- REVENUE ENGINE MATURITY (collapsible, open) -->
+  <details class="sec" id="secM" open>
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">&#9656;</span> Revenue Engine Maturity Score</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+    <p class="lede" style="margin-bottom:1rem;">The same four-level scoring Catalyst Works runs live on a discovery call, applied to its own revenue engine. Level 1 ad-hoc, Level 2 defined, Level 3 operationalized, Level 4 compounding. The pattern is the whole story: world-class on paper, Level 1 in the field.</p>
+    <div class="maturity">
+      <div class="mrow"><div class="mlbl">Strategy &amp; IP</div><div class="mbar"><div class="mfill l3"></div></div><div class="mscore l3">L3 Operationalized</div></div>
+      <div class="mrow"><div class="mlbl">Offer &amp; Pricing</div><div class="mbar"><div class="mfill l3"></div></div><div class="mscore l3">L3 on paper</div></div>
+      <div class="mrow"><div class="mlbl">Built Assets</div><div class="mbar"><div class="mfill l4"></div></div><div class="mscore l4">L4 Overbuilt</div></div>
+      <div class="mrow"><div class="mlbl">Positioning (live site)</div><div class="mbar"><div class="mfill l2"></div></div><div class="mscore l2">L2 Drifting</div></div>
+      <div class="mrow"><div class="mlbl">Demand Generation</div><div class="mbar"><div class="mfill l1"></div></div><div class="mscore l1">L1 Ad-hoc</div></div>
+      <div class="mrow"><div class="mlbl">Proof &amp; Credibility</div><div class="mbar"><div class="mfill l1"></div></div><div class="mscore l1">L1 None</div></div>
+      <div class="mrow"><div class="mlbl">Plan Execution</div><div class="mbar"><div class="mfill l1"></div></div><div class="mscore l1">L1 Unrun</div></div>
+      <div class="mrow"><div class="mlbl">Founder Commitment</div><div class="mbar"><div class="mfill l1"></div></div><div class="mscore l1">L1 Divided</div></div>
+    </div>
+    <div class="callout ember" style="margin-top:1.1rem;">
+      <span class="lbl">What the score says</span>
+      A business does not sell from its highest score. It sells from its lowest one. Catalyst Works has Level 3 and Level 4 assets bolted onto a Level 1 execution layer, and the Level 1 layer is what the bank account reflects. Pouring more Level 4 build on top of a Level 1 floor is exactly what produced ten weeks of zero.
+    </div>
+    </div>
+  </details>
+
+  <p class="lede" style="margin:1.6rem 0 0.6rem;">The full diagnostic is below, collapsed. Click any header to expand it, or use the jump nav. The structure mirrors the real client deliverable: the engagement frame, the Nine-Agent Audit, the strategy timeline, the constraint diagnosis (issue tree, 5 Whys, value-driver break, funnel math, outside view), the Council rounds, the binding constraint, the Flywheel fix, the offer, the risks, the pitch, and a meta QA of this report as a product.</p>
+
+  <div class="callout blue">
+    <span class="lbl">Companion: the working transcript</span>
+    Want the full path that produced this verdict, not just the conclusion? The <a href="https://boubacarbarry.com/review/20260626-catalyst-works-discovery-transcript/">Discovery &amp; Working Transcript</a> shows the rigor behind the price: the actual discovery-call question protocol asked and answered from the evidence, the 5-Whys chains as Q&amp;A, and every Council round and premortem as a visible challenge-and-response.
+  </div>
+
+  <!-- JUMP NAV -->
+  <nav class="toc" aria-label="Jump to section">
+    <span class="toc-lbl">Jump to section</span>
+    <a href="#sec00"><span class="n">00</span> Verdict</a>
+    <a href="#secP"><span class="n">&#9656;</span> Read First</a>
+    <a href="#secM"><span class="n">&#9656;</span> Maturity Score</a>
+    <a href="#sec01"><span class="n">01</span> Engagement Frame</a>
+    <a href="#sec02"><span class="n">02</span> Nine-Agent Audit</a>
+    <a href="#sec03"><span class="n">03</span> Strategy Timeline</a>
+    <a href="#sec04"><span class="n">04</span> Diagnosis</a>
+    <a href="#sec05"><span class="n">05</span> Council Rounds</a>
+    <a href="#sec06"><span class="n">06</span> The Binding Constraint</a>
+    <a href="#sec07"><span class="n">07</span> The Fix (Flywheel)</a>
+    <a href="#sec08"><span class="n">08</span> Offer &amp; Positioning</a>
+    <a href="#sec09"><span class="n">09</span> Risks &amp; Continue Decision</a>
+    <a href="#sec10"><span class="n">10</span> The 10-Second Pitch</a>
+    <a href="#sec11"><span class="n">11</span> Deliverable QA (meta)</a>
+    <a href="#sec12"><span class="n">12</span> Method &amp; Evidence</a>
+    <a href="https://boubacarbarry.com/review/20260626-catalyst-works-discovery-transcript/"><span class="n">&#8599;</span> Discovery Transcript</a>
+  </nav>
+
+  <!-- SECTION 1 -->
+  <details class="sec" id="sec01" open>
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">01</span> Engagement Frame</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">What we were asked, what we are testing, and what "good" looks like.</p>
+
+      <h4>The question</h4>
+      <p>Why does Catalyst Works generate roughly zero in consistent revenue despite heavy build, and what is the single binding constraint to fix first to turn revenue on?</p>
+
+      <h4>The hypotheses on the table (before the work)</h4>
+      <div class="scroll"><table>
+        <thead><tr><th>#</th><th>Hypothesis</th><th>If true, the fix is...</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td>No proof or credibility. First-time, unknown, zero closed clients. The "proof paradox."</td><td>Manufacture proof.</td></tr>
+          <tr><td>B</td><td>Positioning instability. Four strategy generations and unstable pricing in ten weeks. Sells the how, not the outcome.</td><td>Lock one message.</td></tr>
+          <tr><td>C</td><td>Founder focus. Spread across multiple ventures plus an active full-time job search and documented wind-down war-gaming.</td><td>Decide and concentrate.</td></tr>
+          <tr><td>D</td><td>No demand engine that reaches a warm, qualified audience. Cold email 0 of 767, 0 of 280, no CRM, no borrowed lists.</td><td>Build distribution.</td></tr>
+          <tr><td>E</td><td>No ICP precision or offer-market fit.</td><td>Sharpen the target and offer.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4>What "good" looks like</h4>
+      <ul>
+        <li>The diagnosis names ONE binding constraint, not a list. Theory of Constraints discipline: until the bottleneck is elevated, improving anything else yields nothing.</li>
+        <li>It survives a premortem. We kill the convenient answers before we keep one.</li>
+        <li>The fix is sequenced and cheap to start. A real first move by Monday, not a strategy retreat.</li>
+        <li>It is honest about the founder. A real advisor names the commitment question out loud.</li>
+      </ul>
+
+      <h4>Current state, stated plainly</h4>
+      <p>Catalyst Works is, on paper, a complete consulting business: brand, four-rung offer ladder, six-plus live Stripe links, a Calendly with qualifiers, five landing pages, a 1,846-line audit tool with its own white-label pricing, lead magnets, playbooks, and a documented strategy with a real research base. Stage, per its own Notion hub: "$0 to first contract." No closed paying client appears in any source swept. The infrastructure is years ahead of the demand validation. That gap is the symptom we are tracing to its root.</p>
+    </div>
+  </details>
+
+  <!-- SECTION 2 -->
+  <details class="sec" id="sec02">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">02</span> The Nine-Agent Audit, Run on Catalyst Works</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">Catalyst Works' own audit system points its diagnostic agents at a client's operations. Here it is pointed at Catalyst Works. Five of the nine agents are named in the documented system (Hidden Factory, Systems Friction, Financial Reality, Customer Outside-In, Culture and Energy). We run those five here and fold the remaining lenses into the issue tree in Section 4, rather than invent agent names that are not in the evidence.</p>
+
+      <div class="agent">
+        <div class="ag-head"><span class="ag-name">Hidden Factory Agent</span><span class="ag-flag red">Critical</span></div>
+        <p class="ag-finding">Finds the shadow work that consumes capacity without producing the outcome. At Catalyst Works the hidden factory is <strong>building as a substitute for selling</strong>. A 1,846-line audit tool with founder and pro pricing tiers, ten channel short links, five funnels, a scanner, a white-label productization, all built with no validated buyer in front of any of them. This is enormous output pointed away from the one thing that produces revenue: a conversation with a check-writer. The factory runs hot and ships nothing that sells.</p>
+      </div>
+
+      <div class="agent">
+        <div class="ag-head"><span class="ag-name">Customer Outside-In Agent</span><span class="ag-flag red">Critical</span></div>
+        <p class="ag-finding">Looks at the business through the buyer's eyes. The documented buyer is a professional-services owner-operator who is found in a room (BNI, Chamber, association luncheon), not online. Catalyst Works reached for that buyer almost entirely through cold email and cold Meta ads. The buyer was never in the channel. A stranger who did land on the site saw an unknown name, a message that read differently month to month, four prices, and zero clients, and concluded, correctly, "no one has bought this yet."</p>
+      </div>
+
+      <div class="agent">
+        <div class="ag-head"><span class="ag-name">Systems Friction Agent</span><span class="ag-flag amber">High</span></div>
+        <p class="ag-finding">Hunts the friction between intent and result. The largest friction point is the gap between the documented plan and the live execution: a coherent strategy in NotebookLM, a drifting set of public artifacts, and no pipeline system (no CRM, the Drive sales folder is empty) to convert intent into a tracked conversation. There is no instrument that turns a "yes, let's talk" into a managed deal, so even a warm signal would leak.</p>
+      </div>
+
+      <div class="agent">
+        <div class="ag-head"><span class="ag-name">Financial Reality Agent</span><span class="ag-flag red">Critical</span></div>
+        <p class="ag-finding">Strips the story to the cash. Inflows: roughly zero. Outflows tracked: about 63 dollars on Apollo with near-zero surviving leads, 200-plus on workshop ads at 0 percent conversion, plus the unmeasured cost of build hours. The unit economics never get a chance to exist because the funnel produces no qualified conversation to price. Revenue equals leads times conversion times price times retention, and the first term is effectively zero, which zeroes the whole product regardless of how good the later terms are.</p>
+      </div>
+
+      <div class="agent">
+        <div class="ag-head"><span class="ag-name">Culture &amp; Energy Agent</span><span class="ag-flag red">Critical</span></div>
+        <p class="ag-finding">Reads where the owner's energy actually goes, versus where it is claimed to go. The May 1 MACU prep document shows the owner interviewing for a full-time Director role (145 to 185 thousand plus) and explicitly war-gaming pausing or winding down Catalyst Works. Energy is split across the consulting arm, a sibling brand, a workshop line, faceless content channels, a ghostwriting track, and a job search. The relationship-led sales motion the plan requires is the single highest-energy-cost activity in the portfolio, and it lost the energy auction to lower-cost building. This is the root the other four agents keep pointing back to.</p>
+      </div>
+
+      <div class="callout amber">
+        <span class="lbl">Audit convergence</span>
+        Four of five agents flag Critical, and every one of them, traced back, lands on the same place: the documented plan was never executed because the owner's committed attention was never there to execute it. Hidden Factory, Customer Outside-In, and Financial Reality describe the same substitution from three angles. Culture and Energy names why the substitution happened.
+      </div>
+    </div>
+  </details>
+
+  <!-- SECTION 3 -->
+  <details class="sec" id="sec03">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">03</span> Strategy Timeline -- The Churn Was in the Storefront, Not the Brain</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">The four "generations" the public artifacts show, plus the coherent fifth that lives in the research notebooks. Dated, with what each got right and wrong.</p>
+
+      <div class="phase">
+        <div class="ph-head"><span class="ph-name">Gen 1 -- The Noise / Decision Problem (AI adoption advisory)</span><span class="ph-when">Mar 2026</span></div>
+        <ul>
+          <li><strong>Thesis:</strong> "You don't have an AI problem. You have a decision problem." Sells filtering and prioritization, not more AI ideas.</li>
+          <li><strong>Right:</strong> The challenger frame is excellent and on-voice. The signature line ("most consultants get paid to say yes; I get paid to tell you where AI matters and where it doesn't") is a genuine wedge. A real research spine (Hick's Law, Iyengar and Lepper, Chernev, Simon, McKinsey, IBM).</li>
+          <li><strong>Wrong:</strong> No prices, no concrete first offer. A philosophy, not yet a sellable thing.</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="ph-head"><span class="ph-name">Gen 2 -- Monetization Stack (generic operations consulting)</span><span class="ph-when">Apr 12, 2026</span></div>
+        <ul>
+          <li><strong>Thesis:</strong> Drops AI entirely. "I help executive teams identify the one hidden constraint slowing their business down." Theory of Constraints, Hidden Factory. Six-product ladder, Signal Session at $350.</li>
+          <li><strong>Right:</strong> A full offer ladder appears. Pricing gets concrete.</li>
+          <li><strong>Wrong:</strong> Identity whiplash. The AI wedge that differentiated Gen 1 is gone, replaced by generic ops consulting, a far more crowded room with no edge.</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="ph-head"><span class="ph-name">Gen 3 -- AI Governance "SHIELD" (compliance as margin protection)</span><span class="ph-when">Apr 16, 2026</span></div>
+        <ul>
+          <li><strong>Thesis:</strong> "Where AI policy becomes margin protection." SHIELD Assessment at $3,500, Signal Session repriced to $497. Aggressive 30 and 90-day cash targets.</li>
+          <li><strong>Right:</strong> Tighter, more premium, regulatory claims verified. A real buyer fear (AI risk) gets addressed.</li>
+          <li><strong>Wrong:</strong> Third distinct identity in five weeks, third price set. The cash targets assumed a pipeline that did not exist.</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="ph-head"><span class="ph-name">Gen 4 -- Live Website Tiers (current public face)</span><span class="ph-when">May 2026</span></div>
+        <ul>
+          <li><strong>Thesis:</strong> Diagnostic Sprint $2 to 5K, Advisory Retainer $3 to 5K per month, Implementation $10K-plus. Plus a later workshop line, a scanner, and a white-label audit tool at $497 / $1,200 a year.</li>
+          <li><strong>Right:</strong> The tier shape matches market benchmarks well (see Section 4, outside view). The pricing is in-market.</li>
+          <li><strong>Wrong:</strong> The public storefront now says different things than the notebooks. Pricing for the Signal Session alone has been $350, $497, then $250 across artifacts. To a buyer this reads as instability.</li>
+        </ul>
+      </div>
+
+      <div class="callout green">
+        <span class="lbl">Gen 5 -- the coherent plan that never reached the storefront (NotebookLM)</span>
+        The recovered NotebookLM notebooks hold the version that actually hangs together. <strong>One ICP:</strong> professional-services owner-operators, 5 to 200 people, check-writers, found at BNI and the Chamber, explicitly not on X. <strong>One outcome-first line:</strong> "I help professional services firms find the margin they're losing to broken operations." <strong>One clean ladder:</strong> Signal Session $497 to 997, SHIELD assessment $3,500, Margin Diagnostic Sprint $8,500, Fractional retainer $1,500 to 5,000 a month. <strong>A discovery-call system</strong> with live four-level maturity scoring. <strong>A 30-day revenue sprint</strong> with conversion math (150 LinkedIn touches plus 4 to 6 events yields 4 to 7 discovery calls; one close ends Phase 0). <strong>A real research base</strong> (Ng's long-tail 1.7M businesses, Mollick's cyborg vs centaur, Blair Enns on niche pricing). This is not churn. This is a finished plan sitting in a drawer.
+      </div>
+
+      <div class="callout ember">
+        <span class="lbl">The reframe this forces</span>
+        The first read of the evidence ("four pivots, unstable pricing, no clear strategy") is wrong, or at least incomplete. The strategy exists and is good. What changed four times was the public skin, because re-skinning a website is building, and building is the comfortable work. The thinking converged; the execution never started. That moves the constraint from "figure out the strategy" to "run the strategy you already have."
+      </div>
+    </div>
+  </details>
+
+  <!-- SECTION 4 -->
+  <details class="sec" id="sec04">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">04</span> Diagnosis -- Issue Tree, 5 Whys, Value-Driver Break, Funnel Math, Outside View</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">The core analytical work. Where the chain breaks, why, and how the alternatives get demoted.</p>
+
+      <h3>The issue tree (MECE): why is revenue zero?</h3>
+      <p>Revenue is zero if and only if the chain from buyer to cash is broken at some node. The branches are mutually exclusive and collectively exhaustive across the path to a sale:</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Branch</th><th>Is this where it breaks?</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Demand exists?</strong></td><td>Yes. 350 ad clicks; Ng's 1.7M-business long tail; market growing ~29% a year.</td><td>Not the break</td></tr>
+          <tr><td><strong>Offer-market fit / ICP?</strong></td><td>ICP is precisely defined in the notebooks; offer ladder matches market benchmarks.</td><td>Solved on paper</td></tr>
+          <tr><td><strong>Positioning / message?</strong></td><td>Outcome-first line exists ("find the margin you're losing"); only the live site drifts.</td><td>Drift, not break</td></tr>
+          <tr><td><strong>Pricing?</strong></td><td>$2 to 5K sprint, $3 to 5K/mo retainer all sit inside 2026 market ranges.</td><td>Not the break</td></tr>
+          <tr><td><strong>Reaching the buyer (distribution)?</strong></td><td>The right channels (BNI, Chamber, warm LinkedIn) were specified and never run; only wrong channels (cold email, cold ads) were run.</td><td><strong>BREAKS HERE</strong></td></tr>
+          <tr><td><strong>Converting the conversation?</strong></td><td>Cannot be tested. There were almost no qualified conversations to convert.</td><td>Untested (starved)</td></tr>
+          <tr><td><strong>Proof / trust to close?</strong></td><td>Zero client proof. Would bite at the conversion node, but the funnel dies before it.</td><td>Real, downstream</td></tr>
+          <tr><td><strong>Retention / repeat?</strong></td><td>N/A. No first client yet.</td><td>Not yet relevant</td></tr>
+        </tbody>
+      </table></div>
+      <p>The tree isolates the break to a single node: <strong>reaching the buyer through a channel the buyer is actually in</strong>. Every node downstream (conversion, proof, retention) is real but cannot be the binding constraint, because the funnel never delivers an input to them. Every node upstream (demand, ICP, price) is healthy.</p>
+
+      <h3>5 Whys -- driven to the root</h3>
+      <ol class="circle-steps">
+        <li><strong>Revenue is zero.</strong> Why? No closed clients.</li>
+        <li><strong>No closed clients.</strong> Why? Almost no qualified discovery calls with check-writers ever happened.</li>
+        <li><strong>No discovery calls.</strong> Why? The business reached for buyers through cold email and cold ads. Buyers got 0 of 767, 1 reply of 280, 0 of a 350-click workshop. The buyer was not in those channels.</li>
+        <li><strong>Why use channels the buyer is not in?</strong> Because the documented plan (be in the room: BNI, Chamber, warm LinkedIn) was never executed. Cold/online channels are scalable, buildable, and automatable. They fit the builder's hands. The in-person motion does not.</li>
+        <li><strong>Why was the in-person motion never run?</strong> It is slow, unscalable, and personally costly. It can hear no. A builder defaults to assets and automation over the uncomfortable relationship ask.</li>
+        <li><strong>Why default to the comfortable work?</strong> Because attention was divided across five-plus efforts and an active full-time job search, and a divided owner has no surplus for the highest-cost activity in the stack.</li>
+        <li><strong>Why was attention divided?</strong> Because the underlying commitment to Catalyst Works as the primary business was never actually made. The May 1 document shows the owner modeling winding it down. <strong>Root: an unmade commitment decision, showing up as an execution gap on an already-correct plan.</strong></li>
+      </ol>
+
+      <h3>Value-driver tree -- exactly where the math breaks</h3>
+      <p>Revenue = Qualified Leads x Conversion x Price x Repeat. Plug in the real numbers:</p>
+      <div class="two-col">
+        <div class="fact-card"><div class="fc-label">Qualified Leads</div><p>Cold email: 0 of 767 and 1 of 280. Workshop: 0 paid of 350 clicks. Apollo: ~0 surviving of ~$63. Effective qualified-lead count: approximately zero. <strong>The product zeroes here.</strong></p></div>
+        <div class="fact-card"><div class="fc-label">Conversion</div><p>Indeterminate. With ~0 qualified conversations as input, conversion has never been tested. Not proven bad, just starved.</p></div>
+        <div class="fact-card"><div class="fc-label">Price</div><p>In-market and healthy. $2 to 5K diagnostic, $3 to 5K/mo retainer match 2026 benchmarks. Not the problem.</p></div>
+        <div class="fact-card"><div class="fc-label">Repeat / Retention</div><p>Not yet in play. No first client to retain.</p></div>
+      </div>
+      <p>A zero in the first term makes the other three irrelevant. This is why "fix the funnel copy," "lower the price," or "build a better tool" all return zero: they optimize terms two through four while term one stays at zero. The only move that changes the outcome is the one that turns the first term positive: get in front of qualified buyers through a channel they trust.</p>
+
+      <h3>Funnel and unit economics, per GTM attempt</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Attempt</th><th>Input</th><th>Result</th><th>What it proves</th></tr></thead>
+        <tbody>
+          <tr><td>CW cold email</td><td>767 sends</td><td>0 replies, 0 calls, 0 clients. Bounce 5.4% / 12.5% (over the 2% cliff)</td><td>Cold + unknown + bad list = zero. Channel wrong for this buyer.</td></tr>
+          <tr><td>SW cold email</td><td>280 sends, 214 opens</td><td>1 real reply, 0 meetings, 0 revenue</td><td>Even with healthy deliverability, cold strangers don't convert to consulting. Trust, not opens.</td></tr>
+          <tr><td>Paid data (Apollo)</td><td>~$63</td><td>~0 surviving leads</td><td>Buying contacts is not buying relationships.</td></tr>
+          <tr><td>IC Workshop</td><td>350 clicks, $200+ ad spend</td><td>0 paid seats, 0% conversion</td><td>Distribution without trust converts at zero. The cleanest proof in the whole record.</td></tr>
+          <tr><td>Documented warm plan</td><td>BNI seat, 4-6 events/mo, 150 warm LinkedIn touches</td><td>Never executed</td><td>The one motion built for this buyer was the one motion never run.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout blue">
+        <span class="lbl">The workshop is the controlled experiment</span>
+        The 350-click, 0-conversion workshop is the single most useful data point in the file. It holds demand constant (people clicked) and isolates the variable: cold traffic with no trust and no proof converts at zero, not at a weak-but-positive rate. That refutes the "it's the ads" hypothesis cleanly. Better ads send more cold strangers to the same trustless page. The leak is trust and channel, upstream of the ad.
+      </div>
+
+      <h3>Outside view -- the market, the pricing, the wedge</h3>
+      <p>Real 2026 benchmarks, to check whether Catalyst Works is fighting the market or itself:</p>
+      <ul>
+        <li><strong>Pricing is in-market, not the problem.</strong> Fractional AI officer engagements run $2 to 8K a month (light) up to $5 to 30K (full); SMB AI readiness audits run $2 to 8K narrow, $5 to 15K full; fixed-fee diagnostic sprints of 2 to 4 weeks are the recommended structure for founder-led firms. Catalyst Works' ladder lands inside every one of these ranges. The $8,500 Margin Diagnostic Sprint and $1.5 to 5K/mo retainer are textbook-correct.</li>
+        <li><strong>The market is real and growing.</strong> AI consulting is compounding around 29% a year. Andrew Ng's "long tail" framing (1.7M US businesses at $500K to $10M) is the exact underserved segment the notebooks target. The demand is not in question.</li>
+        <li><strong>The wedge is plausible but not unique.</strong> "Fractional AI" is filling fast (fractional roles jumped from ~2,000 in 2022 to 110,000-plus by early 2024). "Vendor-neutral judgment" is becoming table stakes as the fractional-CTO and AI-consultant lines converge, not a standalone moat. What is differentiable: a sharp niche (professional services), an outcome-first promise (margin), and operator-as-proof (he runs his own business on AI agents, a demo most competitors cannot show). Those three together are a real wedge. Vendor-neutrality alone is not.</li>
+        <li><strong>Why consultants fail to land clients (market-wide) matches this file exactly.</strong> The dominant buyer question is "can this person actually deliver?" and the top trust-builder is social proof from prior clients. Consultants without shipped, verifiable outcomes stall. Catalyst Works has zero client proof and is selling into the single most trust-sensitive purchase category. That is not a Catalyst Works quirk; it is the known failure mode, and the known fix is a first proven engagement plus warm referral, not more cold reach.</li>
+      </ul>
+
+      <h3>Founder-focus lens (named honestly, because a real advisor must)</h3>
+      <p>This is the part that stings, and it is the most important part. As of May 1, the owner was interviewing for a full-time Director of Employee Experience Technology role at a ~$20B credit union, comp anchored at $145K floor, $165 to 185K target plus bonus, $216K stretch, and the prep document explicitly war-games the question "wouldn't you keep building Catalyst Works?" with the answer: would pause, low-maintenance, or evolve it for the right offer. At the same time, attention is spread across the consulting arm, a sibling visibility brand, a workshop line, a faceless content studio family, and a ghostwriting track. The documented sales plan needs roughly 8 focused hours a week of in-person relationship work, sustained for weeks, the highest-discomfort, lowest-leverage-feeling activity in the entire portfolio. It never got the hours because the hours were never truly committed. This is not laziness; the build output proves enormous effort. It is divided direction. And it is upstream of every other finding: a fully committed owner does the warm asks, runs the BNI motion, lands a first client, and manufactures proof, because that is what a person does when the business is the only boat.</p>
+    </div>
+  </details>
+
+  <!-- SECTION 5 -->
+  <details class="sec" id="sec05">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">05</span> The Sankofa Council -- Four Premortem Rounds</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">Five independent voices, run in premortem mode (it is six months from now and Catalyst Works is dead; each voice explains why). Four rounds. The job: kill the convenient answers and converge on the one binding constraint. No voice softens. No em dashes.</p>
+
+      <h3>Round 1 -- Independent premortems</h3>
+      <div class="cause-stack">
+        <div class="cause"><div class="rank r1">C</div><div class="body"><strong>The Contrarian -- the chain that killed it</strong><p>It became unfixable the moment that, after 1,047 cold sends and a 0-seat workshop all returned zero, the response was to build more (a white-label audit tier, more short links) instead of changing the motion. Catalyst Works died of building, not of bad luck. The fatal premise: that a good enough system attracts buyers. It does not. Trust does, and trust is earned in rooms, not shipped in code.</p></div></div>
+        <div class="cause"><div class="rank r2">F</div><div class="body"><strong>First Principles -- the one wrong assumption nobody wrote down</strong><p>"Our problem is being known." It was never being known. It was being believed. Every fix targeted reach (more sends, more ads, more pages). None targeted trust. The real question was never "how do we reach more buyers," it was "why would a check-writer believe an unknown enough to pay," and the honest answer (they would not, yet) was never confronted.</p></div></div>
+        <div class="cause"><div class="rank r3">O</div><div class="body"><strong>The Outsider -- what was obvious from outside</strong><p>A stranger saw an unknown person, a message that changed every month, four prices, and not one named client. The market read "nobody has bought this" in three seconds. Insiders saw a rich, sophisticated system. Outsiders saw a storefront with no customers and kept walking.</p></div></div>
+        <div class="cause"><div class="rank r4">E</div><div class="body"><strong>The Expansionist -- what was never tried that would have saved it</strong><p>The unscalable first-client motion. Pick three real local owner-operators, run the diagnostic free or cheap, capture a documented result and a testimonial, ask each for two referrals. Plus operator-as-proof: he runs his own business on autonomous agents, and that demo was never packaged as the case study it already is. Plus one borrowed list (SBDC, Chamber). None of it run.</p></div></div>
+        <div class="cause"><div class="rank r5">X</div><div class="body"><strong>The Executor -- the earliest warning sign, and the week it appeared</strong><p>The week of May 27. That week, 261 cold sends returned 0 engagement AND a lead-gen automation had to be killed for fabricating leads. Together they screamed: there is no real pipeline, and the system is faking one. The correct response was to go land one real client by hand. Instead cold was paused and the building continued.</p></div></div>
+      </div>
+
+      <h3>Round 2 -- Cross-review: kill the convenient answers</h3>
+      <p>The voices read each other. Convergence is immediate on the target: this is about <strong>trust and channel, not reach</strong>. The convenient answers die here:</p>
+      <ul>
+        <li><strong>"It's the ads."</strong> Dead. 350 clicks at 0 percent with in-spec targeting proves the leak is after the click, not at it. Better ads buy more cold strangers for the same trustless page.</li>
+        <li><strong>"It's the funnel / the copy."</strong> Dead as primary. There is no warm traffic to convert; fixing copy on a page no one trusts returns zero, which is exactly what happened.</li>
+        <li><strong>"It's the price."</strong> Dead. The ladder is in-market on every rung.</li>
+        <li><strong>"It's no strategy / unstable positioning."</strong> Demoted. A coherent strategy exists in the notebooks. The instability is in the storefront, which is a symptom of building-instead-of-selling, not the root.</li>
+      </ul>
+      <p>One real divergence survives: is the one thing <strong>proof</strong> (Contrarian) or <strong>warm distribution</strong> (Expansionist)? First Principles resolves it: they are the same constraint from two ends. Proof is the asset; the warm channel is the wire. Warm distribution (a partner intro, a referral, a room) carries borrowed trust that substitutes for proof at the start, which is exactly how almost every consultant lands client one. You need both ends, or no current flows. Name the unified thing: a <strong>trust-carrying path to the buyer</strong>.</p>
+
+      <h3>Round 3 -- Premortem the surviving answer itself</h3>
+      <p>Pressure-test the single-lever versions so we do not ship a convenient compound either:</p>
+      <div class="pressure-box">
+        <div class="pb-head">Premortem A -- "We built proof and still made zero"</div>
+        <p>We finally produced a case study and a slick operator demo, and revenue was still zero. Why? The proof sat on a site nobody trusted enough to visit, shown through cold channels again. <strong>Proof with no warm channel is a tree falling in an empty forest.</strong></p>
+      </div>
+      <div class="pressure-box">
+        <div class="pb-head">Premortem B -- "We got distribution and still made zero"</div>
+        <p>A partner blasted the offer to 2,000 owner-operators and we still got nothing. Why? The offer still sold the how (a constraint diagnostic) instead of a felt outcome, from a host with no proof. <strong>Borrowed reach without proof or a sharp outcome is just the workshop again at a bigger scale.</strong></p>
+      </div>
+      <p>Both single levers die. The surviving answer must be the compound that the documented Gen-5 plan already contains: <strong>a trust-carrying path (warm channel) + first proof + one outcome-first offer, executed together</strong>. And critically, the Gen-5 plan already specifies all three. So the constraint is not "design this." It is "run this."</p>
+
+      <h3>Round 4 -- Premortem the precondition (the one that stings)</h3>
+      <div class="pressure-box">
+        <div class="pb-head">Premortem C -- "We did everything right and it still died"</div>
+        <p>We had the proof, the warm channel, the sharp offer, and Catalyst Works still died. Why? The owner took the full-time role, or kept splitting across six efforts, and never gave the motion the concentrated weeks it needs. The earliest warning was visible on May 1, eight weeks before the workshop: a document war-gaming the wind-down. The plan was never the risk. The commitment was.</p>
+      </div>
+      <p>This is why the binding constraint has two layers, and the report states both: the <strong>operational</strong> constraint is the unexecuted trust-carrying motion; the <strong>binding precondition</strong> is the commitment decision that has never been made. You fix the second before the first, or the first never gets fixed.</p>
+
+      <div class="callout green">
+        <span class="lbl">Chairman synthesis -- convergence ~92%</span>
+        The Council converges: the binding constraint is <strong>execution of an already-correct go-to-market plan through a trust-carrying channel to the buyer, which has never been run, blocked by an unmade founder-commitment decision</strong>. The tension between proof-first and distribution-first is named and resolved as a compound (both, executed together) that the existing plan already specifies. The convenient single-cause answers (ads, funnel, price, "no strategy") are all killed with evidence. Open question only the owner can answer: <em>is Catalyst Works the boat, or the side project?</em> Everything downstream depends on that one word.
+      </div>
+    </div>
+  </details>
+
+  <!-- SECTION 6 -->
+  <details class="sec" id="sec06">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">06</span> The Binding Constraint -- and Why It, Not the Alternatives</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <div class="callout ember">
+        <span class="lbl">The binding constraint</span>
+        Catalyst Works has a coherent, well-researched go-to-market plan it has never executed. The one motion built for its actual buyer (show up in person at BNI and the Chamber, run relationship-led outreach, book discovery calls, deliver a first proof engagement) was replaced in practice by building assets and running the cold, online, trustless channels the plan had already ruled out. The constraint is execution, not knowledge. Underneath it, the binding precondition is an unmade commitment: the owner has not decided that Catalyst Works is the primary business, and the relationship-led motion cannot run on divided attention.
+      </div>
+
+      <h3>The full evidence chain</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Link</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>A coherent plan exists</td><td>NotebookLM CW_Audience Engine + CW_Catalyst Works Ops: precise ICP, outcome-first positioning, four-rung ladder, discovery-call system, 30-day sprint with conversion math, real research base.</td></tr>
+          <tr><td>It was never executed</td><td>No CRM; Drive sales folder empty; stage "$0 to first contract"; no record of the BNI seat being worked or events attended; actual activity was cold email and cold ads.</td></tr>
+          <tr><td>The wrong channels were run instead</td><td>767 + 280 cold sends; $200+ cold workshop ads; 5 funnels; 1,846-line tool; white-label tier, all online/buildable, the exact channels the plan said this buyer is not in.</td></tr>
+          <tr><td>The wrong channels returned zero</td><td>0/767, 1/280, 0 paid of 350 clicks, ~0 of $63. Consistent, total.</td></tr>
+          <tr><td>The break is upstream of conversion/proof</td><td>The funnel produced almost no qualified conversation, so conversion and proof never got an input to fail at. Value-driver term one is zero.</td></tr>
+          <tr><td>The precondition is unmet</td><td>May 1 MACU prep: active FT job interview, explicit wind-down war-gaming; attention split across 5+ efforts.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Why each alternative is real but not binding</h3>
+      <ul>
+        <li><strong>Proof (A):</strong> real and necessary, but a sub-step the existing plan already contains (free-to-paid flywheel, 1 to 2 free projects then testimonials). Proof with no warm channel to show it through still returns zero. Necessary, not binding alone.</li>
+        <li><strong>Positioning (B):</strong> the good positioning exists; only the storefront drifts. Fixing the storefront without running the motion changes nothing. Symptom, not root.</li>
+        <li><strong>ICP / fit (E):</strong> solved on paper to an unusually high standard. Removing this from the suspect list is one of the diagnosis's most useful moves.</li>
+        <li><strong>Demand engine (D):</strong> closest to correct, but mis-stated. It is not "no demand engine." The right demand engine was specified and never switched on; the wrong one was run instead. Reframed, D folds into the execution constraint.</li>
+        <li><strong>Founder focus (C):</strong> not a separate alternative. It is the precondition underneath the execution constraint, and the report keeps it explicit rather than hiding it.</li>
+      </ul>
+
+      <div class="callout blue">
+        <span class="lbl">Dogfooding note</span>
+        Catalyst Works' own governing principle is "the lens follows the constraint." Applied here, the constraint is not analytical (we know what to do) and not financial (price is fine) and not creative (the assets exist). It is behavioral: the plan is not being run. Catalyst Works would tell a client in this exact state: "You don't have an AI problem, you have a decision problem." The same sentence, turned inward, is the verdict. You do not have a strategy problem. You have an execution problem, and under it, a decision problem.
+      </div>
+    </div>
+  </details>
+
+  <!-- SECTION 7 -->
+  <details class="sec" id="sec07">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">07</span> The Fix -- The Catalyst Flywheel, 30/60/90</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">Sequenced to break the constraint, using Catalyst Works' own flywheel: identify friction, run a focused activation sprint, measure, repeat. The friction is identified. This is the activation sprint, applied to the business itself. The order matters as much as the steps.</p>
+
+      <div class="callout green">
+        <span class="lbl">Step 0 -- the gate, before anything</span>
+        Decide: 90 concentrated days on Catalyst Works as the primary business, or a deliberate wind-down. Do not start the plan on divided attention; that just buys another quarter of zero. If the answer is the job, choose it cleanly and freeze the brand as a credential. The rest of this plan assumes the answer is "build it."
+      </div>
+
+      <div class="phase">
+        <div class="ph-head"><span class="ph-name">Days 0 to 30 -- Run the plan you already wrote</span><span class="ph-when">Activation</span></div>
+        <ul>
+          <li><strong>Lock one ICP and one offer.</strong> ICP: Utah professional-services owner-operators, 5 to 50 people, check-writers. Offer front door: the Margin Diagnostic. Freeze all other positioning. Stop building new pages and tools, full stop.</li>
+          <li><strong>Take the BNI South Jordan seat and put 4 to 6 events on the calendar this month.</strong> This buyer is in the room, not the inbox. This is the single highest-leverage move and it has never been made.</li>
+          <li><strong>Run 150 relationship-led LinkedIn touches</strong> to professional-services owners, plus direct personal asks to warm contacts. Target from the documented math: 4 to 7 discovery calls in 30 days.</li>
+          <li><strong>Use the discovery-call system v2.0 you already built</strong> (live maturity scoring, 1 to 2 page artifact within 48 hours). It exists. Run it.</li>
+          <li><strong>Stand up a real CRM.</strong> Even a simple one. Track every conversation. You cannot manage a pipeline you cannot see.</li>
+          <li><strong>Make the live site match the Gen-5 plan:</strong> the "find the margin you're losing to broken operations" line, the documented ladder, one price per offer. One afternoon, then leave it alone.</li>
+        </ul>
+        <p class="note">Goal by day 30: 4 to 7 discovery calls booked with real check-writers, from rooms and warm outreach, not ads.</p>
+      </div>
+
+      <div class="phase">
+        <div class="ph-head"><span class="ph-name">Days 30 to 60 -- Convert and manufacture proof</span><span class="ph-when">Proof</span></div>
+        <ul>
+          <li><strong>Land 1 to 2 free or discounted Margin Diagnostics</strong> with real owner-operators, in exchange for a documented outcome, a testimonial, and two referrals each. This is the proof factory the plan already specified.</li>
+          <li><strong>Package operator-as-proof:</strong> a 3-minute recorded walkthrough of your own business running on autonomous agents, plus a one-page case. This is the demo no competitor in Utah can show. It has existed the whole time, unpackaged.</li>
+          <li><strong>Convert at least one discovery call to a paid next step</strong> ($497 to 997 Signal Session or the $3,500 assessment). First dollar in.</li>
+          <li><strong>Activate one borrowed list</strong> (SBDC, Chamber) for a warm session, now that proof is starting to exist.</li>
+        </ul>
+        <p class="note">Goal by day 60: first paid engagement closed, 2+ testimonials captured, referral loop started.</p>
+      </div>
+
+      <div class="phase">
+        <div class="ph-head"><span class="ph-name">Days 60 to 90 -- Scale what works, then decide</span><span class="ph-when">Compounding</span></div>
+        <ul>
+          <li><strong>Convert proof into 1 to 3 paying clients</strong> (the existing internal August 4 target). Make the retainer the product; the diagnostic is the front door, the workshop and scanner are lead magnets that feed it, not standalone bets.</li>
+          <li><strong>Now, and only now, turn paid and cold back on</strong> to amplify a motion that already converts, with a pixel and retargeting. Ads are step four, never step one.</li>
+          <li><strong>Lock the positioning that actually closed deals.</strong> Kill the rest. Retire the white-label audit tier and the dormant sibling-brand Stripe link.</li>
+          <li><strong>Run the decision gate:</strong> is Catalyst Works on a path to replace meaningful income by Q4? Yes, double down. No, after a genuine push, convert to low-maintenance and take the role with a clear conscience.</li>
+        </ul>
+        <p class="note">Goal by day 90: 1 to 3 paying clients and a repeatable warm-to-paid motion, or a clean, evidence-based decision to stop.</p>
+      </div>
+
+      <h3>Top 5 actions, in order</h3>
+      <ol>
+        <li><strong>Make the commitment call.</strong> 90 concentrated days on Catalyst Works, or a deliberate wind-down. Everything depends on this one word.</li>
+        <li><strong>Take the BNI seat and book 4 to 6 events this month.</strong> Go where the buyer is. This has never been done.</li>
+        <li><strong>Run 150 warm LinkedIn touches plus the discovery-call system</strong> to book 4 to 7 discovery calls in 30 days.</li>
+        <li><strong>Land 1 to 2 free or discounted diagnostics to manufacture proof</strong> (testimonials plus referrals), and package the operator-as-proof demo.</li>
+        <li><strong>Sync the site to the Gen-5 plan, stand up a CRM, and freeze the build.</strong> No new pages or tools until a client is paying.</li>
+      </ol>
+    </div>
+  </details>
+
+  <!-- SECTION 8 -->
+  <details class="sec" id="sec08">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">08</span> Offer &amp; Positioning -- Lock It, Don't Reinvent It</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">The simplification is mostly subtraction. The good version already exists in the notebooks. The job is to make the public face match it and stop adding.</p>
+
+      <h4>One ICP</h4>
+      <p>Utah-first professional-services owner-operators, 5 to 50 people (extend to 200), $1M to $20M, check-writers, AI adoption stalled. Found at BNI, the Chamber, and association luncheons, not on X.</p>
+
+      <h4>One outcome</h4>
+      <p>"I help professional services firms find the margin they're losing to broken operations." Outcome-first (margin), not method-first (governance, constraint diagnostics, eight lenses). The method stays internal, exactly as the company profile already instructs.</p>
+
+      <h4>One offer ladder (already documented, just commit to it)</h4>
+      <div class="scroll"><table>
+        <thead><tr><th>Rung</th><th>Offer</th><th>Price</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td>Lead magnets</td><td>Workshop + 60-second scan + free worksheet</td><td>Free / low</td><td>Feed the front door</td></tr>
+          <tr><td>Front door</td><td>Executive Signal Session</td><td>$497 to 997</td><td>Paid diagnostic conversation</td></tr>
+          <tr><td>Core</td><td>SHIELD Assessment / Margin Diagnostic Sprint</td><td>$3,500 / $8,500</td><td>The proof-generating engagement</td></tr>
+          <tr><td><strong>The product</strong></td><td>Fractional retainer (3 tiers)</td><td>$1,500 to 5,000 / mo</td><td>The recurring revenue, the actual business</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4>What to kill</h4>
+      <ul>
+        <li>The white-label audit tier ($497 / $1,200 a year). No buyer, pure build.</li>
+        <li>The dormant sibling-brand $250 Stripe link, live but pointed nowhere.</li>
+        <li>The competing positionings (speed wedge, generic ops, AIOS build as headline). Keep the build SKU as an expansion offer, not the front message.</li>
+        <li>Any new asset until a client is paying.</li>
+      </ul>
+
+      <div class="callout green">
+        <span class="lbl">The proof-first path, restated</span>
+        Catalyst Works as the front door (the diagnostic). Workshop and scan as lead magnets that feed it. Retainer as the product. First proof from 1 to 2 free or discounted diagnostics plus the operator-as-proof demo. Then, and only then, paid amplification. This is the proof-first sequence the workshop after-action review already arrived at, now wired to the documented ICP and ladder.
+      </div>
+    </div>
+  </details>
+
+  <!-- SECTION 9 -->
+  <details class="sec" id="sec09">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">09</span> Risks &amp; the Honest "Should Catalyst Works Continue?"</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <div class="cause-stack">
+        <div class="cause"><div class="rank r1">1</div><div class="body"><strong>The half-run risk (highest)</strong><p>The owner takes the job, or keeps splitting attention, and "runs" the plan at 20 percent. This produces another quarter of zero and a false conclusion that "the plan doesn't work." Mitigation: the Step 0 forcing decision. Concentrated or not at all.</p></div></div>
+        <div class="cause"><div class="rank r2">2</div><div class="body"><strong>Warm network too thin or too national</strong><p>The warm list may be small or not local enough to fill a Sandy room. Mitigation: partner and borrowed lists plus pro-bono first engagements to widen the top of funnel fast.</p></div></div>
+        <div class="cause"><div class="rank r3">3</div><div class="body"><strong>Market window closing</strong><p>"Fractional AI" is filling fast and vendor-neutrality is becoming table stakes. The durable wedge is niche plus outcome plus operator-proof, and it must be claimed before the niche crowds. Move now, not in Q4.</p></div></div>
+        <div class="cause"><div class="rank r4">4</div><div class="body"><strong>Fuzzy proof outcomes</strong><p>Consulting outcomes can be hard to quantify, weakening the first testimonials. Mitigation: pick narrow, measurable first problems (hours saved, a specific bottleneck cleared) so the proof is concrete.</p></div></div>
+      </div>
+
+      <div class="decision" style="margin-top:1.4rem;">
+        <div class="dc-head">The honest question</div>
+        <div class="dc-title">Should Catalyst Works continue, and under what condition?</div>
+        <p class="dc-rec"><strong>Conditional yes.</strong> Continue if and only if the owner will give 90 concentrated days to the documented motion AND lands at least one paying client by the existing August 4 internal target. The strategy is sound, the market is real, the pricing is right, and the wedge is claimable. The only thing missing has always been the concentrated execution. If, after a genuine 90-day push, there is still no paying client, the honest and even smart call is to convert Catalyst Works to a low-maintenance credential asset and take the full-time role. Catalyst Works has been a build project, not yet a business. Ninety honest days decides which it becomes. What is not acceptable is a third quarter of half-effort followed by blaming the ads, the funnel, or the market.</p>
+      </div>
+    </div>
+  </details>
+
+  <!-- SECTION 10 -->
+  <details class="sec" id="sec10">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">10</span> The 10-Second Pitch</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">Outcome-first, constraint-first. First person, no hype, operator-as-proof. Each ran through the voice gate; composite scores shown. Recommendation: lead with Pitch 2, the challenger frame is the strongest and most on-voice.</p>
+
+      <div class="voice primary">
+        <div class="v-head"><span class="v-name">Pitch 2 -- The Challenger (recommended)</span><span class="v-score">Voice 93</span></div>
+        <p class="v-pitch">"You don't have an AI problem. You have a decision problem. Everyone is selling you tools. I tell you the one thing slowing your business down, then we put AI on that one thing. I run my own business on AI agents, so I show you what works, not what is trending."</p>
+      </div>
+      <div class="voice">
+        <div class="v-head"><span class="v-name">Pitch 1 -- The Reframe</span><span class="v-score">Voice 92</span></div>
+        <p class="v-pitch">"I help business owners find the one bottleneck capping their growth, then deploy the two or three AI tools that remove it. Most owners don't have an AI problem. They have a focus problem, and the noise makes it worse. I run a short diagnostic, tell you where AI matters and where it doesn't, and we install only what moves revenue."</p>
+      </div>
+      <div class="voice">
+        <div class="v-head"><span class="v-name">Pitch 3 -- The Differentiator</span><span class="v-score">Voice 91</span></div>
+        <p class="v-pitch">"Most consultants get paid to say yes to AI. I get paid to tell you where it actually matters and where it doesn't. I find the single constraint holding your business back, then deploy the few AI tools that remove it. No tool tour. One bottleneck, one fix you can measure."</p>
+      </div>
+      <div class="voice">
+        <div class="v-head"><span class="v-name">Ultra-short -- 5 seconds</span><span class="v-score">Voice 91</span></div>
+        <p class="v-pitch">"I find the one bottleneck slowing your business down, then deploy the AI that removes it. One fix that moves revenue, not a tool tour."</p>
+      </div>
+
+      <div class="callout blue">
+        <span class="lbl">Voice gate note</span>
+        All four clear the 90 composite bar. Anchors present: operator-as-proof (he runs his own business on AI agents), the contrarian "where AI matters and where it doesn't" signature, and the Theory-of-Constraints-to-AI bridge. No em dashes, no manufactured urgency, no unverified numbers, first person throughout.
+      </div>
+    </div>
+  </details>
+
+  <!-- SECTION 11 -->
+  <details class="sec" id="sec11">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">11</span> Deliverable QA -- This Report as a Product</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">The second bird. If Catalyst Works sells an $8,500 Margin Diagnostic Sprint, this document is the product. Here is an honest QA of it as a client deliverable: is it deep enough, client-grade in style, worth the price, and what must improve before a real client pays for one.</p>
+
+      <h3>Scorecard</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Dimension</th><th>Score</th><th>Read</th></tr></thead>
+        <tbody>
+          <tr><td>Analytical depth</td><td>8.5 / 10</td><td>Issue tree, 5 Whys to a real root, value-driver math, four premortem rounds, outside-view benchmarks. Genuinely past symptoms. Strong.</td></tr>
+          <tr><td>Evidence rigor</td><td>9 / 10</td><td>Every claim traces to a dossier. No invented revenue, no fake proof. Discovery gap (NotebookLM) disclosed, not papered over.</td></tr>
+          <tr><td>Clarity for the buyer</td><td>8 / 10</td><td>Plain-English primer up top, one-sentence verdict, maturity score a non-analyst can read. The deep sections are dense; a busy owner reads the top third.</td></tr>
+          <tr><td>Design / client-grade feel</td><td>8.5 / 10</td><td>Dark editorial palette, collapsible sections, jump nav, maturity bars, agent cards. Looks like a paid product. Not yet a branded, logo'd, PDF-exportable artifact.</td></tr>
+          <tr><td>Actionability</td><td>9 / 10</td><td>Step 0 gate, 30/60/90, top 5 actions, a Monday-real first move (book the BNI seat). A client could act tomorrow.</td></tr>
+          <tr><td>Value vs $8,500</td><td>7.5 / 10</td><td>The thinking is worth it. The packaging is not yet at the level a skeptical buyer expects for that number (see gaps).</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>What specifically needs improving before selling this</h3>
+      <div class="two-col">
+        <div class="fact-card"><div class="fc-label">Content gap</div><p>A real client deliverable needs primary-source quotes from interviews and the client's own numbers (revenue, margin, hours). This self-audit leans on documents; a paid version needs the discovery-call transcript woven in.</p></div>
+        <div class="fact-card"><div class="fc-label">Quantification gap</div><p>The "margin you're losing" promise needs a dollar number. This report names the constraint but does not size the cost of the constraint in dollars. A paid Margin Diagnostic must put a figure on the leak.</p></div>
+        <div class="fact-card"><div class="fc-label">Design / brand gap</div><p>No Catalyst Works logo, cover page, or contents page. No PDF export. The maturity model and Nine-Agent system should be visually templated and reusable, not hand-built per report.</p></div>
+        <div class="fact-card"><div class="fc-label">Style gap</div><p>Density. The deep sections reward an analyst, not a busy managing partner. A paid version needs a tighter 2-page executive cut as the front matter, with the depth as a clearly-optional appendix.</p></div>
+        <div class="fact-card"><div class="fc-label">Value-proof gap</div><p>The deliverable should end with fixed-scope options priced (the documented "top gaps + fixed-scope options" close). This is the bridge from diagnosis to the retainer. It is implied here, not packaged as a decision sheet.</p></div>
+        <div class="fact-card"><div class="fc-label">Repeatability gap</div><p>Built bespoke. To sell at volume, the Nine-Agent audit and maturity scoring need a templated intake-to-report pipeline so each one is not a from-scratch build (which is, fittingly, the exact constraint this report diagnoses).</p></div>
+      </div>
+
+      <div class="callout amber">
+        <span class="lbl">The meta-verdict</span>
+        As a thinking product, this is already client-grade and arguably worth the price. As a packaged product, it is about 75 percent of the way to something a skeptical owner-operator pays $8,500 for sight-unseen. The gap is presentation and quantification, not analysis: add the dollar-sizing of the constraint, a 2-page executive cut, a branded template with PDF export, and a priced fixed-scope options sheet at the end. Notably, the single biggest improvement (templatize it so it is not hand-built each time) is the same constraint this report diagnoses in the business. Catalyst Works overbuilds bespoke and underbuilds the repeatable engine. Even the deliverable proves the finding.
+      </div>
+    </div>
+  </details>
+
+  <!-- SECTION 12 -->
+  <details class="sec" id="sec12">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">12</span> Method &amp; Evidence (incl. discovery gaps)</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <h4>Method</h4>
+      <p>Catalyst Works' own deliverable structure, dogfooded: the Nine-Agent Audit system (five named agents run, the rest folded into the issue tree), the four-level maturity scoring run on the revenue engine, the eight-lens diagnostic discipline (Theory of Constraints lead: "the lens follows the constraint"), and the Catalyst Flywheel as the fix format. Layered on top: a MECE issue tree, a 5 Whys driven to root, a value-driver decomposition, a funnel and unit-economics read, a real-market outside view, and a four-round Sankofa Council in premortem mode to kill convenient answers.</p>
+
+      <h4>Evidence base</h4>
+      <ul>
+        <li>Local dossier: catalystworks-site git history, agentsHQ docs, memory files, the workshop after-action review.</li>
+        <li>External dossier: Google Drive (CW folders, playbooks, MACU prep, brand) and Notion (hub, pricing task, ideas).</li>
+        <li>NotebookLM dossier: three CW notebooks (Audience Engine, Catalyst Works Ops, Learning Lab), recovered via the VPS after the laptop TLS block, holding the coherent Gen-5 strategy.</li>
+        <li>Outside view: 2026 web benchmarks on fractional-AI and SMB AI-consulting pricing, market growth, and consultant failure modes.</li>
+      </ul>
+
+      <h4>Discovery gaps (disclosed, not fabricated)</h4>
+      <ul>
+        <li><strong>NotebookLM was initially SSL-blocked</strong> on the laptop and recovered mid-engagement via the VPS. The recovery materially changed the diagnosis (it revealed the coherent strategy). Had it stayed blocked, this report would have wrongly concluded "no clear strategy." A standing reminder that absence of evidence was nearly mistaken for evidence of absence.</li>
+        <li><strong>No CRM or pipeline export exists</strong> (Drive sales folder empty), so conversion behavior on any warm conversation is unobservable. The conversion node is inferred as untested, not measured.</li>
+        <li><strong>Leads live in Supabase</strong>, not swept here; treated as out of scope, consistent with the "$0 to first contract" stage in every source.</li>
+        <li><strong>Two named agents of the Nine-Agent system were not in the evidence;</strong> we ran the five documented agents and did not invent the others.</li>
+      </ul>
+
+      <h4>Truth statement</h4>
+      <p>No revenue, client, or proof was invented. Every number traces to a dossier. Where the picture was incomplete, the gap is named. This report is for the owner's eyes and is honest where it stings, because that is where the value is.</p>
+    </div>
+  </details>
+
+  <div class="callout ember" style="margin-top:1.4rem;">
+    <span class="lbl">Bottom line</span>
+    The strategy is good and already written. The market is real and the pricing is right. The one thing missing has never been the plan; it has been running it. Go where the buyer is, land one real client by hand, capture the proof, and let the flywheel turn. But first, decide that Catalyst Works is the boat. The plan cannot be run from the dock.
+  </div>
+
+  <div class="footer">
+    <p>Catalyst Works -- Margin Diagnostic Sprint, Self-Engagement -- prepared 2026-06-26 &middot; Confidential / internal</p>
+    <p style="margin-top:0.3rem;">Method: Nine-Agent Audit + four-level maturity scoring + Theory of Constraints + a four-round Sankofa Council in premortem mode. Verdict: the binding constraint is execution of an already-correct go-to-market plan through a trust-carrying channel to the buyer, blocked by an unmade founder-commitment decision. Convenient single-cause answers (ads, funnel, price, "no strategy") were tested and killed. The fix is sequence, proof, and above all a decision.</p>
+  </div>
+
+</div>
+
+<button id="backToTop" aria-label="Back to top" title="Back to top">&#8593;</button>
+
+<script>
+  (function () {
+    var btn = document.getElementById('backToTop');
+    var onScroll = function () {
+      if (window.pageYOffset > 480) { btn.classList.add('show'); } else { btn.classList.remove('show'); }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    btn.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+    var navLinks = document.querySelectorAll('.toc a[href^="#"]');
+    Array.prototype.forEach.call(navLinks, function (link) {
+      link.addEventListener('click', function (e) {
+        var id = link.getAttribute('href').slice(1);
+        var target = document.getElementById(id);
+        if (!target) { return; }
+        e.preventDefault();
+        if (target.tagName.toLowerCase() === 'details') { target.open = true; }
+        window.requestAnimationFrame(function () { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+        if (history && history.replaceState) { history.replaceState(null, '', '#' + id); }
+      });
+    });
+  })();
+</script>
+</body>
+</html>
+
