@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workshop AAR -- AI Without Getting Burned</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #15161a;
+      --muted: #6b6f76;
+      --line: #e7e7ea;
+      --accent: #ff5a3c;
+      --accent2: #2a6bf2;
+      --green: #18a058;
+      --amber: #e0892b;
+      --soft: #f7f7f9;
+      --red-soft: #fff1ee;
+      --green-soft: #f0faf5;
+      --green-border: #b6e8cc;
+      --amber-soft: #fffbf0;
+      --amber-border: #fde68a;
+      --blue-soft: #f0f4ff;
+      --blue-border: #c7d7fc;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: var(--ink);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 2.2rem 1.25rem 5rem; }
+
+    .doc-header { margin-bottom: 1.6rem; }
+    .tag {
+      display: inline-block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.12em; padding: 0.2rem 0.58rem; border-radius: 999px;
+      background: #111; color: #fff; margin-right: 0.4rem; vertical-align: middle;
+    }
+    .tag.aar { background: var(--accent); }
+    .tag.council { background: #2a4acc; }
+    h1 { font-size: 2.05rem; font-weight: 850; letter-spacing: -0.035em; margin: 0.75rem 0 0.3rem; line-height: 1.1; }
+    .sub { color: var(--muted); font-size: 0.96rem; max-width: 62ch; }
+    .doc-meta { font-size: 0.78rem; color: var(--muted); margin-top: 0.75rem; }
+
+    .lead-box {
+      background: linear-gradient(135deg, #15161a 0%, #1e2030 100%);
+      color: #fff; padding: 1.55rem 1.75rem; border-radius: 14px; margin: 1.8rem 0 2.4rem;
+    }
+    .lead-box .verdict-lbl { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 0.55rem; }
+    .lead-box .verdict { font-size: 1.3rem; font-weight: 800; font-style: italic; letter-spacing: -0.02em; line-height: 1.3; color: #fff; }
+    .lead-box .sub-verdict { color: #b8bcc8; font-size: 0.93rem; margin-top: 0.8rem; line-height: 1.6; }
+
+    .stat-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem; margin: 0 0 2.5rem; }
+    .stat { background: var(--soft); border-radius: 10px; padding: 0.85rem 0.9rem; border: 1px solid var(--line); }
+    .stat .num { font-size: 1.6rem; font-weight: 850; letter-spacing: -0.03em; line-height: 1; margin-bottom: 0.18rem; }
+    .stat .num.red { color: var(--accent); }
+    .stat .lbl { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    section { margin-bottom: 2.8rem; }
+    h2 { font-size: 1.28rem; font-weight: 820; letter-spacing: -0.02em; margin: 0 0 1rem; padding-bottom: 0.45rem; border-bottom: 2.5px solid var(--ink); }
+    h2 .num { color: var(--accent); margin-right: 0.45rem; }
+    h3 { font-size: 1.0rem; font-weight: 760; margin: 1.3rem 0 0.45rem; }
+    p { margin-bottom: 0.85rem; font-size: 0.96rem; }
+    ul { margin: 0.2rem 0 1rem 1.15rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.95rem; }
+    strong { font-weight: 700; }
+    .lede { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.3rem; }
+
+    .callout { border-radius: 10px; padding: 1rem 1.15rem; margin: 1.1rem 0; font-size: 0.93rem; }
+    .callout .lbl { display: block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.35rem; }
+    .callout.green { background: var(--green-soft); border-left: 4px solid var(--green); }
+    .callout.green .lbl { color: var(--green); }
+    .callout.amber { background: var(--amber-soft); border-left: 4px solid var(--amber); }
+    .callout.amber .lbl { color: var(--amber); }
+    .callout.blue { background: var(--blue-soft); border-left: 4px solid var(--accent2); }
+    .callout.blue .lbl { color: var(--accent2); }
+
+    .cause-stack { display: flex; flex-direction: column; gap: 0.65rem; margin: 1rem 0; }
+    .cause { display: flex; align-items: flex-start; gap: 0.9rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.9rem 1rem; background: #fff; }
+    .cause .rank { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 800; color: #fff; }
+    .cause .rank.r1 { background: #dc2626; }
+    .cause .rank.r2 { background: #ea580c; }
+    .cause .rank.r3 { background: #d97706; }
+    .cause .rank.r4 { background: #65a30d; }
+    .cause .rank.r5 { background: #0ea5e9; }
+    .cause .body { flex: 1; min-width: 0; }
+    .cause .body strong { display: block; font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .cause .body p { font-size: 0.87rem; color: var(--muted); margin: 0; line-height: 1.5; }
+    .cause .weight { flex-shrink: 0; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); padding-top: 0.1rem; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin: 1rem 0; }
+    .fact-card { background: var(--soft); border-radius: 10px; padding: 0.85rem 1rem; border: 1px solid var(--line); }
+    .fact-card .fc-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.35rem; }
+    .fact-card p { font-size: 0.87rem; color: var(--ink); margin: 0; line-height: 1.5; }
+
+    .phase { border: 1px solid var(--line); border-radius: 12px; padding: 1.05rem 1.2rem; margin: 0.8rem 0; background: #fff; }
+    .phase .ph-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.55rem; }
+    .phase .ph-name { font-weight: 820; font-size: 1.02rem; }
+    .phase .ph-when { font-size: 0.76rem; color: var(--muted); font-weight: 700; background: var(--soft); border-radius: 6px; padding: 0.1rem 0.45rem; }
+    .phase ul { margin: 0.2rem 0 0 1rem; }
+    .phase li { font-size: 0.89rem; margin-bottom: 0.3rem; color: var(--ink); }
+    .phase li strong { color: var(--ink); }
+    .phase .note { font-size: 0.82rem; color: var(--muted); margin-top: 0.5rem; font-style: italic; }
+
+    .grid-3x3 { display: grid; grid-template-columns: auto repeat(3, 1fr); gap: 0.4rem; margin: 1rem 0; font-size: 0.82rem; }
+    .grid-3x3 .gh { background: var(--ink); color: #fff; font-weight: 800; border-radius: 6px; padding: 0.35rem 0.5rem; text-align: center; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .grid-3x3 .gl { background: var(--soft); color: var(--muted); font-weight: 700; border-radius: 6px; padding: 0.35rem 0.5rem; display: flex; align-items: center; justify-content: flex-end; text-align: right; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .grid-3x3 .gc { background: var(--blue-soft); border: 1px solid var(--blue-border); border-radius: 8px; padding: 0.45rem 0.5rem; text-align: center; font-size: 0.78rem; font-weight: 600; color: var(--ink); line-height: 1.3; }
+    .grid-3x3 .gc.winner { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
+
+    .pressure-box { background: var(--amber-soft); border: 1px solid var(--amber-border); border-radius: 10px; padding: 1rem 1.15rem; margin: 1.3rem 0; font-size: 0.91rem; }
+    .pressure-box .pb-head { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--amber); margin-bottom: 0.5rem; }
+
+    .scroll { overflow-x: auto; margin: 1rem 0; -webkit-overflow-scrolling: touch; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.85rem; min-width: 480px; }
+    th, td { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-weight: 750; background: var(--soft); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+
+    .footer { margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); }
+
+    @media (max-width: 580px) {
+      h1 { font-size: 1.62rem; }
+      .stat-bar { grid-template-columns: repeat(2, 1fr); }
+      .two-col { grid-template-columns: 1fr; }
+      .lead-box .verdict { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-header">
+    <span class="tag aar">After-Action Review</span>
+    <span class="tag council">5-Angle Council</span>
+    <h1>AI Without Getting Burned</h1>
+    <p class="sub">First paid workshop. Thu 2026-06-25, SLCC Miller Campus, Sandy UT. 0 paid seats, 0 walk-ins. The recording is the sole deliverable and the first proof asset for July.</p>
+    <p class="doc-meta">Published 2026-06-26 &middot; 5-round Sankofa Council analysis &middot; Confidential / internal</p>
+  </header>
+
+  <div class="stat-bar">
+    <div class="stat"><div class="num red">0</div><div class="lbl">Paid Seats</div></div>
+    <div class="stat"><div class="num">350</div><div class="lbl">Landing Page Views</div></div>
+    <div class="stat"><div class="num red">$200+</div><div class="lbl">Ad Spend</div></div>
+    <div class="stat"><div class="num red">0%</div><div class="lbl">Conversion Rate</div></div>
+  </div>
+
+  <div class="lead-box">
+    <div class="verdict-lbl">5-Round Council Verdict</div>
+    <div class="verdict">"The ads" is a convenient single cause. The real root cause is a cold-traffic funnel with nothing warm behind it.</div>
+    <div class="sub-verdict">350 people saw the page. Zero converted. That is not primarily an ad copy problem. It is a trust-gap and sequence-of-operations problem. Personal asks never went out. The borrowed-list channel was never executed. The page had zero social proof. Ads cannot compensate for all three at once. They amplify a working funnel. They do not create one from scratch.</div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <section>
+    <h2><span class="num">01</span> What We Did Well</h2>
+    <p class="lede">Honest inventory. What was genuinely shipped or solved.</p>
+
+    <h3>Operations fully de-risked</h3>
+    <p>Venue secured at SLCC Miller Campus at lower cost than the initial scope. Insurance source found. Full run-of-show documented. Gear list confirmed. Entry logistics handled. Water-bottle placement figured out. None of this needs re-solving for July. That is real capital carried forward.</p>
+
+    <h3>Content plan was strong</h3>
+    <p>The 3-skill session structure was fully designed with a live-build component. Attendees would have left with something they built. The differentiator is real: showing a live autonomous operator handling actual business tasks, not a demo of what AI could theoretically do. AP does not have this. Nobody in the Utah market has this. It stays sharp for July.</p>
+
+    <h3>Back-end offer stack built ahead of schedule</h3>
+    <p>Three conversion paths existed after the workshop: free AI audit with a working Calendly link, $497 cohort, $297 kit. Most workshop operators build the back-end after their first event. Having it ready on day one is ahead of where most operators are. July can open on these immediately when seats fill.</p>
+
+    <h3>Meta ads proved demand exists</h3>
+    <p>350 people clicked through from cold ads to the seat page. The topic has real demand in the Utah market and the ad copy generated traffic. The ads failed to convert, but they diagnosed exactly where the funnel broke: after the click, not before it. That is useful signal, not wasted money.</p>
+
+    <h3>Showed up and recorded</h3>
+    <p>Most first-time workshop operators cancel when seat count is zero two days before the event. Running the session and recording it was correct. The recording is now the most valuable asset in the funnel. Every fix below starts with it.</p>
+  </section>
+
+  <!-- SECTION 2 -->
+  <section>
+    <h2><span class="num">02</span> What We Did Not Do Well</h2>
+    <p class="lede">No softening. Each gap was concrete with a concrete consequence.</p>
+
+    <div class="two-col">
+      <div class="fact-card">
+        <div class="fc-label">Distribution Gap 1</div>
+        <p>LinkedIn Connections.csv was never provided. The highest-trust personal invite channel generated zero invitations. The people exist. The channel simply never activated.</p>
+      </div>
+      <div class="fact-card">
+        <div class="fc-label">Distribution Gap 2</div>
+        <p>No direct personal asks went out. IC Slack members, warm contacts, colleagues -- none received a human message saying "I'm running this Thursday, would you come?" Most first events fill through this channel. It was skipped entirely in favor of paid ads.</p>
+      </div>
+      <div class="fact-card">
+        <div class="fc-label">Timeline Gap</div>
+        <p>Date locked 6/05. Marketing plan done 6/12. Event 6/25. That is 13 days. Chambers and SBDC need 2-3 weeks minimum. Meta ads need 7+ days to optimize. The slow channels were structurally unable to deliver on 13 days regardless of execution quality.</p>
+      </div>
+      <div class="fact-card">
+        <div class="fc-label">Ad System Gap</div>
+        <p>3 creative angles but no A/B test system. No conversion pixel -- Meta optimized for Traffic not Purchases. 350 bounces lost permanently to retargeting. No learning loop. Expensive guessing rather than scientific testing.</p>
+      </div>
+      <div class="fact-card">
+        <div class="fc-label">Social Proof Gap</div>
+        <p>First-ever event. The seat page had zero testimonials, zero past-attendee faces, zero "X people registered" counter. Cold audiences evaluating a $47 purchase from an unknown organizer need trust signals. None were present.</p>
+      </div>
+      <div class="fact-card">
+        <div class="fc-label">Borrowed-List Gap</div>
+        <p>AP's first advice: "borrow the list from local orgs." SBDC and chambers were contacted as passive co-marketers, not as list partners. The borrowed-audience playbook was never executed. This was the highest-leverage channel that stayed almost completely untapped.</p>
+      </div>
+      <div class="fact-card">
+        <div class="fc-label">Creative Quality Gap</div>
+        <p>Ad problems were identified early. No time and no forcing mechanism to fix them before the campaign ran. AP's feedback on the specific copy was not obtained before launch. The known problems ran anyway.</p>
+      </div>
+      <div class="fact-card">
+        <div class="fc-label">StartFEST Timing</div>
+        <p>StartFEST ran 6/23-24. Event was 6/25. A $47 close to strangers for a workshop the next evening is an extremely hard ask. The right use of StartFEST was list-building and seeding for July, not closing for a next-day event.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3 -->
+  <section>
+    <h2><span class="num">03</span> Why We Did Not Get People to Sign Up</h2>
+    <p class="lede">This section goes deepest. Five rounds of Council analysis. The "no signups" vs "signups that don't show" distinction is addressed below.</p>
+
+    <div class="callout blue">
+      <span class="lbl">Diagnostic clarity first</span>
+      There were zero signups -- not "signups who did not show." The breakdown was entirely at the conversion step, not the commitment or logistics step. There was no attendance problem. There was a purchase problem.
+    </div>
+
+    <h3>Root Cause Hierarchy (5-Round Council Output)</h3>
+
+    <div class="cause-stack">
+      <div class="cause">
+        <div class="rank r1">1</div>
+        <div class="body">
+          <strong>Personal asks never happened</strong>
+          <p>IC Slack members, LinkedIn connections, warm contacts -- none received a direct human message asking them to attend. Most workshop operators fill their first 5-10 seats through exactly this channel. Personal asks are free, same-day, and convert at the highest rate of any channel. Paying $200 in ads while sending zero personal invites is reversing the order of operations entirely.</p>
+        </div>
+        <div class="weight">Heaviest</div>
+      </div>
+
+      <div class="cause">
+        <div class="rank r2">2</div>
+        <div class="body">
+          <strong>Cold-traffic funnel with zero social proof</strong>
+          <p>The entire acquisition system was cold: cold ads pointing at cold audiences landing on a page with zero testimonials, zero past-event photos, no counter, from an unknown first-time organizer. AP's Meta ads work because AP has a track record and past attendees. For a first-ever workshop, cold traffic requires either exceptional social proof or a borrowed audience where an org they already trust has vouched for you. Neither condition was met.</p>
+        </div>
+        <div class="weight">Heavy</div>
+      </div>
+
+      <div class="cause">
+        <div class="rank r3">3</div>
+        <div class="body">
+          <strong>Wrong channel mix for the runway available</strong>
+          <p>13-day runway is survivable with fast channels: personal asks (same day), warm network (1-2 days), borrowed list from a partner who can email immediately (3-5 days). It is not survivable with slow channels: chambers need approval cycles, SBDC has internal workflows, Meta needs 7+ days to optimize. The plan was built for a 3-week runway and executed on 13 days. The mismatch was structural, not a quality-of-execution problem.</p>
+        </div>
+        <div class="weight">Significant</div>
+      </div>
+
+      <div class="cause">
+        <div class="rank r4">4</div>
+        <div class="body">
+          <strong>Ad system underbuilt: no pixel, no A/B test, no retargeting</strong>
+          <p>Meta optimized for Traffic with no conversion pixel. It found clickers, not buyers. The 350 who visited but did not convert were permanently lost -- no retargeting without a pixel. 3 creative angles with no test system means there was no way to learn which combination converts. Running 3 versions without testing is expensive guessing. AP's 3x3 = 9 variant system exists because you cannot know what works until you test it.</p>
+        </div>
+        <div class="weight">Real</div>
+      </div>
+
+      <div class="cause">
+        <div class="rank r5">5</div>
+        <div class="body">
+          <strong>Landing page not built for first-timer trust</strong>
+          <p>A cold audience evaluating a $47 purchase from an unknown organizer needs: recognized social proof, past event evidence, a specific outcome statement, urgency signals, and a seat counter. The page likely had none of these. Even perfect ads cannot compensate for a page that fails to close the trust gap for cold traffic.</p>
+        </div>
+        <div class="weight">Contributing</div>
+      </div>
+    </div>
+
+    <div class="pressure-box">
+      <div class="pb-head">Council Pressure Test -- Against the "Ads Are the Gate" Hypothesis</div>
+      <p><strong>His hypothesis:</strong> "The ads are the gate. Better ads, properly A/B tested, would have filled the room."</p>
+      <p style="margin-top:0.5rem;"><strong>Council verdict: Partially correct. Structurally incomplete.</strong></p>
+      <p style="margin-top:0.5rem;">Better ads plus A/B testing plus a longer runway equals meaningful improvement. True. But "ads fix everything" externalizes the problem to an improvable tool while leaving the harder problems untouched. AP's ads work because AP has social proof and a community. Better Boubacar ads pointed at the same zero-social-proof page still underperform. The personal-asks channel was skipped entirely -- not an ad problem. The borrowed-list channel was never executed -- also not an ad problem.</p>
+      <p style="margin-top:0.5rem;"><strong>Corrected hypothesis for July:</strong> Ads fill the room IF the page has social proof from the recording, the borrowed-list channel runs first, personal asks go out simultaneously, and the ad system has a pixel, retargeting, and 9 tested variants. Ads are the amplifier. The other three are the foundation.</p>
+    </div>
+
+    <h3>No Signups vs. Signups Who Do Not Show</h3>
+    <div class="two-col">
+      <div class="fact-card">
+        <div class="fc-label">No Signups (This Workshop)</div>
+        <p>The entire problem was here. All root causes operated at the purchase layer. Every fix below targets this.</p>
+      </div>
+      <div class="fact-card">
+        <div class="fc-label">Show-Up Rate (Future Risk to Wire Now)</div>
+        <p>Not relevant to June 25, but worth building before July. AP confirms: confirmation email plus 48-hour reminder plus day-of text. People who pay $47 have skin in the game but still need a nudge sequence.</p>
+      </div>
+    </div>
+
+    <h3>Variable-by-Variable Weight</h3>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Variable</th><th>Actual State</th><th>Impact</th><th>Weight</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Personal asks</strong></td><td>Zero sent</td><td>Entire owned channel dark. First 5-10 seats typically come from here.</td><td>Very High</td></tr>
+          <tr><td><strong>Borrowed list</strong></td><td>Never activated</td><td>AP's first recommendation. Pre-qualified local audience with org trust transfer.</td><td>Very High</td></tr>
+          <tr><td><strong>Social proof on page</strong></td><td>Zero</td><td>Cold traffic has no reason to trust a first-ever event. Testimonials and counters are conversion levers.</td><td>High</td></tr>
+          <tr><td><strong>Ad quality and A/B testing</strong></td><td>3 angles, no test, problems unfixed</td><td>Real gap. Better creative improves quality. Not the primary cause.</td><td>Medium</td></tr>
+          <tr><td><strong>Runway</strong></td><td>13 days from marketing start</td><td>Survivable with fast channels. Structural mismatch with slow channels chosen.</td><td>Medium</td></tr>
+          <tr><td><strong>No conversion pixel</strong></td><td>Meta optimized for Traffic</td><td>Found clickers not buyers. 350 bounces lost permanently to retargeting.</td><td>Medium</td></tr>
+          <tr><td><strong>Price ($47)</strong></td><td>In AP's sweet spot</td><td>Not the problem. Price was correct.</td><td>Low</td></tr>
+          <tr><td><strong>Offer stack</strong></td><td>Free audit plus $497 plus $297 built</td><td>Not visible pre-signup. Good for in-room conversion, irrelevant to seat acquisition.</td><td>Low</td></tr>
+          <tr><td><strong>Targeting</strong></td><td>Founders/operators, 30-60, Sandy +15mi</td><td>Reasonable. 350 views confirms the audience exists.</td><td>Low-Medium</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECTION 4 -->
+  <section>
+    <h2><span class="num">04</span> How to Fix It</h2>
+    <p class="lede">Concrete and sequenced. Next week first, then July. The order matters as much as the individual steps.</p>
+
+    <div class="callout green">
+      <span class="lbl">Fix order matters</span>
+      Ads are step 4, not step 1. Sequence: (1) Build social proof from the recording. (2) Send personal asks. (3) Activate a borrowed list. (4) Run ads to amplify a funnel that already has momentum. Reversing this order again produces the same result.
+    </div>
+
+    <h3>This Week -- June 26-30</h3>
+
+    <div class="phase">
+      <div class="ph-head">
+        <span class="ph-name">Social Proof Build</span>
+        <span class="ph-when">By June 28</span>
+      </div>
+      <ul>
+        <li><strong>Clip 3 highlights from the recording:</strong> the live-agent demo moment, the framework intro, one insight that landed well. Post to LinkedIn and X. These clips are now the primary proof asset. They exist because the session ran.</li>
+        <li><strong>Write and post the "I ran this with 0 attendees" story.</strong> Transparency about the result, what was learned, and what changes for July is a stronger authority signal than a polished recap nobody believes. This post builds trust with July's cold audience before they see an ad.</li>
+        <li><strong>Collect testimonials this week</strong> from anyone who has engaged with the content positively. Even 3 LinkedIn recommendations changes the page conversion rate. Ask directly.</li>
+      </ul>
+      <p class="note">Goal by July 1: at least one visible proof artifact a cold audience can see and trust before clicking the July seat link.</p>
+    </div>
+
+    <div class="phase">
+      <div class="ph-head">
+        <span class="ph-name">Personal Asks</span>
+        <span class="ph-when">By June 30</span>
+      </div>
+      <ul>
+        <li><strong>Send 20 direct personal messages</strong> to people most likely to attend or refer. IC Slack contacts, Utah-local LinkedIn connections, warm professional relationships. Direct message, not a broadcast. Human voice: "I'm running this again in July -- would you come, or do you know someone who should?"</li>
+        <li><strong>Export LinkedIn connections now</strong> from LinkedIn settings directly. Do not wait for the CSV to be provided. Takes 10 minutes. Own this step.</li>
+        <li>Ask AP this week: "Would you share this with your Utah orbit in July?" He said he was open. Use the opening.</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="ph-head">
+        <span class="ph-name">Meta Pixel Install</span>
+        <span class="ph-when">By June 28</span>
+      </div>
+      <ul>
+        <li><strong>Install the Meta pixel on catalystworks.consulting now</strong>, before any July ads run. One-time setup. Starts building a retargeting audience from all future visitors including the 350 from June still within the retargeting window.</li>
+        <li>Set up a Purchase conversion event tied to the Stripe checkout confirmation. July ads optimize for buyers, not clickers.</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="ph-head">
+        <span class="ph-name">AP Feedback Loop</span>
+        <span class="ph-when">By July 1</span>
+      </div>
+      <ul>
+        <li>DM AP: "Can I show you my ad copy and landing page? I want to see what you actually run." He offered. Use it this week, not the week before July's event.</li>
+        <li>Get at least one ad he runs. Even one Hormozi-style static with his copy structure is a better starting point than iterating from zero alone.</li>
+      </ul>
+    </div>
+
+    <h3>July Session -- Full Sequenced Plan</h3>
+
+    <div class="phase">
+      <div class="ph-head">
+        <span class="ph-name">Set Date and Announce by July 1</span>
+        <span class="ph-when">July 1</span>
+      </div>
+      <ul>
+        <li>Target: July 21-24 window. 3-week runway from July 1. Minimum for fast and slow channels to both be viable.</li>
+        <li>Announce immediately: LinkedIn post, X post, newsletter block. The announcement seeds the list and creates urgency on day one.</li>
+        <li>Same venue if available (logistics already solved). Same $47 early-bird / $97 door pricing.</li>
+        <li><strong>Hard rule:</strong> if the date cannot be confirmed 3 weeks out, push the event. Never start the marketing engine with less than 21 days of runway.</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="ph-head">
+        <span class="ph-name">Borrow One List by July 3</span>
+        <span class="ph-when">Pre-announce week</span>
+      </div>
+      <ul>
+        <li><strong>Priority 1: SLCC SBDC.</strong> Same building as the venue. Newsletter list of owner-operators who already drive to that campus. One email to the director: "I'm running a paid AI workshop at Miller Campus on [date]. Would you share it with your members at the $47 early-bird rate?" Give them something to offer their list.</li>
+        <li><strong>Priority 2: Sandy Area Chamber.</strong> The venue is in their city. Member newsletter reaches pre-qualified local business owners.</li>
+        <li><strong>Priority 3: AP's Utah orbit</strong> if he confirms. His trust transfers to the event with a single mention.</li>
+        <li>Contact all three the week before announcing so they are lined up and ready when the announcement drops.</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="ph-head">
+        <span class="ph-name">Rebuild Seat Page with Social Proof</span>
+        <span class="ph-when">July 3</span>
+      </div>
+      <ul>
+        <li>Add at least 3 testimonials or LinkedIn recommendations collected this week.</li>
+        <li>Embed or link the recording highlight clip. "Watch 3 minutes of what you will learn." Proof beats promise every time.</li>
+        <li>Add a "X seats claimed" counter, updated in real time.</li>
+        <li>Add a countdown timer to the event date.</li>
+        <li>Sharpen the outcome statement to something specific: "Leave with a running AI agent built for your business, a one-page AI use policy, and a 30-day implementation checklist." Specific beats vague for cold traffic.</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="ph-head">
+        <span class="ph-name">The 3x3 Ad Testing System</span>
+        <span class="ph-when">July 3-10</span>
+      </div>
+      <p style="font-size:0.89rem;color:var(--muted);margin-bottom:0.75rem;">AP's method: 9 variants = 3 audiences times 3 creatives. Run all 9 at low spend for 5-7 days to find the winner, then scale. This is the minimum scientific standard. Running fewer is guessing.</p>
+
+      <div class="grid-3x3">
+        <div></div>
+        <div class="gh">Creative A<br>Fear Flip</div>
+        <div class="gh">Creative B<br>Live Demo</div>
+        <div class="gh">Creative C<br>Outcome</div>
+        <div class="gl">Audience 1<br>Local founders</div>
+        <div class="gc">A1</div>
+        <div class="gc">B1</div>
+        <div class="gc">C1</div>
+        <div class="gl">Audience 2<br>HR / Ops</div>
+        <div class="gc">A2</div>
+        <div class="gc">B2</div>
+        <div class="gc">C2</div>
+        <div class="gl">Audience 3<br>Tech adopters</div>
+        <div class="gc">A3</div>
+        <div class="gc winner">B3 -- test to confirm</div>
+        <div class="gc">C3</div>
+      </div>
+
+      <ul style="margin-top:0.65rem;">
+        <li><strong>3 audiences:</strong> Local founders and owners (primary ICP), HR and operations leaders (his Fortune 100 HR background is a direct edge), tech-adjacent professionals who are curious but not yet committed.</li>
+        <li><strong>3 creatives:</strong> (A) Fear-flip -- "Your competitors are not smarter. They started earlier." (B) Live-demo hook -- "Watch a real one-person business run itself. 90 minutes." (C) Outcome -- "Leave with a running AI agent for your business. Not a slide deck." Static images only, brand navy/gold, no AI stock-photo slop. AP's formula.</li>
+        <li><strong>Budget for the test phase:</strong> $5-10 per variant per day, 7 days = $315-630 total. Kill 8 losers. Scale the winner at $50/day for the remaining 10 days.</li>
+        <li><strong>Pixel required before launching a single ad.</strong> Optimize for Purchase. Not Traffic.</li>
+        <li><strong>AP review required</strong> before spend. Show him the 9 creatives. His feedback before money, not after.</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="ph-head">
+        <span class="ph-name">Email, Newsletter, and Close Sequence</span>
+        <span class="ph-when">July 7-20</span>
+      </div>
+      <ul>
+        <li><strong>Newsletter feature block</strong> July 7: recording clip, July date, early-bird deadline, specific outcome. Reason to act, not just an announcement.</li>
+        <li><strong>Countdown email</strong> July 14: "One week out. X seats left." Real number.</li>
+        <li><strong>Last-chance email</strong> July 20: "Last day at $47. Door rate goes up tomorrow." Urgency is real.</li>
+        <li>All borrowed-list partners send their emails by July 10 so their audience has time to decide.</li>
+        <li>Wire the confirmation sequence before the first seat sells: email on purchase, 48-hour reminder, day-of text.</li>
+      </ul>
+    </div>
+
+    <div class="callout amber">
+      <span class="lbl">Non-Negotiable for July and Every Session After</span>
+      The event date is set 3 weeks before the event. Marketing starts on announcement day. Borrowed-list partners are contacted the week before the announcement so they are ready. Ads launch in week 1. SBDC and chambers are contacted in week 0. If the date cannot be confirmed 3 weeks in advance, the event moves. Never start the marketing engine with less than 21 days.
+    </div>
+  </section>
+
+  <!-- SECTION 5: Quick Reference -->
+  <section>
+    <h2><span class="num">05</span> Quick Reference</h2>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Action</th><th>Owner</th><th>Deadline</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Clip 3 recording highlights, post to LinkedIn and X</td><td>Boubacar</td><td>June 28</td></tr>
+          <tr><td>2</td><td>Write and post the "0 attendees" story</td><td>Boubacar</td><td>June 28</td></tr>
+          <tr><td>3</td><td>Export LinkedIn connections from settings directly</td><td>Boubacar</td><td>June 28</td></tr>
+          <tr><td>4</td><td>Install Meta pixel on catalystworks.consulting, set Purchase event</td><td>Boubacar / agent</td><td>June 28</td></tr>
+          <tr><td>5</td><td>Collect 3+ testimonials or LinkedIn recommendations</td><td>Boubacar</td><td>June 29</td></tr>
+          <tr><td>6</td><td>Send 20 direct personal asks (IC Slack, warm contacts, LinkedIn)</td><td>Boubacar</td><td>June 30</td></tr>
+          <tr><td>7</td><td>DM AP: share ad copy and landing page, request feedback + Utah orbit mention</td><td>Boubacar</td><td>July 1</td></tr>
+          <tr><td>8</td><td>Set July event date, announce immediately</td><td>Boubacar</td><td>July 1</td></tr>
+          <tr><td>9</td><td>Contact SBDC and Sandy Chamber pre-announcement to borrow list</td><td>Boubacar / agent</td><td>Pre-announce week</td></tr>
+          <tr><td>10</td><td>Rebuild seat page: social proof, clip, counter, countdown, specific outcome</td><td>Agent</td><td>July 3</td></tr>
+          <tr><td>11</td><td>Build 9 ad variants (3x3), get AP review, launch with pixel active</td><td>Boubacar / agent</td><td>July 3-7</td></tr>
+          <tr><td>12</td><td>Newsletter feature block with recording clip and July seat link</td><td>Agent</td><td>July 7</td></tr>
+          <tr><td>13</td><td>Scale winning ad variant ($50/day), kill 8 losers after 7-day test</td><td>Boubacar</td><td>July 10</td></tr>
+          <tr><td>14</td><td>Countdown email: "One week out, X seats left"</td><td>Agent</td><td>July 14</td></tr>
+          <tr><td>15</td><td>Last-chance email and social push</td><td>Agent</td><td>July 20</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="callout green" style="margin-top:2rem;">
+    <span class="lbl">Bottom Line</span>
+    Logistics are solved and carry forward. The content is strong and the live-operator differentiator is real -- nobody in Utah has it. The attendance problem is solvable with correct sequencing: build proof from the recording this week, warm the audience through personal asks, borrow a list from one org that vouches for you, then amplify with a properly built ad system. The recording from June 25 is the most important asset in the funnel. Start there.
+  </div>
+
+  <div class="footer">
+    <p>After-Action Review -- AI Without Getting Burned -- June 25, 2026 &middot; Sandy UT</p>
+    <p style="margin-top:0.3rem;">Council method: 5 independent angles, 5 rounds of iteration. Pressure-tested against the single-cause (ads) hypothesis. Verdict: ads are necessary and impactful but not sufficient. Sequence is the fix.</p>
+  </div>
+
+</div>
+</body>
+</html>
