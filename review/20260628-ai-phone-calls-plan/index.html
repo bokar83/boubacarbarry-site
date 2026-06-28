@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Phone Calls — Research &amp; Implementation Plan | agentsHQ</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #111318; --muted: #64697a; --line: #e5e7ef; --soft: #f7f8fa;
+  --accent: #2563eb; --green: #16a34a; --green-light: #dcfce7;
+  --orange: #d97706; --orange-light: #fef3c7;
+  --red: #dc2626; --red-light: #fee2e2;
+  --purple: #7c3aed; --purple-light: #ede9fe;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background:#fff; color:var(--ink); line-height:1.65; -webkit-font-smoothing:antialiased; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 0 1.25rem 5rem; }
+.hero { background: linear-gradient(135deg,#0f172a 0%,#1e293b 55%,#1d4ed8 100%); padding:3rem 1.5rem 2.5rem; margin-bottom:2.5rem; }
+.hero-inner { max-width:860px; margin:0 auto; }
+.badges { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1.1rem; }
+.badge { font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; padding:.2rem .6rem; border-radius:999px; border:1px solid rgba(255,255,255,.25); color:rgba(255,255,255,.85); }
+.badge.council { background:rgba(124,58,237,.4); border-color:#a78bfa; color:#ddd6fe; }
+.badge.karpathy { background:rgba(217,119,6,.4); border-color:#fcd34d; color:#fef3c7; }
+h1 { font-size:clamp(1.7rem,4vw,2.6rem); font-weight:870; letter-spacing:-.035em; color:#fff; line-height:1.08; margin-bottom:.8rem; }
+.hero-sub { color:#93c5fd; font-size:1rem; max-width:58ch; line-height:1.55; }
+.hero-meta { margin-top:1.4rem; display:flex; flex-wrap:wrap; gap:1.2rem; }
+.hero-meta span { font-size:.78rem; color:rgba(255,255,255,.55); }
+.hero-meta strong { color:rgba(255,255,255,.85); }
+.tldr { background:#f0f7ff; border:1.5px solid #bfdbfe; border-left:5px solid var(--accent); border-radius:12px; padding:1.2rem 1.4rem; margin-bottom:1.4rem; }
+.tldr .label { font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--accent); margin-bottom:.4rem; }
+.tldr p { font-size:.97rem; margin-bottom:.5rem; }
+.tldr p:last-child { margin-bottom:0; }
+.toc-bar { display:flex; align-items:center; justify-content:flex-end; gap:.6rem; margin-bottom:2rem; }
+.toc-btn { font-size:.75rem; font-weight:700; padding:.3rem .75rem; border-radius:6px; border:1.5px solid var(--line); background:var(--soft); color:var(--muted); cursor:pointer; transition:background .15s,color .15s; }
+.toc-btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+section { margin-bottom:2.8rem; }
+h2 { font-size:1.3rem; font-weight:820; letter-spacing:-.025em; padding-bottom:.5rem; border-bottom:2.5px solid var(--ink); margin-bottom:.9rem; display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+h2:hover { color:var(--accent); border-bottom-color:var(--accent); }
+h2 .num { color:var(--accent); margin-right:.45rem; }
+h2 .chev { font-size:.75rem; color:var(--muted); flex-shrink:0; margin-left:.75rem; width:1.5rem; height:1.5rem; border-radius:50%; background:var(--soft); border:1px solid var(--line); display:inline-flex; align-items:center; justify-content:center; transition:transform .2s; }
+h2.collapsed .chev { transform:rotate(-90deg); }
+h3 { font-size:1.05rem; font-weight:750; margin:1.4rem 0 .5rem; }
+p { font-size:.96rem; margin-bottom:.9rem; }
+ul,ol { margin:0 0 1rem 1.2rem; }
+li { font-size:.95rem; margin-bottom:.4rem; }
+strong { font-weight:700; }
+.lede { color:var(--muted); font-size:.95rem; max-width:62ch; margin-bottom:1.2rem; }
+.section-body.hidden { display:none; }
+.verdict { background:var(--purple-light); border:1.5px solid #c4b5fd; border-left:5px solid var(--purple); border-radius:12px; padding:1.1rem 1.3rem; margin:1.1rem 0; }
+.verdict .v-label { font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--purple); margin-bottom:.35rem; }
+.verdict p { font-size:.94rem; margin-bottom:0; }
+.warn { background:var(--red-light); border:1.5px solid #fca5a5; border-left:5px solid var(--red); border-radius:12px; padding:1.1rem 1.3rem; margin:1.1rem 0; }
+.warn .w-label { font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--red); margin-bottom:.35rem; }
+.warn p { font-size:.94rem; color:#7f1d1d; margin-bottom:0; }
+.why { background:var(--orange-light); border:1px solid #fde68a; border-left:4px solid var(--orange); border-radius:10px; padding:1rem 1.15rem; margin:1.1rem 0; }
+.why .why-label { font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--orange); margin-bottom:.3rem; }
+.why p { font-size:.91rem; color:#78350f; margin-bottom:0; }
+.stack-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.8rem; margin:1.2rem 0; }
+.stack-card { background:var(--soft); border:1px solid var(--line); border-radius:10px; padding:.9rem 1.05rem; }
+.stack-card .layer { font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:.25rem; }
+.stack-card .tool { font-weight:780; font-size:.98rem; margin-bottom:.2rem; }
+.stack-card .detail { font-size:.82rem; color:var(--muted); }
+.stack-card.owned { border-color:#86efac; background:var(--green-light); }
+.stack-card.owned .layer { color:var(--green); }
+pre.arch { background:#0f172a; color:#94a3b8; border-radius:12px; padding:1.3rem 1.4rem; font-size:.78rem; line-height:1.7; overflow-x:auto; margin:1.1rem 0; font-family:'SF Mono','Menlo','Consolas',monospace; white-space:pre; }
+.scroll { overflow-x:auto; margin:1rem 0; }
+table { border-collapse:collapse; width:100%; min-width:500px; }
+th,td { text-align:left; padding:.5rem .75rem; border-bottom:1px solid var(--line); font-size:.88rem; vertical-align:top; }
+th { background:var(--soft); font-weight:700; font-size:.76rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+.hi { font-weight:800; color:var(--green); }
+.steps { counter-reset:step; }
+.steps li { counter-increment:step; position:relative; padding:.6rem 0 .6rem 2.4rem; border-bottom:1px solid var(--line); list-style:none; font-size:.94rem; margin:0; }
+.steps li:last-child { border-bottom:none; }
+.steps li::before { content:counter(step); position:absolute; left:0; top:.55rem; width:1.6rem; height:1.6rem; border-radius:50%; background:var(--accent); color:#fff; font-size:.72rem; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.phases { display:flex; flex-direction:column; gap:.7rem; margin:1.2rem 0; }
+.phase { border-radius:10px; padding:1rem 1.1rem; }
+.phase.p1 { background:#eff6ff; border:1.5px solid #93c5fd; }
+.phase.p2 { background:var(--green-light); border:1.5px solid #86efac; }
+.phase.p3 { background:var(--purple-light); border:1.5px solid #c4b5fd; }
+.phase-label { font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; margin-bottom:.3rem; }
+.phase.p1 .phase-label { color:var(--accent); }
+.phase.p2 .phase-label { color:var(--green); }
+.phase.p3 .phase-label { color:var(--purple); }
+.phase-name { font-weight:760; font-size:1.02rem; margin-bottom:.25rem; }
+.phase p { font-size:.88rem; color:var(--muted); margin-bottom:0; }
+.next-session { background:#111318; border-radius:14px; padding:1.5rem 1.6rem; margin:1.5rem 0; }
+.next-session .ns-label { font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:#60a5fa; margin-bottom:.7rem; }
+.next-session pre { color:#e2e8f0; font-family:'SF Mono','Menlo','Consolas',monospace; font-size:.8rem; line-height:1.65; white-space:pre-wrap; margin:0; }
+.risk-row { background:var(--red-light); border-left:4px solid var(--red); border-radius:0 10px 10px 0; padding:.85rem 1rem; margin-bottom:.6rem; }
+.risk-row .risk-label { font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--red); margin-bottom:.2rem; }
+.risk-row .fix { font-size:.83rem; color:#991b1b; font-weight:600; margin-top:.25rem; }
+.risk-row p { font-size:.9rem; margin-bottom:0; }
+.checklist { list-style:none; margin-left:0; }
+.checklist li { padding:.4rem 0 .4rem 1.8rem; position:relative; border-bottom:1px solid var(--line); font-size:.93rem; }
+.checklist li:last-child { border-bottom:none; }
+.checklist li::before { content:'\2610'; position:absolute; left:0; color:#cbd5e1; font-size:1rem; line-height:1.45; }
+.compliance-box { background:#f0fdf4; border:1.5px solid #86efac; border-left:5px solid var(--green); border-radius:12px; padding:1.2rem 1.3rem; margin:1.1rem 0; }
+.compliance-box .c-label { font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--green); margin-bottom:.5rem; }
+.compliance-box .script { font-style:italic; font-size:.97rem; color:#166534; border-left:3px solid var(--green); padding-left:.85rem; margin:.6rem 0; line-height:1.6; }
+.kp-row { border-bottom:1px solid var(--line); padding:.8rem 0; }
+.kp-row:last-child { border-bottom:none; }
+.kp-num { font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:.2rem; }
+.kp-body { font-size:.93rem; }
+#btt { position:fixed; bottom:1.5rem; right:1.5rem; z-index:9990; width:2.5rem; height:2.5rem; border-radius:50%; background:var(--accent); color:#fff; border:none; font-size:1.1rem; cursor:pointer; box-shadow:0 4px 12px rgba(37,99,235,.35); opacity:0; pointer-events:none; transition:opacity .25s,transform .2s; display:flex; align-items:center; justify-content:center; }
+#btt.visible { opacity:1; pointer-events:auto; }
+#btt:hover { transform:translateY(-2px); }
+#stamp { position:fixed; top:8px; right:10px; z-index:99999; font-family:monospace; font-size:11px; color:rgba(165,151,131,.78); background:rgba(20,18,16,.72); border:1px solid rgba(236,226,210,.14); border-radius:6px; padding:4px 8px; pointer-events:none; }
+footer { border-top:1px solid var(--line); padding-top:1.5rem; margin-top:3rem; font-size:.8rem; color:var(--muted); }
+@media(max-width:620px) { .hero{padding:2.2rem 1.25rem 2rem;} h1{font-size:1.6rem;} .stack-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div id="stamp">2026-06-28 &middot; AI Phone Calls Research v1.0</div>
+<button id="btt" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top">&#8679;</button>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="badges">
+      <span class="badge">Survey: 9 Tools</span>
+      <span class="badge council">Council: 5 Angles</span>
+      <span class="badge karpathy">Karpathy: 10 Principles</span>
+      <span class="badge">11 Agents &middot; 963k Tokens</span>
+    </div>
+    <h1>AI Phone Calls<br>Research &amp; Implementation Plan</h1>
+    <p class="hero-sub">How to build an outbound AI calling system inside agentsHQ that sounds human, schedules appointments, and can eventually pick up Boubacar's calls when he's busy.</p>
+    <div class="hero-meta">
+      <span><strong>Date:</strong> 2026-06-28</span>
+      <span><strong>Verdict:</strong> Build Pipecat. Validate on ElevenLabs ConvAI today.</span>
+      <span><strong>First call:</strong> 1-4 hours from now</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+<div class="tldr">
+  <div class="label">TL;DR</div>
+  <p><strong>Build:</strong> Pipecat (open source, Python/Docker) + Twilio Media Streams + Deepgram STT + OpenRouter → Claude + ElevenLabs turbo. That's the durable self-hosted stack that fits agentsHQ perfectly.</p>
+  <p><strong>But don't build it first.</strong> Validate today on ElevenLabs Conversational AI (1-4 hours to first call) to learn what end-of-turn failures actually sound like before committing dev weeks.</p>
+  <p><strong>Legal hard stop:</strong> cold AI calls to non-consented cell numbers = TCPA strict liability, $500-$1,500 per call, no cap. Scope Phase 1 to warm/consented confirmation calls only. One list of 1,000 cold cells = up to $1.5M exposure.</p>
+</div>
+
+<div class="toc-bar">
+  <button class="toc-btn" id="expand-all">Expand all</button>
+  <button class="toc-btn" id="collapse-all">Collapse all</button>
+</div>
+
+<section>
+  <h2><span class="h2-inner"><span class="num">01</span> The Recommended Stack</span><span class="chev">&#9660;</span></h2>
+  <div class="section-body">
+  <p class="lede">Every layer chosen for stack-fit and hard rules (all LLM via OpenRouter, ElevenLabs already contracted, Python/Docker native).</p>
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="layer">Framework</div>
+      <div class="tool">Pipecat (pipecat-ai)</div>
+      <div class="detail">Open source BSD-2, 13k GitHub stars. Python pipeline: STT→LLM→TTS. Native Twilio, ElevenLabs, Deepgram, AND OpenRouter support. Runs in Docker Compose alongside orc-crewai.</div>
+    </div>
+    <div class="stack-card">
+      <div class="layer">Telephony</div>
+      <div class="tool">Twilio Programmable Voice</div>
+      <div class="detail">PSTN unavoidable — you can't run your own phone network. Twilio Media Streams = WebSocket audio to your VPS. $0.013/min outbound. Migrate to SignalWire (~55% cheaper) at scale.</div>
+    </div>
+    <div class="stack-card">
+      <div class="layer">Speech-to-Text</div>
+      <div class="tool">Deepgram Nova-2/Nova-3</div>
+      <div class="detail">~150ms first-word latency. Native `utterance_end` event (critical for natural turn detection). Streaming, not batch.</div>
+    </div>
+    <div class="stack-card owned">
+      <div class="layer">LLM &mdash; ALREADY WIRED</div>
+      <div class="tool">OpenRouter → Claude Sonnet 4.6</div>
+      <div class="detail">Hard rule: ALL LLM via OpenRouter. `OpenRouterLLMService` is a native Pipecat class. No change to existing routing.</div>
+    </div>
+    <div class="stack-card owned">
+      <div class="layer">TTS &mdash; ALREADY CONTRACTED</div>
+      <div class="tool">ElevenLabs eleven_turbo_v2_5</div>
+      <div class="detail">Already in the stack. MUST use turbo model only — standard models add 800ms+ latency and blow the budget. First-byte: 75-150ms.</div>
+    </div>
+    <div class="stack-card">
+      <div class="layer">VAD (Voice Activity Detection)</div>
+      <div class="tool">Silero VAD (local PyTorch)</div>
+      <div class="detail">Under 5ms latency, no API cost, handles barge-in (human interrupts AI mid-sentence). Open source, runs on VPS CPU.</div>
+    </div>
+    <div class="stack-card owned">
+      <div class="layer">Storage &mdash; EXISTING</div>
+      <div class="tool">Postgres (orc-postgres)</div>
+      <div class="detail">Call sessions, per-turn timing telemetry, transcripts, consent flags. No new infra.</div>
+    </div>
+    <div class="stack-card owned">
+      <div class="layer">Alerts &mdash; EXISTING</div>
+      <div class="tool">Telegram notifier</div>
+      <div class="detail">Call started/booked/failed. Same notifier.send_message() pattern as everywhere else.</div>
+    </div>
+  </div>
+  <div class="warn">
+    <div class="w-label">Drop OpenAI Realtime API</div>
+    <p>Every council member and Karpathy flagged this: OpenAI Realtime does its own TTS (speech-to-speech model), so bolting ElevenLabs on top is architecturally incoherent. Also violates the OpenRouter-only rule. Drop it entirely — the cascade above (streaming text LLM via OpenRouter + separate ElevenLabs TTS) is the right design.</p>
+  </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="h2-inner"><span class="num">02</span> Architecture: Full Call Flow</span><span class="chev">&#9660;</span></h2>
+  <div class="section-body">
+  <pre class="arch">TRIGGER (async, agentsHQ)                CALL (real-time, sub-second loop)
+─────────────────────────────────────────────────────────────────────────────
+
+ orchestrator (orc-crewai)
+ "call Agency X, book a slot"
+        │
+        │ trigger_outbound_call(to, goal, context, consent_ref)
+        │   ── GATE: assert consent_flag == True ──┐ (no consent → hard refuse)
+        ▼                                          │
+ INSERT voice_calls (status='initiating',          │
+   context JSON, consent_ref) → Postgres           │
+        │                                          │
+        ▼                                          │
+ Twilio REST API: calls.create(                    │
+   url=https://voice.boubacarbarry.com/twiml?id=N) │
+        │                                          │
+        ▼                                          │
+ Twilio dials PSTN ──────────────────► TARGET PHONE answers
+        │                                          │
+        │ webhook → TwiML &lt;Connect>&lt;Stream          │
+        │   url="wss://voice.boubacarbarry.com/ws"/>│
+        ▼                                          │
+ ┌──────────────────────────────────────────────────────────┐
+ │  voice-server container (FastAPI + Pipecat, VPS)          │
+ │  TLS: nginx + Let's Encrypt on voice.boubacarbarry.com    │
+ │  (Twilio rejects bare IPs — TLS subdomain is REQUIRED)    │
+ │                                                           │
+ │  TwilioTransport (µ-law 8kHz, 20ms frames)                │
+ │       │  inbound audio                                    │
+ │       ▼                                                   │
+ │  Silero VAD (local) ──barge-in──► kill TTS + flush LLM    │
+ │       │                                                   │
+ │       ▼                                                   │
+ │  Deepgram STT (streaming) ── utterance_end ──► turn done  │
+ │       │                                                   │
+ │       ▼                                                   │
+ │  OpenRouterLLMService (claude-sonnet-4.6, streaming)       │
+ │       │  sentence-boundary chunking                       │
+ │       ▼                                                   │
+ │  ElevenLabs TTS (turbo_v2_5, stream) → µ-law → Twilio     │
+ │                                                           │
+ │  mid-call function call: book_appointment(...)            │
+ │       └─► Calendly/Calendar API → VERIFY-AFTER-WRITE      │
+ │            (re-fetch event, assert exists, THEN confirm)   │
+ │                                                           │
+ │  live opt-out detector:                                   │
+ │    "stop calling" / "remove me" → hangup + DNC write      │
+ │    (synchronous — NEVER async for opt-outs)               │
+ └──────────────────────────────────────────────────────────┘
+        │                          │
+        │ per-turn telemetry        │ on hangup: extract result
+        ▼                          ▼
+ Postgres (async):            voice_calls UPDATE
+  - call_turns: latency trace   (outcome, slot, email, transcript)
+    per segment (VAD→STT→LLM        │
+    →TTS→barge-in timestamps)       ├─► Calendar invite sent
+  - required for debugging          ├─► Supabase leads: status='booked'
+    non-reproducible call faults    └─► Telegram: "Booked: Agency X Wed 10am"</pre>
+  <div class="why">
+    <div class="why-label">Why per-turn telemetry is mandatory, not polish</div>
+    <p>A phone call is non-reproducible. When "it talked over the caller on minute 2" happens, you have one chance to get that data. Per-turn timing (VAD fire timestamp, STT latency, LLM TTFT, TTS first-byte, barge-in events) is the only way to debug the specific failure. Log it or debug blind forever.</p>
+  </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="h2-inner"><span class="num">03</span> Build vs Buy Decision</span><span class="chev">&#9660;</span></h2>
+  <div class="section-body">
+  <div class="verdict">
+    <div class="v-label">Verdict</div>
+    <p>Buy to validate (Phase 1, days). Build to own (Phase 2, weeks). Do NOT build Pipecat first — validate the call flow works on managed, then build the durable home.</p>
+  </div>
+  <div class="scroll">
+    <table>
+      <tr><th>Approach</th><th>100 calls/mo</th><th>1,000/mo</th><th>10,000/mo</th><th>One-time build</th></tr>
+      <tr><td><strong>A — Pipecat self-host</strong></td><td>$15</td><td>$150</td><td class="hi">$1,500</td><td>$6-12k (honest)</td></tr>
+      <tr><td><strong>D — ElevenLabs ConvAI</strong></td><td>$35</td><td>$350</td><td>$3,500</td><td>$1.5-4.5k</td></tr>
+      <tr><td>B — Vapi (managed)</td><td>$60</td><td>$600</td><td>$6,000</td><td>$1.5-3k</td></tr>
+      <tr><td>C — LiveKit (skip)</td><td>—</td><td>—</td><td>—</td><td>4 stateful services, OOM on 8GB VPS</td></tr>
+    </table>
+  </div>
+  <p><strong>Crossover ≈ 5,000 calls/month.</strong> Below that, managed (D) is cheaper once you price the build honestly. Above that, Pipecat's 3-5x margin pays back the $6-12k build in 1.5-2.5 months.</p>
+  <div class="why">
+    <div class="why-label">The number that actually matters: cost per BOOKED appointment</div>
+    <p>Cold connect rates are 1-5%. 60-80% of dials hit voicemail (all billed). 10,000 dials → 200-500 connects → 20-50 bookings → <strong>$30-75 per booked appointment even at self-hosted rates</strong>. Price and sell on "appointments booked," never "AI minutes." Warm confirmation calls have far higher connect rates — another reason warm is the real business.</p>
+  </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="h2-inner"><span class="num">04</span> Phase 1: First Working Call Today</span><span class="chev">&#9660;</span></h2>
+  <div class="section-body">
+  <p class="lede">Goal: hear a real AI call on your cell <strong>today</strong>. Disposable. Zero reusable code. Only output is a yes/no on whether the appointment flow works.</p>
+  <ol class="steps">
+    <li><strong>Hour 0-1 — Create ElevenLabs ConvAI agent.</strong> ElevenLabs dashboard → Agents → Create agent. Voice = existing ElevenLabs voice. TTS model = <code>eleven_turbo_v2_5</code>. Set custom LLM endpoint = <code>https://openrouter.ai/api/v1</code>, model = <code>anthropic/claude-sonnet-4.6</code>. Pull OPENROUTER_API_KEY from .env. This satisfies the LLM hard rule from minute one.</li>
+    <li><strong>System prompt.</strong> Role: appointment scheduling assistant. MUST open with the legal disclosure (see Compliance section). Goal: confirm one of 3 offered time slots + capture email (confirm-by-spelling).</li>
+    <li><strong>Hour 1-3 — Wire telephony.</strong> Connect a Twilio number via ElevenLabs' native Twilio integration (no TwiML needed). If no number exists, buy one (~$1/mo, 15 min) — calling your OWN cell needs no A2P trust registration.</li>
+    <li><strong>Trigger an outbound call to your cell.</strong> What you hear Day 1: actual first-word latency (~1-1.5s), real barge-in behavior, whether slot+email capture works or breaks.</li>
+    <li><strong>Hour 3-4 — Bridge results to Postgres.</strong> Configure ElevenLabs post-call webhook → tiny FastAPI endpoint writing outcome + transcript to <code>voice_calls</code> table.</li>
+  </ol>
+  <div class="why">
+    <div class="why-label">Why throwaway first, build second</div>
+    <p>The biggest wastes in voice AI are building the whole Pipecat stack, deploying it, and then discovering that end-of-turn detection has a 2-second dead-air problem that requires 2 weeks of tuning. Phase 1 is insurance: it either validates the appointment flow works (proceed to Phase 2) or reveals the conversation design is broken (fix before the big build). If Phase 1 fails, you just saved $6-12k and several weeks.</p>
+  </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="h2-inner"><span class="num">05</span> Phase 2: agentsHQ Integration</span><span class="chev">&#9660;</span></h2>
+  <div class="section-body">
+  <p class="lede">Decoupled voice-server container. A phone call is sub-second real-time; agentsHQ is async/queue-based. They share only Postgres + Twilio webhooks.</p>
+  <h3>New Container Structure</h3>
+  <pre class="arch">orchestrator/
+  voice/
+    call_server.py      # FastAPI: /twiml, /status, /ws (Twilio Media Streams)
+    pipeline.py         # Pipecat pipeline definition
+    prompts.py          # system prompts per goal type
+    result_handler.py   # extract result, verify-after-write, notify
+    telemetry.py        # per-turn latency log → Postgres
+  tools/
+    voice_call.py       # trigger_outbound_call() — orchestrator entry point</pre>
+  <h3>Key Function Signatures</h3>
+  <pre class="arch">def trigger_outbound_call(
+    to_number: str,
+    goal: str,          # "schedule_appointment" | "confirm_appointment"
+    context: dict,      # {lead_name, company, available_slots, purpose}
+    consent_ref: str,   # REQUIRED — id of consent record; gate hard-refuses without it
+) -> dict:              # {"call_sid": ..., "record_id": ...}
+
+@function_schema
+async def book_appointment(name: str, email: str, slot: str) -> dict:
+    """Book via Calendly/Calendar, then RE-FETCH to verify before confirming."""
+    # create event → re-fetch by id → assert exists → return {"status":"booked"}
+    # NEVER let AI say "you're booked" until verify-after-write passes.</pre>
+  <h3>Pipecat Pipeline (Concrete)</h3>
+  <pre class="arch">pipeline = Pipeline([
+    TwilioTransport(websocket, params),
+    SileroVADAnalyzer(),
+    DeepgramSTTService(api_key=..., language="en-US"),
+    LLMUserResponseAggregator(),
+    OpenRouterLLMService(
+        api_key=OPENROUTER_KEY,
+        model="anthropic/claude-sonnet-4.6",
+    ),
+    LLMAssistantResponseAggregator(),   # sentence-boundary chunking → TTS
+    ElevenLabsTTSService(
+        api_key=...,
+        voice_id=...,
+        model="eleven_turbo_v2_5",      # TURBO ONLY — standard blows latency budget
+    ),
+    TwilioTransport(websocket, params), # output side
+])</pre>
+  <div class="warn">
+    <div class="w-label">TLS required before first byte flows</div>
+    <p>Twilio rejects bare IPs and self-signed certs. You need a real subdomain (<code>voice.boubacarbarry.com</code>) with nginx + Let's Encrypt on the VPS before a single WebSocket byte can flow. This is a 30-minute setup but blocks everything until done.</p>
+  </div>
+  <h3>Timeline: 1-2 Weeks to Production</h3>
+  <ul>
+    <li><strong>~30%</strong> of build time = compliance plumbing (transcript/consent logging, live opt-out detector, AI disclosure)</li>
+    <li><strong>~40%</strong> = end-of-turn detection + barge-in atomicity tuning (the hardest part, not the pipeline wiring)</li>
+    <li><strong>~30%</strong> = pipeline wiring, Docker Compose, TLS, webhook handlers</li>
+  </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="h2-inner"><span class="num">06</span> Phase 3: Inbound Autoresponder</span><span class="chev">&#9660;</span></h2>
+  <div class="section-body">
+  <p class="lede">Same voice-server, different entry point. When Boubacar's busy, the AI picks up.</p>
+  <ol class="steps">
+    <li>Buy/port a Twilio inbound number, OR configure forward-on-no-answer from your cell to it.</li>
+    <li>Twilio inbound webhook → same <code>/twiml</code> → same <code>&lt;Connect&gt;&lt;Stream&gt;</code> → same Pipecat pipeline.</li>
+    <li>Swap system prompt to receptionist: <em>"Boubacar is unavailable right now. I'm his AI assistant. I can take a message or book a time on his calendar."</em></li>
+    <li>Function calls: <code>take_message(caller, summary)</code> → Telegram to Boubacar; <code>book_callback(caller, slot)</code> → calendar.</li>
+  </ol>
+  <div class="why">
+    <div class="why-label">Inbound is legally simpler</div>
+    <p>The caller initiated contact, so TCPA outbound-consent rules don't apply. Still disclose AI at the start (Utah AI Policy Act; also the trust move that prevents "wait, am I talking to a robot?" trust collapse). Inbound call handling is also the highest-value dogfood use case — it's immediately useful to Boubacar personally.</p>
+  </div>
+  <div class="warn">
+    <div class="w-label">Concurrency limit: ~5-15 calls on 8GB VPS</div>
+    <p>Inbound + outbound share one VPS event loop. Call 16 doesn't error — it just gets slow (silent degradation). Add a concurrency watermark Telegram alert before going live.</p>
+  </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="h2-inner"><span class="num">07</span> Compliance: Exactly What to Say</span><span class="chev">&#9660;</span></h2>
+  <div class="section-body">
+  <div class="warn">
+    <div class="w-label">TCPA Hard Stop — Read This First</div>
+    <p>Cold AI calls to non-consented cell numbers = TCPA strict liability = $500-$1,500 per call, no cap, no intent defense. One list of 1,000 cold cells = up to $1.5M exposure. The trigger_outbound_call() function must hard-gate on a consent flag and refuse to dial without it. This is not optional.</p>
+  </div>
+  <div class="compliance-box">
+    <div class="c-label">Exact Opening Disclosure (every call, outbound and inbound)</div>
+    <div class="script">"Hi, this is an AI assistant calling on behalf of Boubacar Barry. This call may be recorded, and you can ask me to stop at any time. I'm reaching out to confirm a time for [purpose]."</div>
+    <p>Why it works: satisfies TCPA caller-ID disclosure, satisfies Utah AI Policy Act (disclose AI at start of any AI interaction in sales/solicitation context), prevents the "wait, is this a robot?" trust collapse, and triggers the opt-out you're legally required to honor immediately.</p>
+  </div>
+  <h3>Live In-Pipeline Opt-Out Detector</h3>
+  <p>If caller says "stop calling," "remove me," "take me off your list" → <strong>immediate hangup + synchronous DNC write</strong>. This runs IN the call, not in post-call analysis. Async DNC write is a TCPA violation — the opt-out must be honored before the call ends.</p>
+  <h3>Must Log Per Call (Retain 5+ Years)</h3>
+  <ul class="checklist">
+    <li>Timestamp + timezone of the call</li>
+    <li>Number called</li>
+    <li>Consent reference (how/when consent was obtained)</li>
+    <li>DNC scrub date (scrub both federal + Utah state DNC within 31 days; daily is best practice)</li>
+    <li>Opt-out status</li>
+    <li>Transcript/recording reference</li>
+    <li>Outcome (booked / declined / opted-out / no-answer)</li>
+  </ul>
+  <h3>Utah-Specific (before any real outbound telemarketing)</h3>
+  <p>Register with Utah Division of Consumer Protection ($500/yr) + $50K surety bond. Call hours: 8 AM-9 PM recipient-local. <strong>Confirmation calls stay informational</strong> — the moment you add an upsell, it becomes marketing and requires prior express <em>written</em> consent.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="h2-inner"><span class="num">08</span> What Council + Karpathy Found</span><span class="chev">&#9660;</span></h2>
+  <div class="section-body">
+  <h3>Council Verdicts (5 Angles)</h3>
+  <div class="kp-row">
+    <div class="kp-num">Technical Feasibility</div>
+    <div class="kp-body">agentsHQ can build this, but the hard part is never the happy-path demo — it's barge-in tuning, end-of-turn detection, and 24/7 WebSocket reliability. <strong>Start on managed to learn what "good" sounds like, then graduate to Pipecat.</strong> Buildability: Pipecat 7/10, ElevenLabs ConvAI 9/10. Maintainability: Pipecat 6/10 (you own the plumbing), ConvAI 8/10.</div>
+  </div>
+  <div class="kp-row">
+    <div class="kp-num">Cost &amp; ROI</div>
+    <div class="kp-body">Self-hosted (Pipecat) is wrong FIRST build — dev cost only amortizes above ~5,000 calls/mo. <strong>Validate with managed first, port to self-hosted when volume or resale justifies it.</strong> A $0.15/call variable cost means $30-75/booked appointment at realistic dial-connect rates — price on appointments, never on minutes.</div>
+  </div>
+  <div class="kp-row">
+    <div class="kp-num">Voice Quality &amp; Human Realism</div>
+    <div class="kp-body">ElevenLabs wins TTS outright. But TTS timbre is only ~30% of perceived "humanness." The other 70% is end-of-turn detection and barge-in atomicity — <strong>engineer the turn-taking layer, not the voice.</strong> A 500ms dead-air after the human stops talking sounds more robotic than any voice model choice.</div>
+  </div>
+  <div class="kp-row">
+    <div class="kp-num">Speed to First Call</div>
+    <div class="kp-body">ElevenLabs ConvAI: 1-4 hours. Vapi: 1-3 hours. Pipecat from scratch: 8-16 real hours (not "2-4 days" — that's the demo, not production). <strong>Dogfood today on ElevenLabs ConvAI. Build Pipecat in parallel.</strong></div>
+  </div>
+  <div class="kp-row">
+    <div class="kp-num">agentsHQ Integration</div>
+    <div class="kp-body">Pipecat is the only approach that puts call flow inside the Python orchestrator, logs natively to Postgres, and can't be TOS-banned mid-campaign. Architecture: decoupled voice-server container — phone calls are real-time (WebSocket), orchestrator is async (queue). They share only Postgres + Twilio webhooks. <strong>Never write a synchronous "wait for call to end" function — the LLM context would time out on a 5-min call.</strong></div>
+  </div>
+  <h3>Karpathy 10-Principle Audit — Top Findings</h3>
+  <div class="kp-row">
+    <div class="kp-num">P1 — First Principles: What is the actual goal?</div>
+    <div class="kp-body">Not "make AI calls." The goal is: save Boubacar 2-3 hours/week of appointment-scheduling time. A warm confirmation call that books 80% of slots is worth 10x a cold calling campaign that books 2% at legal risk.</div>
+  </div>
+  <div class="kp-row">
+    <div class="kp-num">P2 — Simplicity: The simplest thing that works</div>
+    <div class="kp-body">ElevenLabs ConvAI + Twilio + a webhook = first working call in hours. Pipecat is the right eventual home, not the right starting point. <strong>The two-phase approach respects simplicity.</strong></div>
+  </div>
+  <div class="kp-row">
+    <div class="kp-num">P7 — Debugging: How do you debug a bad call?</div>
+    <div class="kp-body">A phone call is non-reproducible. Per-turn telemetry (VAD fire → STT latency → LLM TTFT → TTS first-byte → barge-in timestamps) in Postgres is the ONLY way to diagnose "it talked over the caller at minute 2." This is mandatory logging, not optional polish.</div>
+  </div>
+  <div class="kp-row">
+    <div class="kp-num">P10 — Failure Modes: Name all of them</div>
+    <div class="kp-body">TCPA exposure (company-ending). Phantom bookings (trust-destroying). TTS mangling emails/phone numbers (costly). Robot-sounding dead-air (adoption-killing). Silent VPS concurrency overload (no error, just slow calls). Voicemail answers getting billed and receiving TCPA-violating prerecorded messages.</div>
+  </div>
+  <div class="kp-row">
+    <div class="kp-num">Karpathy Overall Verdict</div>
+    <div class="kp-body">Build A (Pipecat cascade), validate on D (ElevenLabs ConvAI) as throwaway. The legal risk is the #1 project-killer if not addressed in code. The #1 success factor is owning the turn-taking layer — not managed by anyone else.</div>
+  </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="h2-inner"><span class="num">09</span> Risks &amp; Kill Conditions</span><span class="chev">&#9660;</span></h2>
+  <div class="section-body">
+  <div class="risk-row">
+    <div class="risk-label">Risk 1 — THE Killer: TCPA / Utah Legal Exposure</div>
+    <p>Cold AI calls to non-consented cells = strict liability. No intent defense. $500-$1,500/call, no cap. One list of 1,000 cold cells = up to $1.5M exposure.</p>
+    <div class="fix">Prevention: consent-gate in trigger_outbound_call() code (hard refuse without consent_ref), warm-only scope for Phase 1, AI disclosure opener, live opt-out detector in-pipeline, Utah DCP registration + $50K bond before any real campaign. Kill condition: if no warm consented list exists, the cold version should not ship.</div>
+  </div>
+  <div class="risk-row">
+    <div class="risk-label">Risk 2 — Make-or-Break: It Sounds Like a 2019 IVR</div>
+    <p>Human realism is 70% turn-taking / barge-in, not voice quality. Silero VAD detects sound stopped — not that the human is DONE. Dead-air and talking-over failures are the #1 adoption killer.</p>
+    <div class="fix">Prevention: own the turn-taking layer (Pipecat, not managed), per-turn telemetry, Deepgram utterance_end + 200ms fallback, Hamming AI for simulated regression testing (you can't legally hand-dial 200 test calls). Kill condition: if still talking over people after tuning, don't scale.</div>
+  </div>
+  <div class="risk-row">
+    <div class="risk-label">Risk 3 — Silent Trust Destroyers: Phantom Bookings + Readback Errors</div>
+    <p>AI says "you're booked" but calendar write failed → no-show → client rage. TTS mangles spoken emails (B-O-U-B-A-C-A-R isn't obvious). Voicemail answers don't know they're talking to nobody.</p>
+    <div class="fix">Prevention: verify-after-write mandatory (re-fetch event, assert exists, THEN confirm), confirm-by-spelling for all captured emails/numbers, answering-machine detection (hang up early; don't leave a prerecorded TCPA-violating voicemail). Kill condition: booking accuracy below ~95% in testing = fix before any client touches it.</div>
+  </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="h2-inner"><span class="num">10</span> Next Session Prompt (Copy-Paste to Builder)</span><span class="chev">&#9660;</span></h2>
+  <div class="section-body">
+  <div class="next-session">
+    <div class="ns-label">Builder Agent — Phase 1 Prompt</div>
+    <pre>Build Phase 1 of the AI phone-calling system: a throwaway ElevenLabs Conversational AI
+agent to dogfood an outbound appointment-confirmation call to Boubacar's own cell TODAY.
+
+Context:
+- Stack: ElevenLabs (TTS contract), OpenRouter (LLM, HARD RULE — all LLM via OpenRouter,
+  never Anthropic-direct), check if Twilio number exists, Postgres (orc-postgres), Telegram.
+- This is a DISPOSABLE validation probe. Write ZERO reusable Pipecat pipeline code.
+  Output is a yes/no on whether the appointment flow works + latency numbers.
+
+Steps:
+1. Create ElevenLabs ConvAI agent: voice = existing ElevenLabs voice, TTS = eleven_turbo_v2_5,
+   custom LLM endpoint = https://openrouter.ai/api/v1, model = anthropic/claude-sonnet-4.6.
+   Pull OPENROUTER_API_KEY from .env on VPS.
+
+2. System prompt = scheduling assistant. Opening line MUST be:
+   "Hi, this is an AI assistant calling on behalf of Boubacar Barry. This call may be
+   recorded, and you can ask me to stop at any time. I'm reaching out to confirm a time."
+   Goal: confirm one of 3 offered slots + capture email (confirm-by-spelling).
+
+3. Wire to Twilio number via ElevenLabs native Twilio integration (no TwiML).
+   If no Twilio number exists, buy one (~$1/mo, 15 min) — calling own cell = no A2P trust needed.
+
+4. Trigger outbound call to Boubacar's cell [he provides the number].
+   Report: actual first-word latency, did barge-in work, slot+email capture pass/fail.
+
+5. Post-call webhook: tiny FastAPI endpoint writing outcome + transcript to voice_calls
+   table in orc-postgres (create table if not exists).
+
+Constraints:
+- OpenRouter for LLM is mandatory (HARD RULE).
+- Do NOT build Pipecat self-hosted version — gated on Phase 1 validating.
+- Work in a worktree off origin/main, tag commits [WIP], claim the branch first.
+- Report back: latency numbers + go/no-go on Phase 2 build.
+
+Success criteria: Boubacar hears the AI call his cell, offer slots, capture an email
+by spelling, and the result lands in Postgres. That's Phase 1 done.</pre>
+  </div>
+  </div>
+</section>
+
+<footer>
+  <p>agentsHQ AI Phone Calls Research &middot; 2026-06-28 &middot; 11 agents &middot; 963k tokens</p>
+  <p style="margin-top:.4rem;">Tool landscape: 9 tools surveyed. Council: 5 angles (Opus). Karpathy: 10 principles (Opus). Synthesis: Opus.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+  var btt = document.getElementById('btt');
+  window.addEventListener('scroll', function(){ btt.classList.toggle('visible', window.scrollY>320); }, {passive:true});
+  document.querySelectorAll('section').forEach(function(sec){
+    var body = sec.querySelector('.section-body');
+    if(!body) return;
+    var h2 = sec.querySelector('h2');
+    if(h2) h2.addEventListener('click', function(){ body.classList.toggle('hidden'); h2.classList.toggle('collapsed'); });
+  });
+  document.getElementById('expand-all').addEventListener('click', function(){
+    document.querySelectorAll('.section-body').forEach(function(b){b.classList.remove('hidden');});
+    document.querySelectorAll('h2').forEach(function(h){h.classList.remove('collapsed');});
+  });
+  document.getElementById('collapse-all').addEventListener('click', function(){
+    document.querySelectorAll('.section-body').forEach(function(b){b.classList.add('hidden');});
+    document.querySelectorAll('h2').forEach(function(h){h.classList.add('collapsed');});
+  });
+})();
+</script>
+</body>
+</html>
