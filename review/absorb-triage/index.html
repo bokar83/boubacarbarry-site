@@ -179,6 +179,18 @@ function saveNotes() {
   catch (e) { showToast("Note save failed"); }
 }
 
+const _noteTimers = {};
+function pushNote(itemId, note) {
+  clearTimeout(_noteTimers[itemId]);
+  _noteTimers[itemId] = setTimeout(() => {
+    fetch(ORC_BASE + "/atlas/absorb-triage-items/" + itemId + "/note", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note: note || null }),
+    }).catch(err => console.warn("note save failed:", err));
+  }, 600);
+}
+
 function showToast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -306,6 +318,7 @@ function buildCard(item) {
     const v = note.value.trim();
     if (v) NOTES[item.id] = v; else delete NOTES[item.id];
     saveNotes();
+    pushNote(item.id, v || null);
   });
   card.appendChild(note);
 
@@ -454,8 +467,11 @@ function loadItems() {
           const b = STATUS_TO_BUCKET[it.triage_status];
           if (b) { STATE[it.id] = b; seeded = true; }
         }
+        // Seed notes from server (server wins; enables cross-device sync).
+        if (it.triage_note) NOTES[it.id] = it.triage_note;
       }
       if (seeded) saveState();
+      saveNotes();
       const now = new Date();
       meta.textContent = ITEMS.length + " items pending | loaded " + now.toLocaleTimeString();
       render();
