@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Visibility Report: Catalyst Works</title>
+<style>
+  :root {
+    --navy:#0f172a; --ink:#1e293b; --muted:#64748b; --line:#e2e8f0;
+    --bg:#f1f5f9; --sky:#0ea5e9; --red:#ef4444; --card:#ffffff;
+  }
+  * { box-sizing:border-box; }
+  html, body { max-width:100%; overflow-x:hidden; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:16px; line-height:1.6; -webkit-text-size-adjust:100%;
+  }
+  .deploy-badge {
+    position:fixed; top:10px; right:10px; z-index:50;
+    background:rgba(15,23,42,.92); color:#cbd5e1; font-size:11px;
+    padding:5px 10px; border-radius:8px; font-variant-numeric:tabular-nums;
+    box-shadow:0 2px 8px rgba(0,0,0,.18); pointer-events:none;
+  }
+  .wrap { max-width:880px; margin:0 auto; padding:24px 16px 64px; width:100%; }
+  .masthead {
+    background:var(--navy); color:#fff; border-radius:16px;
+    padding:28px 24px; margin-bottom:20px;
+  }
+  .masthead .eyebrow { font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:#7dd3fc; font-weight:700; }
+  .masthead h1 { margin:8px 0 6px; font-size:26px; line-height:1.2; }
+  .masthead .sub { color:#94a3b8; font-size:14px; }
+  .card {
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:24px; margin-bottom:18px;
+  }
+  h2 { font-size:20px; margin:0 0 12px; color:var(--navy); line-height:1.25; }
+  .lead { color:var(--muted); font-size:15px; margin:0 0 18px; }
+  .exec p { font-size:17px; line-height:1.65; margin:0 0 16px; color:var(--ink); }
+  .exec .action {
+    background:#ecfeff; border-left:4px solid var(--sky); border-radius:8px;
+    padding:14px 16px; font-size:15px; font-weight:600; color:#0c4a6e; margin:0;
+  }
+  /* score card */
+  .score-card { background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%); color:#fff; }
+  .score-card h2 { color:#fff; }
+  .score-grid { display:flex; gap:16px; flex-wrap:wrap; align-items:stretch; }
+  .score-now, .score-target { flex:1 1 200px; background:rgba(255,255,255,.06); border-radius:14px; padding:20px; }
+  .score-now .big { font-size:64px; font-weight:800; line-height:1; letter-spacing:-2px; }
+  .score-target .big { font-size:40px; font-weight:800; line-height:1; color:#7dd3fc; }
+  .score-label { font-size:13px; color:#94a3b8; text-transform:uppercase; letter-spacing:.8px; margin-top:10px; }
+  .tier-badge {
+    display:inline-block; margin-top:14px; padding:8px 16px; border-radius:999px;
+    font-weight:700; font-size:15px;
+  }
+  .score-meaning { margin-top:16px; font-size:14px; color:#cbd5e1; }
+  /* prompt breakdown */
+  .prompt-list { display:flex; flex-direction:column; gap:12px; }
+  .prompt-row {
+    display:flex; gap:12px; align-items:center; justify-content:space-between;
+    border:1px solid var(--line); border-radius:12px; padding:14px 16px; flex-wrap:wrap;
+  }
+  .prompt-label { font-weight:700; color:var(--navy); font-size:15px; }
+  .prompt-count { font-weight:600; color:var(--sky); font-size:13px; }
+  .prompt-example { color:var(--muted); font-size:14px; margin-top:3px; }
+  .prompt-scores { display:flex; gap:18px; }
+  .mini-label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); }
+  .mini-zero { font-size:22px; font-weight:800; color:var(--red); }
+  .mini-target { font-size:22px; font-weight:800; color:#16a34a; }
+  /* engines */
+  .engine-grid { display:flex; flex-direction:column; gap:12px; }
+  .engine-card { border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .engine-card.pending { background:#f8fafc; border-style:dashed; }
+  .engine-head { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .engine-name { font-weight:700; font-size:16px; color:var(--navy); }
+  .engine-score { font-size:26px; font-weight:800; color:var(--red); }
+  .pending-pill { font-size:14px; color:#92400e; background:#fef3c7; padding:4px 12px; border-radius:999px; font-weight:700; }
+  .engine-tag { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--sky); font-weight:600; margin-top:2px; }
+  .engine-desc { font-size:14px; color:var(--muted); margin:8px 0 0; }
+  /* tables */
+  .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table { width:100%; border-collapse:collapse; font-size:14px; min-width:340px; }
+  th, td { text-align:left; padding:12px 14px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th { color:var(--muted); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.6px; }
+  .comp-name { font-weight:600; color:var(--navy); }
+  .you-row { background:#ecfeff; }
+  .status { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+  .tag-neutral { background:#e2e8f0; color:#475569; }
+  .tag-warn { background:#fee2e2; color:#b91c1c; }
+  .tag-you { background:#0ea5e9; color:#fff; }
+  .goodnews {
+    background:#ecfdf5; border-left:4px solid #16a34a; border-radius:8px;
+    padding:12px 16px; font-size:14px; color:#065f46; font-weight:600; margin-bottom:16px;
+  }
+  .rm-month { font-weight:700; color:var(--navy); white-space:nowrap; }
+  .rm-impact { color:#0c4a6e; font-weight:600; }
+  /* content plan */
+  .plan-list { display:flex; flex-direction:column; gap:14px; }
+  .plan-card { display:flex; gap:14px; border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .plan-num {
+    flex:0 0 32px; height:32px; width:32px; border-radius:50%;
+    background:var(--sky); color:#fff; font-weight:800; display:flex;
+    align-items:center; justify-content:center; font-size:15px;
+  }
+  .plan-title { font-weight:700; font-size:15px; color:var(--navy); line-height:1.35; }
+  .plan-meta { display:flex; flex-direction:column; gap:3px; margin-top:8px; font-size:13px; color:var(--muted); }
+  .plan-meta b { color:var(--ink); }
+  .clean-list { margin:0; padding-left:20px; }
+  .clean-list li { margin-bottom:8px; font-size:15px; }
+  footer {
+    color:var(--muted); font-size:13px; line-height:1.7; text-align:center;
+    margin-top:28px; padding-top:20px; border-top:1px solid var(--line);
+  }
+  footer .brand { color:var(--navy); font-weight:700; }
+  @media (max-width:560px) {
+    body { font-size:15px; }
+    .wrap { padding:18px 12px 48px; }
+    .masthead { padding:22px 18px; }
+    .masthead h1 { font-size:22px; }
+    .card { padding:18px 16px; }
+    .score-now .big { font-size:52px; }
+    .prompt-row { flex-direction:column; align-items:flex-start; }
+    .prompt-scores { width:100%; justify-content:flex-start; gap:28px; margin-top:4px; }
+    .plan-card { flex-direction:row; }
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-06-28-14:59:31 MT</div><!-- DEPLOY_STAMP_END -->
+<div class="deploy-badge">Generated 2026-06-28 (baseline v2)</div>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">AI Visibility Report</div>
+    <h1>Catalyst Works</h1>
+    <div class="sub">Report date: June 28, 2026 &middot; 30 buyer-intent searches &middot; 2 AI engines</div>
+  </header>
+
+  <section class="card exec">
+    <h2>The bottom line</h2>
+    <p>Right now, when a potential client in Salt Lake City or South Jordan asks ChatGPT, Perplexity, or Google&#x27;s AI for a business consultant recommendation, Catalyst Works does not appear. Not once across 30 searches designed to mirror what real buyers type. Your competitors have the same gap, but whoever gets cited first will own it.</p>
+    <p class="action">This report shows exactly where you're invisible and the content that will fix it.</p>
+  </section>
+
+  <section class="card score-card">
+    <h2>Your AI visibility score today</h2>
+    <div class="score-grid">
+      <div class="score-now">
+        <div class="big">0%</div>
+        <div class="score-label">Current AI visibility</div>
+        <span class="tier-badge" style="background:#ef4444;color:#ffffff;">Not Visible</span>
+      </div>
+      <div class="score-target">
+        <div class="big">50%+</div>
+        <div class="score-label">Target in 90 days</div>
+      </div>
+    </div>
+    <p class="score-meaning">What 0% means: not mentioned in any of 30 AI searches run the way your potential clients would run them.</p>
+  </section>
+
+  
+        <section class="card">
+          <h2>What your buyers are actually typing</h2>
+          <p class="lead">We grouped 30 real buyer questions into three intents. Here is where you stand on each, and the realistic target.</p>
+          <div class="prompt-list">
+            <div class="prompt-row">
+              <div class="prompt-main">
+                <div class="prompt-label">Discovery searches <span class="prompt-count">12 prompts</span></div>
+                <div class="prompt-example">&quot;Best [service] in [city]&quot;. Buyers finding their options.</div>
+              </div>
+              <div class="prompt-scores">
+                <div class="prompt-now"><span class="mini-label">Now</span><span class="mini-zero">0%</span></div>
+                <div class="prompt-target"><span class="mini-label">Target</span><span class="mini-target">40%+</span></div>
+              </div>
+            </div>
+            <div class="prompt-row">
+              <div class="prompt-main">
+                <div class="prompt-label">Comparison searches <span class="prompt-count">10 prompts</span></div>
+                <div class="prompt-example">&quot;Top [service] firms in [state]&quot;. Buyers building a shortlist.</div>
+              </div>
+              <div class="prompt-scores">
+                <div class="prompt-now"><span class="mini-label">Now</span><span class="mini-zero">0%</span></div>
+                <div class="prompt-target"><span class="mini-label">Target</span><span class="mini-target">30%+</span></div>
+              </div>
+            </div>
+            <div class="prompt-row">
+              <div class="prompt-main">
+                <div class="prompt-label">Recommendation searches <span class="prompt-count">8 prompts</span></div>
+                <div class="prompt-example">&quot;Recommend a [service] for [need]&quot;. Buyers asking for a name.</div>
+              </div>
+              <div class="prompt-scores">
+                <div class="prompt-now"><span class="mini-label">Now</span><span class="mini-zero">0%</span></div>
+                <div class="prompt-target"><span class="mini-label">Target</span><span class="mini-target">25%+</span></div>
+              </div>
+            </div></div>
+        </section>
+
+  <section class="card">
+    <h2>Where you stand on each AI engine</h2>
+    <p class="lead">Not all AI answers are equal. Here is each engine, what it is, and why it matters for your business.</p>
+    <div class="engine-grid">
+        <div class="engine-card">
+          <div class="engine-head">
+            <div class="engine-name">Perplexity AI</div>
+            <div class="engine-score">0%</div>
+          </div>
+          <div class="engine-tag">Live web search · highest priority</div>
+          <p class="engine-desc">Searches the live web in real time. This is where buyers who research before they buy get their shortlist.</p>
+        </div>
+        <div class="engine-card">
+          <div class="engine-head">
+            <div class="engine-name">ChatGPT</div>
+            <div class="engine-score">0%</div>
+          </div>
+          <div class="engine-tag">Knowledge base · reflects online presence</div>
+          <p class="engine-desc">Answers from what it has already learned about the web. Strong online presence is what earns a mention here.</p>
+        </div>
+        <div class="engine-card pending">
+          <div class="engine-head">
+            <div class="engine-name">Google Gemini</div>
+            <div class="engine-score pending-pill">Pending</div>
+          </div>
+          <div class="engine-tag">Live web search · results in your next report</div>
+          <p class="engine-desc">Google&#x27;s AI answer layer. Configuration is being finalized and results land in the next scan.</p>
+        </div></div>
+  </section>
+
+  
+        <section class="card">
+          <h2>How you stack up against local competitors</h2>
+          <div class="goodnews">Good news: your competitors share the same blind spot. The first business to fix it wins the citation.</div>
+          <div class="table-scroll">
+            <table class="comp-table">
+              <thead><tr><th>Business</th><th>Perplexity AI</th><th>ChatGPT</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr class="you-row">
+                  <td class="comp-name">Catalyst Works (you)</td>
+                  <td>0%</td><td>0%</td>
+                  <td><span class="status tag-you">Starting point</span></td>
+                </tr>
+                
+            <tr>
+              <td class="comp-name">Zion Consulting</td>
+              <td>0%</td><td>0%</td>
+              <td><span class="status tag-neutral">Same gap</span></td>
+            </tr>
+            <tr>
+              <td class="comp-name">SLC Business Partners</td>
+              <td>0%</td><td>0%</td>
+              <td><span class="status tag-neutral">Same gap</span></td>
+            </tr>
+            <tr>
+              <td class="comp-name">Alpine Strategy Group</td>
+              <td>0%</td><td>0%</td>
+              <td><span class="status tag-neutral">Same gap</span></td>
+            </tr>
+            <tr>
+              <td class="comp-name">Summit Business Advisors</td>
+              <td>0%</td><td>0%</td>
+              <td><span class="status tag-neutral">Same gap</span></td>
+            </tr>
+            <tr>
+              <td class="comp-name">Wasatch Strategy Group</td>
+              <td>0%</td><td>0%</td>
+              <td><span class="status tag-neutral">Same gap</span></td>
+            </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+  
+        <section class="card">
+          <h2>Your content plan for the next 30 days</h2>
+          <p class="lead">Three pieces, each written to answer the exact questions buyers are asking AI about business consulting and AI strategy in Salt Lake City and South Jordan.</p>
+          <div class="plan-list">
+            <div class="plan-card">
+              <div class="plan-num">1</div>
+              <div class="plan-body">
+                <div class="plan-title">Top Business Consultants in South Jordan, Utah: What to Look For</div>
+                <div class="plan-meta">
+                  <span><b>Targets:</b> 8 discovery searches directly</span>
+                  <span><b>Publish on:</b> catalystworks.consulting/blog</span>
+                  <span><b>Timeline:</b> 2 weeks (drafting + client approval)</span>
+                </div>
+              </div>
+            </div>
+            <div class="plan-card">
+              <div class="plan-num">2</div>
+              <div class="plan-body">
+                <div class="plan-title">AI Strategy for Small Businesses in Salt Lake City: A Practical Guide (with FAQ)</div>
+                <div class="plan-meta">
+                  <span><b>Targets:</b> 6 comparison + 4 recommendation searches</span>
+                  <span><b>Publish on:</b> catalystworks.consulting/blog</span>
+                  <span><b>Timeline:</b> 2 weeks (drafting + client approval)</span>
+                </div>
+              </div>
+            </div>
+            <div class="plan-card">
+              <div class="plan-num">3</div>
+              <div class="plan-body">
+                <div class="plan-title">How to Choose a Fractional Operations Consultant in Utah</div>
+                <div class="plan-meta">
+                  <span><b>Targets:</b> 4 comparison + 4 recommendation searches</span>
+                  <span><b>Publish on:</b> catalystworks.consulting/blog</span>
+                  <span><b>Timeline:</b> 2 weeks (drafting + client approval)</span>
+                </div>
+              </div>
+            </div></div>
+        </section>
+
+  
+        <section class="card">
+          <h2>The 90-day roadmap to visibility</h2>
+          <div class="table-scroll">
+            <table class="roadmap-table">
+              <thead><tr><th>When</th><th>What we do</th><th>Expected impact</th></tr></thead>
+              <tbody><tr><td class="rm-month">July</td>
+                   <td>Publish 3 targeted blog posts answering buyer questions</td>
+                   <td class="rm-impact">Pages indexed, AI begins crawling your content</td></tr><tr><td class="rm-month">August</td>
+                   <td>Rescan, publish 2 more posts, add directory listings</td>
+                   <td class="rm-impact">Score target: 10-20%</td></tr><tr><td class="rm-month">September</td>
+                   <td>Rescan, refine the winners, expand the prompt set</td>
+                   <td class="rm-impact">Score target: 25-40%</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+  
+
+  <footer>
+    Prepared by <span class="brand">Catalyst Works</span> &middot;
+    Report date: June 28, 2026 &middot; Next scan: July 28, 2026<br>
+    Methodology: 30 buyer-intent prompts across 2 AI engines.
+    Each prompt is run twice and a mention only counts when both runs confirm it.
+    Scores are directional signals, not guarantees.
+  </footer>
+
+</div>
+</body>
+</html>
