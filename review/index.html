@@ -80,6 +80,7 @@
     window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
     plausible.init()
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <!-- bb-logo: Boubacar visible logo (standing rule) -->
@@ -755,8 +756,10 @@
     toggle();
   })();
 
-  // --- Per-device Keep / Archive (localStorage). Layers on top of the server
-  //     manifest keep:true / 21-day archive without changing it. Single-user hub. ---
+  // --- Cross-device Keep / Archive (Supabase + localStorage cache). Layers on top of
+  //     the server manifest keep:true / 21-day archive without changing it.
+  //     Mobile-as-gospel: if Supabase is empty but localStorage has state, the local
+  //     state is uploaded on first load so phone-set state survives the migration. ---
   (function () {
     var KEEP = 'bb_review_kept', ARCH = 'bb_review_archived';
     var mainList = document.getElementById('list');
@@ -764,11 +767,41 @@
     var archWrap = document.getElementById('archived');
     if (!mainList || !archList) return;
 
-    function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch (e) { return []; } }
-    function save(k, arr) { try { localStorage.setItem(k, JSON.stringify(arr)); } catch (e) {} }
+    // Supabase client (public publishable key; RLS public_rw policy on review_states).
+    var SUPA_URL = 'https://jscucboftaoaphticqci.supabase.co';
+    var SUPA_KEY = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
+    var db = (window.supabase && window.supabase.createClient)
+      ? window.supabase.createClient(SUPA_URL, SUPA_KEY)
+      : null;
+
+    // Runtime source of truth: two in-memory slug arrays mirroring the old localStorage shape.
+    var _kept = [], _arch = [];
+
+    function lsLoad(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch (e) { return []; } }
+    function lsSave() {
+      try {
+        localStorage.setItem(KEEP, JSON.stringify(_kept));
+        localStorage.setItem(ARCH, JSON.stringify(_arch));
+      } catch (e) {}
+    }
+
+    // load(k) returns the live in-memory array so every existing call site keeps working.
+    function load(k) { return k === KEEP ? _kept : _arch; }
     function has(arr, s) { return arr.indexOf(s) !== -1; }
-    function add(k, s) { var a = load(k); if (!has(a, s)) { a.push(s); save(k, a); } }
-    function rm(k, s) { var a = load(k).filter(function (x) { return x !== s; }); save(k, a); }
+
+    // Write-through: update localStorage cache + fire-and-forget upsert of this slug's row.
+    function persist(slug) {
+      lsSave();
+      if (!db) return;
+      db.from('review_states').upsert({
+        slug: slug,
+        kept: has(_kept, slug),
+        archived: has(_arch, slug),
+        updated_at: new Date().toISOString()
+      }).then(function () {}, function () {});
+    }
+    function add(k, s) { var a = load(k); if (!has(a, s)) a.push(s); persist(s); }
+    function rm(k, s) { var a = load(k); var i = a.indexOf(s); if (i !== -1) a.splice(i, 1); persist(s); }
 
     function cards() { return Array.prototype.slice.call(document.querySelectorAll('.review-card')); }
     function findCard(slug) {
@@ -829,11 +862,42 @@
     }
     function unpin(card) { card.classList.remove('pinned'); setKeptBadge(card, false); makeActions(card, false); }
 
-    // Apply saved state on load. Archived first (removes from main), then keep pins.
-    var arch = load(ARCH), kept = load(KEEP);
-    arch.forEach(function (slug) { var c = findCard(slug); if (c && c.parentNode === mainList) moveToArchive(c); });
-    // Pin in reverse so the first saved keep ends up highest.
-    kept.slice().reverse().forEach(function (slug) { var c = findCard(slug); if (c && c.parentNode === mainList && !has(arch, slug)) pinTop(c); });
+    function bootFromLocal() { _kept = lsLoad(KEEP); _arch = lsLoad(ARCH); }
+
+    // Load state from Supabase; on empty table migrate localStorage up (mobile-as-gospel);
+    // on any error fall back to the localStorage cache so the hub still works offline.
+    function loadState() {
+      if (!db) { bootFromLocal(); return Promise.resolve(); }
+      return db.from('review_states').select('slug,kept,archived').then(function (res) {
+        if (res.error) throw res.error;
+        var data = res.data || [];
+        if (data.length === 0) {
+          // Supabase empty -> seed it from whatever this device already has.
+          var lk = lsLoad(KEEP), la = lsLoad(ARCH);
+          _kept = lk.slice(); _arch = la.slice();
+          var slugs = [];
+          lk.concat(la).forEach(function (s) { if (slugs.indexOf(s) === -1) slugs.push(s); });
+          if (slugs.length && db) {
+            var rows = slugs.map(function (s) {
+              return { slug: s, kept: lk.indexOf(s) !== -1, archived: la.indexOf(s) !== -1 };
+            });
+            return db.from('review_states').upsert(rows).then(function () {}, function () {});
+          }
+        } else {
+          _kept = []; _arch = [];
+          data.forEach(function (r) { if (r.kept) _kept.push(r.slug); if (r.archived) _arch.push(r.slug); });
+          lsSave(); // mirror the authoritative server state into the local cache
+        }
+      }).catch(function () { bootFromLocal(); });
+    }
+
+    // Apply saved state to the DOM once it is loaded. Archived first (removes from
+    // main), then keep pins (reversed so the first saved keep ends up highest).
+    loadState().then(function () {
+      var arch = _arch.slice(), kept = _kept.slice();
+      arch.forEach(function (slug) { var c = findCard(slug); if (c && c.parentNode === mainList) moveToArchive(c); });
+      kept.slice().reverse().forEach(function (slug) { var c = findCard(slug); if (c && c.parentNode === mainList && !has(arch, slug)) pinTop(c); });
+    });
 
     // Delegated click handling for all action buttons.
     document.addEventListener('click', function (e) {
