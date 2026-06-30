@@ -1,7 +1,16 @@
 name: Review Hub Sync Check
-# Fails the push if review/index.html or the manifest is out of sync with the review/
-# directory, or an item is overdue for the 21-day auto-archive. This is the unskippable
-# backstop: even if someone forgets to run the rebuild before deploy, CI catches the drift.
+# Self-healing backstop for the review hub. When review/ pages change on a push, this
+# regenerates index.html + .review-manifest.json (self-populate + auto-archive sweep) and
+# commits the result back with [skip ci] if anything drifted -- so a new review page lists
+# WITHOUT a manual rebuild, and the hub is never left out of sync after a push.
+#
+# Why this auto-commits instead of just failing: every review-page commit that skipped the
+# manual rebuild was failing this check, then needing a follow-up [skip ci] rebuild commit
+# (or waiting up to 24h for the daily archive sweep) to heal. Mirrors review-archive.yml,
+# which already commits hub rebuilds to main with the same permissions + [skip ci] guard.
+#
+# Genuine corruption (missing REVIEW_CARDS markers, card-count mismatch) still fails loud:
+# rebuild-review-index.ps1 exits 1 in those cases and no commit is produced.
 on:
   push:
     paths:
@@ -9,11 +18,27 @@ on:
       - 'scripts/rebuild-review-index.ps1'
       - '.github/workflows/review-sync.yml'
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   sync-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify review hub is in sync
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Rebuild review hub (self-populate + auto-archive)
         shell: pwsh
-        run: ./scripts/rebuild-review-index.ps1 -Check
+        run: ./scripts/rebuild-review-index.ps1
+      - name: Commit + push if the hub drifted
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain review/)" ]; then
+            git config user.name "review-bot"
+            git config user.email "review-bot@users.noreply.github.com"
+            git add review/
+            git commit -m "chore(review): auto-sync hub index + manifest [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "review/ hub already in sync; nothing to commit."
+          fi
