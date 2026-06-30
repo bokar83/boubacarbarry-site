@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warm List Ranked -- Workshop Readiness</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #141210; --panel: #1c1916; --card: #221e1a; --card-2: #2a251f; --card-3: #322b23;
+    --ink: #ece2d2; --ink-strong: #fbf4e8; --muted: #a59783; --faint: #7e7263;
+    --line: rgba(236, 226, 210, 0.12); --line-soft: rgba(236, 226, 210, 0.07);
+    --ember: #e3622f; --ember-bright: #ff7a45; --clay: #c4471d;
+    --green: #4fbf86; --green-soft: rgba(79, 191, 134, 0.12); --green-border: rgba(79, 191, 134, 0.4);
+    --amber: #e8a13a; --amber-soft: rgba(232, 161, 58, 0.12); --amber-border: rgba(232, 161, 58, 0.4);
+    --info: #6ea8e6; --info-soft: rgba(110, 168, 230, 0.12); --info-border: rgba(110, 168, 230, 0.38);
+    --violet: #b08ae0; --violet-soft: rgba(176, 138, 224, 0.12);
+    --red: #f06b4d; --red-soft: rgba(240,107,77,0.12); --red-border: rgba(240,107,77,0.4);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(900px 420px at 6% -8%, rgba(227, 98, 47, 0.11), transparent 60%),
+      radial-gradient(820px 400px at 100% -2%, rgba(79, 191, 134, 0.07), transparent 55%);
+    background-attachment: fixed; color: var(--ink); line-height: 1.6;
+    -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 2.2rem 1.15rem 6rem; position: relative; z-index: 1; }
+  a { color: var(--ember-bright); }
+
+  /* ---- HEADER ---- */
+  .doc-header { margin-bottom: 1.4rem; }
+  .tag { display: inline-block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.12em; padding: 0.22rem 0.6rem; border-radius: 999px;
+    background: #2c2722; color: var(--ink-strong); margin-right: 0.4rem; vertical-align: middle; border: 1px solid var(--line); }
+  .tag.primary { background: var(--ember); color: #fff; border-color: transparent; }
+  .tag.geo { background: #1f4d5d; color: #d7f0f7; border-color: transparent; }
+  h1 { font-size: clamp(1.9rem, 1.3rem + 3vw, 2.55rem); font-weight: 850; letter-spacing: -0.038em;
+    margin: 0.8rem 0 0.35rem; line-height: 1.06; color: var(--ink-strong); }
+  h1 .accent { color: var(--ember-bright); }
+  .sub { color: var(--muted); font-size: 1rem; max-width: 62ch; }
+  .doc-meta { font-size: 0.76rem; color: var(--faint); margin-top: 0.7rem; }
+
+  /* ---- HERO PIPELINE ---- */
+  .pipeline { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch;
+    gap: 0.5rem; margin: 1.9rem 0 1.4rem; }
+  .pstep { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 1.2rem 1.05rem 1.15rem; position: relative; }
+  .pstep.final { border-color: var(--green-border); background: linear-gradient(150deg, #1a2620 0%, #221f19 75%); }
+  .pstep .pnum { font-size: clamp(2rem, 1.2rem + 4vw, 2.85rem); font-weight: 850; letter-spacing: -0.04em;
+    line-height: 0.92; color: var(--ink-strong); }
+  .pstep.final .pnum { color: var(--green); }
+  .pstep .plbl { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); margin-top: 0.5rem; }
+  .pstep .psub { font-size: 0.74rem; color: var(--faint); margin-top: 0.25rem; }
+  .parrow { display: flex; align-items: center; justify-content: center; color: var(--ember); font-size: 1.3rem; font-weight: 900; }
+
+  /* ---- LEAD VERDICT ---- */
+  .lead-box { background: linear-gradient(135deg, #241d17 0%, #1a2620 100%);
+    border: 1px solid var(--line); border-left: 4px solid var(--green);
+    padding: 1.5rem 1.7rem; border-radius: 14px; margin: 1.6rem 0 2rem; }
+  .lead-box .vlbl { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--green); margin-bottom: 0.5rem; }
+  .lead-box .verdict { font-size: 1.18rem; font-weight: 800; letter-spacing: -0.015em; line-height: 1.42; color: var(--ink-strong); }
+  .lead-box .verdict .hl { color: var(--ember-bright); }
+  .lead-box .sub-verdict { color: var(--muted); font-size: 0.92rem; margin-top: 0.85rem; line-height: 1.62; }
+  .lead-box .sub-verdict strong { color: var(--ink-strong); }
+
+  /* ---- SECTION SHELL ---- */
+  .section { margin: 2.4rem 0 0; }
+  .s-head { display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 0.3rem; }
+  .s-head .s-num { font-size: 0.8rem; font-weight: 850; color: var(--ember); letter-spacing: 0.02em; }
+  .s-head h2 { font-size: 1.34rem; font-weight: 830; letter-spacing: -0.022em; color: var(--ink-strong); }
+  .s-desc { color: var(--muted); font-size: 0.9rem; margin: 0.15rem 0 1.1rem; max-width: 70ch; }
+
+  /* ---- LANE BARS ---- */
+  .lane { background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 1.1rem 1.2rem 1.2rem; margin-bottom: 0.8rem; }
+  .lane.primary { border-color: var(--ember); box-shadow: 0 0 0 1px rgba(227,98,47,0.25); }
+  .lane-top { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 0.85rem; flex-wrap: wrap; }
+  .lane-name { font-size: 1.02rem; font-weight: 820; color: var(--ink-strong); letter-spacing: -0.01em; display: flex; align-items: center; gap: 0.55rem; }
+  .lane-name .badge { font-size: 0.56rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.18rem 0.5rem; border-radius: 999px; background: var(--ember); color: #fff; }
+  .lane-ask { font-size: 0.76rem; color: var(--faint); font-weight: 600; }
+  .lane-ask .price { color: var(--ember-bright); font-weight: 800; }
+  /* stacked tier bar */
+  .tierbar { display: flex; height: 30px; border-radius: 7px; overflow: hidden; background: #1a1714; border: 1px solid var(--line-soft); }
+  .tseg { display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; color: #14110e; min-width: 2px; transition: opacity 0.15s; }
+  .tseg.a { background: var(--green); }
+  .tseg.b { background: var(--amber); }
+  .tseg.c { background: #4a423a; color: var(--muted); }
+  .tier-legend { display: flex; gap: 1.1rem; margin-top: 0.7rem; flex-wrap: wrap; }
+  .tier-legend .ti { display: flex; align-items: center; gap: 0.4rem; font-size: 0.76rem; color: var(--muted); }
+  .tier-legend .dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .tier-legend .dot.a { background: var(--green); }
+  .tier-legend .dot.b { background: var(--amber); }
+  .tier-legend .dot.c { background: #4a423a; }
+  .tier-legend .ti b { color: var(--ink-strong); font-weight: 800; }
+
+  /* ---- COUNTS STRIP ---- */
+  .mini-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin: 1rem 0 0; }
+  .mstat { background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; padding: 0.8rem 0.85rem; }
+  .mstat .mn { font-size: 1.3rem; font-weight: 850; letter-spacing: -0.03em; color: var(--ink-strong); line-height: 1; }
+  .mstat .mn.green { color: var(--green); } .mstat .mn.amber { color: var(--amber); } .mstat .mn.info { color: var(--info); }
+  .mstat .ml { font-size: 0.66rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 0.3rem; }
+
+  /* ---- ROSTER TABLE ---- */
+  .roster-tools { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+  #rsearch { flex: 1; min-width: 180px; background: var(--card-2); border: 1px solid var(--line); border-radius: 9px;
+    color: var(--ink); font-size: 0.86rem; padding: 0.6rem 0.85rem; font-family: inherit; }
+  #rsearch::placeholder { color: var(--faint); }
+  #rsearch:focus { outline: none; border-color: var(--ember); }
+  .rcount { font-size: 0.74rem; color: var(--faint); font-weight: 600; white-space: nowrap; }
+  .rcount b { color: var(--ink-strong); }
+  .table-shell { border: 1px solid var(--line); border-radius: 13px; overflow: hidden; background: var(--panel); }
+  table.roster { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  table.roster thead th { position: sticky; top: 0; background: var(--card-3); color: var(--muted);
+    font-size: 0.64rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; text-align: left;
+    padding: 0.65rem 0.7rem; border-bottom: 1px solid var(--line); z-index: 2; white-space: nowrap; }
+  table.roster thead th.sc { text-align: right; }
+  table.roster tbody td { padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  table.roster tbody tr:last-child td { border-bottom: none; }
+  table.roster tbody tr:hover { background: rgba(227,98,47,0.05); }
+  .r-name { color: var(--ink-strong); font-weight: 700; }
+  .r-pos { color: var(--muted); font-size: 0.8rem; }
+  .r-co { color: var(--ink); font-size: 0.82rem; }
+  .geo-pill { display: inline-block; font-size: 0.62rem; font-weight: 800; padding: 0.12rem 0.45rem; border-radius: 5px; letter-spacing: 0.03em; white-space: nowrap; }
+  .geo-pill.slc { background: rgba(110,168,230,0.18); color: #9cc6f2; }
+  .geo-pill.utah { background: rgba(79,191,134,0.16); color: #7fd6a6; }
+  .geo-pill.mtn { background: rgba(176,138,224,0.16); color: #c6abec; }
+  .geo-pill.unk { background: #2c2722; color: var(--faint); }
+  .reach-pill { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; }
+  .reach-pill.email { color: var(--ember-bright); }
+  .reach-pill.dm { color: var(--muted); }
+  td.sc { text-align: right; font-weight: 850; color: var(--ink-strong); white-space: nowrap; }
+  .sc-chip { display: inline-block; min-width: 2.3rem; text-align: center; padding: 0.18rem 0.4rem; border-radius: 6px; font-size: 0.8rem; }
+  .sc-chip.hi { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); }
+  .sc-chip.mid { background: rgba(232,161,58,0.10); color: var(--amber); border: 1px solid var(--amber-border); }
+  .no-results { padding: 1.4rem; text-align: center; color: var(--faint); font-size: 0.86rem; display: none; }
+
+  .read-note { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--ember);
+    border-radius: 10px; padding: 0.95rem 1.15rem; margin-top: 0.9rem; font-size: 0.86rem; color: var(--muted); line-height: 1.6; }
+  .read-note b { color: var(--ink-strong); }
+  .read-note .lbl { display: block; font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ember); margin-bottom: 0.4rem; }
+
+  /* ---- REFERRAL NODE CALLOUT ---- */
+  .referral { background: linear-gradient(135deg, #221a2c 0%, #1c1916 70%); border: 1px solid rgba(176,138,224,0.32);
+    border-radius: 14px; padding: 1.4rem 1.55rem; margin-top: 1rem; }
+  .referral .rlbl { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--violet); margin-bottom: 0.5rem; }
+  .referral h3 { font-size: 1.05rem; font-weight: 820; color: var(--ink-strong); letter-spacing: -0.01em; margin-bottom: 0.5rem; }
+  .referral p { font-size: 0.9rem; color: var(--muted); line-height: 1.62; }
+  .referral p strong { color: var(--ink-strong); }
+  .node-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.9rem; }
+  .node-chips span { font-size: 0.72rem; font-weight: 700; color: #d8c9ea; background: var(--violet-soft);
+    border: 1px solid rgba(176,138,224,0.25); border-radius: 999px; padding: 0.28rem 0.65rem; }
+
+  /* ---- SEAT MATH ---- */
+  .seat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin: 1.1rem 0; }
+  .seat-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.2rem; }
+  .seat-card .sc-src { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ember); margin-bottom: 0.45rem; }
+  .seat-card .sc-seats { font-size: 1.7rem; font-weight: 850; letter-spacing: -0.03em; color: var(--ink-strong); line-height: 1; margin-bottom: 0.45rem; }
+  .seat-card .sc-seats .unit { font-size: 0.85rem; font-weight: 700; color: var(--muted); }
+  .seat-card .sc-math { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+  .seat-card.win { border-color: var(--green-border); background: var(--green-soft); }
+  .seat-card.win .sc-src { color: var(--green); }
+  .seat-card.win .sc-seats { color: var(--green); }
+
+  .target-line { background: linear-gradient(135deg, #1a2620 0%, #21201a 100%); border: 1.5px solid var(--green-border);
+    border-radius: 12px; padding: 1.2rem 1.45rem; margin: 1.1rem 0; }
+  .target-line .tl-head { font-size: 0.64rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--green); margin-bottom: 0.55rem; }
+  .target-line p { font-size: 0.93rem; line-height: 1.62; }
+  .target-line p strong { color: var(--ink-strong); }
+  .target-line .path { color: var(--green); font-weight: 800; }
+
+  .caveat { background: var(--amber-soft); border: 1px solid var(--amber-border); border-radius: 12px;
+    padding: 1.2rem 1.45rem; margin-top: 1rem; }
+  .caveat .cv-lbl { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--amber); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
+  .caveat .cv-lbl::before { content: "\26A0"; font-size: 0.95rem; }
+  .caveat p { font-size: 0.91rem; color: var(--ink); line-height: 1.64; }
+  .caveat p strong { color: var(--amber); }
+  .caveat p .ink { color: var(--ink-strong); font-weight: 700; }
+
+  /* ---- SUB-LANE TABLES (audit/pga) ---- */
+  details.minilane { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; margin-bottom: 0.8rem; }
+  details.minilane > summary { list-style: none; cursor: pointer; padding: 0.95rem 1.2rem; display: flex; align-items: center; gap: 0.6rem;
+    font-size: 1rem; font-weight: 800; color: var(--ink-strong); background: var(--card-2); user-select: none; }
+  details.minilane > summary::-webkit-details-marker { display: none; }
+  details.minilane > summary .chev { width: 1.4rem; height: 1.4rem; border-radius: 6px; background: var(--ember); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 900; transition: transform 0.22s; }
+  details.minilane[open] > summary .chev { transform: rotate(90deg); }
+  details.minilane > summary .ml-meta { margin-left: auto; font-size: 0.72rem; color: var(--muted); font-weight: 600; }
+  .minilane .ml-body { padding: 0.3rem 0; }
+  .minilane .ml-body table.roster thead th { background: var(--card); }
+
+  /* ---- METHOD ---- */
+  .method { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.2rem 1.4rem; margin-top: 1rem; }
+  .method ul { list-style: none; margin: 0; padding: 0; }
+  .method li { font-size: 0.85rem; color: var(--muted); padding: 0.45rem 0 0.45rem 1.4rem; position: relative; border-bottom: 1px solid var(--line-soft); line-height: 1.55; }
+  .method li:last-child { border-bottom: none; }
+  .method li::before { content: ""; position: absolute; left: 0; top: 0.85rem; width: 6px; height: 6px; border-radius: 50%; background: var(--ember); }
+  .method li strong { color: var(--ink-strong); }
+
+  footer { margin-top: 3rem; padding-top: 1.4rem; border-top: 1px solid var(--line); font-size: 0.74rem; color: var(--faint); line-height: 1.7; }
+  footer .ft-stamp { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; color: var(--muted); }
+  footer .ft-status { display: inline-block; margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: 999px; background: var(--amber-soft); border: 1px solid var(--amber-border); color: var(--amber); font-weight: 700; font-size: 0.66rem; letter-spacing: 0.04em; }
+
+  @media (max-width: 720px) {
+    .pipeline { grid-template-columns: 1fr; gap: 0.4rem; }
+    .parrow { transform: rotate(90deg); padding: 0.1rem 0; }
+    .mini-stats { grid-template-columns: 1fr 1fr; }
+    .seat-grid { grid-template-columns: 1fr; }
+    table.roster .col-pos { display: none; }
+    .wrap { padding: 1.6rem 0.85rem 5rem; }
+  }
+  @media (max-width: 440px) {
+    table.roster .col-co { font-size: 0.76rem; }
+    table.roster thead th, table.roster tbody td { padding: 0.5rem 0.45rem; }
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-06-30-12:29:04 MT</div><!-- DEPLOY_STAMP_END -->
+<div class="wrap">
+
+  <header class="doc-header">
+    <span class="tag primary">Warm List Readiness</span>
+    <span class="tag">Workshop &middot; Jul 30</span>
+    <span class="tag geo">62 of 63 A-tier are Utah-local</span>
+    <h1>The warm list, ranked: can it <span class="accent">fill the room?</span></h1>
+    <p class="sub">4,346 scored connections run through a 6-signal rubric, routed across three lanes by fixed priority. The question this answers: how many of the July 30 in-person seats come from people already in the network.</p>
+    <p class="doc-meta">Source: LinkedIn Connections export (06-30-2026) &middot; Analysis only, nothing drafted-as-final, nothing sent &middot; PII held local.</p>
+  </header>
+
+  <!-- HERO PIPELINE -->
+  <div class="pipeline">
+    <div class="pstep">
+      <div class="pnum">4,488</div>
+      <div class="plbl">Connections loaded</div>
+      <div class="psub">4,346 scored after dead rows dropped</div>
+    </div>
+    <div class="parrow">&rarr;</div>
+    <div class="pstep">
+      <div class="pnum">63</div>
+      <div class="plbl">Workshop A-tier</div>
+      <div class="psub">62 Utah/SLC geo-confirmed</div>
+    </div>
+    <div class="parrow">&rarr;</div>
+    <div class="pstep final">
+      <div class="pnum">~7&ndash;8</div>
+      <div class="plbl">Seats from A-tier alone</div>
+      <div class="psub">at conservative ~12% conversion</div>
+    </div>
+  </div>
+
+  <!-- LEAD VERDICT -->
+  <div class="lead-box">
+    <div class="vlbl">Read in one line</div>
+    <div class="verdict">The warm list is <span class="hl">fillable but not by A-tier alone.</span> 63 A-tier owners and directors give roughly 7&ndash;8 direct seats. Clearing the 15&ndash;25 target needs the confirmed-local second wave plus referral asks into the university and HR cluster.</div>
+    <div class="sub-verdict"><strong>Geo is the dominant signal.</strong> Only 218 of 4,346 connections carry any Utah location signal at all, so most non-local rows sink to C for an in-person event. Almost everyone is DM-reachable: just 97 connections across the whole list carry an email.</div>
+  </div>
+
+  <!-- SECTION 1: LANES -->
+  <div class="section" id="lanes">
+    <div class="s-head"><span class="s-num">01</span><h2>Tier breakdown by lane</h2></div>
+    <p class="s-desc">Each connection is scored separately for all three offers, then routed by fixed priority: Workshop first, then the site audit, then thought-leadership ghostwriting. No one gets asked twice.</p>
+
+    <!-- WORKSHOP -->
+    <div class="lane primary">
+      <div class="lane-top">
+        <div class="lane-name">Workshop <span class="badge">Primary</span></div>
+        <div class="lane-ask">In-person Salt Lake session &middot; <span class="price">$47</span></div>
+      </div>
+      <div class="tierbar" role="img" aria-label="Workshop tiers: 63 A-tier, 1269 B-tier, 3014 C-tier">
+        <div class="tseg a" style="flex-grow:63" title="A-tier: 63"></div>
+        <div class="tseg b" style="flex-grow:1269" title="B-tier: 1,269">B</div>
+        <div class="tseg c" style="flex-grow:3014" title="C-tier: 3,014">C</div>
+      </div>
+      <div class="tier-legend">
+        <div class="ti"><span class="dot a"></span><b>63</b>&nbsp;A-tier (&ge;70)</div>
+        <div class="ti"><span class="dot b"></span><b>1,269</b>&nbsp;B-tier (45&ndash;69)</div>
+        <div class="ti"><span class="dot c"></span><b>3,014</b>&nbsp;C-tier (&lt;45)</div>
+      </div>
+    </div>
+
+    <!-- AUDIT -->
+    <div class="lane">
+      <div class="lane-top">
+        <div class="lane-name">Website Audit</div>
+        <div class="lane-ask">Site audit &middot; <span class="price">$250</span></div>
+      </div>
+      <div class="tierbar" role="img" aria-label="Audit tiers: 16 A-tier, 1233 B-tier, 3097 C-tier">
+        <div class="tseg a" style="flex-grow:16" title="A-tier: 16"></div>
+        <div class="tseg b" style="flex-grow:1233" title="B-tier: 1,233">B</div>
+        <div class="tseg c" style="flex-grow:3097" title="C-tier: 3,097">C</div>
+      </div>
+      <div class="tier-legend">
+        <div class="ti"><span class="dot a"></span><b>16</b>&nbsp;A-tier</div>
+        <div class="ti"><span class="dot b"></span><b>1,233</b>&nbsp;B-tier</div>
+        <div class="ti"><span class="dot c"></span><b>3,097</b>&nbsp;C-tier</div>
+      </div>
+    </div>
+
+    <!-- GHOSTWRITING -->
+    <div class="lane">
+      <div class="lane-top">
+        <div class="lane-name">Ghostwriting</div>
+        <div class="lane-ask">Thought-leadership, remote OK</div>
+      </div>
+      <div class="tierbar" role="img" aria-label="Ghostwriting tiers: 23 A-tier, 1429 B-tier, 2894 C-tier">
+        <div class="tseg a" style="flex-grow:23" title="A-tier: 23"></div>
+        <div class="tseg b" style="flex-grow:1429" title="B-tier: 1,429">B</div>
+        <div class="tseg c" style="flex-grow:2894" title="C-tier: 2,894">C</div>
+      </div>
+      <div class="tier-legend">
+        <div class="ti"><span class="dot a"></span><b>23</b>&nbsp;A-tier</div>
+        <div class="ti"><span class="dot b"></span><b>1,429</b>&nbsp;B-tier</div>
+        <div class="ti"><span class="dot c"></span><b>2,894</b>&nbsp;C-tier</div>
+      </div>
+    </div>
+
+    <div class="mini-stats">
+      <div class="mstat"><div class="mn info">218</div><div class="ml">Utah-signal rows</div></div>
+      <div class="mstat"><div class="mn">4,128</div><div class="ml">Geo unknown</div></div>
+      <div class="mstat"><div class="mn amber">97</div><div class="ml">Email-reachable</div></div>
+      <div class="mstat"><div class="mn">142</div><div class="ml">Dead rows dropped</div></div>
+    </div>
+    <div class="read-note">
+      <span class="lbl">Why audit + ghostwriting A-counts look small</span>
+      The Workshop lane claims any contact who is A-tier for the workshop first. After routing, the audit queue holds 5 A-tier and the ghostwriting queue 16 &mdash; the rest were absorbed upstream by the priority rule, not lost.
+    </div>
+  </div>
+
+  <!-- SECTION 2: ROSTER -->
+  <div class="section" id="roster">
+    <div class="s-head"><span class="s-num">02</span><h2>Workshop A-tier roster</h2></div>
+    <p class="s-desc">Contact first, sorted high to low. Reach is Email where present, else DM. Score is the workshop percentage of lane max. Type a name, company, or city to filter.</p>
+
+    <div class="roster-tools">
+      <input type="search" id="rsearch" placeholder="Filter roster by name, company, or city..." aria-label="Filter roster">
+      <span class="rcount"><b id="rshown">63</b> / 63 shown</span>
+    </div>
+
+    <div class="table-shell">
+      <table class="roster" id="rtable">
+        <thead>
+          <tr>
+            <th>Name &middot; Position</th>
+            <th class="col-co">Company</th>
+            <th class="col-pos">Geo</th>
+            <th>Reach</th>
+            <th class="sc">Score</th>
+          </tr>
+        </thead>
+        <tbody id="rbody"><!-- rows injected --></tbody>
+      </table>
+      <div class="no-results" id="rno">No connections match that filter.</div>
+    </div>
+
+    <div class="read-note">
+      <span class="lbl">Read on this table</span>
+      The top band &mdash; <b>Brandon Orton, Khalique Zaman, maya smith, Brad Skinner, Darroll Young, Douglas Bowen</b> &mdash; blends a real Utah/SLC signal with director-or-owner seniority and recent connect dates. Best first touches. The long 70-score tail is heavy on university directors and Utah HR leaders: all genuinely local and senior, strong room-fillers and referral nodes even when they are not the literal buyer. One row (Lindy Mansfield, 72) is geo Unknown, kept on seniority + warmth &mdash; confirm location before treating as local.
+    </div>
+  </div>
+
+  <!-- SECTION 3: REFERRAL + B-TIER -->
+  <div class="section" id="referral">
+    <div class="s-head"><span class="s-num">03</span><h2>The second wave + the referral engine</h2></div>
+    <p class="s-desc">Most B-tier rows are geo Unknown and scored on seniority and warmth, not locality. Work A-tier to exhaustion first, then mine B-tier for confirmed-local owners. The university and HR cluster inside the A-tier is the real multiplier.</p>
+
+    <div class="referral">
+      <div class="rlbl">Referral nodes, not direct buyers</div>
+      <h3>The BYU / Marriott / Utah-HR cluster is the room-filler</h3>
+      <p>A large share of the 70-score tail is BYU and Marriott School career-management directors, Utah-university administrators, and senior HR leaders at Utah employers. Many are not the literal $47 buyer. <strong>Each one is a node into a local professional network.</strong> The play is A-tier-first for direct seats, plus an explicit referral ask in those same messages: one introduction each turns a thin warm list into a full room.</p>
+      <div class="node-chips">
+        <span>BYU Marriott MBA career mgmt</span>
+        <span>University directors (U of U, SUU, WGU)</span>
+        <span>Utah HR leaders (CHRO / VP-HR)</span>
+        <span>Credit-union + Utah-employer HR</span>
+      </div>
+    </div>
+
+    <details class="minilane" id="btier">
+      <summary><span class="chev">&rsaquo;</span> Workshop B-tier &mdash; second wave <span class="ml-meta">top 24 of 1,248 &middot; mostly geo Unknown</span></summary>
+      <div class="ml-body">
+        <table class="roster">
+          <thead><tr><th>Name &middot; Position</th><th class="col-co">Company</th><th>Reach</th><th class="sc">Score</th></tr></thead>
+          <tbody id="bbody"><!-- injected --></tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <!-- SECTION 4: OTHER LANES -->
+  <div class="section" id="otherlanes">
+    <div class="s-head"><span class="s-num">04</span><h2>The other two lanes</h2></div>
+    <p class="s-desc">Lower priority than the workshop, mined only after the room is handled. Open to see the top targets for each.</p>
+
+    <details class="minilane" id="auditlane">
+      <summary><span class="chev">&rsaquo;</span> Website Audit &mdash; $250 site audit <span class="ml-meta">founders + Utah SMBs</span></summary>
+      <div class="ml-body">
+        <table class="roster">
+          <thead><tr><th>Name &middot; Position</th><th class="col-co">Company</th><th class="col-pos">Geo</th><th class="sc">Score</th></tr></thead>
+          <tbody id="audbody"></tbody>
+        </table>
+        <div class="read-note" style="margin:0.6rem 1rem 1rem;">A-tier here is founders and fractional consultants (own presence to audit). The Utah B-tier rows &mdash; Park City retail, Ogden Clinic, UTOPIA, Extra Space &mdash; are the more on-thesis local-SMB-site targets even at a lower score.</div>
+      </div>
+    </details>
+
+    <details class="minilane" id="pgalane">
+      <summary><span class="chev">&rsaquo;</span> Ghostwriting &mdash; thought-leadership <span class="ml-meta">finance / fintech lean = direct fit</span></summary>
+      <div class="ml-body">
+        <table class="roster">
+          <thead><tr><th>Name &middot; Position</th><th class="col-co">Company</th><th class="sc">Score</th></tr></thead>
+          <tbody id="pgabody"></tbody>
+        </table>
+        <div class="read-note" style="margin:0.6rem 1rem 1rem;">Heavy on finance, banking, and insurance execs (CEO, CFO, COO, VP-HR): the people who visibly should post and don't. Geo barely weighted here since remote is fine.</div>
+      </div>
+    </details>
+  </div>
+
+  <!-- SECTION 5: SEAT MATH -->
+  <div class="section" id="seatmath">
+    <div class="s-head"><span class="s-num">05</span><h2>Seat math: how the room fills</h2></div>
+    <p class="s-desc">Using the plan's stated conversion: net warm-contact to paid-seat is roughly 8% (0.40 reply &times; 0.40 interested &times; 0.50 buy), with A-tier converting richer at ~12% and B-tier leaner at ~4%.</p>
+
+    <div class="seat-grid">
+      <div class="seat-card win">
+        <div class="sc-src">63 A-tier</div>
+        <div class="sc-seats">~7&ndash;8 <span class="unit">seats</span></div>
+        <div class="sc-math">63 contacts &times; ~12% conversion. The direct, highest-confidence yield.</div>
+      </div>
+      <div class="seat-card">
+        <div class="sc-src">~250 local B-tier</div>
+        <div class="sc-seats">~10 <span class="unit">seats</span></div>
+        <div class="sc-math">First ~250 confirmed-local B-tier rows &times; ~4%. Requires confirming locality first.</div>
+      </div>
+    </div>
+
+    <div class="target-line">
+      <div class="tl-head">Path to 15&ndash;25 seats</div>
+      <p><strong>A-tier alone is not enough.</strong> Blend: 63 A-tier (~8 seats) + the first ~250 confirmed-local B-tier (~10 seats) gets to <span class="path">~18</span>, and a small in-person / referral tail clears <span class="path">20&ndash;25</span>. The plan's own read (&ge;100 A-tier = fillable from warm alone) means at 63 A-tier the workshop is fillable but needs the local B-tier supplement <span class="path">and</span> the referral asks &mdash; not A-tier in isolation.</p>
+    </div>
+
+    <div class="caveat">
+      <div class="cv-lbl">The honest caveat</div>
+      <p>The 70-score A-tier tail is not 50 ready-to-pay buyers. A large block is <span class="ink">BYU / Marriott academic and Utah-HR directors</span> &mdash; genuinely local and senior, but for many of them the realistic value is as a <strong>referral node or room-filler, not a direct $47 buyer</strong>. Treat the headline "63 A-tier" as the top of a funnel, not 63 seats. The conservative ~7&ndash;8 direct-seat projection already prices this in.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 6: METHOD -->
+  <div class="section" id="method">
+    <div class="s-head"><span class="s-num">06</span><h2>Method &amp; traceability</h2></div>
+    <div class="method">
+      <ul>
+        <li><strong>Geo</strong> inferred only from explicit text signals in Company/Position (Salt Lake city names, Utah cities, known Utah-HQ employers, BYU/UVU/U-of-U/SUU/WGU). No external lookups, no guessing. Absent any signal &rarr; Unknown, never a fabricated city.</li>
+        <li><strong>Seniority</strong> bucketed from title keywords: Owner/Founder/CxO/Partner/President &rarr; Owner; VP/Director/Head &rarr; VP; Manager/Supervisor/Lead &rarr; Manager; else IC.</li>
+        <li><strong>Warmth</strong> from connect-date recency (under 6mo = 3, under 2yr = 2, under 4yr = 1, older = 0).</li>
+        <li><strong>Reachability</strong> = Email if an address is present (97 rows), else DM. Binary, never blocks.</li>
+        <li><strong>Scores</strong> are percent of each lane's max (Workshop/Audit max 54, Ghostwriting 51). Tier cuts: A &ge;70, B 45&ndash;69, C &lt;45.</li>
+        <li><strong>No messages were drafted-as-final and nothing was sent.</strong> This is the working artifact for the manual outreach pass.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    <div class="ft-stamp">Warm List Ranked &middot; review build v1 &middot; data generated 2026-06-30 (America/Denver)</div>
+    Source file: docs/personal/warm-list-ranked-2026-06-30.md &middot; 6-signal weighted rubric, fixed-priority routing (Workshop &rarr; Audit &rarr; Ghostwriting).
+    <br><span class="ft-status">Analysis only &middot; nothing sent</span>
+  </footer>
+
+</div>
+
+<script>
+// ---- DATA (verbatim from source file; truth-only) ----
+const ATIER = [
+  ["Brandon Orton","doTERRA International LLC","Director, Global Story Creative at dōTERRA","Utah","DM",87],
+  ["Khalique U Zaman","WMX","Human Resources Business Partner","Utah","Email",85],
+  ["maya smith","Vivint","Partner Performance Revenue Associate Manager","Utah","DM",81],
+  ["Brad Skinner","Solstice Senior Living","Executive Director - Solstice at Sandy","SLC","DM",80],
+  ["Darroll Young","Salt Lake Community College","Event Coordinator","SLC","DM",80],
+  ["Douglas Bowen","KidsUnited Salt Lake City","Owner","SLC","DM",80],
+  ["PJ Schwartz","BambooHR","Partner Account Manager","Utah","DM",76],
+  ["Tom Whitworth","Wasatch Photonics","Director Of Engineering","Utah","Email",74],
+  ["Lindy Mansfield","PACS","Human Resources Business Partner- CA Region","Unknown","Email",72],
+  ["Davis Black","BYU Business Strategy Society","Co-President","Utah","DM",70],
+  ["Michael Johanson","Brigham Young University","Director Of Alumni Relations","Utah","DM",70],
+  ["John D. Wilson","Seminaries and Institutes of Religion","Global Director, Academic Strategy and Programs","Utah","DM",70],
+  ["Perry Christensen","BYU Marriott School of Business","Director, MBA Career Management","Utah","DM",70],
+  ["Ed Harrington","Alpine Talent Group - Retained Executive Search","Managing Principal","Utah","DM",70],
+  ["Mariana Monteiro","State of Connecticut - Office of the Governor","Chief Opportunity Officer","Utah","DM",70],
+  ["Cheikh Ndiaye","Teranga Without Borders","Chef/Owner","Utah","DM",70],
+  ["Janice L Semper","Social Impact Partners Connecticut","Volunteer Partner","Utah","DM",70],
+  ["Sean Morrison","Bank of Utah","Senior Vice President Human Resources","Utah","DM",70],
+  ["Monte Menzel","Roy's Auto","Service Director","Utah","DM",70],
+  ["Mark Homer","Brigham Young University - Idaho","Online Adjunct Instructor","Utah","DM",70],
+  ["Whitney McGowan","Brigham Young University","Public Affairs Coordinator","Utah","DM",70],
+  ["Shawn Spainhour","Clearlink","Senior Managing Director","Utah","DM",70],
+  ["Danny Yeo","Brigham Young University","IT Director","Utah","DM",70],
+  ["Daniel Snow","BYU Marriott School of Business","Director, MBA Programs","Utah","DM",70],
+  ["Sarah Campbell","Brigham Young University","Chief Integrity and Compliance Officer","Utah","DM",70],
+  ["Addison Kirk","BYU Broadcasting","Casting Director","Utah","DM",70],
+  ["David Jungheim, MBA","Brigham Young University","Space Management Coordinator","Utah","DM",70],
+  ["Shad Morris","BYU Marriott School of Business","Executive Director","Utah","DM",70],
+  ["Michael Hendron","BYU Rollins Center for Entrepreneurship & Technology","Director","Utah","DM",70],
+  ["R Bruce Money","BYU - Marriott School of Management","Director, Global Management Center","Utah","DM",70],
+  ["Treavor Peterson","Brigham Young University","Managing Director, MBA Programs","Utah","DM",70],
+  ["Julie Brown","Western Governors University","Director, Leadership Development & Org Development","Utah","DM",70],
+  ["Kari Gardner, SPHR, SHRM-SCP","Professional Education at the University of Utah","Course Instructor","Utah","DM",70],
+  ["Joe Nabrotzky","Utah Community Credit Union (UCCU)","Chief Human Resources Officer (CHRO)","Utah","DM",70],
+  ["SETH OGOE AYIM, PMP, MPA","BYU Management Society (Global)","Vice President Strategic Development","Utah","DM",70],
+  ["C. Tad Brinkerhoff","Southern Utah University","Associate Vice President, Graduate and Online Programs","Utah","DM",70],
+  ["Bret Jones","Serenity Hospice of Utah","Chief Executive Officer","Utah","DM",70],
+  ["Chris Farnsworth","doTERRA International LLC","Senior Vice President of Global Human Resources","Utah","DM",70],
+  ["Sam Brown","Brigham Young University","Director","Utah","DM",70],
+  ["Rachel Weiss","Helen of Troy","HR Director, Beauty & Wellness","Utah","DM",70],
+  ["Shawna Gygi","BYU/Marriott School","Asst. Director BYU / MBA Career Management","Utah","DM",70],
+  ["Teppo Felin","University of Utah - David Eccles School of Business","Ion Presidential Endowed Chair & Co-Director","Utah","DM",70],
+  ["Rick Patterson","Brigham Young University","Assistant Director MBA Career Management","Utah","DM",70],
+  ["Mimi West","O.C. Tanner","Director of Global Product Marketing","Utah","DM",70],
+  ["Kurt Sandholtz","BYU Honors Program","Leadership Development Coordinator","Utah","DM",70],
+  ["Jeff Thompson","Brigham Young University","Director, Sorensen Center for Moral and Ethical Leadership","Utah","DM",70],
+  ["Ethan Wing","Qualtrics","Principal Pricing and Planning Manager","Utah","DM",70],
+  ["Trent Savage","Mountain America Credit Union","Senior Vice President - HR","Utah","DM",70],
+  ["Ben Brown","Lucid Software","Director of Product Management","Utah","DM",70],
+  ["Monica McGhie","Cricut","Director of Digital Content","Utah","DM",70],
+  ["Mark A. Mackay","Swire Coca-Cola, USA","Senior Human Resources Business Partner","Utah","DM",70],
+  ["Andrew Walters","Swire Coca-Cola, USA","Director Organizational Effectiveness","Utah","DM",70],
+  ["Todd Hollingshead","Brigham Young University","National News Director","Utah","DM",70],
+  ["Jeff Hanson","Cricut","Director of Product, Creative Labs (AI & Marketplaces)","Utah","DM",70],
+  ["Rod Ririe","Utah Department of Public Safety","Certified Utah Concealed Firearms Instructor","Utah","DM",70],
+  ["Shane Wright","Brigham Young University","Director - Performing Arts Management","Utah","DM",70],
+  ["Jessica Johnson","BYU School of Medicine","Managing Director of External Relations","Utah","DM",70],
+  ["Todd L. Jacobsen","Utah's Best of Best TV","Principal Owner","Utah","DM",70],
+  ["Michael Bush","Brigham Young University","Associate Director, Center for Language Studies","Utah","DM",70],
+  ["Tedd Mills","LEGACY INITIATIVE OF UTAH","President and Co-Founder","Utah","DM",70],
+  ["Duff Tittle","BYU Athletics","Associate Athletic Director — Communications","Utah","DM",70],
+  ["Jonathon Wood","BYU Marriott School of Business","Managing Director, Global Business Center","Utah","DM",70],
+  ["Jeff Snider","Spring Gardens of Lindon, Avista Senior Living","Dining Services Director","Utah","DM",70]
+];
+
+const BTIER = [
+  ["Clint Carlos","Atonom","Head of Enterprise and Partner Ecosystem","DM",69],
+  ["Dallin Johns","HyperEquity","CEO & Co-Founder","DM",69],
+  ["Brynden (BT) King","FFE Solutions Group LLC","VP of Sales and VP","DM",69],
+  ["Craig Cossairt","Cozy Fables","Founder","DM",69],
+  ["Matthew Gluckman","Think WorkWell","Founder","DM",69],
+  ["Cameo Doran","Cameo Labs","Founder","DM",69],
+  ["Taha Salahuddin Abbasi","AskFlorence","Technical Founder and CEO","DM",69],
+  ["Marita Erler","Mondi Group","Chief People Officer","DM",69],
+  ["Tim Young","Pearson","Senior Vice President, Human Resources Operations","DM",69],
+  ["Maria Shaw, LSSBB, MBA","Thermo Fisher Scientific","Global Division Vice President, Manufacturing","DM",69],
+  ["Ibrahima Diallo","Jawudi, Inc.","Founder / CEO","DM",69],
+  ["Aśha Smith","PayPal","Director, Executive Search / Global Tech","DM",69],
+  ["Sébastien Toutain","TE Connectivity","Global HR Business Partner","DM",69],
+  ["Diego Davis","AccessHealthcare LLC","CFO","DM",69],
+  ["Chloe Fleurant","Quantum Management Services Ltd.","Director of Recruiting","DM",69],
+  ["Landon Pitcher","Kiin","CEO, Co-Founder","DM",69],
+  ["Alexandra Shadle","International Dance Arts Collective","Nonprofit Founder","DM",69],
+  ["Monique Williams","Pall Corporation","Global Human Resources Director","DM",69],
+  ["Shaun Muir","Kevin Edward Executive Search","Managing Director","DM",69],
+  ["Lubna Haroon","Arctech","Human Resources Business Partner (HRBP)","Email",67],
+  ["Erin Biehl","Growthspace","Director of Operations","DM",63],
+  ["Dan Terner","GrowthSpace","Co-Founder and Chief Operating Officer","DM",63],
+  ["Emmanuel Ligner","Avantor","President and Chief Executive Officer","DM",63],
+  ["Jeff Black","Black Sheep","Founder and CEO","DM",63]
+];
+
+const AUDIT = [
+  ["Alf Carlesäter","GROW HR Consulting","Founder · Fractional CHRO / Governance","Unknown",74,"A"],
+  ["Jeremy Webb","Consult Dean","Principal Consultant","Unknown",74,"A"],
+  ["Laura Kerns, SPHR","Laura Kerns Consulting LLC","Founder & Fractional Head of People","Unknown",70,"A"],
+  ["Luke Pierce","Ai Agency Inner Circle","Founder","Unknown",70,"A"],
+  ["Brendan Langen","Human Agency","Partner, Managing Director of AI","Unknown",70,"A"],
+  ["Annmarie Last","Gorsuch Ltd. - Park City, Utah","Retail Supervisor","Utah",48,"B"],
+  ["Quincy Robinson","Ogden Clinic","Senior Operations Manager","Utah",48,"B"],
+  ["Brian Kelsey","UTOPIA Fiber","OSP Engineering Manager","Utah",48,"B"],
+  ["Cameron Corfield","Extra Space Storage","Sr. Manager, Employee Experience","Utah",48,"B"]
+];
+
+const PGA = [
+  ["Jacob Knight","JWAL-Software","Chief Executive Officer","DM",86],
+  ["Hadja Mariame Bah","Bank of Diaspora","Director of Development And Communications","DM",86],
+  ["Toni Attieh","Strategic Executive Mandate","Regional Director / P&L & Capital Governance","DM",86],
+  ["Riham Rifky","Al Khayyat Investments (AKI)","Human Resources Business Partner","DM",86],
+  ["Mariama S. Keita","Rocklane Capital Partners","Chief Operating Officer","DM",86],
+  ["Joe Mounir","ArcelorMittal","Chief Financial Officer","DM",80],
+  ["Syed Gaous","HDFC ERGO General Insurance","Deputy Vice President - Human Resources","DM",80],
+  ["Mourad Hamdi","Aspen Technology","Sales Director / Software / Oil and Gas","DM",80],
+  ["Husain AlBaqali","NCR Atleos","PS Associate Partner - Banking","DM",80],
+  ["Ru Wang","Blockchain & Web3 Marketing Studio","Founder","Email",76],
+  ["Kara Peterson","Mountain America Credit Union","VP of HR","DM",75],
+  ["Taibah Almashouq","PIF Portfolio Company","Senior Human Capital Director","DM",75],
+  ["Mamadou Diallo, CISA","U.S. Bank","AVP - Information Security Audit","DM",75],
+  ["Abhimanyu Vannemreddy","A.P. Moller - Maersk","Associate Finance Business Partner","DM",75],
+  ["Mamadou Diallo","World Bank Group","Advisor to Executive Director","DM",75],
+  ["Russell A. Lee","Arizona Public Service - APS","Sr. Human Resources Business Partner","DM",71]
+];
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function geoCls(g){ return g==='SLC'?'slc':g==='Utah'?'utah':g==='MtnWest'?'mtn':'unk'; }
+function scCls(n){ return n>=70?'hi':'mid'; }
+
+// Workshop A-tier (full)
+const rbody = document.getElementById('rbody');
+rbody.innerHTML = ATIER.map(([n,co,pos,geo,reach,sc]) => `
+  <tr data-find="${esc((n+' '+co+' '+geo).toLowerCase())}">
+    <td><div class="r-name">${esc(n)}</div><div class="r-pos">${esc(pos)}</div></td>
+    <td class="col-co r-co">${esc(co)}</td>
+    <td class="col-pos"><span class="geo-pill ${geoCls(geo)}">${esc(geo)}</span></td>
+    <td><span class="reach-pill ${reach==='Email'?'email':'dm'}">${esc(reach)}</span></td>
+    <td class="sc"><span class="sc-chip ${scCls(sc)}">${sc}</span></td>
+  </tr>`).join('');
+
+// B-tier
+document.getElementById('bbody').innerHTML = BTIER.map(([n,co,pos,reach,sc]) => `
+  <tr>
+    <td><div class="r-name">${esc(n)}</div><div class="r-pos">${esc(pos)}</div></td>
+    <td class="col-co r-co">${esc(co)}</td>
+    <td><span class="reach-pill ${reach==='Email'?'email':'dm'}">${esc(reach)}</span></td>
+    <td class="sc"><span class="sc-chip mid">${sc}</span></td>
+  </tr>`).join('');
+
+// Audit
+document.getElementById('audbody').innerHTML = AUDIT.map(([n,co,pos,geo,sc,tier]) => `
+  <tr>
+    <td><div class="r-name">${esc(n)}</div><div class="r-pos">${esc(pos)}</div></td>
+    <td class="col-co r-co">${esc(co)}</td>
+    <td class="col-pos"><span class="geo-pill ${geoCls(geo)}">${esc(geo)}</span></td>
+    <td class="sc"><span class="sc-chip ${tier==='A'?'hi':'mid'}">${sc}</span></td>
+  </tr>`).join('');
+
+// Ghostwriting
+document.getElementById('pgabody').innerHTML = PGA.map(([n,co,pos,reach,sc]) => `
+  <tr>
+    <td><div class="r-name">${esc(n)}</div><div class="r-pos">${esc(pos)}</div></td>
+    <td class="col-co r-co">${esc(co)}</td>
+    <td class="sc"><span class="sc-chip ${sc>=70?'hi':'mid'}">${sc}</span></td>
+  </tr>`).join('');
+
+// Live filter on the A-tier roster
+const search = document.getElementById('rsearch');
+const shown = document.getElementById('rshown');
+const noRes = document.getElementById('rno');
+const rows = Array.from(rbody.querySelectorAll('tr'));
+search.addEventListener('input', () => {
+  const q = search.value.trim().toLowerCase();
+  let count = 0;
+  rows.forEach(tr => {
+    const match = !q || tr.dataset.find.includes(q);
+    tr.style.display = match ? '' : 'none';
+    if (match) count++;
+  });
+  shown.textContent = count;
+  noRes.style.display = count === 0 ? 'block' : 'none';
+});
+</script>
+</body>
+</html>
+
