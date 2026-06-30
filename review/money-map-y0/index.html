@@ -329,7 +329,7 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-06-30-14:24:27 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-06-30-14:31:49 MT</div><!-- DEPLOY_STAMP_END -->
 
 <div class="wrap">
 
@@ -822,6 +822,7 @@
   function todayAskKey(){ return 'ask-' + dkey(new Date()); }
   function getAsk(dateStr){ var v = state['ask-'+dateStr]; if (v === undefined) v = lsGet('ask-'+dateStr); var n = parseInt(v,10); return isNaN(n) ? 0 : n; }
   var ASK_MIN = 5, WEEK_ASK_TARGET = 25;
+  var activeWeek = 1;   // declared up front: render functions run before the week-strip block
 
   // Apply a value to the DOM for a given item_id
   function applyToDom(item, value){
@@ -906,7 +907,7 @@
     if (strEl) strEl.textContent = 'Streak: ' + calcAskStreak() + ' days at ' + ASK_MIN + '+';
     if (zone) zone.classList.toggle('locked', !met);
     if (blPill){ blPill.textContent = met ? 'Open' : ('Locked until ' + ASK_MIN + ' asks'); blPill.className = 'bl-pill ' + (met ? 'open' : 'locked'); }
-    if (window.__y0_renderBrandon) window.__y0_renderBrandon();
+    renderBrandon();
     recomputeScorecard();
   }
   window.__y0_renderAsk = renderAsk;
@@ -936,12 +937,11 @@
   })();
 
   // ---- weekly scorecard: headline = ASKS SENT this week (sum of daily counts) ----
-  var activeWeek = 1;
   // Map week number -> that week's Monday date (Week 1 Monday = 2026-06-29).
-  function weekMonday(wk){ var d = new Date(Date.UTC(2026,5,29)); d.setUTCDate(d.getUTCDate() + (wk-1)*7); return d; }
+  function weekMonday(wk){ var n = parseInt(wk,10); if (isNaN(n)) n = 1; var d = new Date(Date.UTC(2026,5,29)); d.setUTCDate(d.getUTCDate() + (n-1)*7); return d; }
   function recomputeScorecard(){
     var mon = weekMonday(activeWeek), total = 0;
-    for (var i=0;i<7;i++){ var d = new Date(mon); d.setUTCDate(d.getUTCDate()+i); total += getAsk(dkey(d)); }
+    for (var i=0;i<7;i++){ var d = new Date(mon.getTime()); d.setUTCDate(d.getUTCDate()+i); total += getAsk(dkey(d)); }
     var pctEl = document.getElementById('scPct'), fill = document.getElementById('scFill'), num = document.getElementById('scWeekNum');
     if (num) num.textContent = activeWeek;
     if (pctEl){ pctEl.textContent = total; pctEl.classList.toggle('under', total < WEEK_ASK_TARGET); }
