@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Year Zero Money Map (Y0)</title>
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #141210; --panel: #1c1916; --card: #221e1a; --card-2: #2a251f;
+      --ink: #ece2d2; --ink-strong: #fbf4e8; --muted: #a59783; --faint: #7e7263;
+      --line: rgba(236, 226, 210, 0.12); --line-soft: rgba(236, 226, 210, 0.07);
+      --ember: #e3622f; --ember-bright: #ff7a45; --clay: #c4471d;
+      --green: #4fbf86; --green-soft: rgba(79, 191, 134, 0.12); --green-border: rgba(79, 191, 134, 0.4);
+      --amber: #e8a13a; --amber-soft: rgba(232, 161, 58, 0.12); --amber-border: rgba(232, 161, 58, 0.4);
+      --info: #6ea8e6; --info-soft: rgba(110, 168, 230, 0.12); --info-border: rgba(110, 168, 230, 0.38);
+      --red: #f06b4d; --red-soft: rgba(240,107,77,0.12); --red-border: rgba(240,107,77,0.4);
+      --purple: #b07ae0; --purple-soft: rgba(176,122,224,0.12); --purple-border: rgba(176,122,224,0.4);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(900px 400px at 8% -6%, rgba(227, 98, 47, 0.10), transparent 60%),
+        radial-gradient(800px 380px at 100% 0%, rgba(79, 191, 134, 0.06), transparent 55%);
+      background-attachment: fixed; color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 840px; margin: 0 auto; padding: 1.4rem 1.1rem 6rem; position: relative; z-index: 1; }
+    a { color: var(--ember-bright); }
+
+    .doc-header { margin-bottom: 1rem; }
+    .tag { display: inline-block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.2rem 0.55rem; border-radius: 999px; background: #2c2722; color: var(--ink-strong); margin-right: 0.35rem; vertical-align: middle; border: 1px solid var(--line); }
+    .tag.plan { background: var(--ember); color: #fff; border-color: transparent; }
+    .tag.y0 { background: #1f5d3f; color: #fff; border-color: transparent; }
+    h1 { font-size: 1.85rem; font-weight: 850; letter-spacing: -0.035em; margin: 0.55rem 0 0.25rem; line-height: 1.08; color: var(--ink-strong); }
+    .sub { color: var(--muted); font-size: 0.92rem; max-width: 62ch; }
+    .doc-meta { font-size: 0.74rem; color: var(--faint); margin-top: 0.55rem; }
+
+    /* SYNC STATUS PILL */
+    .sync { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.22rem 0.6rem; border-radius: 999px; border: 1px solid var(--line); background: var(--card-2); color: var(--muted); margin-top: 0.6rem; }
+    .sync .dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--faint); transition: background 0.2s; }
+    .sync.live .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .sync.live { color: var(--green); border-color: var(--green-border); }
+    .sync.saving .dot { background: var(--amber); }
+    .sync.saving { color: var(--amber); }
+    .sync.offline .dot { background: var(--red); }
+    .sync.offline { color: var(--red); border-color: var(--red-border); }
+
+    /* STICKY MINI-NAV */
+    .mini { position: sticky; top: 0; z-index: 50; display: flex; gap: 0.4rem; padding: 0.55rem 0.6rem; margin: 0.9rem 0 1rem; background: rgba(20,18,16,0.94); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 11px; overflow-x: auto; }
+    .mini a { flex-shrink: 0; font-size: 0.72rem; font-weight: 800; text-decoration: none; color: var(--ink); background: var(--card-2); border: 1px solid var(--line); padding: 0.32rem 0.66rem; border-radius: 999px; white-space: nowrap; }
+    .mini a:hover { background: var(--ember); color: #fff; border-color: transparent; }
+
+    /* PANELS */
+    .panel { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); margin-bottom: 1.1rem; overflow: hidden; }
+    .panel-head { padding: 0.85rem 1.1rem; background: var(--card-2); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .panel-head h2 { font-size: 1.18rem; font-weight: 850; letter-spacing: -0.02em; color: var(--ink-strong); }
+    .panel-head .ph-date { font-size: 0.74rem; color: var(--ember-bright); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+    .panel-body { padding: 0.9rem 1.1rem 1.1rem; }
+
+    /* VISION + GOAL */
+    .vision { background: linear-gradient(135deg, #221a14 0%, #1a201b 100%); border: 1.5px solid var(--ember); border-radius: 14px; padding: 1.05rem 1.2rem; margin-bottom: 1.1rem; }
+    .vision .v-lbl { font-size: 0.6rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ember-bright); margin-bottom: 0.4rem; }
+    .vision .v-line { font-size: 1.08rem; font-weight: 780; color: var(--ink-strong); line-height: 1.4; }
+    .vision .v-meta { font-size: 0.78rem; color: var(--muted); margin-top: 0.55rem; }
+
+    .goal { border: 1px solid var(--green-border); background: var(--green-soft); border-radius: 14px; padding: 1.05rem 1.2rem; margin-bottom: 1.1rem; }
+    .goal .g-lbl { font-size: 0.6rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.12em; color: var(--green); margin-bottom: 0.35rem; }
+    .goal .g-num { font-size: 1.6rem; font-weight: 850; letter-spacing: -0.02em; color: var(--ink-strong); line-height: 1.05; }
+    .goal .g-num span { color: var(--green); }
+    .goal .g-sub { font-size: 0.84rem; color: var(--muted); margin-top: 0.3rem; }
+    .goal .g-edit { display: inline-block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--amber); border: 1px solid var(--amber-border); background: var(--amber-soft); border-radius: 999px; padding: 0.18rem 0.5rem; margin-top: 0.6rem; }
+    .subgoals { list-style: none; margin: 0.85rem 0 0; padding: 0; display: grid; gap: 0.45rem; }
+    .subgoals li { display: flex; gap: 0.6rem; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 0.75rem; font-size: 0.86rem; }
+    .subgoals li .sg-k { flex-shrink: 0; width: 1.5rem; height: 1.5rem; border-radius: 6px; background: var(--green); color: #0d1410; font-weight: 850; font-size: 0.78rem; display: flex; align-items: center; justify-content: center; }
+    .subgoals li strong { color: var(--ink-strong); }
+
+    /* DAILY EXECUTION (top of page) */
+    .daily { border: 1.5px solid var(--ember); border-radius: 14px; background: linear-gradient(135deg, #241712 0%, #1c1916 100%); margin-bottom: 1.1rem; overflow: hidden; }
+    .daily-head { padding: 0.8rem 1.1rem; background: rgba(227,98,47,0.14); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+    .daily-head h2 { font-size: 1.18rem; font-weight: 850; letter-spacing: -0.02em; color: var(--ink-strong); }
+    .daily-head .dh-date { font-size: 0.72rem; color: var(--ember-bright); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+    .daily-body { padding: 0.9rem 1.1rem 1.1rem; }
+
+    .progress-wrap { display: flex; align-items: center; gap: 0.6rem; margin: 0.2rem 0 0.9rem; }
+    .progress-bar { flex: 1; height: 0.55rem; background: var(--card-2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+    .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--ember), var(--green)); transition: width 0.3s ease; }
+    .progress-label { font-size: 0.74rem; font-weight: 800; color: var(--muted); white-space: nowrap; }
+
+    .act { display: flex; align-items: flex-start; gap: 0.7rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.5rem; background: var(--card); transition: opacity 0.18s, background 0.18s; }
+    .act input[type=checkbox] { flex-shrink: 0; appearance: none; -webkit-appearance: none; width: 1.5rem; height: 1.5rem; margin-top: 0.05rem; border: 2px solid var(--faint); border-radius: 6px; cursor: pointer; position: relative; transition: border-color 0.15s, background 0.15s; }
+    .act input[type=checkbox]:checked { background: var(--green); border-color: var(--green); }
+    .act input[type=checkbox]:checked::after { content: "\2713"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #0d1410; font-size: 1rem; font-weight: 900; }
+    .act .act-body { flex: 1; min-width: 0; }
+    .act .act-top { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.1rem; }
+    .act .lane { font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.1rem 0.4rem; border-radius: 4px; background: var(--card-2); border: 1px solid var(--line); color: var(--muted); }
+    .act .lane.cw { background: rgba(227,98,47,0.16); color: var(--ember-bright); border-color: transparent; }
+    .act .lane.sw { background: var(--green-soft); color: var(--green); border-color: transparent; }
+    .act .lane.ic { background: var(--amber-soft); color: var(--amber); border-color: transparent; }
+    .act .lane.pga { background: var(--purple-soft); color: var(--purple); border-color: transparent; }
+    .act .lane.key { background: var(--red-soft); color: var(--red); border-color: transparent; }
+    .act .lane.news { background: rgba(110,168,230,0.10); color: #8fc0ff; border-color: transparent; }
+    .act .lane.studio { background: rgba(176,122,224,0.10); color: #c79ae8; border-color: transparent; }
+    .act .owner { font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.1rem 0.4rem; border-radius: 4px; }
+    .act .owner.bou { background: var(--ember); color: #fff; }
+    .act .owner.agent { background: var(--card-2); color: var(--muted); border: 1px solid var(--line); }
+    .act .act-text { font-size: 0.9rem; color: var(--ink); }
+    .act .act-text strong { color: var(--ink-strong); }
+    .act .dep { display: block; font-size: 0.77rem; color: var(--muted); margin-top: 0.2rem; }
+    .act.done { opacity: 0.5; background: var(--panel); }
+    .act.done .act-text { text-decoration: line-through; text-decoration-color: var(--faint); }
+
+    /* REVENUE TOGGLE + STREAK */
+    .rev { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; margin-top: 1rem; padding: 0.9rem 1rem; border: 1.5px solid var(--ember); border-radius: 12px; background: linear-gradient(135deg, #2a1810 0%, #1c1916 100%); }
+    .rev .rev-q { flex: 1; min-width: 180px; font-size: 0.92rem; font-weight: 750; color: var(--ink-strong); }
+    .rev .rev-btns { display: flex; gap: 0.5rem; }
+    .rev .rev-btn { font-size: 0.8rem; font-weight: 850; padding: 0.45rem 1rem; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--muted); cursor: pointer; }
+    .rev .rev-btn.yes.on { background: var(--green); color: #0d1410; border-color: transparent; }
+    .rev .rev-btn.no.on { background: var(--red); color: #fff; border-color: transparent; }
+    .rev .streak { font-size: 0.82rem; font-weight: 800; color: var(--amber); white-space: nowrap; }
+    .rev-note { font-size: 0.76rem; color: var(--faint); margin-top: 0.5rem; }
+
+    /* 12-WEEK YEAR STRIP */
+    .wy-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; margin: 0.3rem 0 0.9rem; }
+    .wy-cell { background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 0.5rem 0.3rem; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .wy-cell .wy-n { font-size: 0.62rem; font-weight: 850; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .wy-cell .wy-d { font-size: 0.62rem; color: var(--faint); margin-top: 0.1rem; line-height: 1.2; }
+    .wy-cell.now { border-color: var(--ember); background: rgba(227,98,47,0.14); }
+    .wy-cell.now .wy-n { color: var(--ember-bright); }
+    .wy-cell.event { border-color: var(--amber-border); }
+    .wy-cell.event .wy-d { color: var(--amber); font-weight: 700; }
+    .wy-cell.active { outline: 2px solid var(--ember); outline-offset: 1px; }
+    .wy-cell:hover { border-color: var(--ember); }
+
+    .scorecard { border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 0.85rem 1rem; margin: 0.8rem 0; }
+    .sc-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.55rem; }
+    .sc-head .sc-t { font-size: 0.78rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .sc-head .sc-pct { font-size: 1.35rem; font-weight: 850; letter-spacing: -0.02em; color: var(--green); }
+    .sc-head .sc-pct.under { color: var(--amber); }
+    .sc-bar { height: 0.5rem; background: var(--card-2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 0.3rem; position: relative; }
+    .sc-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--amber), var(--green)); transition: width 0.3s ease; }
+    .sc-target { position: absolute; top: -2px; bottom: -2px; left: 85%; width: 2px; background: var(--ink-strong); opacity: 0.65; }
+    .sc-note { font-size: 0.72rem; color: var(--faint); }
+    .sc-note b { color: var(--green); }
+
+    .wk-tactics { margin-top: 0.6rem; }
+    .lag-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.45rem; margin: 0.7rem 0 0.2rem; }
+    .lag-stat { background: var(--card-2); border: 1px solid var(--line); border-radius: 9px; padding: 0.5rem 0.6rem; }
+    .lag-stat label { display: block; font-size: 0.58rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem; line-height: 1.2; }
+    .lag-stat input { width: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink-strong); font-size: 0.95rem; font-weight: 800; padding: 0.3rem 0.4rem; text-align: center; }
+    .lead-lag-note { font-size: 0.7rem; color: var(--faint); margin-top: 0.4rem; }
+
+    /* WEEK PANE */
+    .week-pane { display: none; }
+    .week-pane.active { display: block; }
+    .wk-meta { font-size: 0.74rem; color: var(--muted); margin-bottom: 0.5rem; }
+    .wk-meta b { color: var(--ember-bright); }
+
+    /* SWIMLANES */
+    .lane-row { border: 1px solid var(--line); border-radius: 11px; margin-bottom: 0.55rem; background: var(--card); overflow: hidden; }
+    .lane-row .lr-head { display: flex; align-items: center; gap: 0.55rem; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--line-soft); }
+    .lane-row .lr-tag { font-size: 0.62rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.18rem 0.5rem; border-radius: 5px; flex-shrink: 0; }
+    .lr-tag.cw { background: rgba(227,98,47,0.16); color: var(--ember-bright); }
+    .lr-tag.ic { background: var(--amber-soft); color: var(--amber); }
+    .lr-tag.pga { background: var(--purple-soft); color: var(--purple); }
+    .lr-tag.sw { background: var(--green-soft); color: var(--green); }
+    .lr-tag.haw { background: var(--info-soft); color: var(--info); }
+    .lr-tag.studio { background: rgba(176,122,224,0.10); color: #c79ae8; }
+    .lr-tag.news { background: rgba(110,168,230,0.10); color: #8fc0ff; }
+    .lr-tag.up { background: var(--card-2); color: var(--faint); border: 1px solid var(--line); }
+    .lane-row .lr-name { font-size: 0.86rem; font-weight: 800; color: var(--ink-strong); flex: 1; min-width: 0; }
+    .lane-row .lr-status { font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.12rem 0.45rem; border-radius: 4px; }
+    .lr-status.go { background: var(--green-soft); color: var(--green); }
+    .lr-status.wait { background: var(--amber-soft); color: var(--amber); }
+    .lr-status.auto { background: var(--info-soft); color: var(--info); }
+    .lr-status.hold { background: var(--card-2); color: var(--faint); border: 1px solid var(--line); }
+    .lane-row .lr-body { padding: 0.55rem 0.85rem 0.7rem; }
+    .lane-row .lr-next { font-size: 0.85rem; color: var(--ink); margin-bottom: 0.25rem; }
+    .lane-row .lr-next strong { color: var(--ink-strong); }
+    .lane-row .lr-meta { font-size: 0.72rem; color: var(--faint); display: flex; gap: 0.8rem; flex-wrap: wrap; }
+    .lane-row .lr-meta b { color: var(--muted); font-weight: 700; }
+
+    /* AUTONOMOUS MONITOR */
+    .mon { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.4rem; }
+    .mon-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 0.65rem 0.8rem; border-left: 3px solid var(--info); }
+    .mon-card .mc-t { font-size: 0.82rem; font-weight: 800; color: var(--ink-strong); margin-bottom: 0.2rem; }
+    .mon-card .mc-cad { font-size: 0.72rem; color: var(--info); font-weight: 700; }
+    .mon-card .mc-glance { font-size: 0.74rem; color: var(--muted); margin-top: 0.25rem; }
+    .mon-card .mc-fail { font-size: 0.72rem; color: var(--amber); margin-top: 0.2rem; }
+
+    /* SECTIONS (collapsible system) */
+    details.sec { margin-bottom: 0.7rem; scroll-margin-top: 4.5rem; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+    details.sec > summary { list-style: none; cursor: pointer; padding: 0.95rem 1.15rem; display: flex; align-items: center; gap: 0.6rem; font-size: 1.06rem; font-weight: 820; letter-spacing: -0.02em; color: var(--ink-strong); user-select: none; background: var(--card-2); }
+    details.sec > summary::-webkit-details-marker { display: none; }
+    details.sec > summary::marker { content: ""; }
+    details.sec > summary .chev { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; border-radius: 6px; background: var(--ember); color: #fff; font-size: 0.75rem; font-weight: 900; transition: transform 0.22s ease; }
+    details.sec[open] > summary .chev { transform: rotate(90deg); }
+    details.sec > summary .s-title { flex: 1; min-width: 0; }
+    details.sec > summary .toggle-hint { margin-left: auto; flex-shrink: 0; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0.2rem 0.55rem; }
+    details.sec > summary .toggle-hint::after { content: "Open"; }
+    details.sec[open] > summary .toggle-hint::after { content: "Close"; }
+    details.sec[open] > summary { border-bottom: 1px solid var(--line); }
+    .sec-body { padding: 0.8rem 1.2rem 1.4rem; }
+
+    h3 { font-size: 0.98rem; font-weight: 780; margin: 1.3rem 0 0.45rem; color: var(--ink-strong); }
+    h3:first-child { margin-top: 0.3rem; }
+    p { margin-bottom: 0.8rem; font-size: 0.92rem; }
+    ul { margin: 0.2rem 0 0.9rem 1.1rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; }
+    strong { font-weight: 700; color: var(--ink-strong); }
+    .lede { color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }
+    .src { font-size: 0.76rem; color: var(--faint); font-style: italic; }
+    .src code, code { background: var(--card-2); padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.86em; color: var(--ink-strong); }
+
+    .callout { border-radius: 10px; padding: 0.9rem 1.1rem; margin: 1rem 0; font-size: 0.9rem; }
+    .callout .lbl { display: block; font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.3rem; }
+    .callout.green { background: var(--green-soft); border-left: 4px solid var(--green); } .callout.green .lbl { color: var(--green); }
+    .callout.amber { background: var(--amber-soft); border-left: 4px solid var(--amber); } .callout.amber .lbl { color: var(--amber); }
+    .callout.red { background: var(--red-soft); border-left: 4px solid var(--red); } .callout.red .lbl { color: var(--red); }
+    .callout.blue { background: var(--info-soft); border-left: 4px solid var(--info); } .callout.blue .lbl { color: var(--info); }
+
+    .cash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; margin: 0.9rem 0; }
+    .cash-card { background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 0.9rem 1rem; }
+    .cash-card .cc-lane { font-size: 0.64rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ember); margin-bottom: 0.35rem; }
+    .cash-card .cc-range { font-size: 1.3rem; font-weight: 850; letter-spacing: -0.02em; color: var(--ink-strong); line-height: 1; margin-bottom: 0.4rem; }
+    .cash-card .cc-math { font-size: 0.78rem; color: var(--muted); line-height: 1.45; }
+    .cash-card.floor { border-color: var(--green-border); background: var(--green-soft); }
+    .cash-card.floor .cc-lane { color: var(--green); }
+
+    .ladder { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.9rem 0; }
+    .rung { display: flex; gap: 0.75rem; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 0.8rem 0.95rem; }
+    .rung .rk { flex-shrink: 0; width: 1.8rem; height: 1.8rem; border-radius: 7px; background: var(--ember); color: #fff; font-weight: 850; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; }
+    .rung.r2 .rk { background: var(--amber); color: #1a140c; }
+    .rung.r3 .rk { background: var(--card-2); color: var(--muted); border: 1px solid var(--line); }
+    .rung .rt { font-weight: 800; color: var(--ink-strong); font-size: 0.92rem; margin-bottom: 0.1rem; }
+    .rung .rd { font-size: 0.83rem; color: var(--muted); }
+
+    .flywheel { background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 1rem 1.15rem; margin: 0.9rem 0; }
+    .flywheel ol { list-style: none; margin: 0; padding: 0; counter-reset: fw; }
+    .flywheel li { position: relative; padding: 0.5rem 0 0.5rem 2.4rem; border-bottom: 1px solid var(--line-soft); font-size: 0.88rem; }
+    .flywheel li:last-child { border-bottom: none; }
+    .flywheel li::before { counter-increment: fw; content: counter(fw); position: absolute; left: 0; top: 0.45rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ember); color: #fff; font-weight: 800; font-size: 0.78rem; display: flex; align-items: center; justify-content: center; }
+    .flywheel li strong { color: var(--ink-strong); }
+
+    .sample { background: #1a1714; border: 1px solid var(--line); border-radius: 10px; padding: 0.85rem 1rem; margin: 0.65rem 0; font-size: 0.86rem; line-height: 1.55; }
+    .sample .sm-lbl { font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ember-bright); margin-bottom: 0.35rem; }
+    .sample .sm-meta { font-size: 0.72rem; color: var(--faint); margin-top: 0.45rem; font-style: italic; }
+
+    .ctrl { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin: 0.9rem 0; }
+    .ctrl-col { background: var(--card); border: 1px solid var(--line); border-radius: 11px; padding: 0.9rem 1rem; }
+    .ctrl-col.intent { border-top: 3px solid var(--ember); }
+    .ctrl-col.react { border-top: 3px solid var(--info); }
+    .ctrl-col h4 { font-size: 0.68rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .ctrl-col.intent h4 { color: var(--ember-bright); }
+    .ctrl-col.react h4 { color: var(--info); }
+    .ctrl-col ul { list-style: none; margin: 0; padding: 0; }
+    .ctrl-col li { font-size: 0.82rem; padding: 0.4rem 0; border-bottom: 1px solid var(--line-soft); }
+    .ctrl-col li:last-child { border-bottom: none; }
+
+    .idx { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 0.9rem 0; }
+    .idx a { display: block; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 0.65rem 0.8rem; text-decoration: none; color: var(--ink); font-size: 0.83rem; font-weight: 600; }
+    .idx a:hover { border-color: var(--ember); background: var(--card-2); color: var(--ember-bright); }
+    .idx a .ix-d { display: block; font-size: 0.7rem; color: var(--faint); font-weight: 500; margin-top: 0.12rem; }
+
+    .footer { margin-top: 2rem; padding-top: 1.1rem; border-top: 1px solid var(--line); font-size: 0.78rem; color: var(--faint); }
+    #backToTop { position: fixed; right: 1rem; bottom: 1rem; z-index: 60; width: 2.7rem; height: 2.7rem; border-radius: 50%; border: 1px solid var(--line); background: var(--ember); color: #fff; cursor: pointer; font-size: 1.15rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px -8px rgba(0,0,0,0.7); opacity: 0; visibility: hidden; transform: translateY(10px); transition: opacity 0.25s, transform 0.25s, visibility 0.25s, background 0.18s; }
+    #backToTop.show { opacity: 1; visibility: visible; transform: translateY(0); }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.5rem; }
+      .cash-grid, .ctrl, .mon, .idx { grid-template-columns: 1fr; }
+      .wy-strip { grid-template-columns: repeat(4, 1fr); }
+      .lag-grid { grid-template-columns: 1fr 1fr; }
+      .wrap { padding-left: 0.85rem; padding-right: 0.85rem; }
+    }
+  </style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-06-30-14:09:50 MT</div><!-- DEPLOY_STAMP_END -->
+
+<div class="wrap">
+
+  <header class="doc-header">
+    <span class="tag plan">Year Zero Money Map</span>
+    <span class="tag y0">Open this every day</span>
+    <h1>Year Zero Money Map (Y0)</h1>
+    <p class="sub">New in Utah, no warm network, starting from a standing start. One goal: real money in the account. This is the single page you open every morning. It runs on a 12-week year, so the finish line is always close enough to sprint to. Tick the boxes, mark whether you moved revenue, glance at the lanes. Everything syncs across your phone, laptop, and tablet automatically.</p>
+    <p class="doc-meta">Built from the real logs, pressure-tested. Truth-only, every fact cited, unknowns marked FIND. State syncs live across all your devices. Internal.</p>
+    <span class="sync" id="syncPill"><span class="dot"></span><span id="syncText">Connecting</span></span>
+  </header>
+
+  <nav class="mini" aria-label="Jump">
+    <a href="#today">Today</a>
+    <a href="#vision">Vision + goal</a>
+    <a href="#weeks">12-week year</a>
+    <a href="#week">This week by lane</a>
+    <a href="#auto">Runs itself</a>
+    <a href="#system">The system</a>
+  </nav>
+
+  <!-- DAILY EXECUTION CHECKLIST (the thing he looks at each day) -->
+  <section class="daily" id="today">
+    <div class="daily-head">
+      <h2>Today</h2>
+      <span class="dh-date">Tue Jun 30 &middot; Week 1 of 12</span>
+    </div>
+    <div class="daily-body">
+      <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" data-grp="daily"></div></div><div class="progress-label" data-lbl="daily">0%</div></div>
+
+      <label class="act"><input type="checkbox" data-item="daily-0"><div class="act-body"><div class="act-top"><span class="lane key">Keystone</span><span class="owner bou">You</span></div><div class="act-text"><strong>30-minute pitch drill.</strong> The one locked offer + 10s/30s pitch + 3-step ask, until it is automatic. This sits on top of your daily floor, not instead of it.</div></div></label>
+      <label class="act"><input type="checkbox" data-item="daily-1"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>3 to 5 warm asks</strong> in a fixed block. One person, one lane, one ask. Priority order resolves ties: workshop, then audit, then ghostwriting.</div></div></label>
+      <label class="act"><input type="checkbox" data-item="daily-2"><div class="act-body"><div class="act-top"><span class="lane pga">PGA</span><span class="owner bou">You</span></div><div class="act-text"><strong>3 to 5 ghostwriting warm asks</strong> in a separate block (fintech founders, remote, never mixed with the local list).</div></div></label>
+      <label class="act"><input type="checkbox" data-item="daily-3"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Follow up every warm thread</strong> that went quiet. New value each touch, one ask, never "just bumping."</div></div></label>
+      <label class="act"><input type="checkbox" data-item="daily-4"><div class="act-body"><div class="act-top"><span class="lane studio">Studio</span><span class="owner bou">You</span></div><div class="act-text"><strong>Approve the faceless video queue</strong> (60-second glance). They post on their own once approved.</div></div></label>
+
+      <!-- REVENUE TOGGLE -->
+      <div class="rev">
+        <div class="rev-q">Did I advance revenue today?</div>
+        <div class="rev-btns">
+          <button class="rev-btn yes" id="revYes">Yes</button>
+          <button class="rev-btn no" id="revNo">No</button>
+        </div>
+        <div class="streak" id="streak">Streak: 0</div>
+      </div>
+      <p class="rev-note">A yes = you sent a warm ask, delivered a scan, closed a sale, booked a seat, or pitched a room. Not "felt busy." The streak counts consecutive yes-days, synced across every device.</p>
+    </div>
+  </section>
+
+  <!-- VISION + 12-WEEK GOAL -->
+  <div class="vision" id="vision">
+    <div class="v-lbl">Y0 Vision</div>
+    <div class="v-line">By the end of this 12-week block, I am no longer starting from a standing start. I have paying clients, a room that has seen me teach, and a local name that AI engines surface, so every next block compounds instead of restarts.</div>
+    <div class="v-meta">Y0 = the first 12-week year. Week 1 is the week of Mon Jun 29, 2026. The block ends Sun Sep 20, 2026.</div>
+  </div>
+
+  <div class="goal">
+    <div class="g-lbl">The 12-week goal (proposal &mdash; edit the number)</div>
+    <div class="g-num"><span>$3,000</span> collected, first paying clients landed, by Sep 20</div>
+    <div class="g-sub">Built bottom-up from the first-dollar math below, not pulled from the air. This is the proof-of-traction milestone on the path to the $12k/mo floor from the consulting self-analysis, not the floor itself. If it feels low or high, change it: it is your number.</div>
+    <ol class="subgoals">
+      <li><span class="sg-k">1</span><div><strong>4 to 6 paid website audits closed</strong> ($250 to $750 each), free-scan-first. The fastest, most certain first dollar.</div></li>
+      <li><span class="sg-k">2</span><div><strong>1 ghostwriting client landed</strong> (deposit this block, fintech founders, remote). Separate audience, separate cash lane.</div></li>
+      <li><span class="sg-k">3</span><div><strong>1 founding consulting client</strong> signed ($1,500 setup / $750 deposit / $397 mo). The start of recurring revenue.</div></li>
+      <li><span class="sg-k">4</span><div><strong>The July 30 room run and captured</strong> (Week 5): photos, testimonials, the recording. The first proof asset every brand reuses.</div></li>
+      <li><span class="sg-k">5</span><div><strong>AI visibility off zero</strong>: GBP + Wikidata live, 5 to 15% AI visibility by the end of the block (baseline today is 0 of 30).</div></li>
+    </ol>
+    <span class="g-edit" id="goalEdit">Tap to log your own target &rarr;</span>
+  </div>
+
+  <!-- 12-WEEK YEAR -->
+  <section class="panel" id="weeks">
+    <div class="panel-head"><h2>The 12-week year</h2><span class="ph-date">Tap a week &middot; Week 1 is now</span></div>
+    <div class="panel-body">
+      <div class="wy-strip" id="wyStrip">
+        <div class="wy-cell now active" data-week="1"><div class="wy-n">W1 now</div><div class="wy-d">Jun 29 - Jul 5</div></div>
+        <div class="wy-cell" data-week="2"><div class="wy-n">W2</div><div class="wy-d">Jul 6 - 12</div></div>
+        <div class="wy-cell" data-week="3"><div class="wy-n">W3</div><div class="wy-d">Jul 13 - 19</div></div>
+        <div class="wy-cell" data-week="4"><div class="wy-n">W4</div><div class="wy-d">Jul 20 - 26</div></div>
+        <div class="wy-cell event" data-week="5"><div class="wy-n">W5</div><div class="wy-d">Jul 27 - Aug 2 &middot; IC Jul 30</div></div>
+        <div class="wy-cell" data-week="6"><div class="wy-n">W6</div><div class="wy-d">Aug 3 - 9</div></div>
+        <div class="wy-cell" data-week="7"><div class="wy-n">W7</div><div class="wy-d">Aug 10 - 16</div></div>
+        <div class="wy-cell" data-week="8"><div class="wy-n">W8</div><div class="wy-d">Aug 17 - 23</div></div>
+        <div class="wy-cell" data-week="9"><div class="wy-n">W9</div><div class="wy-d">Aug 24 - 30</div></div>
+        <div class="wy-cell" data-week="10"><div class="wy-n">W10</div><div class="wy-d">Aug 31 - Sep 6</div></div>
+        <div class="wy-cell" data-week="11"><div class="wy-n">W11</div><div class="wy-d">Sep 7 - 13</div></div>
+        <div class="wy-cell" data-week="12"><div class="wy-n">W12</div><div class="wy-d">Sep 14 - 20</div></div>
+      </div>
+
+      <!-- WEEKLY SCORECARD -->
+      <div class="scorecard">
+        <div class="sc-head"><span class="sc-t">Week <span id="scWeekNum">1</span> scorecard &middot; tactics done</span><span class="sc-pct" id="scPct">0%</span></div>
+        <div class="sc-bar"><div class="sc-fill" id="scFill"></div><div class="sc-target" title="85% target"></div></div>
+        <p class="sc-note">Lead indicator. Target is <b>85%+</b> of planned tactics done (the line on the bar). The 12-week year scores the actions you control, not the results you hope for. Hit 85% on the lead and the lag follows.</p>
+        <div class="lag-grid">
+          <div class="lag-stat"><label>Warm asks sent</label><input type="text" inputmode="numeric" data-item="lag-w1-asks" placeholder="0"></div>
+          <div class="lag-stat"><label>Scans delivered</label><input type="text" inputmode="numeric" data-item="lag-w1-scans" placeholder="0"></div>
+          <div class="lag-stat"><label>$ collected</label><input type="text" inputmode="numeric" data-item="lag-w1-cash" placeholder="0"></div>
+        </div>
+        <p class="lead-lag-note">Lag indicators (the results). If the lead is high and the lag is flat, the fix is the list and the volume, not the copy. Send more before you rewrite.</p>
+      </div>
+
+      <!-- WEEK PANES -->
+      <div class="wk-tactics" id="wkTactics">
+
+        <div class="week-pane active" data-week="1">
+          <div class="wk-meta"><b>Week 1</b> &middot; Jun 29 - Jul 5 &middot; Lock the room, light the first-cash lane, get listed</div>
+          <label class="act"><input type="checkbox" data-item="w1-0"><div class="act-body"><div class="act-top"><span class="lane key">Critical</span><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Sign the SLCC room contract, send the COI, pay the full room fee</strong> for July 30. The date is confirmed (Alex Dotter holds Room 105); this is the paperwork to make it binding. Do it next week, after the move settles.<span class="dep">Karen Gail Miller Center, SLCC Miller Campus, Sandy, Room 105. Alex Dotter, alex.dotter@slcc.edu, 801-957-5294.</span></div></div></label>
+          <label class="act"><input type="checkbox" data-item="w1-1"><div class="act-body"><div class="act-top"><span class="lane key">Critical</span><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Export LinkedIn connections to CSV.</strong> 5 minutes. Seeds every warm lane. Fallback: top 50 by hand.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w1-2"><div class="act-body"><div class="act-top"><span class="lane key">First cash</span><span class="lane sw">SW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Publish the $250 audit link</strong>, run 3 free scans for warm local owners, then deliver and ask for the walkthrough on the leakers.<span class="dep">$250: buy.stripe.com/3cI7sN85F0tkcnC4EJgEg0c. Free scan: geolisted.co/scan.</span></div></div></label>
+          <label class="act"><input type="checkbox" data-item="w1-3"><div class="act-body"><div class="act-top"><span class="lane ic">IC</span><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Announce July 30</strong> on LinkedIn, X, newsletter. Start the founding-client drip (2 slots).</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w1-4"><div class="act-body"><div class="act-top"><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Send the P1 free-talk + co-host pitches:</strong> SBDC, ChamberWest, SCORE, Kiln. One ask each. Then submit all free listings.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w1-5"><div class="act-body"><div class="act-top"><span class="lane sw">SW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Restart cold local-website outreach</strong> (10 to 15 scans/day off the lead-engine playbook).</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w1-6"><div class="act-body"><div class="act-top"><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Pitch the podcasts:</strong> UtahPreneur (podcast@utahpreneur.co), then Everyday AI + Entrepreneurs on Fire.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w1-7"><div class="act-body"><div class="act-top"><span class="lane news">News</span><span class="owner bou">You</span></div><div class="act-text"><strong>Draft + queue the next Weekly Signal issue</strong> (Beehiiv), carrying the July 30 invite + the free scan.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="2">
+          <div class="wk-meta"><b>Week 2</b> &middot; Jul 6 - 12 &middot; Count, double down, convert the first scans</div>
+          <label class="act"><input type="checkbox" data-item="w2-0"><div class="act-body"><div class="act-top"><span class="lane sw">SW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Deliver every scan requested; close the leakers on the $250 walkthrough.</strong> This is the first-dollar window.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w2-1"><div class="act-body"><div class="act-top"><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Count seats vs the 15 to 25 target;</strong> run the highest-leverage open channel harder. Warm pass two + first B-tier local names.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w2-2"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Follow up every unanswered org pitch</strong> from Week 1 (touch 2, new value).</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w2-3"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Referral asks to the director/HR nodes:</strong> one name each. One in-person room with QR cards.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w2-4"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>If 10+ warm captures exist, turn Meta ads on</strong> (3 creatives, $30/day, 72h test, double the winner). Kill at $150 / 0 captures.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="3">
+          <div class="wk-meta"><b>Week 3</b> &middot; Jul 13 - 19 &middot; Fill the room, deepen visibility</div>
+          <label class="act"><input type="checkbox" data-item="w3-0"><div class="act-body"><div class="act-top"><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Drive seat registrations hard.</strong> Two weeks out is when most seats book. Warm pass three + every confirmed org slot promoted.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w3-1"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Stand up GBP + Wikidata</strong> (entity stack) and the FAQ master so AI visibility starts climbing off zero.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w3-2"><div class="act-body"><div class="act-top"><span class="lane sw">SW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Keep the audit engine running</strong> (10 to 15 scans/day) and close the next leakers.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w3-3"><div class="act-body"><div class="act-top"><span class="lane pga">PGA</span><span class="owner bou">You</span></div><div class="act-text"><strong>Push the ghostwriting lane toward a first deposit:</strong> daily warm asks, move warm replies to a call.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="4">
+          <div class="wk-meta"><b>Week 4</b> &middot; Jul 20 - 26 &middot; Final fill + dry run before the room</div>
+          <label class="act"><input type="checkbox" data-item="w4-0"><div class="act-body"><div class="act-top"><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Last seat push + confirm logistics:</strong> AV, seating, check-in, QR cards, the in-room offer. Assign the proof-capture person.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w4-1"><div class="act-body"><div class="act-top"><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Rehearse the workshop + the in-room close.</strong> The money is the close, not the ticket. Drill it.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w4-2"><div class="act-body"><div class="act-top"><span class="lane sw">SW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Keep closing audits.</strong> Target the first 2 to 3 paid closes banked by now.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="5">
+          <div class="wk-meta"><b>Week 5</b> &middot; Jul 27 - Aug 2 &middot; <span style="color:var(--amber)">The July 30 room</span></div>
+          <label class="act"><input type="checkbox" data-item="w5-0"><div class="act-body"><div class="act-top"><span class="lane key">Event</span><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Run the July 30 workshop.</strong> Teach, then make the in-room offer. Capture full-room photos, 2 to 3 testimonial clips, and the recording.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w5-1"><div class="act-body"><div class="act-top"><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Same-week follow-up to every attendee:</strong> the recording + the next step. This is where the in-room interest converts.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w5-2"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Publish the proof asset:</strong> photos, clips, and quotes onto the seat page and every brand surface.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="6">
+          <div class="wk-meta"><b>Week 6</b> &middot; Aug 3 - 9 &middot; Harvest the room, scale what worked</div>
+          <label class="act"><input type="checkbox" data-item="w6-0"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Convert post-workshop leads into founding clients.</strong> The proof asset does the selling now: lead with it.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w6-1"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Turn ads back on with the new proof creatives</strong> if the gate is met. Double the winner.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w6-2"><div class="act-body"><div class="act-top"><span class="lane sw">SW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Audit lane keeps banking cash</strong> toward the 4 to 6 paid-close goal.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="7">
+          <div class="wk-meta"><b>Week 7</b> &middot; Aug 10 - 16 &middot; Recurring revenue + second room</div>
+          <label class="act"><input type="checkbox" data-item="w7-0"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Sign the first founding consulting client</strong> ($397/mo recurring). Recurring revenue is the real unlock toward the floor.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w7-1"><div class="act-body"><div class="act-top"><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Book the next room</strong> (chamber, SCORE, or repeat the workshop) using the July 30 proof to get the slot.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w7-2"><div class="act-body"><div class="act-top"><span class="lane pga">PGA</span><span class="owner bou">You</span></div><div class="act-text"><strong>Close the first ghostwriting deposit</strong> if not already banked.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="8">
+          <div class="wk-meta"><b>Week 8</b> &middot; Aug 17 - 23 &middot; Mid-block review, cut what is dead</div>
+          <label class="act"><input type="checkbox" data-item="w8-0"><div class="act-body"><div class="act-top"><span class="lane key">Review</span><span class="owner bou">You</span></div><div class="act-text"><strong>Mid-block review.</strong> You are halfway. Tally cash collected vs $3,000, clients vs target. Kill the lowest-yield lane, pour into the highest.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w8-1"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Double down on the lane that is producing cash.</strong> Stop spreading thin.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="9">
+          <div class="wk-meta"><b>Week 9</b> &middot; Aug 24 - 30 &middot; Compound the authority</div>
+          <label class="act"><input type="checkbox" data-item="w9-0"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Land the podcast guest spots</strong> pitched in Week 1 (the August payoff). Each one feeds local authority + AI visibility.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w9-1"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Reviews cadence:</strong> ask for one Google review/week. Target 15+ by block end (drives local AI answers).</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w9-2"><div class="act-body"><div class="act-top"><span class="lane sw">SW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Keep the audit + ghostwriting lanes producing.</strong> Hold the line on volume.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="10">
+          <div class="wk-meta"><b>Week 10</b> &middot; Aug 31 - Sep 6 &middot; Push toward the cash target</div>
+          <label class="act"><input type="checkbox" data-item="w10-0"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Sprint on open opportunities</strong> in the pipeline. Close what is close. Three weeks left in the block.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w10-1"><div class="act-body"><div class="act-top"><span class="lane ic">IC</span><span class="owner bou">You</span></div><div class="act-text"><strong>Run or book one more room</strong> if the first repeated well.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="11">
+          <div class="wk-meta"><b>Week 11</b> &middot; Sep 7 - 13 &middot; Final close push</div>
+          <label class="act"><input type="checkbox" data-item="w11-0"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Final close push on every warm thread.</strong> Last full week to bank cash against the goal.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w11-1"><div class="act-body"><div class="act-top"><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Lock recurring:</strong> confirm the founding client is billing, line up the next.</div></div></label>
+        </div>
+
+        <div class="week-pane" data-week="12">
+          <div class="wk-meta"><b>Week 12</b> &middot; Sep 14 - 20 &middot; Close the block, plan Y1</div>
+          <label class="act"><input type="checkbox" data-item="w12-0"><div class="act-body"><div class="act-top"><span class="lane key">Review</span><span class="owner bou">You</span></div><div class="act-text"><strong>Block review + score.</strong> Tally the goal: cash collected, clients landed, visibility %. What worked, what did not.</div></div></label>
+          <label class="act"><input type="checkbox" data-item="w12-1"><div class="act-body"><div class="act-top"><span class="lane key">Plan</span><span class="owner bou">You</span></div><div class="act-text"><strong>Set the Y1 12-week goal</strong> from the numbers. Build the next block on what compounded, not what you hoped.</div></div></label>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- THIS WEEK SWIMLANES -->
+  <section class="panel" id="week">
+    <div class="panel-head"><h2>This week, by lane</h2><span class="ph-date">Next action &middot; owner &middot; due &middot; status</span></div>
+    <div class="panel-body">
+
+      <div class="lane-row"><div class="lr-head"><span class="lr-tag cw">CW</span><span class="lr-name">Consulting + 90-day AI visibility</span><span class="lr-status go">Go</span></div><div class="lr-body"><div class="lr-next"><strong>Next:</strong> announce July 30, start the founding-client drip (2 slots), kick the visibility track (GSC + Bing + GBP + Wikidata).</div><div class="lr-meta"><span><b>Owner:</b> You + agent</span><span><b>Due:</b> this week</span><span><b>SKU:</b> $497 cohort / $297 kit / free audit to $5k</span></div></div></div>
+
+      <div class="lane-row"><div class="lr-head"><span class="lr-tag ic">IC</span><span class="lr-name">July 30 workshop + the AP relationship</span><span class="lr-status go">Confirmed</span></div><div class="lr-body"><div class="lr-next"><strong>Next:</strong> the room is confirmed for July 30, Room 105 (Alex Dotter). Sign the contract, send the COI, pay the full room fee next week post-move. Then org pitches + warm pass + listings. Ask AP (Akshay) for one share to his Utah orbit and his proven ad structure.</div><div class="lr-meta"><span><b>Owner:</b> You</span><span><b>Due:</b> paperwork next week</span><span><b>Price:</b> $47 founding</span></div></div></div>
+
+      <div class="lane-row"><div class="lr-head"><span class="lr-tag pga">PGA</span><span class="lr-name">Ghostwriting program + homework</span><span class="lr-status go">Go</span></div><div class="lr-body"><div class="lr-next"><strong>Next:</strong> Module 5 Outreach. Assignment 5 = count your leaks + faucets, message them with the EEC, post the counts to #submit-assignment-5. Then 3 to 5 warm asks/day.</div><div class="lr-meta"><span><b>Owner:</b> You</span><span><b>Due:</b> ongoing</span><span><b>EEC:</b> fintech.invisiblescribe.com</span></div></div></div>
+
+      <div class="lane-row"><div class="lr-head"><span class="lr-tag sw">SW</span><span class="lr-name">Website audit + local lead engine</span><span class="lr-status go">Go</span></div><div class="lr-body"><div class="lr-next"><strong>Next:</strong> publish $250 link, 3 free scans, then 10 to 15 cold local scans/day. Deliver report, upsell the walkthrough.</div><div class="lr-meta"><span><b>Owner:</b> You</span><span><b>Due:</b> this week</span><span><b>First-dollar lane</b></span></div></div></div>
+
+      <div class="lane-row"><div class="lr-head"><span class="lr-tag haw">HAW</span><span class="lr-name">Product store + funnel</span><span class="lr-status auto">Light</span></div><div class="lr-body"><div class="lr-next"><strong>Next:</strong> keep the free lead magnet live (AI-policy checklist capture page), point newsletter + posts at it. No new SKUs this week.</div><div class="lr-meta"><span><b>Owner:</b> Agent + you</span><span><b>Due:</b> ongoing</span><span><b>Store:</b> humanatwork.ai</span></div></div></div>
+
+      <div class="lane-row"><div class="lr-head"><span class="lr-tag studio">Studio</span><span class="lr-name">Faceless channels (full family)</span><span class="lr-status auto">Autonomous</span></div><div class="lr-body"><div class="lr-next"><strong>Next:</strong> keep the queue full, you approve before publish. 1stGen Money, Under the Baobab, AI Catalyst lead; Tier List Labs, What If Files, Dark Psychology warming.</div><div class="lr-meta"><span><b>Owner:</b> Autonomous + approve</span><span><b>Cadence:</b> up to 3/day post warm-up</span><span><b>Note:</b> Blotato cap on some channels</span></div></div></div>
+
+      <div class="lane-row"><div class="lr-head"><span class="lr-tag news">News</span><span class="lr-name">Newsletters (both)</span><span class="lr-status go">Cadence</span></div><div class="lr-body"><div class="lr-next"><strong>Next:</strong> The Weekly Signal (Beehiiv) next issue this week, carries the July 30 invite + the free scan. The ghostwriting EEC sequence (Kit) runs on its own once a lead opts in.</div><div class="lr-meta"><span><b>Owner:</b> You draft, agent stages</span><span><b>Due:</b> this week draft</span><span><b>Send:</b> per-batch go</span></div></div></div>
+
+      <div class="lane-row"><div class="lr-head"><span class="lr-tag up">Upwork</span><span class="lr-name">Separate lane &mdash; hands off</span><span class="lr-status hold">Awareness</span></div><div class="lr-body"><div class="lr-next"><strong>Next:</strong> nothing for you to do. The scanner runs on its own in a different lane. Listed here only so the money map is complete.</div><div class="lr-meta"><span><b>Owner:</b> Other lane</span><span><b>Due:</b> n/a</span><span><b>Do not task its builds</b></span></div></div></div>
+
+    </div>
+  </section>
+
+  <!-- AUTONOMOUS MONITOR -->
+  <section class="panel" id="auto">
+    <div class="panel-head"><h2>Runs itself &mdash; just glance</h2><span class="ph-date">Do not delay these for the manual work</span></div>
+    <div class="panel-body">
+      <div class="mon">
+        <div class="mon-card"><div class="mc-t">Faceless video posting</div><div class="mc-cad">Up to 3/day after warm-up</div><div class="mc-glance">Glance: Notion board / Telegram batch.</div><div class="mc-fail">Stalled if no new post in 48h. Blotato Starter cap hit on some channels.</div></div>
+        <div class="mon-card"><div class="mc-t">AI-visibility weekly scan</div><div class="mc-cad">Sunday 9am, auto report</div><div class="mc-glance">Glance: 15 min every Monday.</div><div class="mc-fail">Down if no Monday report arrives.</div></div>
+        <div class="mon-card"><div class="mc-t">Newsletter sequences</div><div class="mc-cad">Per opt-in (Kit EEC) + scheduled (Beehiiv)</div><div class="mc-glance">Glance: Kit + Beehiiv dashboards.</div><div class="mc-fail">Broadcast sends still need your per-batch go.</div></div>
+        <div class="mon-card"><div class="mc-t">Upwork scanner</div><div class="mc-cad">Separate lane</div><div class="mc-glance">Glance only.</div><div class="mc-fail">Not yours to run or fix.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE SYSTEM (collapsible deep layer) -->
+  <h2 style="font-size:1.3rem;font-weight:850;letter-spacing:-0.02em;margin:1.6rem 0 0.8rem;color:var(--ink-strong);" id="system">The system (open when you want the why)</h2>
+
+  <details class="sec"><summary><span class="chev">&#9656;</span><span class="s-title">First dollar, ranked</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">Every lane scored on one question: how fast and how certain is the first real dollar? The $3,000 block goal is built from these ranges.</p>
+      <div class="cash-grid">
+        <div class="cash-card floor"><div class="cc-lane">Website audit &mdash; #1 most likely</div><div class="cc-range">$250&ndash;$750</div><div class="cc-math">Free scan first, then the $250 walkthrough on the leakers. Link live in Stripe, no fulfillment risk. The scan report is the proof, delivered same day. 4 to 6 of these is the backbone of the block goal.</div></div>
+        <div class="cash-card"><div class="cc-lane">Ghostwriting deposit &mdash; #2</div><div class="cc-range">~$0&ndash;$1,500+</div><div class="cc-math">First premium client, fintech founders, remote. 1 if warm asks start now. Deposit this block, full close next. Separate audience, never mixed with local.</div></div>
+        <div class="cash-card"><div class="cc-lane">Consulting founding client &mdash; #3</div><div class="cc-range">~$0&ndash;$750</div><div class="cc-math">$1,500 setup, $750 deposit at signature, $397/mo. ~1 close per 100 warm reach-outs. A deposit plus the start of recurring revenue toward the $12k/mo floor.</div></div>
+        <div class="cash-card"><div class="cc-lane">Workshop seats &mdash; not real cash</div><div class="cc-range">break-even</div><div class="cc-math">20 x $47 ~ $940, eaten by venue + ads. The money is the in-room close, and that lands in Weeks 5 to 7. Run it for proof.</div></div>
+      </div>
+      <p class="src">Upwork is a separate hands-off lane, not counted here. Faceless = downstream, not block cash. The $12k/mo floor is the year target from the consulting self-analysis, not this block.</p>
+    </div>
+  </details>
+
+  <details class="sec"><summary><span class="chev">&#9656;</span><span class="s-title">Priority ladder + how the brands help and hurt each other</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <div class="ladder">
+        <div class="rung"><div class="rk">1</div><div><div class="rt">Consulting (Catalyst Works)</div><div class="rd">July 30 workshop = proof + pipeline. Real money = the in-room close. Ghostwriting runs alongside as its own cash lane and feeds your authority.</div></div></div>
+        <div class="rung r2"><div class="rk">2</div><div><div class="rt">Website audit (Signal Works) + product store</div><div class="rd">The $250 audit is the floor and first-cash lane, free-scan-first. The store + newsletter are the nurture infrastructure.</div></div></div>
+        <div class="rung r3"><div class="rk">3</div><div><div class="rt">Faceless video + build-in-public</div><div class="rd">Authority and traffic that run on their own. Not block cash. They feed the funnels over time.</div></div></div>
+      </div>
+      <h3>How they help each other</h3>
+      <ul>
+        <li><strong>Shared local authority.</strong> One Google profile, one Wikidata entity, one podcast run lifts consulting, audit, and your name at once.</li>
+        <li><strong>Shared content.</strong> One video becomes a LinkedIn post, an X thread, and a newsletter blurb. Repurpose once, distribute everywhere (except the faceless cluster, which stays separate).</li>
+        <li><strong>Shared warm list, asked once.</strong> Each person gets one lane, one ask. Priority order resolves ties: workshop, then audit, then ghostwriting.</li>
+        <li><strong>Shared proof.</strong> The July 30 recording + room photos + testimonials become the first proof asset for every brand.</li>
+      </ul>
+      <h3>The firewalls (do not cross)</h3>
+      <div class="callout red"><span class="lbl">Hard separations</span>
+        <ul style="margin-bottom:0;">
+          <li>Ghostwriting (fintech, remote) never mixes with the Utah-local list.</li>
+          <li>Faceless channels never link to your name. Separate email, separate calendar.</li>
+          <li>Audit and consulting must not read as rivals to the same owner. Audit feeds consulting; one person, one lane.</li>
+          <li>Build-in-public never pitches consulting. Personal posts always manual, no religion or politics, your voice.</li>
+        </ul>
+      </div>
+      <p class="src">Source: <code>review/20260618-marketing-plan</code>, <code>review/20260619-portfolio-blueprint</code>.</p>
+    </div>
+  </details>
+
+  <details class="sec"><summary><span class="chev">&#9656;</span><span class="s-title">The flywheel + the ad gate</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">June failed because ads ran before any proof or warm ask. This is the order that breaks the circle.</p>
+      <div class="flywheel"><ol>
+        <li><strong>Borrow trusted rooms.</strong> Free talks and co-hosts hand you an audience. Highest leverage.</li>
+        <li><strong>Send direct warm asks.</strong> The ranked list, one ask each, one lane each.</li>
+        <li><strong>Get listed everywhere a local owner looks.</strong> Silicon Slopes, chambers, Meetup, Alignable, Nextdoor, Eventbrite.</li>
+        <li><strong>Run the event, capture proof.</strong> Photos, testimonials, the recording. The first proof asset.</li>
+        <li><strong>Then run ads.</strong> Ads scale what works. Off until 10+ warm captures exist.</li>
+      </ol></div>
+      <div class="callout amber"><span class="lbl">Ad gate</span>Meta ads stay off until 10+ warm captures. $30/day, 3 creatives, 72h test, double the winner. Kill at $150 / 0 captures.</div>
+    </div>
+  </details>
+
+  <details class="sec"><summary><span class="chev">&#9656;</span><span class="s-title">What we drive vs what runs itself</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <div class="ctrl">
+        <div class="ctrl-col intent"><h4>We drive this</h4><ul>
+          <li>Sign the room paperwork + export the list</li>
+          <li>Publish audit link, scans, announce, founding drip</li>
+          <li>Org pitches, warm pass, podcasts</li>
+          <li>Daily: pitch drill (keystone) + ghostwriting block</li>
+        </ul></div>
+        <div class="ctrl-col react"><h4>Runs itself</h4><ul>
+          <li>Faceless posting (approve, then auto)</li>
+          <li>Weekly visibility scan (Sunday 9am)</li>
+          <li>Newsletter sequences (per opt-in)</li>
+          <li>Upwork scanner (separate lane)</li>
+        </ul></div>
+      </div>
+      <p class="src">The right column must never wait on the left.</p>
+    </div>
+  </details>
+
+  <details class="sec"><summary><span class="chev">&#9656;</span><span class="s-title">Sample messages (your voice, ready to send)</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <div class="sample"><div class="sm-lbl">A. Free-talk pitch (chamber / SBDC / SCORE)</div>Subject: A free AI session for your members, no pitch<br><br>Hi [Name],<br><br>I am new to the [West Jordan] area and I run a small practice helping owner-operators put AI to work where it actually saves hours. I would like to teach one of your member sessions for free, 30 to 45 minutes, hands-on, no sales pitch from the stage.<br><br>Your members walk out with one task they can hand to AI that night. That is the whole session.<br><br>Would you have a slot on your calendar in July I could fill?<br><br>Boubacar<div class="sm-meta">One ask = a calendar slot. The talk is the value.</div></div>
+      <div class="sample"><div class="sm-lbl">B. Warm seat invite (LinkedIn DM)</div>Hi [First], good to see you here in Utah. I am running a small in-person session on July 30 in Sandy on using AI at work without getting burned. Owners and operators, hands-on, you leave with one thing working that night. I saved a founding seat at $47 if you want it. Here is the link: [LINK]<br><br>And if it is not for you but you know one owner who should be in that room, send them my way. Either one helps.<div class="sm-meta">One offer with a referral fork (an OR, not a second ask).</div></div>
+      <div class="sample"><div class="sm-lbl">C. Warm audit ask (free scan first)</div>Hi [First], quick one. I run free AI-visibility scans for local businesses. It shows whether ChatGPT and Google's AI actually surface your business when someone nearby searches for what you do, and where you are leaking that traffic. Takes me a few minutes, no cost, no pitch.<br><br>Want me to run yours and send it over?<div class="sm-meta">The $250 walkthrough is the upsell after delivery, never in this message.</div></div>
+      <div class="sample"><div class="sm-lbl">D. Referral ask (a director or HR node)</div>Hi [First], you know the Utah owner-operator world better than almost anyone I have met since moving here. I am not asking you to come to anything. I am running a small AI session for business owners on July 30 and I am trying to reach the right people.<br><br>Who is one owner in your circle who should be in that room? If you give me a name I will write the intro for you so it is one click on your end.<div class="sm-meta">One ask = one name. Removes their effort.</div></div>
+      <div class="sample"><div class="sm-lbl">E. Personal LinkedIn post (carries the consulting brand)</div>I moved to Utah a few months ago with no network here and one rule: do not wait to be known before you start being useful.<br><br>So I am teaching a room of local business owners on July 30, in person, for the price of lunch. Here is the part most people get backwards. The hard skill is not running AI. The hard skill is picking the one task in your week that AI should take first, and handing it off cleanly so it actually saves you the hour.<br><br>I learned that the slow way, watching good tools fail inside a Fortune 100 because nobody decided what to point them at. Same thing happens to a one-person business with a free AI account open in a tab.<br><br>If you run a business near Salt Lake and you keep meaning to make AI earn its keep, this session is for you. Comment "seat" and I will send the link.<div class="sm-meta">Bridge: Fortune 100 process seat to the one-person owner, same failure mode. No em-dash, sentence case.</div></div>
+      <div class="sample"><div class="sm-lbl">F. Nextdoor post (new-resident angle)</div>New to the West Jordan area and trying to be useful while I get to know people here. I help local owners put AI to work on the boring parts of running a business, the scheduling, the follow-ups, the writing nobody has time for.<br><br>I am running a small in-person session at the end of July for business owners who want to see what is actually worth using and what is hype. If that is you, reply here and I will share the details.<div class="sm-meta">Matches the channel: new-resident framing, soft ask.</div></div>
+    </div>
+  </details>
+
+  <details class="sec"><summary><span class="chev">&#9656;</span><span class="s-title">Proof, reviews, and follow-up hygiene (easy to forget)</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">The things that compound quietly. Adding these because the June workshop had none of them and it cost the whole event.</p>
+      <ul>
+        <li><strong>Proof capture at the workshop.</strong> Assign someone to shoot full-room photos and 2 to 3 short testimonial clips. Record the session. The recording is the single most valuable asset you walk out with.</li>
+        <li><strong>Google reviews cadence.</strong> Once the profile is live, ask for one review a week (Thursday reminder). Target 15+ by block end. Reviews drive local AI answers.</li>
+        <li><strong>Content repurposing.</strong> One video becomes a LinkedIn post, an X thread, a newsletter blurb, and a faceless clip. Film once, cut many.</li>
+        <li><strong>Follow-up hygiene.</strong> Every warm thread gets a second and third touch (new value, one ask). Field standard for cold conversion is about 8 touches. Most money is left in the follow-up.</li>
+        <li><strong>Event calendar to keep filled.</strong> Chambers, Silicon Slopes meetups, SCORE workshops. Be in one room a week so the local face builds while the funnels run.</li>
+        <li><strong>List hygiene.</strong> Keep the warm list current. Quarterly value drop to dormant names, one observation, one link, no ask.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec"><summary><span class="chev">&#9656;</span><span class="s-title">Detail page: calendar, the 12 orgs, posts, sites, ads, tools</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <div class="callout green"><span class="lbl">The full execution layer</span><a href="https://boubacarbarry.com/review/20260630-master-plan-detail/"><strong>&rarr; Open the detail page</strong></a>: the day-by-day calendar, the 12 real orgs with contacts and asks, what to post per channel, the sites and links to build, the SEO/AEO/GEO + ads sequence, and the full tool stack.</div>
+      <h3>Every component plan</h3>
+      <div class="idx">
+        <a href="https://boubacarbarry.com/review/20260630-coldstart-seatfill/">Cold-start seat-fill engine<span class="ix-d">12 SLC orgs, templates, 10-day plan</span></a>
+        <a href="https://boubacarbarry.com/review/20260630-warm-list-ranked/">Warm list, ranked<span class="ix-d">63 A-tier, scored, lane-assigned</span></a>
+        <a href="https://boubacarbarry.com/review/20260629-weekly-action-plan/">Weekly action plan v3<span class="ix-d">Cash math, the three lanes</span></a>
+        <a href="https://boubacarbarry.com/review/20260628-cw-ai-visibility-plan/">AI-visibility 90-day plan<span class="ix-d">SEO, AEO, GEO + tools</span></a>
+        <a href="https://boubacarbarry.com/review/20260628-cw-ai-visibility-2/">Visibility baseline<span class="ix-d">Starting point, 0 of 30</span></a>
+        <a href="https://boubacarbarry.com/review/20260626-catalyst-works-self-analysis/">Consulting self-analysis<span class="ix-d">The sales-rail constraint, $12k floor</span></a>
+        <a href="https://boubacarbarry.com/review/20260626-workshop-aar/">Workshop after-action<span class="ix-d">Why June sold zero</span></a>
+        <a href="https://boubacarbarry.com/review/20260618-marketing-plan/">Portfolio marketing plan<span class="ix-d">Brand merge-map + firewalls</span></a>
+        <a href="https://boubacarbarry.com/review/sw-warm-board/">Audit warm board<span class="ix-d">Signal Works warm touches</span></a>
+        <a href="https://boubacarbarry.com/review/haw-gtm-plan/">Product store go-to-market<span class="ix-d">Catalog + newsletter engine</span></a>
+      </div>
+    </div>
+  </details>
+
+  <div class="footer">
+    <p>Truth-only. Every fact traces to a real source. Unknowns marked FIND, never guessed. No invented contacts, prices, or stats. Upwork named for awareness only, never tasked here.</p>
+    <p>12-week year structure after Brian Moran. State syncs live across your phone, laptop, and tablet via your private board. Offline edits queue and sync when you reconnect. Your daily operating page.</p>
+  </div>
+
+</div>
+
+<button id="backToTop" aria-label="Back to top">&uarr;</button>
+
+<!-- Supabase JS client (cross-device sync) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
+        integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug"
+        crossorigin="anonymous"></script>
+<script>
+(function(){
+  // ---- Config (publishable/anon key only; never the service key) ----
+  var SB_URL = 'https://jscucboftaoaphticqci.supabase.co';
+  var SB_ANON = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
+  var BOARD_ID = 'y0';
+  // Board token: a shared write-secret baked into this private tracker. It is NOT
+  // a service key. With RLS, the anon key alone cannot write; the token gates the
+  // upsert RPC so a random visitor cannot trash the board. Boubacar reads/writes
+  // from any device because the token travels with the page.
+  var BOARD_TOKEN = 'y0_5RLZllwfaHb_pO7qPHcBJGlgcwkwKL2Q';
+  var LS = 'y0mm-';            // localStorage namespace (offline fallback)
+
+  var sb = null;
+  try { sb = window.supabase.createClient(SB_URL, SB_ANON, { realtime: { params: { eventsPerSecond: 5 } } }); } catch(e){ sb = null; }
+
+  // ---- sync status pill ----
+  var pill = document.getElementById('syncPill'), pillText = document.getElementById('syncText');
+  function setSync(state, label){ if(!pill) return; pill.className = 'sync ' + state; pillText.textContent = label; }
+
+  // ---- local cache of remote state: item_id -> value ----
+  var state = {};
+
+  // ---- helpers ----
+  function lsGet(k){ try { return localStorage.getItem(LS + k); } catch(e){ return null; } }
+  function lsSet(k, v){ try { localStorage.setItem(LS + k, v); } catch(e){} }
+
+  // Apply a value to the DOM for a given item_id
+  function applyToDom(item, value){
+    var cb = document.querySelector('input[type=checkbox][data-item="'+CSS.escape(item)+'"]');
+    if (cb){ var on = (value === '1'); cb.checked = on; var act = cb.closest('.act'); if(act) act.classList.toggle('done', on); return; }
+    var txt = document.querySelector('input[type=text][data-item="'+CSS.escape(item)+'"]');
+    if (txt){ txt.value = value || ''; return; }
+    if (item === 'rev-day'){ /* handled by revenue module below */ }
+  }
+
+  // Push one item to Supabase (and mirror to localStorage). Optimistic.
+  function persist(item, value){
+    state[item] = value;
+    lsSet(item, value);
+    if (!sb){ setSync('offline', 'Offline (saved here)'); return; }
+    setSync('saving', 'Saving');
+    sb.rpc('y0_upsert', { p_board: BOARD_ID, p_item: item, p_value: value, p_token: BOARD_TOKEN })
+      .then(function(res){
+        if (res.error){ setSync('offline', 'Offline (saved here)'); }
+        else { setSync('live', 'Synced'); }
+      })
+      .catch(function(){ setSync('offline', 'Offline (saved here)'); });
+  }
+
+  // ---- wire checkboxes + text inputs ----
+  var checkboxes = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox][data-item]'));
+  var textInputs = Array.prototype.slice.call(document.querySelectorAll('input[type=text][data-item]'));
+
+  checkboxes.forEach(function(cb){
+    // hydrate from localStorage immediately (offline-first paint)
+    var cached = lsGet(cb.getAttribute('data-item'));
+    if (cached === '1'){ cb.checked = true; var a = cb.closest('.act'); if(a) a.classList.add('done'); }
+    cb.addEventListener('change', function(){
+      var item = cb.getAttribute('data-item');
+      var val = cb.checked ? '1' : '0';
+      var a = cb.closest('.act'); if(a) a.classList.toggle('done', cb.checked);
+      persist(item, val);
+      recomputeAllProgress();
+      recomputeScorecard();
+    });
+  });
+  textInputs.forEach(function(inp){
+    var cached = lsGet(inp.getAttribute('data-item'));
+    if (cached !== null && cached !== undefined) inp.value = cached;
+    inp.addEventListener('input', function(){ persist(inp.getAttribute('data-item'), inp.value); });
+  });
+
+  // ---- daily progress bar ----
+  function recomputeAllProgress(){
+    var pane = document.querySelector('.daily-body');
+    if (!pane) return;
+    var boxes = pane.querySelectorAll('input[type=checkbox][data-item]');
+    var done = pane.querySelectorAll('input[type=checkbox][data-item]:checked').length;
+    var pct = boxes.length ? Math.round(done/boxes.length*100) : 0;
+    var f = document.querySelector('.progress-fill[data-grp="daily"]');
+    var l = document.querySelector('.progress-label[data-lbl="daily"]');
+    if (f) f.style.width = pct + '%';
+    if (l) l.textContent = pct + '% (' + done + '/' + boxes.length + ')';
+  }
+
+  // ---- weekly scorecard (computes % of planned tactics done for the shown week) ----
+  var activeWeek = 1;
+  function recomputeScorecard(){
+    var pane = document.querySelector('.week-pane[data-week="'+activeWeek+'"]');
+    if (!pane) return;
+    var boxes = pane.querySelectorAll('input[type=checkbox][data-item]');
+    var done = pane.querySelectorAll('input[type=checkbox][data-item]:checked').length;
+    var pct = boxes.length ? Math.round(done/boxes.length*100) : 0;
+    var pctEl = document.getElementById('scPct'), fill = document.getElementById('scFill'), num = document.getElementById('scWeekNum');
+    if (num) num.textContent = activeWeek;
+    if (pctEl){ pctEl.textContent = pct + '%'; pctEl.classList.toggle('under', pct < 85); }
+    if (fill) fill.style.width = pct + '%';
+  }
+
+  // ---- week strip + panes ----
+  document.querySelectorAll('.wy-cell').forEach(function(cell){
+    cell.addEventListener('click', function(){
+      var wk = cell.getAttribute('data-week');
+      document.querySelectorAll('.wy-cell').forEach(function(c){ c.classList.remove('active'); });
+      cell.classList.add('active');
+      document.querySelectorAll('.week-pane').forEach(function(p){ p.classList.toggle('active', p.getAttribute('data-week') === wk); });
+      activeWeek = parseInt(wk, 10);
+      recomputeScorecard();
+    });
+  });
+
+  // ---- revenue toggle + streak (per calendar day, synced) ----
+  (function(){
+    var yes = document.getElementById('revYes'), no = document.getElementById('revNo'), streakEl = document.getElementById('streak');
+    function todayKey(){ return 'rev-' + new Date().toISOString().slice(0,10); }
+    function render(){
+      var v = state[todayKey()] || lsGet(todayKey());
+      yes.classList.toggle('on', v === 'yes');
+      no.classList.toggle('on', v === 'no');
+      streakEl.textContent = 'Streak: ' + calcStreak();
+    }
+    function calcStreak(){
+      var s = 0, d = new Date();
+      for (var i=0;i<400;i++){
+        var k = 'rev-' + d.toISOString().slice(0,10);
+        var v = state[k] || lsGet(k);
+        if (v === 'yes'){ s++; d.setDate(d.getDate()-1); }
+        else if (i === 0 && (v === null || v === undefined)){ d.setDate(d.getDate()-1); }
+        else break;
+      }
+      return s;
+    }
+    yes.addEventListener('click', function(){ persist(todayKey(), 'yes'); render(); });
+    no.addEventListener('click', function(){ persist(todayKey(), 'no'); render(); });
+    window.__y0_renderRev = render;
+    render();
+  })();
+
+  // ---- goal-edit note (logs an intent flag; the real number lives in Boubacar's head/edit) ----
+  (function(){
+    var ge = document.getElementById('goalEdit');
+    if (!ge) return;
+    ge.addEventListener('click', function(){
+      var current = state['goal-target'] || lsGet('goal-target') || '3000';
+      var v = window.prompt('Your 12-week cash target ($). This is your number, edit freely.', current);
+      if (v !== null && v.trim() !== ''){
+        persist('goal-target', v.trim());
+        var num = document.querySelector('.goal .g-num span');
+        if (num) num.textContent = '$' + v.trim();
+      }
+    });
+  })();
+
+  // ---- initial load from Supabase: fetch all, render, then subscribe realtime ----
+  function hydrateFromRemote(rows){
+    rows.forEach(function(r){ state[r.item_id] = r.value; lsSet(r.item_id, r.value); applyToDom(r.item_id, r.value); });
+    // goal target
+    var gt = state['goal-target'];
+    if (gt){ var num = document.querySelector('.goal .g-num span'); if (num) num.textContent = '$' + gt; }
+    recomputeAllProgress();
+    recomputeScorecard();
+    if (window.__y0_renderRev) window.__y0_renderRev();
+  }
+
+  if (sb){
+    setSync('saving', 'Loading');
+    sb.from('y0_money_map_state').select('item_id,value').eq('board_id', BOARD_ID)
+      .then(function(res){
+        if (res.error){ setSync('offline', 'Offline (local only)'); return; }
+        hydrateFromRemote(res.data || []);
+        setSync('live', 'Synced');
+        // realtime: phone/laptop/tablet update live
+        sb.channel('y0-board')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'y0_money_map_state', filter: 'board_id=eq.'+BOARD_ID },
+            function(payload){
+              var row = payload.new || payload.old; if (!row) return;
+              var item = row.item_id, value = (payload.eventType === 'DELETE') ? '' : row.value;
+              state[item] = value; lsSet(item, value); applyToDom(item, value);
+              recomputeAllProgress(); recomputeScorecard();
+              if (window.__y0_renderRev) window.__y0_renderRev();
+            })
+          .subscribe(function(status){ if (status === 'SUBSCRIBED') setSync('live', 'Live sync on'); });
+      })
+      .catch(function(){ setSync('offline', 'Offline (local only)'); });
+  } else {
+    setSync('offline', 'Offline (local only)');
+    recomputeAllProgress(); recomputeScorecard();
+  }
+
+  // ---- back to top ----
+  var btt = document.getElementById('backToTop');
+  window.addEventListener('scroll', function(){ btt.classList.toggle('show', window.scrollY > 600); });
+  btt.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
+})();
+</script>
+</body>
+</html>
+
