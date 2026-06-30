@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Money Master Plan -- Detail + Calendar</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #141210; --panel: #1c1916; --card: #221e1a; --card-2: #2a251f;
+      --ink: #ece2d2; --ink-strong: #fbf4e8; --muted: #a59783; --faint: #7e7263;
+      --line: rgba(236, 226, 210, 0.12); --line-soft: rgba(236, 226, 210, 0.07);
+      --ember: #e3622f; --ember-bright: #ff7a45; --clay: #c4471d;
+      --green: #4fbf86; --green-soft: rgba(79, 191, 134, 0.12); --green-border: rgba(79, 191, 134, 0.4);
+      --amber: #e8a13a; --amber-soft: rgba(232, 161, 58, 0.12); --amber-border: rgba(232, 161, 58, 0.4);
+      --info: #6ea8e6; --info-soft: rgba(110, 168, 230, 0.12); --info-border: rgba(110, 168, 230, 0.38);
+      --red: #f06b4d; --red-soft: rgba(240,107,77,0.12); --red-border: rgba(240,107,77,0.4);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(900px 400px at 8% -6%, rgba(227, 98, 47, 0.10), transparent 60%),
+        radial-gradient(800px 380px at 100% 0%, rgba(79, 191, 134, 0.06), transparent 55%);
+      background-attachment: fixed; color: var(--ink); line-height: 1.65; -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 820px; margin: 0 auto; padding: 2.2rem 1.25rem 6rem; position: relative; z-index: 1; }
+    a { color: var(--ember-bright); }
+
+    .doc-header { margin-bottom: 1.6rem; }
+    .tag { display: inline-block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.2rem 0.58rem; border-radius: 999px; background: #2c2722; color: var(--ink-strong); margin-right: 0.4rem; vertical-align: middle; border: 1px solid var(--line); }
+    .tag.plan { background: var(--ember); color: #fff; border-color: transparent; }
+    .tag.detail { background: #28405e; color: #fff; border-color: transparent; }
+    h1 { font-size: 2.0rem; font-weight: 850; letter-spacing: -0.035em; margin: 0.75rem 0 0.3rem; line-height: 1.1; color: var(--ink-strong); }
+    .sub { color: var(--muted); font-size: 0.96rem; max-width: 64ch; }
+    .doc-meta { font-size: 0.78rem; color: var(--faint); margin-top: 0.75rem; }
+    .backlink { display: inline-block; margin-bottom: 0.4rem; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-decoration: none; }
+    .backlink:hover { color: var(--ember-bright); }
+
+    .toc { position: sticky; top: 0; z-index: 40; display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0.7rem 0.75rem; margin: 1.4rem 0; background: rgba(20, 18, 16, 0.92); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 12px; }
+    .toc .toc-lbl { width: 100%; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--faint); margin-bottom: 0.15rem; }
+    .toc a { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 700; text-decoration: none; color: var(--ink); background: var(--card-2); border: 1px solid var(--line); padding: 0.34rem 0.7rem; border-radius: 999px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    .toc a .n { color: var(--ember); font-weight: 850; }
+    .toc a:hover { background: var(--ember); color: #fff; border-color: transparent; }
+    .toc a:hover .n { color: #fff; }
+    .expand-all { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); background: var(--card-2); border: 1px solid var(--line); border-radius: 999px; padding: 0.34rem 0.7rem; cursor: pointer; }
+    .expand-all:hover { color: var(--ember-bright); border-color: var(--ember); }
+
+    details.sec { margin-bottom: 0.8rem; scroll-margin-top: 5.5rem; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+    details.sec > summary { list-style: none; cursor: pointer; padding: 1.05rem 1.25rem; display: flex; align-items: center; gap: 0.65rem; font-size: 1.16rem; font-weight: 820; letter-spacing: -0.02em; color: var(--ink-strong); user-select: none; background: var(--card-2); transition: background 0.16s, color 0.16s; }
+    details.sec > summary::-webkit-details-marker { display: none; }
+    details.sec > summary::marker { content: ""; }
+    details.sec > summary .chev { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border-radius: 6px; background: var(--ember); color: #fff; font-size: 0.8rem; font-weight: 900; line-height: 1; transition: transform 0.22s ease; transform: rotate(0deg); }
+    details.sec[open] > summary .chev { transform: rotate(90deg); }
+    details.sec > summary .s-num { color: var(--ember); font-weight: 850; }
+    details.sec > summary .s-title { flex: 1; min-width: 0; }
+    details.sec > summary .toggle-hint { margin-left: auto; flex-shrink: 0; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0.22rem 0.6rem; }
+    details.sec > summary .toggle-hint::after { content: "Expand"; }
+    details.sec[open] > summary .toggle-hint::after { content: "Collapse"; }
+    details.sec > summary:hover { background: #332c24; color: var(--ember-bright); }
+    details.sec[open] > summary { border-bottom: 1px solid var(--line); }
+    .sec-body { padding: 0.7rem 1.3rem 1.5rem; }
+
+    h2 { font-size: 1.26rem; font-weight: 820; letter-spacing: -0.02em; }
+    h3 { font-size: 1.0rem; font-weight: 760; margin: 1.5rem 0 0.5rem; color: var(--ink-strong); }
+    p { margin-bottom: 0.85rem; font-size: 0.95rem; }
+    ul { margin: 0.2rem 0 1rem 1.15rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.94rem; }
+    strong { font-weight: 700; color: var(--ink-strong); }
+    .lede { color: var(--muted); font-size: 0.94rem; margin-bottom: 1.2rem; }
+    .src { font-size: 0.78rem; color: var(--faint); font-style: italic; }
+    .src code { font-style: normal; background: var(--card-2); padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.92em; }
+    code { background: var(--card-2); padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.88em; color: var(--ink-strong); }
+
+    .callout { border-radius: 10px; padding: 1rem 1.15rem; margin: 1.1rem 0; font-size: 0.92rem; }
+    .callout .lbl { display: block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.35rem; }
+    .callout.green { background: var(--green-soft); border-left: 4px solid var(--green); } .callout.green .lbl { color: var(--green); }
+    .callout.amber { background: var(--amber-soft); border-left: 4px solid var(--amber); } .callout.amber .lbl { color: var(--amber); }
+    .callout.blue { background: var(--info-soft); border-left: 4px solid var(--info); } .callout.blue .lbl { color: var(--info); }
+    .callout.red { background: var(--red-soft); border-left: 4px solid var(--red); } .callout.red .lbl { color: var(--red); }
+
+    /* DAY blocks */
+    .day-block { border: 1px solid var(--line); border-radius: 12px; margin: 0.7rem 0; overflow: hidden; background: var(--card); }
+    .day-head { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 0.95rem; background: var(--card-2); border-bottom: 1px solid var(--line); }
+    .day-head .dd { font-size: 0.92rem; font-weight: 850; color: var(--ink-strong); }
+    .day-head .dl { font-size: 0.7rem; font-weight: 700; color: var(--ember-bright); text-transform: uppercase; letter-spacing: 0.05em; }
+    .day-head.crit { background: linear-gradient(90deg, rgba(240,107,77,0.18), var(--card-2)); }
+    .day-head.dark { background: #1a1714; }
+    .day-body { padding: 0.7rem 0.95rem; }
+    .day-body ul { margin: 0 0 0 1.05rem; }
+    .day-body li { font-size: 0.89rem; margin-bottom: 0.35rem; }
+    .who { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.08rem 0.4rem; border-radius: 4px; margin-left: 0.3rem; vertical-align: middle; }
+    .who.bou { background: var(--ember); color: #fff; }
+    .who.agent { background: var(--card-2); color: var(--muted); border: 1px solid var(--line); }
+
+    /* ORG cards */
+    .org { border: 1px solid var(--line); border-radius: 11px; padding: 0.9rem 1.05rem; margin: 0.6rem 0; background: var(--card); }
+    .org .org-top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.3rem; }
+    .org .org-name { font-size: 0.98rem; font-weight: 820; color: var(--ink-strong); }
+    .org .pri { font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.1rem 0.42rem; border-radius: 4px; }
+    .org .pri.p1 { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); }
+    .org .pri.p2 { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-border); }
+    .org .pri.p3 { background: var(--info-soft); color: var(--info); border: 1px solid var(--info-border); }
+    .org .org-ask { font-size: 0.87rem; color: var(--ink); margin-bottom: 0.3rem; }
+    .org .org-c { font-size: 0.8rem; color: var(--muted); }
+    .org .org-c .find { color: var(--amber); font-weight: 700; }
+
+    .scroll { overflow-x: auto; margin: 1rem 0; -webkit-overflow-scrolling: touch; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.84rem; min-width: 520px; }
+    th, td { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-weight: 750; background: var(--card-2); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    td { color: var(--ink); }
+    td strong { color: var(--ink-strong); }
+
+    .footer { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--faint); }
+    #backToTop { position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 60; width: 2.85rem; height: 2.85rem; border-radius: 50%; border: 1px solid var(--line); background: var(--ember); color: #fff; cursor: pointer; font-size: 1.2rem; line-height: 1; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px -8px rgba(0,0,0,0.7); opacity: 0; visibility: hidden; transform: translateY(10px); transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s, background 0.18s; }
+    #backToTop.show { opacity: 1; visibility: visible; transform: translateY(0); }
+    #backToTop:hover { background: var(--ember-bright); }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.55rem; }
+      .wrap { padding-left: 1rem; padding-right: 1rem; }
+    }
+  </style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-06-30-13:15:05 MT</div><!-- DEPLOY_STAMP_END -->
+
+<div class="wrap">
+
+  <header class="doc-header">
+    <a class="backlink" href="https://boubacarbarry.com/review/20260630-master-plan/">&larr; Back to the master plan</a><br>
+    <span class="tag plan">Money Master Plan</span>
+    <span class="tag detail">Detail + calendar</span>
+    <h1>The nitty-gritty: calendar, orgs, posts, sites, tools</h1>
+    <p class="sub">The execution layer behind the master plan. Every day from today to July 12, the 12 real Salt Lake orgs with contacts, what to post on each channel, the sites and links to build, the visibility and ads sequence, and the exact tool for each job.</p>
+    <p class="doc-meta">Truth-only. Real contacts where known, marked FIND where not. No invented people, numbers, or pages.</p>
+  </header>
+
+  <nav class="toc" aria-label="Jump to section">
+    <span class="toc-lbl">Jump to section</span>
+    <a href="#d1"><span class="n">1</span> Dated calendar</a>
+    <a href="#d2"><span class="n">2</span> The 12 orgs</a>
+    <a href="#d3"><span class="n">3</span> What to post</a>
+    <a href="#d4"><span class="n">4</span> Sites + links</a>
+    <a href="#d5"><span class="n">5</span> Visibility + ads</a>
+    <a href="#d6"><span class="n">6</span> Tool stack</a>
+    <button class="expand-all" id="expandAll" type="button">Expand all</button>
+  </nav>
+
+  <!-- 1: CALENDAR -->
+  <details class="sec" id="d1" open>
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">1.</span> Dated calendar &mdash; 6/30 to 7/12</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">Each day names who does it. Sunday is dark (no outbound). The run-up borrows the 10-day cold-start sequence and lines it up against July 30.</p>
+
+      <div class="day-block">
+        <div class="day-head crit"><span class="dd">Tue 6/30</span><span class="dl">Critical path: lock the room + the list</span></div>
+        <div class="day-body"><ul>
+          <li>Call SLCC, lock July 30 room or book the next open date same call <span class="who bou">You</span></li>
+          <li>Export LinkedIn connections to CSV (fallback: top 50 by hand) <span class="who bou">You</span></li>
+          <li>Approve + post the 2 personal-brand drafts <span class="who bou">You</span></li>
+          <li>Draft all 12 org emails + the warm message set for tomorrow <span class="who agent">Agent</span></li>
+          <li>Confirm the seat link, QR cards, and the audit link are ready <span class="who agent">Agent</span></li>
+        </ul></div>
+      </div>
+
+      <div class="day-block">
+        <div class="day-head"><span class="dd">Wed 7/1</span><span class="dl">First-cash lane goes live</span></div>
+        <div class="day-body"><ul>
+          <li>Publish the $250 audit link; run 3 free scans for warm local owners <span class="who bou">You</span></li>
+          <li>Announce July 30 on LinkedIn, X, newsletter <span class="who bou">You</span></li>
+          <li>Send P1 free-talk + co-host pitches: SBDC, ChamberWest, SCORE, Kiln <span class="who bou">You</span></li>
+          <li>Start the founding-client drip (2 slots) and restart cold local-website outreach <span class="who bou">You</span></li>
+          <li>Mint and verify all short links + UTM tags <span class="who agent">Agent</span></li>
+        </ul></div>
+      </div>
+
+      <div class="day-block">
+        <div class="day-head"><span class="dd">Thu 7/2</span><span class="dl">Get listed everywhere</span></div>
+        <div class="day-body"><ul>
+          <li>Submit all listings: Silicon Slopes, Meetup, Alignable, Nextdoor, Eventbrite, chamber calendars <span class="who agent">Agent</span></li>
+          <li>Warm A-tier pass, top 20, one ask each by lane (lead with Sandy + SLCC names, Brandon Orton) <span class="who bou">You</span></li>
+          <li>Deliver the 3 free scans from Wed; ask for the $250 walkthrough on the ones that leak <span class="who bou">You</span></li>
+        </ul></div>
+      </div>
+
+      <div class="day-block">
+        <div class="day-head"><span class="dd">Fri 7/3</span><span class="dl">Podcasts + proof page</span></div>
+        <div class="day-body"><ul>
+          <li>Pitch UtahPreneur (podcast@utahpreneur.co), then Everyday AI + Entrepreneurs on Fire <span class="who bou">You</span></li>
+          <li>Reply to every warm response with acknowledge, compliment, ask <span class="who bou">You</span></li>
+          <li>Rebuild the seat page with social-proof slots for the post-event recording <span class="who agent">Agent</span></li>
+        </ul></div>
+      </div>
+
+      <div class="day-block">
+        <div class="day-head dark"><span class="dd">Sat 7/4</span><span class="dl">Light + manual only</span></div>
+        <div class="day-body"><ul>
+          <li>Record the 60-second invite video <span class="who bou">You</span></li>
+          <li>No outbound sends (holiday + pre-Sabbath) <span class="who bou">You</span></li>
+        </ul></div>
+      </div>
+
+      <div class="day-block">
+        <div class="day-head dark"><span class="dd">Sun 7/5</span><span class="dl">Dark</span></div>
+        <div class="day-body"><ul><li>No outbound across any channel. Rest. The autonomous lanes keep running on their own.</li></ul></div>
+      </div>
+
+      <div class="day-block">
+        <div class="day-head"><span class="dd">Mon 7/6</span><span class="dl">Count + double down</span></div>
+        <div class="day-body"><ul>
+          <li>15-min visibility review (the Monday scan report) <span class="who bou">You</span></li>
+          <li>Count seats vs the 15&ndash;25 target; run the highest-leverage open channel harder <span class="who bou">You</span></li>
+          <li>Warm pass two + first B-tier local names <span class="who bou">You</span></li>
+          <li>Follow up every unanswered org pitch from last week (touch 2, new value) <span class="who agent">Agent</span></li>
+        </ul></div>
+      </div>
+
+      <div class="day-block">
+        <div class="day-head"><span class="dd">Tue 7/7 &rarr; Fri 7/11</span><span class="dl">Convert + ground game</span></div>
+        <div class="day-body"><ul>
+          <li>Deliver every scan requested; close the ones that leak on the $250 walkthrough (first-dollar window) <span class="who bou">You</span></li>
+          <li>Referral asks to the director/HR nodes: one name each <span class="who bou">You</span></li>
+          <li>One in-person room (chamber mixer or Silicon Slopes meetup) with QR cards <span class="who bou">You</span></li>
+          <li>If 10+ warm captures exist, turn Meta ads on (3 creatives, $30/day, 72h test) <span class="who bou">You</span></li>
+          <li>Daily: 30-min pitch drill + ghostwriting block <span class="who bou">You</span></li>
+        </ul></div>
+      </div>
+
+      <div class="day-block">
+        <div class="day-head"><span class="dd">Sat 7/12</span><span class="dl">Week-two checkpoint</span></div>
+        <div class="day-body"><ul>
+          <li>Tally: seats booked, scans delivered, paid audits closed, founding deposits, ghostwriting replies <span class="who bou">You</span></li>
+          <li>Decide the next two weeks from the numbers, not the plan <span class="who bou">You</span></li>
+        </ul></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2: THE 12 ORGS -->
+  <details class="sec" id="d2">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">2.</span> The 12 real Salt Lake orgs &mdash; contact + ask</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">Researched targets, ranked by leverage. Where a contact is not confirmed it says FIND with exactly where to look. Nothing here is invented.</p>
+
+      <div class="org"><div class="org-top"><span class="org-name">Salt Lake SBDC at SLCC</span><span class="pri p1">P1 Talk</span></div><div class="org-ask">Same campus as the venue. Ask: guest-teach an AI session on their workshop calendar, then invite the class to July 30.</div><div class="org-c">christine.rice@slcc.edu, bryce.hansen@slcc.edu, jim.herrin@slcc.edu &middot; 801-957-5441 &middot; utahsbdc.org/locations/salt-lake-city</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">ChamberWest</span><span class="pri p1">P1 Talk</span></div><div class="org-ask">Covers West Jordan (the new city), West Valley, Taylorsville, Magna, Kearns. Ask: a free lunch-and-learn slot or a member-newsletter mention.</div><div class="org-c"><span class="find">FIND</span> staff email via chamberwest.com contact form &middot; alt: info@westjordanchamber.com</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">SCORE Utah</span><span class="pri p1">P1 Talk</span></div><div class="org-ask">SBA-backed free workshops. Ask: deliver a free AI workshop on their calendar, or co-list July 30 as a SCORE workshop.</div><div class="org-c">randalb.klein@scorevolunteer.org (membership chair) &middot; 801-451-7872 &middot; utah.score.org &middot; <span class="find">FIND</span> workshop coordinator via the Contact page</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">Kiln SLC</span><span class="pri p1">P1 Co-host</span></div><div class="org-ask">Coworking with a 150-seat theater. Ask: host the workshop in their theater and co-promote to members. They run Bagels and Brews weekly.</div><div class="org-c">kiln.com/communities/salt-lake-city &middot; The Gateway, downtown SLC &middot; <span class="find">FIND</span> community manager via site contact or front desk</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">Silicon Slopes</span><span class="pri p2">P2 List</span></div><div class="org-ask">Newsletter + events + community. Ask: list July 30 on the events calendar and in "This Week at Silicon Slopes." Join a Dinner Club table to meet builders.</div><div class="org-c">siliconslopes.com/events &middot; newsletter.siliconslopes.com</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">South Valley Chamber</span><span class="pri p2">P2 Talk</span></div><div class="org-ask">Formerly Sandy Area Chamber, closest to the venue. Ask: a speaking slot at the weekly networking event or a newsletter mention.</div><div class="org-c">southvalleychamber.com &middot; 9800 S Monroe St #806, Sandy</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">Murray Area Chamber</span><span class="pri p2">P2 Talk</span></div><div class="org-ask">500+ members. Ask: a workshop/lunch-and-learn slot plus a member-deal listing for the $47 seat.</div><div class="org-c">info@murraychamber.net, support@murrayareachamber.com &middot; 801-263-2632 &middot; themurraychamber.com</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">Salt Lake Chamber</span><span class="pri p2">P2 Talk</span></div><div class="org-ask">The biggest list. Ask: present to the Small Business Committee or the Business Women's Forum.</div><div class="org-c">hwalker@slchamber.com (small biz), bwf@slchamber.com (Women's Forum), info@slchamber.com &middot; 801-364-3631</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">Church &amp; State</span><span class="pri p3">P3 List</span></div><div class="org-ask">Downtown small-business hub + venue (22,000 sq ft). Ask: list the event and tap the entrepreneur network.</div><div class="org-c"><span class="find">FIND</span> via the Church &amp; State SLC site &middot; cross-list on Eventbrite SLC</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">Meetup + Alignable + Nextdoor</span><span class="pri p3">P3 List</span></div><div class="org-ask">Passive, free, self-serve. Ask: post July 30 on a Utah small-business or AI Meetup, an Alignable local event, and Nextdoor West Jordan with the new-resident angle.</div><div class="org-c">meetup.com (search "Utah small business" + "AI") &middot; alignable.com &middot; nextdoor.com (West Jordan)</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">UtahPreneur</span><span class="pri p3">P3 Podcast</span></div><div class="org-ask">Weekly Utah founder podcast, host Keaton Walker. Ask: guest on practical AI for small Utah business.</div><div class="org-c">podcast@utahpreneur.co &middot; utahpreneur.co &middot; @utahpreneurpod</div></div>
+
+      <div class="org"><div class="org-top"><span class="org-name">Silicon Slopes show + Utah Business podcast</span><span class="pri p3">P3 Podcast</span></div><div class="org-ask">Two more guest shots for local authority. Pitch now, air whenever they can fit you.</div><div class="org-c">siliconslopes.com (podcast) &middot; utahbusiness.com/podcast</div></div>
+
+      <div class="callout amber"><span class="lbl">Authority pods (August payoff, pitch now)</span>Everyday AI (youreverydayai.com/guest) and Entrepreneurs on Fire (eofire.com/apply). Bigger reach, slow to book. These build the proof pipeline, not July seats.</div>
+      <p class="src">Source: <code>review/20260630-coldstart-seatfill</code> + <code>review/20260629-weekly-action-plan</code> (authority pods).</p>
+    </div>
+  </details>
+
+  <!-- 3: WHAT TO POST -->
+  <details class="sec" id="d3">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">3.</span> What to post, per channel</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">Two calendars run in parallel. Your personal/brand calendar (you post manually) and the faceless calendar (separate identity, agent-run, approve before publish). They never cross.</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Channel</th><th>Serves</th><th>Angle / hook</th><th>Cadence</th></tr></thead>
+        <tbody>
+          <tr><td><strong>LinkedIn (personal)</strong></td><td>Consulting</td><td>The bridge posts: Fortune 100 process seat to the one-person owner. Workshop invite ("comment seat"). One operator lesson per week.</td><td>3&ndash;4/week, manual</td></tr>
+          <tr><td><strong>X (personal)</strong></td><td>Consulting + build-in-public</td><td>Short operator takes, the "do not wait to be known" line, workshop countdown. Build-in-public threads stay off the consulting pitch.</td><td>Daily-ish, manual</td></tr>
+          <tr><td><strong>Nextdoor</strong></td><td>Consulting (local)</td><td>New-resident angle, soft offer to help local owners. Reply with details when asked.</td><td>1&ndash;2 for the run-up</td></tr>
+          <tr><td><strong>Alignable</strong></td><td>Consulting (local)</td><td>Local-business intro + the July 30 event listing.</td><td>1 post + event</td></tr>
+          <tr><td><strong>Meetup / Eventbrite</strong></td><td>Consulting (local)</td><td>The event itself, listed where local owners already look.</td><td>Once, leave it running</td></tr>
+          <tr><td><strong>Faceless video</strong></td><td>Authority / traffic (separate identity)</td><td>Per channel theme (money playbooks, heritage storytelling, AI explainers). Never references you or the workshop.</td><td>Up to 3/day after warm-up, approve first</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout blue"><span class="lbl">Voice rule on every personal post</span>Name a bridge between two worlds you uniquely straddle. No em-dashes. Sentence case. First person. The post is the bridge, not a ship report.</div>
+    </div>
+  </details>
+
+  <!-- 4: SITES + LINKS -->
+  <details class="sec" id="d4">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">4.</span> Sites + links to build, and how they connect</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">What already exists, what to publish this week, and the link graph that makes the local authority compound.</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Page / asset</th><th>State</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Workshop seat page</strong> (catalystworks.consulting/workshop/)</td><td>Live</td><td>Update date to July 30, add social-proof slots for the recording</td></tr>
+          <tr><td><strong>$250 audit link</strong> (Stripe)</td><td>Live, unpublished</td><td>Publish Wed 7/1, link from geolisted.co + the scan delivery</td></tr>
+          <tr><td><strong>Free scan tool</strong> (geolisted.co/scan)</td><td>Live</td><td>This is the lead magnet. Every cold + warm audit ask points here</td></tr>
+          <tr><td><strong>llms.txt</strong></td><td>FIND / likely missing</td><td>Add to catalystworks.consulting + geolisted.co so AI engines read the site cleanly</td></tr>
+          <tr><td><strong>Google Business Profile</strong></td><td>Build</td><td>Create + verify for the consulting brand. Primary category Business Management Consultant. Drives local AI answers</td></tr>
+          <tr><td><strong>Wikidata entity</strong></td><td>Build</td><td>Person + org entities (30 min). Knowledge Panel lands in 2&ndash;6 weeks, lifts every brand</td></tr>
+          <tr><td><strong>Location / service pages</strong></td><td>Build (phase 2)</td><td>Utah-SMB cluster pages on the consulting site, one keyword cluster only</td></tr>
+        </tbody>
+      </table></div>
+      <h3>The link graph</h3>
+      <ul>
+        <li>Personal site and posts &rarr; link to the workshop page and the free scan.</li>
+        <li>Free scan delivery &rarr; links to the $250 walkthrough.</li>
+        <li>GBP + Wikidata &rarr; point at the consulting site; the consulting site links the scan; one local entity feeds AI answers for both brands.</li>
+        <li>Faceless channels &rarr; link only to their own funnels, never to your name or these pages.</li>
+      </ul>
+      <p class="src">Sources: LIVE_STATE (links), <code>review/20260628-cw-ai-visibility-plan</code> (entity + GBP + Wikidata), <code>reference_domain_assets</code>.</p>
+    </div>
+  </details>
+
+  <!-- 5: VISIBILITY + ADS -->
+  <details class="sec" id="d5">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">5.</span> Visibility (SEO / AEO / GEO) + ads, sequenced</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">From the 90-day visibility plan. Fix Bing to unlock Perplexity, ChatGPT Browse, and DuckDuckGo. Fix Google to unlock Gemini. One keyword cluster: AI implementation for Utah SMBs. Ads come last.</p>
+      <h3>Order of operations</h3>
+      <ul>
+        <li><strong>Day 1:</strong> measurement first. Verify Google Search Console (DNS TXT) and Bing Webmaster. Baseline crawl with Screaming Frog.</li>
+        <li><strong>Day 1&ndash;7:</strong> entity stack. Wikidata person + org, GBP create + verify.</li>
+        <li><strong>Day 1&ndash;14:</strong> technical SEO. Title tags, meta, Core Web Vitals (LCP &lt; 2.5s, CLS &lt; 0.1, INP &lt; 200ms), sitemap, robots, internal links.</li>
+        <li><strong>Day 7&ndash;30:</strong> the pillar cluster. FAQ master (20 questions), homepage overhaul, first pillar + cluster posts. Two-tier answers (40&ndash;60 word direct answer, then 150&ndash;250 word depth).</li>
+        <li><strong>Day 7&ndash;21:</strong> schema. FAQPage, HowTo, Speakable, LocalBusiness.</li>
+        <li><strong>Day 21&ndash;90:</strong> authority + links. Silicon Slopes News, KSL Tech, Utah Business; 3 podcast transcripts; citations cleanup.</li>
+        <li><strong>Ongoing:</strong> GBP reviews, target 15+ by Day 90 (~1.5/week, Thursday reminder).</li>
+      </ul>
+      <div class="callout amber"><span class="lbl">Targets</span>Day 30: 5&ndash;15% AI visibility. Day 60: 15&ndash;30%. Day 90: 30%+ on Perplexity and Gemini. Baseline today is 0 of 30. Weekly 15-min review every Monday.</div>
+      <h3>Paid ads (last, gated)</h3>
+      <ul>
+        <li>Meta only, $30/day, 3 creatives, 72-hour test, then double the winner.</li>
+        <li>Objective: Traffic to the workshop page (or Purchases once the pixel is installed).</li>
+        <li>Geo Sandy + 15 miles, age 30&ndash;60, owner/founder behaviors. Start a weekday morning, no weekend spend.</li>
+        <li><strong>Gate:</strong> off until 10+ warm captures exist. Kill at $150 spent / 0 captures.</li>
+      </ul>
+      <p class="src">Source: <code>docs/strategy/cw-ai-visibility-90day-plan-v2.md</code> (published <code>review/20260628-cw-ai-visibility-plan</code>) + workshop ad spec.</p>
+    </div>
+  </details>
+
+  <!-- 6: TOOL STACK -->
+  <details class="sec" id="d6">
+    <summary><span class="chev">&#9656;</span><span class="s-title"><span class="s-num">6.</span> The tool stack, per job</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <div class="scroll"><table>
+        <thead><tr><th>Job</th><th>Tool</th><th>Cost / note</th></tr></thead>
+        <tbody>
+          <tr><td>Search measurement</td><td>Google Search Console, Bing Webmaster Tools</td><td>Free. Both, separately</td></tr>
+          <tr><td>Site crawl / audit</td><td>Screaming Frog</td><td>Free up to 500 URLs</td></tr>
+          <tr><td>Keyword research</td><td>Google Keyword Planner + Semrush</td><td>Cross-check; keep keywords 10+ searches</td></tr>
+          <tr><td>People-also-ask mapping</td><td>AlsoAsked.com</td><td>Export the question tree on 5 pillar keywords</td></tr>
+          <tr><td>Page speed / Core Web Vitals</td><td>PageSpeed Insights</td><td>Free</td></tr>
+          <tr><td>Local citations / NAP</td><td>BrightLocal</td><td>~$30/mo, fix the top 20</td></tr>
+          <tr><td>Entity / knowledge panel</td><td>Wikidata, schema validators</td><td>Free</td></tr>
+          <tr><td>Paid ads</td><td>Meta Ads</td><td>$30/day, gated on warm captures</td></tr>
+          <tr><td>Booking</td><td>Calendly (free-ai-audit-owner-operators)</td><td>Live, 45-min, 5 qualifiers</td></tr>
+          <tr><td>Payments</td><td>Stripe</td><td>Audit, seat, cohort, kit links all live</td></tr>
+          <tr><td>Free scan / lead magnet</td><td>geolisted.co/scan</td><td>The audit lead magnet</td></tr>
+          <tr><td>Faceless video</td><td>Existing pipeline + Blotato</td><td>Starter cap hit, some channels pending</td></tr>
+          <tr><td>Analytics</td><td>Plausible + UTM short links</td><td>Read winners by source</td></tr>
+          <tr><td>Content board</td><td>Notion</td><td>Draft &rarr; queue &rarr; approve</td></tr>
+        </tbody>
+      </table></div>
+      <p class="src">Sources: visibility plan tool list + LIVE_STATE (Calendly, Stripe, scan) + <code>reference_domain_assets</code> (Blotato).</p>
+    </div>
+  </details>
+
+  <div class="footer">
+    <p>Truth-only. Real contacts where known, FIND where not, no invented people or numbers. Upwork is a separate hands-off lane, named for awareness only.</p>
+    <p><a href="https://boubacarbarry.com/review/20260630-master-plan/">&larr; Back to the master plan</a></p>
+  </div>
+
+</div>
+
+<button id="backToTop" aria-label="Back to top">&uarr;</button>
+<script>
+  document.getElementById('expandAll').addEventListener('click', function(){
+    var secs = document.querySelectorAll('details.sec');
+    var anyClosed = Array.prototype.some.call(secs, function(s){ return !s.open; });
+    secs.forEach(function(s){ s.open = anyClosed; });
+    this.textContent = anyClosed ? 'Collapse all' : 'Expand all';
+  });
+  var btt = document.getElementById('backToTop');
+  window.addEventListener('scroll', function(){ btt.classList.toggle('show', window.scrollY > 600); });
+  btt.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
+</script>
+</body>
+</html>
+
