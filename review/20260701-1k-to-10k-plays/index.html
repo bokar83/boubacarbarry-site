@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>The Money Plays Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F7F3EC; --paper-deep:#EFE8DC; --ink:#0E1B29; --ink-soft:#3A4756; --ink-faint:#6B7684;
+  --clay:#B47C57; --clay-deep:#96613F; --teal:#00838C; --teal-bright:#00B7C2;
+  --pass:#1E7A46; --pass-bg:#E3F0E7; --amber:#9A6A12; --amber-bg:#F5EAD2; --red:#8C3B2E; --red-bg:#F3E2DD;
+  --line:#D8CFC0; --ease-out:cubic-bezier(0.22,1,0.36,1); --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{background:var(--paper);color:var(--ink);font-family:'Public Sans',system-ui,sans-serif;font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+::selection{background:var(--clay);color:#fff}
+
+.masthead{max-width:980px;margin:0 auto;padding:88px 20px 34px;position:relative}
+.masthead .kicker{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--clay-deep);display:flex;align-items:center;gap:12px}
+.masthead .kicker::after{content:"";flex:0 0 64px;height:2px;background:var(--clay);transform:rotate(-1.2deg);border-radius:2px}
+.masthead h1{font-family:'Spectral',serif;font-weight:800;font-size:clamp(2.05rem,1.4rem + 4vw,3.8rem);line-height:1.05;letter-spacing:-.015em;margin:18px 0 14px;max-width:20ch}
+.masthead h1 em{font-style:italic;font-weight:600;color:var(--clay-deep)}
+.masthead .standfirst{font-size:clamp(1rem,.95rem + .5vw,1.16rem);color:var(--ink-soft);max-width:62ch}
+.masthead .meta{margin-top:20px;font-family:var(--mono);font-size:.7rem;color:var(--ink-faint);display:flex;flex-wrap:wrap;gap:6px 22px}
+
+.jumpnav{position:sticky;top:0;z-index:60;background:rgba(247,243,236,.95);backdrop-filter:saturate(1.2) blur(6px);border-bottom:1px solid var(--line)}
+.jumpnav-inner{max-width:980px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:8px;min-height:52px}
+.jumpnav .navlabel{font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--clay-deep);white-space:nowrap;margin-right:4px}
+.jumpnav ul{display:flex;list-style:none;gap:2px;flex-wrap:wrap}
+.jumpnav a{display:inline-block;padding:6px 8px;border-radius:999px;font-size:.78rem;font-weight:600;color:var(--ink-soft);text-decoration:none;transition:background .18s var(--ease-out),color .18s var(--ease-out)}
+.jumpnav a:hover{background:var(--paper-deep);color:var(--ink)}
+.jumpnav a.active{background:var(--ink);color:var(--paper)}
+#syncPill{margin-left:auto;font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;padding:5px 11px;border-radius:999px;background:var(--paper-deep);color:var(--ink-faint);white-space:nowrap}
+#syncPill.ok{background:var(--pass-bg);color:var(--pass)}
+#syncPill.saving{background:var(--amber-bg);color:var(--amber)}
+#syncPill.off{background:var(--red-bg);color:var(--red)}
+.nav-burger{display:none;background:none;border:1.5px solid var(--ink);border-radius:8px;padding:7px 12px;font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;color:var(--ink);cursor:pointer}
+@media(max-width:920px){
+  .jumpnav-inner{flex-wrap:wrap;padding:8px 16px}
+  .nav-burger{display:inline-block;order:2}
+  #syncPill{order:3}
+  .jumpnav ul{display:none;width:100%;flex-direction:column;gap:0;padding:6px 0 10px;border-top:1px dashed var(--line);margin-top:8px;order:4}
+  .jumpnav ul.open{display:flex}
+  .jumpnav a{display:block;padding:10px 8px;border-radius:8px}
+}
+
+main{max-width:980px;margin:0 auto;padding:0 20px 90px}
+section.block{margin-top:52px}
+.sec-head{display:flex;align-items:baseline;gap:14px;cursor:pointer;user-select:none;border-bottom:2px solid var(--ink);padding-bottom:10px}
+.sec-head .num{font-family:var(--mono);font-size:.8rem;color:var(--clay-deep);font-weight:700}
+.sec-head h2{font-family:'Spectral',serif;font-weight:700;font-size:clamp(1.3rem,1.1rem + 1.4vw,1.85rem);line-height:1.15;flex:1}
+.sec-toggle{font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;color:var(--ink-faint);display:flex;align-items:center;gap:7px;white-space:nowrap}
+.sec-toggle .chev{width:11px;height:11px;border-right:2px solid var(--clay-deep);border-bottom:2px solid var(--clay-deep);transform:rotate(45deg);transition:transform .3s var(--ease-out);margin-top:-4px}
+section.block.collapsed .sec-toggle .chev{transform:rotate(-45deg);margin-top:3px}
+.sec-body{overflow:hidden;max-height:60000px;transition:max-height .55s var(--ease-out),opacity .4s var(--ease-out);opacity:1}
+section.block.collapsed .sec-body{max-height:0;opacity:0}
+.sec-body-inner{padding-top:20px}
+.prose p{margin-bottom:15px;max-width:74ch}
+.lede{font-size:1.07rem}
+.cat-intro{color:var(--ink-soft);max-width:74ch;margin-bottom:6px}
+.moatline{margin:14px 0 6px;padding:14px 16px;background:var(--paper-deep);border-radius:12px;font-size:.92rem;transform:rotate(-.2deg)}
+.moatline strong{color:var(--clay-deep)}
+.callout{background:var(--paper-deep);border-radius:14px;padding:20px 22px;margin:18px 0;transform:rotate(-.25deg);position:relative}
+.callout::before{content:"";position:absolute;left:22px;top:-5px;width:74px;height:9px;background:var(--clay);opacity:.85;border-radius:5px 3px 6px 2px;transform:rotate(-1.6deg)}
+.callout p{margin:0;max-width:72ch}
+.callout p + p{margin-top:12px}
+
+/* rubric */
+.rubric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin:16px 0 6px}
+.rubric-card{background:#FBF8F2;border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px}
+.rubric-card .rc-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.rubric-card .rc-name{font-weight:700;font-size:.92rem}
+.rubric-card .rc-w{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--clay-deep)}
+.rubric-card p{font-size:.83rem;color:var(--ink-soft);margin:0;line-height:1.5}
+.formula{font-family:var(--mono);font-size:.78rem;background:var(--ink);color:var(--paper);border-radius:10px;padding:12px 16px;margin:14px 0 6px;overflow-x:auto;white-space:nowrap}
+
+/* play cards */
+.play{margin-top:26px;background:#FBF8F2;border:1px solid var(--line);border-radius:18px;padding:24px 22px 20px;position:relative}
+.play-head{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.play-head .titles{flex:1;min-width:230px}
+.playno{font-family:var(--mono);font-size:.66rem;letter-spacing:.15em;text-transform:uppercase;color:var(--clay-deep);font-weight:700}
+.play-head h3{font-family:'Spectral',serif;font-weight:800;font-size:clamp(1.2rem,1.05rem + 1.1vw,1.65rem);line-height:1.12;margin:6px 0 6px}
+.hook{font-family:'Spectral',serif;font-style:italic;font-size:1rem;color:var(--clay-deep);margin:2px 0 8px;max-width:58ch}
+.oneline{color:var(--ink-soft);max-width:58ch;font-size:.94rem}
+.dial{flex:0 0 auto;text-align:center;width:100px}
+.dial svg{display:block;margin:0 auto}
+.dial .dial-label{font-family:var(--mono);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-top:4px;line-height:1.4}
+.badge{display:inline-block;margin:8px 8px 0 0;font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.08em;padding:5px 11px;border-radius:999px}
+.badge.pass{background:var(--pass-bg);color:var(--pass)}
+.badge.below{background:var(--amber-bg);color:var(--amber)}
+.badge.build{background:#E2ECF0;color:#175E68}
+.chip{display:inline-block;margin:8px 6px 0 0;font-size:.68rem;font-weight:600;padding:4px 10px;border-radius:999px;border:1px dashed var(--clay);color:var(--clay-deep)}
+.play h4{font-weight:700;font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;color:var(--clay-deep);margin:22px 0 8px;display:flex;align-items:center;gap:10px}
+.play h4::after{content:"";flex:1;height:1px;background:var(--line)}
+.play p{margin-bottom:11px;max-width:74ch;font-size:.94rem}
+.play ul{margin:0 0 11px 20px}
+.play ul li{margin-bottom:6px;max-width:70ch;font-size:.94rem}
+
+details.inner{border:1px dashed var(--line);border-radius:12px;margin:10px 0;background:#FDFBF6}
+details.inner summary{cursor:pointer;list-style:none;padding:11px 16px;font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--ink-soft);display:flex;align-items:center;gap:10px}
+details.inner summary::-webkit-details-marker{display:none}
+details.inner summary::before{content:"+";font-size:.95rem;color:var(--clay-deep);font-weight:700}
+details.inner[open] summary::before{content:"\2212"}
+details.inner .inner-body{padding:2px 16px 14px}
+
+table{width:100%;border-collapse:collapse;margin:4px 0 8px;font-size:.9rem}
+th{text-align:left;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;padding:8px 10px 6px;border-bottom:2px solid var(--ink)}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.84rem}
+.tbl-note{font-size:.79rem;color:var(--ink-faint);margin-top:0}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:600px){table{font-size:.82rem}td,th{padding:7px 6px}}
+
+.timeline{list-style:none;margin:2px 0 6px !important;padding:0}
+.timeline li{display:grid;grid-template-columns:92px 1fr;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line);margin:0 !important;max-width:none !important}
+.timeline li:last-child{border-bottom:none}
+.timeline .days{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--teal);padding-top:2px;white-space:nowrap}
+@media(max-width:520px){.timeline li{grid-template-columns:74px 1fr;gap:9px}}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:2px}
+@media(max-width:640px){.split{grid-template-columns:1fr}}
+.split > div{background:var(--paper-deep);border-radius:12px;padding:14px 16px}
+.split .split-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:7px}
+.split .you .split-tag{color:var(--clay-deep)}
+.split .auto .split-tag{color:var(--teal)}
+.split ul{margin:0 0 0 18px}
+.split li{font-size:.88rem;margin-bottom:4px}
+
+.risk{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.risk{grid-template-columns:1fr}}
+.risk > div{border:1px dashed var(--clay);border-radius:12px;padding:14px 16px}
+.risk .risk-tag{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--clay-deep);margin-bottom:7px}
+.risk p{font-size:.88rem;margin:0;max-width:none}
+
+/* dock: status + notes, Supabase-backed */
+.dock{margin-top:20px;background:#F2EDE2;border:1px solid #E2D9C7;border-radius:14px;padding:16px 16px 12px}
+.dock .dock-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.dock .dock-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--ink-soft)}
+.seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:999px;overflow:hidden}
+.seg button{border:none;background:transparent;font-family:var(--mono);font-size:.66rem;font-weight:700;letter-spacing:.08em;padding:8px 14px;cursor:pointer;color:var(--ink-soft);transition:background .2s var(--ease-out),color .2s var(--ease-out)}
+.seg button + button{border-left:1.5px solid var(--ink)}
+.seg button.on-proceed{background:var(--pass);color:#fff}
+.seg button.on-hold{background:var(--amber);color:#fff}
+.seg button.on-cancel{background:var(--red);color:#fff}
+.dock textarea{width:100%;min-height:74px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:#FDFBF6;color:var(--ink);font-family:'Public Sans',sans-serif;font-size:.93rem;line-height:1.55;padding:11px 13px}
+.dock textarea:focus{outline:2px solid var(--teal-bright);outline-offset:1px;border-color:transparent}
+.dock .dock-hint{font-size:.68rem;color:var(--ink-faint);margin-top:7px}
+
+/* verdict pills */
+.vpill{display:inline-block;font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:4px 10px;border-radius:999px}
+.v-R{background:var(--pass-bg);color:var(--pass)}
+.v-H{background:var(--amber-bg);color:var(--amber)}
+.v-X{background:var(--red-bg);color:var(--red)}
+
+/* compact idea cards (jiggered + moonshots) */
+.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+@media(max-width:760px){.mini-grid{grid-template-columns:1fr}}
+.mini{background:#FBF8F2;border:1px solid var(--line);border-radius:16px;padding:18px 18px 14px;display:flex;flex-direction:column}
+.mini .m-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.mini h3{font-family:'Spectral',serif;font-weight:800;font-size:1.12rem;line-height:1.2;margin:2px 0 6px}
+.mini .m-conf{font-family:var(--mono);font-size:.9rem;font-weight:700;white-space:nowrap;padding-top:2px}
+.mini .hook{font-size:.9rem;margin-bottom:6px}
+.mini p.m-body{font-size:.87rem;color:var(--ink-soft);margin-bottom:8px}
+.mini .m-meta{font-family:var(--mono);font-size:.64rem;color:var(--ink-faint);margin-bottom:4px;letter-spacing:.04em}
+
+/* master table */
+#field-table th{cursor:pointer;user-select:none;white-space:nowrap}
+#field-table th .arr{opacity:.4;font-size:.7rem}
+#field-table td{font-size:.86rem}
+#field-table tr.idea-row{cursor:pointer;transition:background .15s}
+#field-table tr.idea-row:hover{background:#F2ECDF}
+#field-table .t-title{font-weight:600;min-width:180px}
+#field-table .t-cat{font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);white-space:nowrap}
+tr.detail-row td{background:#FDFBF6;border-bottom:1px solid var(--line);padding:16px 14px}
+.bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 18px;margin:8px 0 12px}
+.bar-item{font-size:.72rem;color:var(--ink-soft)}
+.bar-item .b-lab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.bar-track{height:7px;border-radius:4px;background:#E4DCCB;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:var(--teal);transition:width .8s var(--ease-out)}
+.detail-row .why{font-size:.87rem;margin-bottom:8px;max-width:78ch}
+.detail-row .why strong{color:var(--clay-deep)}
+.row-dock{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-top:10px}
+.row-dock textarea{flex:1;min-width:220px;min-height:56px;border:1px solid var(--line);border-radius:10px;background:#fff;font-family:'Public Sans',sans-serif;font-size:.88rem;padding:9px 11px}
+.status-note{font-family:var(--mono);font-size:.6rem;color:var(--ink-faint);flex-basis:100%}
+
+/* proceed panel */
+.approved-panel{background:var(--ink);color:var(--paper);border-radius:18px;padding:26px 24px;margin-top:20px}
+.approved-panel h3{font-family:'Spectral',serif;font-weight:800;font-size:1.35rem;margin-bottom:6px}
+.approved-panel .ap-sub{color:#B9C2CC;font-size:.9rem;max-width:66ch;margin-bottom:14px}
+#approvedList{list-style:none;margin:0;padding:0}
+#approvedList li{display:flex;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px dashed rgba(247,243,236,.2);font-size:.95rem}
+#approvedList li:last-child{border-bottom:none}
+#approvedList .ap-cat{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;color:var(--teal-bright);white-space:nowrap;text-transform:uppercase}
+#approvedEmpty{color:#8E99A5;font-style:italic;font-size:.92rem;padding:8px 0}
+.sec-note{font-size:.78rem;color:var(--ink-faint);margin-top:14px;max-width:74ch}
+
+.pick-box{background:var(--ink);color:var(--paper);border-radius:18px;padding:28px 26px;margin-top:20px;position:relative;overflow:hidden}
+.pick-box::after{content:"";position:absolute;right:-40px;top:-40px;width:170px;height:170px;border-radius:50%;background:var(--clay);opacity:.16}
+.pick-box .pick-tag{font-family:var(--mono);font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:var(--teal-bright);font-weight:700}
+.pick-box h3{font-family:'Spectral',serif;font-weight:800;font-size:clamp(1.2rem,1.05rem + 1.2vw,1.65rem);margin:10px 0 12px;line-height:1.18}
+.pick-box p{color:#D9DFE6;max-width:68ch;margin-bottom:10px}
+.pick-box p:last-child{margin-bottom:0}
+.pick-box strong{color:#fff}
+
+.compare-wrap td:first-child{font-weight:600}
+.compare-wrap .best{color:var(--pass);font-weight:700}
+
+#toTop{position:fixed;right:16px;bottom:18px;z-index:70;width:52px;height:52px;border-radius:50%;background:var(--ink);color:var(--paper);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .3s var(--ease-out),transform .3s var(--ease-out);box-shadow:0 8px 22px rgba(14,27,41,.28)}
+#toTop.show{opacity:1;pointer-events:auto;transform:translateY(0)}
+#toTop svg{position:absolute;inset:0}
+#toTop .arrow{font-size:1.15rem;line-height:1;position:relative;z-index:1}
+
+footer{border-top:2px solid var(--ink);max-width:980px;margin:70px auto 0;padding:26px 20px 60px;font-size:.82rem;color:var(--ink-faint);display:flex;flex-wrap:wrap;gap:10px 30px;justify-content:space-between}
+footer .fmono{font-family:var(--mono);font-size:.7rem}
+
+.rv{opacity:1;transform:none}
+.js-ready .rv{opacity:0;transform:translateY(16px);transition:opacity .7s var(--ease-out),transform .7s var(--ease-out)}
+.js-ready .rv.in{opacity:1;transform:none}
+@media print{.jumpnav,#toTop{display:none}section.block.collapsed .sec-body{max-height:none;opacity:1}body{background:#fff}}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-01-21:40:52 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="jumpnav" aria-label="Jump to section">
+  <div class="jumpnav-inner">
+    <span class="navlabel">Jump to</span>
+    <button class="nav-burger" id="navBurger" aria-expanded="false" aria-controls="navList">MENU</button>
+    <span id="syncPill">CONNECTING&hellip;</span>
+    <ul id="navList">
+      <li><a href="#summary">Summary</a></li>
+      <li><a href="#honest">Honest read</a></li>
+      <li><a href="#scoring">Scoring</a></li>
+      <li><a href="#cat1">48 hours</a></li>
+      <li><a href="#cat2">$5k week</a></li>
+      <li><a href="#cat3">10x month</a></li>
+      <li><a href="#cat4">While you sleep</a></li>
+      <li><a href="#cat5">Cold start</a></li>
+      <li><a href="#moonshots">Moonshots</a></li>
+      <li><a href="#field">Full field</a></li>
+      <li><a href="#approved">Proceeding</a></li>
+      <li><a href="#pick">Sequence</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="masthead">
+  <p class="kicker">Master board &middot; July 2026</p>
+  <h1>The Money Plays Board: <em>every idea, every score, nothing hidden.</em></h1>
+  <p class="standfirst">Thirty-nine plays across five money-now categories plus a moonshot lane, each scored on an eight-part rubric with honest confidence numbers, kill points, and the exact condition that would turn a rejected idea into a yes. Set any play to Proceed, Hold, or Cancel and your decision saves to the database and follows you to every device.</p>
+  <p class="meta">
+    <span>39 PLAYS &middot; 8-PART RUBRIC</span>
+    <span>TRUTH-ONLY SCORES</span>
+    <span>PROCEED &rarr; FEEDS THE MONEY MAP</span>
+  </p>
+</header>
+
+<main>
+
+<!-- 01 SUMMARY -->
+<section class="block rv" id="summary">
+  <div class="sec-head" data-toggle><span class="num">01</span><h2>The board at a glance</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner prose">
+    <p class="lede">Top recommendation per category. The full ranked field of all 39, including everything rejected and why, lives in the Full Field section below.</p>
+    <div class="tscroll"><table>
+      <thead><tr><th>Category</th><th>Best play</th><th class="n">Confidence</th><th class="n">Math</th></tr></thead>
+      <tbody>
+        <tr><td>$1k in 48 hours</td><td><strong>The Warm Hundred</strong></td><td class="n">65% in 48h / 85% in 7d</td><td class="n">4 &times; $250</td></tr>
+        <tr><td>$5k in a week</td><td><strong>The Stacked Week</strong></td><td class="n">60% full / 80% to $3k</td><td class="n">stack of 3 offers</td></tr>
+        <tr><td>10x in a month</td><td><strong>The Rolodex Sprint</strong></td><td class="n">80-82%</td><td class="n">2 &times; $5,000</td></tr>
+        <tr><td>While you sleep</td><td><strong>$47 instant visibility report</strong></td><td class="n">35% for 30-day cash</td><td class="n">volume &times; $47</td></tr>
+        <tr><td>Cold start, no network</td><td><strong>Proof Before Pitch</strong></td><td class="n">75-80% first client</td><td class="n">1 client to start</td></tr>
+        <tr><td>Jiggered (recombined)</td><td><strong>Rent the Receptionist ($149/mo)</strong></td><td class="n">60% for 5 renters in 45d</td><td class="n">recurring, compounds</td></tr>
+        <tr><td>Moonshots</td><td><strong>License the scan engine</strong> ($5M thought experiment)</td><td class="n">5-10% within 24 months</td><td class="n">1,000 seats &times; $99-499/mo</td></tr>
+      </tbody>
+    </table></div>
+    <p>One finding repeats everywhere: <strong>capital is never the engine.</strong> The engine is expertise plus working proof, sold personally, nearly every working day. Nothing on this board depends on luck, virality, or timing you cannot control, and every play doubles as a public challenge whose documented run becomes sales proof.</p>
+  </div></div>
+</section>
+
+<!-- 02 HONEST READ -->
+<section class="block rv" id="honest">
+  <div class="sec-head" data-toggle><span class="num">02</span><h2>The honest read, before anything else</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner prose">
+    <p class="lede">Can a legal, ethical $1,000-to-$10,000 in a month clear an 80% confidence bar? Yes. One way only.</p>
+    <p>No legal capital play turns $1,000 into $10,000 in thirty days at believable speed. Flips, resale, domains, and ad-funded cheap products all die in arithmetic: a flip cycle at 40 to 60% margin caps near $3,000 to $4,000 no matter how well it runs. Trading is gambling and was killed on sight. What clears the bar is selling high-value expertise at $250 to $10,000 a ticket, where margin is close to 100% and an AI toolset compresses delivery from weeks to days.</p>
+    <p>Sixteen 10x candidates were simulated and thirteen died in the math. Survivors took three pressure rounds each: a premortem, a five-angle stress review, and a go-to-market reality check. Then the whole field, fast plays, flywheels, recombinations, and moonshots, was scored on one rubric with the same rule: state the true number, even when it is 10%. Killed ideas keep their full card and the exact unlock that would revive them.</p>
+    <div class="callout">
+      <p><strong>The moat that gets forgotten:</strong> the operator behind this board is Gen X. He lived the analog-to-digital transition once already and is living the AI one now. Gen X and older owners and buyers, who hold most of the budgets, trust a peer who speaks their language over a 20-something guru. That leaves a higher-trust, higher-budget audience nearly uncontested, and it shapes the targeting on almost every play below.</p>
+      <p><strong>The full moat stack, named on every play:</strong> the Gen X bridge. Fifteen years of HR inside a Fortune-100 company. The cultural moat: Guinea roots and an American operator's career, two worlds straddled, trust built across audiences others cannot reach, and market gaps seen from the outside in. The MBA operator's eye for unit economics. The proof moat: a working AI operation, live phone agent included, built before selling a minute of advice about it. Communications training put to work. The superpower moat: spotting non-obvious connections others miss, which powers the entire moonshot lane. And the learn-fast-and-teach moat: he picks up new tech quickly and explains it plainly to non-technical people, which converts every new tool he touches into a teachable, sellable asset before most people have finished reading the docs.</p>
+    </div>
+  </div></div>
+</section>
+
+<!-- 03 SCORING RUBRIC -->
+<section class="block rv" id="scoring">
+  <div class="sec-head" data-toggle><span class="num">03</span><h2>How these are scored</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner prose">
+    <p>Every idea gets eight sub-scores from 0 to 10, weighted into a composite out of 100. The weights are printed so you can mentally re-weight: if you only cared about speed to cash, the 48-hour plays rise; if you only cared about upside, the moonshots do. Sub-scores are judgment calls stated honestly, not measurements.</p>
+    <div class="rubric-grid">
+      <div class="rubric-card"><div class="rc-head"><span class="rc-name">Confidence</span><span class="rc-w">20%</span></div><p>Odds of hitting the stated target if run exactly as written. The number that never gets rounded up.</p></div>
+      <div class="rubric-card"><div class="rc-head"><span class="rc-name">Feasibility</span><span class="rc-w">15%</span></div><p>Can it start now with current assets and skills, no permission, no missing piece.</p></div>
+      <div class="rubric-card"><div class="rc-head"><span class="rc-name">Speed to cash</span><span class="rc-w">15%</span></div><p>Days from start to first collected dollar. 10 means today; 1 means quarters away.</p></div>
+      <div class="rubric-card"><div class="rc-head"><span class="rc-name">Upside</span><span class="rc-w">15%</span></div><p>Dollar potential and scalability if it works. A $1k play caps low; a licensing engine does not.</p></div>
+      <div class="rubric-card"><div class="rc-head"><span class="rc-name">Effort and cost</span><span class="rc-w">10%</span></div><p>Capital plus his hours in. Scored inverted: 10 is light, 1 consumes the calendar.</p></div>
+      <div class="rubric-card"><div class="rc-head"><span class="rc-name">Durability</span><span class="rc-w">10%</span></div><p>One-off cash versus recurring revenue or a flywheel that keeps paying.</p></div>
+      <div class="rubric-card"><div class="rc-head"><span class="rc-name">Moat fit</span><span class="rc-w">10%</span></div><p>How hard it leans on his unfair advantages: Gen X bridge, HR seat, cultural bridge, proof, MBA, teach-fast, connection-spotting.</p></div>
+      <div class="rubric-card"><div class="rc-head"><span class="rc-name">Risk</span><span class="rc-w">5%</span></div><p>Downside if it misses: cash lost, time burned, reputation exposure. Scored inverted: 10 is safe to fail.</p></div>
+    </div>
+    <p class="formula">composite = conf&times;2.0 + feas&times;1.5 + speed&times;1.5 + upside&times;1.5 + effort&times;1.0 + durability&times;1.0 + moat&times;1.0 + risk&times;0.5&nbsp;&nbsp;(each 0-10 &rarr; 100)</p>
+    <p class="tbl-note">Verdicts map from the scores but stay human calls: RECOMMEND (run it), HOLD (real idea, wrong month, unlock named), REJECT (math or ethics failed, unlock named anyway so nothing is buried).</p>
+  </div></div>
+</section>
+
+<!-- 04 CATEGORY 1 -->
+<section class="block rv" id="cat1">
+  <div class="sec-head" data-toggle><span class="num">04</span><h2>Category 1: $1,000 in 48 hours</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner">
+    <p class="cat-intro">The fastest money on the board. Warm and direct, nothing built, nothing bought. Both plays double as public challenges: run one, document it, and the receipt becomes sales proof for everything else here.</p>
+    <p class="moatline"><strong>Moats this category rides:</strong> Gen X peer trust plus working proof. The warm list watched him operate for two decades. The live scan puts a working AI tool in front of owners his own age who are tired of being pitched by kids. The message: not "AI will change everything" but "I run a business like yours, here is what your customers see."</p>
+
+    <article class="play" data-key="warm-hundred">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 1A &middot; Warm list</p>
+          <h3>The Warm Hundred</h3>
+          <p class="hook">The challenge: put $1,000 on the board in 48 hours using only people who already know me.</p>
+          <p class="oneline">Message the 100 warmest contacts and past customers with two offers: a $250 visibility audit and a $1,500 done-for-you setup. Four audit yeses, or one setup plus momentum, hits $1,000.</p>
+          <span class="badge below">65% IN A STRICT 48H</span><span class="badge pass">85% WITHIN 7 DAYS</span>
+          <span class="chip">Gen X peer trust</span><span class="chip">Practitioner proof</span>
+        </div>
+        <div class="dial" data-conf="65" data-below="1"><div class="dial-label">Confidence 65% (48h)</div></div>
+      </div>
+      <h4>The math</h4>
+      <div class="tscroll"><table>
+        <thead><tr><th>Step</th><th class="n">Assumption</th><th class="n">Result</th></tr></thead>
+        <tbody>
+          <tr><td>Personal messages sent in 48h</td><td class="n">100</td><td class="n">hours 0-36</td></tr>
+          <tr><td>Reply rate (warm)</td><td class="n">~30%</td><td class="n">~30 replies</td></tr>
+          <tr><td>Audit closes at $250</td><td class="n">~4</td><td class="n"><strong>$1,000</strong></td></tr>
+          <tr><td>Cash cycle</td><td class="n">card on yes</td><td class="n">same day</td></tr>
+        </tbody>
+      </table></div>
+      <p class="tbl-note">The 48-hour clock is the honest constraint: replies land on the buyer's schedule, not yours. Same play, seven-day window: roughly 85%.</p>
+      <details class="inner"><summary>Day by day, capital, and risk</summary><div class="inner-body">
+        <ul class="timeline">
+          <li><span class="days">Hours 0-4</span><span>Pull the 100 warmest names. Write two short offers in plain words. No blast tools; every message personal.</span></li>
+          <li><span class="days">Hours 4-36</span><span>Send all 100. Answer every reply within minutes. Take payment on the call, run the audit within 24 hours of payment.</span></li>
+          <li><span class="days">Hours 36-48</span><span>Second touch to the interested-but-quiet. Post the running tally if documenting the challenge publicly.</span></li>
+        </ul>
+        <p><strong>Capital:</strong> $0 required. Effort: two focused days.</p>
+        <div class="risk">
+          <div><p class="risk-tag">#1 failure mode</p><p>Warm does not mean fast. People who like you still take three days to answer. The clock, not the offer, is what kills the strict version.</p></div>
+          <div><p class="risk-tag">Kill criteria</p><p>None needed inside 48 hours. If under $500 at hour 48, extend to day 7 rather than discount. Never cut the price to beat the clock.</p></div>
+        </div>
+        <div class="split">
+          <div class="you"><p class="split-tag">You, personally</p><ul><li>Every message, every reply, every close</li></ul></div>
+          <div class="auto"><p class="split-tag">Automated or delegated</p><ul><li>List assembly, audit generation, scheduling, receipts</li></ul></div>
+        </div>
+      </div></details>
+      <div class="dock" data-dock="warm-hundred"></div>
+    </article>
+
+    <article class="play" data-key="main-street">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 1B &middot; Face to face</p>
+          <h3>Main Street, Live</h3>
+          <p class="hook">The challenge: walk one business district for two days and close $1,000 with a live scan and nothing else.</p>
+          <p class="oneline">Walk into local businesses, run the AI visibility scan while they watch, and show them what AI tools say (or fail to say) about them. Offer the $250 full audit or a $500 same-week quick fix on the spot.</p>
+          <span class="badge below">50-55% IN 48H, HONESTLY</span>
+          <span class="chip">Gen X owner trust</span><span class="chip">Working proof</span>
+        </div>
+        <div class="dial" data-conf="52" data-below="1"><div class="dial-label">Confidence 50-55%</div></div>
+      </div>
+      <h4>The math</h4>
+      <div class="tscroll"><table>
+        <thead><tr><th>Step</th><th class="n">Assumption</th><th class="n">Result</th></tr></thead>
+        <tbody>
+          <tr><td>Walk-ins over two days</td><td class="n">~30</td><td class="n">owner present ~15</td></tr>
+          <tr><td>Live scans run</td><td class="n">~12</td><td class="n">2-3 min each</td></tr>
+          <tr><td>Closes at $250-500</td><td class="n">~25%</td><td class="n">3-4 sales</td></tr>
+          <tr><td><strong>Revenue</strong></td><td class="n">mixed</td><td class="n"><strong>$750-1,500</strong></td></tr>
+        </tbody>
+      </table></div>
+      <p class="tbl-note">Below the coin-flip line is where honesty matters most: this could take two runs. But even a failed run produces the strongest content asset on this page, a true story with receipts. The story value is certain; the 48-hour cash is not.</p>
+      <details class="inner"><summary>Steps, capital, and risk</summary><div class="inner-body">
+        <ul class="timeline">
+          <li><span class="days">Hour 0</span><span>Pick one district with 30+ owner-operated storefronts. Print a one-page leave-behind.</span></li>
+          <li><span class="days">Days 1-2</span><span>Walk in during slow hours. One line: "Can I show you what AI tools tell your customers about you? Takes two minutes." Run the scan, show the gaps, offer the fix.</span></li>
+        </ul>
+        <p><strong>Capital:</strong> under $50 (printing, parking). Effort: two full days on foot.</p>
+        <div class="risk">
+          <div><p class="risk-tag">#1 failure mode</p><p>Owner not on site. Half of walk-ins reach an employee who cannot buy. The play lives or dies on picking a district where owners work the counter.</p></div>
+          <div><p class="risk-tag">Kill criteria</p><p>Ten scans shown with zero closes means the pitch or the district is wrong. Change one variable, not both, before run two.</p></div>
+        </div>
+        <div class="split">
+          <div class="you"><p class="split-tag">You, personally</p><ul><li>Every walk-in and every close. This one cannot be delegated.</li></ul></div>
+          <div class="auto"><p class="split-tag">Automated or delegated</p><ul><li>The scan itself, audit delivery, follow-up calls handled by the phone agent</li></ul></div>
+        </div>
+      </div></details>
+      <div class="dock" data-dock="main-street"></div>
+    </article>
+  </div></div>
+</section>
+
+<!-- 05 CATEGORY 2 -->
+<section class="block rv" id="cat2">
+  <div class="sec-head" data-toggle><span class="num">05</span><h2>Category 2: $5,000 in a week</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner">
+    <p class="cat-intro">Near-term money from offers that already exist. The honest headline: no single offer here makes $5,000 in seven days on its own. The stack does.</p>
+    <p class="moatline"><strong>Moats this category rides:</strong> practitioner proof plus the Gen X bridge, with the learn-fast-and-teach moat carrying the workshop. The audit buyer is an established owner who wants a peer, not a pitch deck. The workshop is positioned for owners who did not grow up with this technology and want it explained plainly by someone who learned it as an adult too.</p>
+
+    <article class="play" data-key="stacked-week">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 2A &middot; The anchor</p>
+          <h3>The Stacked Week</h3>
+          <p class="hook">The challenge: seven days, three existing offers, $5,000 collected, every step documented.</p>
+          <p class="oneline">Batch the $250 audits by scanning one whole niche at once, let the AI phone agent handle follow-up calls, close one $1,500 done-for-you setup, and let workshop seats top up the total.</p>
+          <span class="badge below">60% FOR THE FULL $5K</span><span class="badge pass">80% TO REACH $3K</span>
+          <span class="chip">Practitioner proof</span><span class="chip">Gen X bridge</span>
+        </div>
+        <div class="dial" data-conf="60" data-below="1"><div class="dial-label">Confidence 60%</div></div>
+      </div>
+      <h4>The math</h4>
+      <div class="tscroll"><table>
+        <thead><tr><th>Piece</th><th class="n">Units &times; price</th><th class="n">Revenue</th></tr></thead>
+        <tbody>
+          <tr><td>Niche-batch audits (scan 100, pitch 40 with findings in hand)</td><td class="n">10 &times; $250</td><td class="n">$2,500</td></tr>
+          <tr><td>Done-for-you setup (audit upsell or warm list)</td><td class="n">1 &times; $1,500</td><td class="n">$1,500</td></tr>
+          <tr><td>Workshop seats (free-video funnel running all week)</td><td class="n">~20 &times; $47</td><td class="n">$940</td></tr>
+          <tr><td><strong>Total</strong></td><td class="n"></td><td class="n"><strong>~$4,940</strong></td></tr>
+        </tbody>
+      </table></div>
+      <p class="tbl-note">Ten audit closes from roughly 40 findings-led pitches assumes a ~25% close rate on prospects shown their own gaps. That is the load-bearing assumption. Cash cycle: cards on close, days 1-7.</p>
+      <details class="inner"><summary>Day by day, capital, and risk</summary><div class="inner-body">
+        <ul class="timeline">
+          <li><span class="days">Day 1</span><span>Pick one niche (one trade, one metro). Run the scanner across 100 businesses. Rank by worst gaps.</span></li>
+          <li><span class="days">Days 2-5</span><span>Pitch the 40 worst with their own findings attached. Phone agent makes first-touch calls and books the interested. You close.</span></li>
+          <li><span class="days">Days 3-6</span><span>Offer the $1,500 setup to every audit buyer and the two warmest list contacts. One yes carries the stack.</span></li>
+          <li><span class="days">All week</span><span>Free-video funnel promotes the $47 seats in parallel. No extra selling hours from you.</span></li>
+        </ul>
+        <p><strong>Capital:</strong> ~$150 (list data + phone credits). Effort: a full selling week.</p>
+        <div class="risk">
+          <div><p class="risk-tag">#1 failure mode</p><p>The audit close rate lands at 10% instead of 25% and the week makes $2,500. Findings-led pitching is the mitigation: never pitch cold, always pitch with their own gaps in hand.</p></div>
+          <div><p class="risk-tag">Kill criteria</p><p>Day 3 with zero audit closes from 15+ findings-led pitches: stop and fix the pitch before spending days 4-7. Do not push the same script harder.</p></div>
+        </div>
+        <div class="split">
+          <div class="you"><p class="split-tag">You, personally</p><ul><li>The closes, setup scoping, pitch fixes</li></ul></div>
+          <div class="auto"><p class="split-tag">Automated or delegated</p><ul><li>Niche scanning, findings reports, first-touch calls, booking, funnel</li></ul></div>
+        </div>
+      </div></details>
+      <div class="dock" data-dock="stacked-week"></div>
+    </article>
+
+    <article class="play" data-key="workshop-funnel">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 2B &middot; Top of funnel</p>
+          <h3>Workshop seats: honest about what this is</h3>
+          <p class="hook">The truth: $47 seats do not make $5,000 in a week. They make buyers for everything else.</p>
+          <p class="oneline">The July 30 workshop at $47 a seat, fed by the free demo video. Reaching $5,000 on seats alone needs 106 sales in a week, which no honest number supports. Its real job: a room full of qualified buyers for the audit, the setup, and the sprints.</p>
+          <span class="badge below">UNDER 10% AS A $5K PLAY</span><span class="badge build">HIGH VALUE AS PIPELINE</span>
+          <span class="chip">Gen X positioning</span><span class="chip">Learn-fast, teach plain</span>
+        </div>
+        <div class="dial" data-conf="10" data-below="1"><div class="dial-label">As a $5k play: 10%</div></div>
+      </div>
+      <p><strong>Why it stays on the board:</strong> a $47 seat is the cheapest qualified-buyer filter that exists here. One room of owners, positioned honestly as "for people who did not grow up with this," converts downstream into audits and setups worth far more than the seat revenue. Count seat money as topping, never as the target.</p>
+      <div class="dock" data-dock="workshop-funnel"></div>
+    </article>
+
+    <article class="play" data-key="ghostwriting-path">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 2C &middot; Skill compounding</p>
+          <h3>The premium ghostwriting path</h3>
+          <p class="hook">The truth: this is a 60-to-90-day path wearing a one-week costume. Treated honestly here.</p>
+          <p class="oneline">He is enrolled in a premium ghostwriting accelerator and mid-way through its assignments (an email course and its landing page already built). Industry-typical retainers run $2,000 to $5,000 a month. His own economics: unproven until a first paid retainer, and outreach is deliberately held until the coursework validates.</p>
+          <span class="badge below">UNDER 15% AS A ONE-WEEK PLAY</span><span class="badge build">~50% FIRST RETAINER IN 60-90 DAYS</span>
+          <span class="chip">Comms training</span><span class="chip">Gen X voice for Gen X execs</span>
+        </div>
+        <div class="dial" data-conf="15" data-below="1"><div class="dial-label">One-week: 15%</div></div>
+      </div>
+      <p><strong>The honest math on its own clock:</strong> one retainer at $2,000 to $5,000 a month, recurring. The moat fit is real: Gen X executives with a voice and no time would rather hand their words to a peer who spent two decades in corporate rooms than to a content kid. But nothing about it fits a seven-day cash window, and pretending otherwise would poison the rest of this board.</p>
+      <div class="dock" data-dock="ghostwriting-path"></div>
+    </article>
+  </div></div>
+</section>
+
+<!-- 06 CATEGORY 3 -->
+<section class="block rv" id="cat3">
+  <div class="sec-head" data-toggle><span class="num">06</span><h2>Category 3: 10x, $1,000 to $10,000 in 15-30 days</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner">
+    <p class="cat-intro">The deep-analysis category. Sixteen candidates simulated, thirteen killed in the math (all visible in the Full Field below with their unlock conditions). The three survivors took three pressure rounds each. This category alone was held to a hard 80% confidence gate, and one of the three sits below the bar with its true number showing.</p>
+    <p class="moatline"><strong>Moats this category rides:</strong> the HR seat above all. Fifteen years inside a Fortune-100 people organization is a door-opener no marketing budget can buy, and the buyers behind those doors are largely Gen X peers who answer a familiar name faster than any cold pitch. The MBA operator lens turns the conversation into a fixed-scope, fixed-price yes.</p>
+
+    <article class="play" data-key="rolodex-sprint">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 3A &middot; Warm network</p>
+          <h3>The Rolodex Sprint</h3>
+          <p class="hook">The challenge: $1,000 in, $10,000 out in 30 days, sold entirely to people who already trust me.</p>
+          <p class="oneline">Two $5,000 fixed-scope AI readiness sprints (half-day working session, AI-use policy pack, 30-day adoption plan) sold to HR and People leaders from a 15-year network. Two closes hit the target.</p>
+          <span class="badge pass">CLEARS THE 80% BAR</span>
+          <span class="chip">HR seat</span><span class="chip">Gen X peer trust</span><span class="chip">MBA operator</span>
+        </div>
+        <div class="dial" data-conf="81"><div class="dial-label">Confidence 80-82%</div></div>
+      </div>
+      <h4>Why this one works</h4>
+      <p>It stacks three verifiable assets: HR credibility earned inside a Fortune-100 environment, a warm network measured in the hundreds, and an AI toolset that delivers a $5,000 sprint in about two working days. Every HR department in 2026 is under pressure to show an AI policy and adoption plan. The buyer already trusts the seller. That trust is the biggest close-rate lever that exists.</p>
+      <h4>The math to $10,000</h4>
+      <div class="tscroll"><table>
+        <thead><tr><th>Step</th><th class="n">Assumption</th><th class="n">Result</th></tr></thead>
+        <tbody>
+          <tr><td>Warm and second-degree contacts reached</td><td class="n">200+</td><td class="n">days 3-10</td></tr>
+          <tr><td>Reply rate, then calls booked</td><td class="n">~25% / ~30%</td><td class="n">~15 calls</td></tr>
+          <tr><td>Close rate per call at $5,000 fixed scope</td><td class="n">~20%</td><td class="n">2-3 signed</td></tr>
+          <tr><td><strong>Revenue</strong></td><td class="n">2 &times; $5,000</td><td class="n"><strong>$10,000</strong></td></tr>
+          <tr><td>Margin / cash cycle</td><td class="n">~100%</td><td class="n">deposits days 12-28</td></tr>
+        </tbody>
+      </table></div>
+      <p class="tbl-note">Two-plus closes from 15 calls at a 20% close rate carries roughly an 83% probability; a haircut for July vacation calendars lands it at 80 to 82%. All rates are stated assumptions.</p>
+      <details class="inner"><summary>Day by day, capital, and risk</summary><div class="inner-body">
+        <ul class="timeline">
+          <li><span class="days">Days 1-2</span><span>Lock the offer one-pager: scope, $5,000 price, two-week delivery promise. Build the 200-name list. Write three outreach variants.</span></li>
+          <li><span class="days">Days 3-10</span><span>Send 25 to 30 personal messages a day. Book calls same week. Publish two short posts on AI policy risk for HR teams. No Sunday sends.</span></li>
+          <li><span class="days">Days 8-16</span><span>Run discovery calls, target fifteen. Sign with a 50% deposit. First close target: day 12 to 14.</span></li>
+          <li><span class="days">Days 12-24</span><span>Deliver sprint one within five business days of signing. Keep outreach at ten a day.</span></li>
+          <li><span class="days">Days 18-30</span><span>Close and deliver sprint two. Collect balances. Ask both clients for one referral introduction each.</span></li>
+        </ul>
+        <p><strong>Where the $1,000 goes:</strong> network search tool $100, contact enrichment $150, two prospect lunches plus five targeted gifts $300, contract tooling $50, reserve $400 (deliberately unspent).</p>
+        <div class="risk">
+          <div><p class="risk-tag">#1 failure mode</p><p>One close instead of two because July vacations pushed signatures two to three weeks. Countermeasure: front-load all outreach into days 3 to 10, and offer a day-14 start framed with real calendar scarcity (two July slots is the true capacity).</p></div>
+          <div><p class="risk-tag">Kill criteria</p><p>Day 10 with under eight calls booked from 200+ touches: the network is colder than assumed, pivot the list to Play 3B. Day 20 with zero closes: drop to a $3,500 policy-pack-only scope and finish near $7,000 honestly.</p></div>
+        </div>
+        <div class="split">
+          <div class="you"><p class="split-tag">You, personally</p><ul><li>All outreach in your name, every call, the half-day sessions, the referral asks</li></ul></div>
+          <div class="auto"><p class="split-tag">Automated or delegated</p><ul><li>List building, outreach drafts (you edit), policy pack drafting, scheduling, invoicing</li></ul></div>
+        </div>
+      </div></details>
+      <div class="dock" data-dock="rolodex-sprint"></div>
+    </article>
+
+    <article class="play" data-key="contract-anchor">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 3B &middot; One yes needed</p>
+          <h3>The Contract Anchor</h3>
+          <p class="hook">The challenge: one signed interim HR engagement inside 30 days, five channels hunting at once.</p>
+          <p class="oneline">Land a single interim or fractional HR contract at $8,000 to $12,000 a month through staffing firms, expert marketplaces, the direct network, freelance platforms, and two local HR events, all in parallel. One yes hits the target.</p>
+          <span class="badge pass">CLEARS THE 80% BAR</span>
+          <span class="chip">HR seat</span><span class="chip">MBA operator</span><span class="chip">Gen X buyer trust</span>
+        </div>
+        <div class="dial" data-conf="80"><div class="dial-label">Confidence 80%</div></div>
+      </div>
+      <h4>Why this one works</h4>
+      <p>It needs exactly one yes from a market with constant interim demand: leadership gaps, restructuring support, compliance, and AI-policy projects. Any single channel is a 20 to 35% shot in thirty days. Five at once pushes the portfolio past 80%. The honest asterisk sits in the headline: the agreement signs inside 30 days; the first invoice may land at day 30 to 45 on net-15 terms.</p>
+      <h4>The math</h4>
+      <div class="tscroll"><table>
+        <thead><tr><th>Step</th><th class="n">Assumption</th><th class="n">Result</th></tr></thead>
+        <tbody>
+          <tr><td>Channels activated in week 1</td><td class="n">5</td><td class="n">days 1-7</td></tr>
+          <tr><td>First-round conversations</td><td class="n">6-10</td><td class="n">days 7-20</td></tr>
+          <tr><td>Rate (senior interim HR)</td><td class="n">$95-110/hr &times; 20-25 hrs/wk</td><td class="n"><strong>$8,200-11,000/mo</strong></td></tr>
+          <tr><td>Signature target</td><td class="n">day 20-30</td><td class="n">cash days 30-45</td></tr>
+        </tbody>
+      </table></div>
+      <details class="inner"><summary>Day by day, capital, and risk</summary><div class="inner-body">
+        <ul class="timeline">
+          <li><span class="days">Days 1-3</span><span>Position assets: interim one-pager, availability signal on the professional profile, a two-page capability sheet (policy, compliance, HR business-partner coverage, AI adoption for HR).</span></li>
+          <li><span class="days">Days 3-7</span><span>Register with eight to ten staffing and consulting firms. Profiles live on three expert marketplaces. Ten platform bids. Availability note to the fifty closest contacts.</span></li>
+          <li><span class="days">Days 7-20</span><span>Interviews and scoping calls, target six to ten. Weekly recruiter follow-up. Attend both local events.</span></li>
+          <li><span class="days">Days 15-30</span><span>Negotiate and sign one statement of work. Target day 25. Start delivery immediately if allowed, which pulls cash forward.</span></li>
+        </ul>
+        <p><strong>Where the $1,000 goes:</strong> HR association membership plus two event tickets $250, profile tools $150, platform bid credits $100, three staffing-firm meetings $200, reserve $300.</p>
+        <div class="risk">
+          <div><p class="risk-tag">#1 failure mode</p><p>Two "strong interest, start in August" conversations and nothing signed by day 30. Placements stall on client-side budget sign-off. Countermeasure: bias toward smaller companies and marketplaces, and offer a two-week paid discovery block at $4,000 to $5,000 as the wedge.</p></div>
+          <div><p class="risk-tag">Kill criteria</p><p>Day 14 with under four first-round conversations across all five channels: collapse this play into Play 3A entirely. Never accept below an $80-per-hour equivalent.</p></div>
+        </div>
+        <div class="split">
+          <div class="you"><p class="split-tag">You, personally</p><ul><li>Interviews, scoping, rate negotiation, recruiter relationships, both events</li></ul></div>
+          <div class="auto"><p class="split-tag">Automated or delegated</p><ul><li>Firm research, form prep, capability sheet, bid drafts, follow-up tracking</li></ul></div>
+        </div>
+      </div></details>
+      <div class="dock" data-dock="contract-anchor"></div>
+    </article>
+
+    <article class="play" data-key="missed-call">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 3C &middot; Cold local, live proof</p>
+          <h3>Missed-Call Rescue</h3>
+          <p class="hook">The demo is a phone number: "Call it right now and listen to it book a job."</p>
+          <p class="oneline">Sell five local home-service businesses an AI phone agent that answers the calls they miss, at $1,975 setup including the first month. The live line already exists and works, which makes the proof unbeatable. The volume math is what holds it under the bar.</p>
+          <span class="badge below">BELOW THE BAR AT 72%, SHOWN HONESTLY</span>
+          <span class="chip">Working proof</span><span class="chip">Gen X owner trust</span>
+        </div>
+        <div class="dial" data-conf="72" data-below="1"><div class="dial-label">Confidence 72%</div></div>
+      </div>
+      <h4>The math and why it misses 80%</h4>
+      <div class="tscroll"><table>
+        <thead><tr><th>Step</th><th class="n">Assumption</th><th class="n">Result</th></tr></thead>
+        <tbody>
+          <tr><td>Target list (HVAC, plumbing, roofing, electrical)</td><td class="n">300</td><td class="n">week 1</td></tr>
+          <tr><td>Live demos ("call this number now")</td><td class="n">~30</td><td class="n">weeks 2-4</td></tr>
+          <tr><td>Close rate at $1,975</td><td class="n">20-25%</td><td class="n">5 closes</td></tr>
+          <tr><td><strong>Revenue</strong></td><td class="n">5 &times; $1,975</td><td class="n"><strong>$9,875</strong></td></tr>
+        </tbody>
+      </table></div>
+      <p class="tbl-note">Five closes from thirty demos carries a probability band of roughly 57 to 76% depending on the true close rate. Add a solo cold motion, installs eating selling hours, paid social unavailable this month, and a playbook that wants one documented pilot case before scaling cold. The honest number: 72%.</p>
+      <details class="inner"><summary>Steps, capital, and risk (if run)</summary><div class="inner-body">
+        <ul class="timeline">
+          <li><span class="days">Week 1</span><span>Build the 300-business list along the Wasatch Front. Write the two-minute demo script. Fifty opening calls.</span></li>
+          <li><span class="days">Weeks 2-4</span><span>Eight to ten demos a week. Close and install same week. Every install becomes a reference.</span></li>
+        </ul>
+        <p><strong>Where the $1,000 goes:</strong> list and data $250, phone credits $200, in-person visits $300, reserve $250.</p>
+        <div class="risk">
+          <div><p class="risk-tag">#1 failure mode</p><p>Demos impress but owners stall at "let me think about it." Novelty wins attention; it does not create a deadline to buy.</p></div>
+          <div><p class="risk-tag">Kill criteria</p><p>Day 12 with under eight demos, or day 20 with under two closes: stop. Keep the clients won as the documented pilot case and fold remaining days into Plays 3A and 3B.</p></div>
+        </div>
+        <div class="split">
+          <div class="you"><p class="split-tag">You, personally</p><ul><li>The demo calls, the visits, every close</li></ul></div>
+          <div class="auto"><p class="split-tag">Automated or delegated</p><ul><li>The phone agent is both product and proof; list building, install config, onboarding docs</li></ul></div>
+        </div>
+      </div></details>
+      <div class="dock" data-dock="missed-call"></div>
+    </article>
+  </div></div>
+</section>
+
+<!-- 07 CATEGORY 4 -->
+<section class="block rv" id="cat4">
+  <div class="sec-head" data-toggle><span class="num">07</span><h2>Category 4: money while you sleep</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner">
+    <p class="cat-intro">Flywheels: assets that keep earning after the work is done. The honest frame for the whole category: expected cash in the next 30 days is small, possibly zero. These are compounding builds, scored as such. Anyone promising passive income in a month is selling something.</p>
+    <p class="moatline"><strong>Moats this category rides:</strong> the cultural moat and the Gen X lens together, powered by learn-fast-and-teach. The faceless channel family (First Generation Money, Under the Baobab, AI Catalyst, and five more warming up) speaks to first-generation professionals and diaspora audiences most creators cannot reach authentically. The connection others miss: those channels are free, owned distribution for the paid reports below. Most people build an audience OR a product. This stack builds the audience that hands the product to itself.</p>
+
+    <article class="play" data-key="instant-report">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 4A &middot; Closest to live</p>
+          <h3>The $47 instant visibility report</h3>
+          <p class="hook">The challenge: a report that sells itself while I sleep, built from a scanner that already runs.</p>
+          <p class="oneline">Self-serve version of the visibility scan: an owner types their business name, pays $47, gets the full "what AI tools say about you" report in minutes. The scanner exists; the buildable part is payment plus delivery, days of work, not weeks.</p>
+          <span class="badge below">35% FOR MEANINGFUL 30-DAY CASH</span><span class="badge build">STRONG AS A COMPOUNDING ASSET</span>
+          <span class="chip">Working proof</span><span class="chip">Gen X owner trust</span>
+        </div>
+        <div class="dial" data-conf="35" data-below="1"><div class="dial-label">30-day cash: 35%</div></div>
+      </div>
+      <h4>The honest math</h4>
+      <div class="tscroll"><table>
+        <thead><tr><th>Step</th><th class="n">Assumption</th><th class="n">Result</th></tr></thead>
+        <tbody>
+          <tr><td>Build: payment + auto-delivery on the existing scanner</td><td class="n">2-4 days</td><td class="n">one-time</td></tr>
+          <tr><td>Traffic source, month one</td><td class="n">own channels + audits + workshop</td><td class="n">unproven</td></tr>
+          <tr><td>Conversion</td><td class="n">unknown, honestly</td><td class="n">no data yet</td></tr>
+          <tr><td>Upsell path</td><td class="n">$47 report &rarr; $250 audit &rarr; $1,500 setup</td><td class="n">the real prize</td></tr>
+        </tbody>
+      </table></div>
+      <p class="tbl-note">The connection others miss: every $47 buyer is a pre-qualified audit lead who paid to raise their hand, and the phone agent can call every one of them. A tripwire wired to a closer that never sleeps either.</p>
+      <div class="risk">
+        <div><p class="risk-tag">#1 failure mode</p><p>No traffic. A tripwire with no front door earns nothing. It needs the channels, the workshop, and the walk-ins feeding it before it earns alone.</p></div>
+        <div><p class="risk-tag">Kill criteria</p><p>Sixty days with under ten sales despite live distribution: park it and keep the scanner for the audit motion. The build cost stays small enough that parking is painless.</p></div>
+      </div>
+      <div class="dock" data-dock="instant-report"></div>
+    </article>
+
+    <article class="play" data-key="national-report">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 4B &middot; The adjacency</p>
+          <h3>"Does ChatGPT recommend you?" as a national self-serve product</h3>
+          <p class="hook">The connection: eight faceless channels are a free national sales force for a $27-47 report.</p>
+          <p class="oneline">Same visibility report, sold nationally at $27 to $47, with the faceless channel family as owned distribution. Channels are live but still warming; their monetization is honestly unproven. The play is real; the timeline is quarters, not weeks.</p>
+          <span class="badge below">30% FOR 30-DAY CASH</span><span class="badge build">DISTRIBUTION ASSET, HONEST TIMELINE</span>
+          <span class="chip">Cultural bridge</span><span class="chip">Gen X HR consultants niche</span>
+        </div>
+        <div class="dial" data-conf="30" data-below="1"><div class="dial-label">30-day cash: 30%</div></div>
+      </div>
+      <p><strong>The Gen X angle on targeting:</strong> one under-served buyer is the independent Gen X HR consultant, thousands of them, newly solo after corporate careers, invisible to AI search and unaware of it. A peer telling them "your future clients ask ChatGPT who to hire, here is what it says about you" lands differently than any ad. Truthfully: no sales data exists yet for this segment, which is why the number reads 30 and not 80.</p>
+      <div class="dock" data-dock="national-report"></div>
+    </article>
+
+    <article class="play" data-key="product-shelf">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 4C &middot; The shelf</p>
+          <h3>The product shelf and the email loop</h3>
+          <p class="hook">The challenge: every playbook I run becomes a $27-97 product with receipts attached.</p>
+          <p class="oneline">Digital products at $27 to $97 (operator playbooks, the command-center kit, the cold-start playbook from Category 5), plus the free-guide-to-email-course-to-paid loop that already exists. Store and email machinery are live; sales volume is honestly unproven.</p>
+          <span class="badge below">25% FOR MEANINGFUL 30-DAY CASH</span><span class="badge build">COMPOUNDS WITH EVERY CHALLENGE RUN</span>
+          <span class="chip">Practitioner proof</span><span class="chip">Learn-fast, teach plain</span>
+        </div>
+        <div class="dial" data-conf="25" data-below="1"><div class="dial-label">30-day cash: 25%</div></div>
+      </div>
+      <p><strong>Why it earns a card anyway:</strong> this page is the factory. Every challenge on this board, run in public with real numbers, becomes a product ("I challenged myself to make $1,000 in 48 hours, here is exactly what happened, including what missed"). Products built from documented runs carry proof no competitor can copy, and the honest failures make the wins believable. Zero fabrication, by design and by rule.</p>
+      <div class="dock" data-dock="product-shelf"></div>
+    </article>
+
+    <article class="play" data-key="channel-adrev">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 4D &middot; The long game</p>
+          <h3>Channel ad revenue, stated plainly</h3>
+          <p class="hook">The truth: platform payouts are months away, and saying otherwise would be a lie.</p>
+          <p class="oneline">Eight faceless channels posting on video and social platforms. Platform ad programs sit behind subscriber and watch-hour thresholds none of the channels have crossed yet. Near-term revenue expectation: effectively zero. Long-term: real, if cadence holds.</p>
+          <span class="badge below">10% FOR ANY 90-DAY AD CASH</span><span class="badge build">AUDIENCE = THE REAL YIELD</span>
+          <span class="chip">Cultural bridge</span>
+        </div>
+        <div class="dial" data-conf="10" data-below="1"><div class="dial-label">90-day ad cash: 10%</div></div>
+      </div>
+      <p><strong>Why it stays:</strong> the audience is the yield, not the ad check. Every subscriber is future distribution for 4A, 4B, and 4C at zero marginal cost. This card exists so the board never confuses "channels are working" with "channels are paying," which are different claims on different clocks.</p>
+      <div class="dock" data-dock="channel-adrev"></div>
+    </article>
+  </div></div>
+</section>
+
+<!-- 08 CATEGORY 5 -->
+<section class="block rv" id="cat5">
+  <div class="sec-head" data-toggle><span class="num">08</span><h2>Category 5: $0 to first client, no network</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner">
+    <p class="cat-intro">The cold-start category: what works with no warm list, no audience, and no budget. It matters twice. Once as a fallback, and once as a product, because "from zero to a paying client with nothing but proof" is itself a playbook thousands of people would buy.</p>
+    <p class="moatline"><strong>Moats this category rides:</strong> working proof as the substitute for a network, with the phone agent as the network itself. It makes the calls, answers the callbacks, and books the meetings a cold-starter has no assistant for. The Gen X frame flips a weakness into the pitch: "I did not grow up with this technology either. I learned it as an adult, built it into a working business, and I can show you yours in two minutes."</p>
+
+    <article class="play" data-key="proof-first">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 5A &middot; The cold-start engine</p>
+          <h3>Proof Before Pitch</h3>
+          <p class="hook">The challenge: first paying client in 30 days starting from zero: no list, no audience, no ad spend.</p>
+          <p class="oneline">Run the visibility scan on a business BEFORE any contact, lead with their own findings, and sell the $250 audit as the fix. The phone agent handles first-touch calls and books the interested. A rent-not-sell option (the phone agent at a monthly rate, no setup fee) lowers the first yes even further.</p>
+          <span class="badge pass">75-80% FIRST CLIENT IN 30 DAYS</span>
+          <span class="chip">Working proof</span><span class="chip">Gen X learner-to-peer frame</span>
+        </div>
+        <div class="dial" data-conf="77"><div class="dial-label">Confidence 75-80%</div></div>
+      </div>
+      <h4>The math</h4>
+      <div class="tscroll"><table>
+        <thead><tr><th>Step</th><th class="n">Assumption</th><th class="n">Result</th></tr></thead>
+        <tbody>
+          <tr><td>Businesses scanned before contact</td><td class="n">100</td><td class="n">week 1</td></tr>
+          <tr><td>Findings-led approaches (email, call, walk-in)</td><td class="n">60</td><td class="n">weeks 2-4</td></tr>
+          <tr><td>Conversations from findings-led contact</td><td class="n">~15%</td><td class="n">~9</td></tr>
+          <tr><td>First close at $250 (or $99/mo agent rental)</td><td class="n">1+ from 9</td><td class="n"><strong>client #1</strong></td></tr>
+        </tbody>
+      </table></div>
+      <p class="tbl-note">One close from nine findings-led conversations is a modest ask, which is why confidence sits at 75 to 80% even from a standing start. The goal is deliberately one client, not ten: client one converts the playbook from theory to record.</p>
+      <details class="inner"><summary>Steps, capital, and risk</summary><div class="inner-body">
+        <ul class="timeline">
+          <li><span class="days">Week 1</span><span>Scan 100 businesses in one niche. Rank by the gap between their reputation and their AI visibility.</span></li>
+          <li><span class="days">Weeks 2-3</span><span>Approach the 60 worst with their own findings attached. The phone agent makes first-touch calls; you take every conversation it books.</span></li>
+          <li><span class="days">Week 4</span><span>Close client one. Document every step, including what missed, into the cold-start playbook (a Category 4C product).</span></li>
+        </ul>
+        <p><strong>Capital:</strong> under $100 (list data, phone credits). Effort: steady daily motion.</p>
+        <div class="risk">
+          <div><p class="risk-tag">#1 failure mode</p><p>Findings that do not sting. If the niche happens to look fine in AI tools, the report has no tension. Countermeasure: rank by gap size first and approach the worst, never alphabetically.</p></div>
+          <div><p class="risk-tag">Kill criteria</p><p>Forty findings-led approaches with zero conversations: the channel is wrong, switch it (email to call, call to walk-in) before touching the offer. Zero closes from nine conversations: offer the $99 rental first.</p></div>
+        </div>
+        <div class="split">
+          <div class="you"><p class="split-tag">You, personally</p><ul><li>Every conversation the agent books, every close, the playbook writing</li></ul></div>
+          <div class="auto"><p class="split-tag">Automated or delegated</p><ul><li>The 100 scans, findings reports, first-touch calls, booking, follow-up</li></ul></div>
+        </div>
+      </div></details>
+      <div class="dock" data-dock="proof-first"></div>
+    </article>
+
+    <article class="play" data-key="playbook-product">
+      <div class="play-head">
+        <div class="titles">
+          <p class="playno">Play 5B &middot; The meta play</p>
+          <h3>The playbook is the product</h3>
+          <p class="hook">Run the cold start in public. The documented run sells even when the run itself struggles.</p>
+          <p class="oneline">Document Play 5A end to end, real numbers, real misses, and package it as the cold-start playbook. Sales volume for a new product is honestly unproven; the story asset is certain because the run produces it either way.</p>
+          <span class="badge below">40% AS A STANDALONE EARNER</span><span class="badge build">STORY VALUE: CERTAIN</span>
+          <span class="chip">Practitioner proof</span><span class="chip">Comms training</span>
+        </div>
+        <div class="dial" data-conf="40" data-below="1"><div class="dial-label">Standalone: 40%</div></div>
+      </div>
+      <p><strong>The honest frame:</strong> this is the self-selling loop the whole board points at. "I challenged myself to land a client from absolute zero, here is the day-by-day record" is a hook no synthesized course can match, because the receipts are real and the misses stay in. It earns a below-the-bar number as a standalone product and a certain yield as trust, which is the currency every other play on this board spends.</p>
+      <div class="dock" data-dock="playbook-product"></div>
+    </article>
+  </div></div>
+</section>
+
+<!-- 09 MOONSHOTS -->
+<section class="block rv" id="moonshots">
+  <div class="sec-head" data-toggle><span class="num">09</span><h2>Moonshots and boundary pushers</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner">
+    <p class="cat-intro">Button, zipper, velcro: the same job, done through a re-thought mechanism, until one version jumps the value. This section takes every play and business model above and swaps one variable at a time: the audience, the delivery, the pricing model, the channel, the bundling. The swaps that jumped are the "jiggered" upgrades. Below them: genuinely new plays that fit no category above. Every number here is honest; most sit under 80% or beyond 30 days, and each one says so on its face. Creativity does not get to borrow credibility from the money-now categories.</p>
+    <p class="moatline"><strong>Moats this lane rides:</strong> the superpower moat IS this section: the connection-spotting instinct that turns a one-off audit into a subscription, a setup fee into a rental, a byproduct into a product. Paired with learn-fast-and-teach, it means any brand-new tool can become a paid teardown, cohort, or guide before most people have opened the docs. First-mover teaching is a repeatable edge, not a one-time trick.</p>
+
+    <h4 style="font-weight:700;font-size:.74rem;letter-spacing:.13em;text-transform:uppercase;color:var(--clay-deep);margin:24px 0 4px;display:flex;align-items:center;gap:10px">The jiggered five <span style="flex:1;height:1px;background:var(--line)"></span></h4>
+    <div class="mini-grid" id="jigGrid"></div>
+
+    <h4 style="font-weight:700;font-size:.74rem;letter-spacing:.13em;text-transform:uppercase;color:var(--clay-deep);margin:28px 0 4px;display:flex;align-items:center;gap:10px">Net-new moonshots <span style="flex:1;height:1px;background:var(--line)"></span></h4>
+    <div class="mini-grid" id="moonGrid"></div>
+
+    <div class="callout" style="margin-top:26px">
+      <p><strong>The $5M thought experiment.</strong> Of every jiggered tweak on this board, the one that scales biggest if it works is licensing the scan-plus-report engine to marketing agencies and consultants as their own white-labeled tool. The arithmetic at scale: 1,000 agency seats or locations at $99 to $499 a month is $1.2M to $6M a year in recurring revenue. Here is what would have to be true, stated plainly: the engine hardened for multi-tenant use; churn under 5% a month; self-serve onboarding so growth does not consume the founder; a distribution wedge (the data report as press bait, the channels, agency communities); and support capacity that does not exist today. Honest odds of reaching that scale within 24 months: 5 to 10%. The path there starts small and near-term: one white-label partner, hand-held, at a few hundred a month, which is exactly what the jiggered white-label card proposes.</p>
+    </div>
+  </div></div>
+</section>
+
+<!-- 10 FULL FIELD -->
+<section class="block rv" id="field">
+  <div class="sec-head" data-toggle><span class="num">10</span><h2>The full field: all 39, ranked, nothing hidden</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner">
+    <p class="cat-intro">Every idea generated across the simulations, the recombination pass, and the moonshot lane, including all thirteen rejects. Click any column header to re-sort. Click a row to open its full breakdown: sub-scores, the exact reason for a Hold or Reject, and the unlock condition that would turn it into a yes. Set Proceed / Hold / Cancel and add notes right in the row; everything saves to the database.</p>
+    <div class="tscroll">
+      <table id="field-table">
+        <thead><tr>
+          <th data-sort="comp">Score <span class="arr">&darr;</span></th>
+          <th>Idea</th>
+          <th>Verdict</th>
+          <th data-sort="conf" class="n">Conf %</th>
+          <th data-sort="exp" class="n">30d $</th>
+          <th data-sort="ttc" class="n">Days to cash</th>
+          <th>Your call</th>
+        </tr></thead>
+        <tbody id="fieldBody"></tbody>
+      </table>
+    </div>
+    <p class="tbl-note">Composite = the weighted rubric above. "30d $" is the honest expected order of magnitude if run this month, not a promise. Rejected ideas keep full cards: open the row for the reason and the unlock.</p>
+  </div></div>
+</section>
+
+<!-- 11 PROCEEDING -->
+<section class="block rv" id="approved">
+  <div class="sec-head" data-toggle><span class="num">11</span><h2>Proceeding: your approved plays</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner">
+    <div class="approved-panel">
+      <h3>Headed to the Money Map</h3>
+      <p class="ap-sub">Everything you set to PROCEED appears here, saved server-side and visible from any device. These flow into the central 12-week Money Map plan as scheduled actions: the plan's implementation loop reads this same table (status = proceed) as its intake, so an approval here is a real handoff, not a sticky note.</p>
+      <ul id="approvedList"></ul>
+      <p id="approvedEmpty">Nothing set to Proceed yet. The controls live on every play card and in every Full Field row.</p>
+    </div>
+    <p class="sec-note"><strong>Plain note on security:</strong> this is an unlisted personal page writing to one dedicated table with a publishable key. Anyone who had both the exact URL and the key could edit statuses and notes: acceptable for a personal decision board, but worth knowing. An easy upgrade later: a small shared-secret gate in front of writes. Nothing sensitive beyond your own notes lives in this table.</p>
+  </div></div>
+</section>
+
+<!-- 12 SEQUENCE -->
+<section class="block rv" id="pick">
+  <div class="sec-head" data-toggle><span class="num">12</span><h2>The sequence: what runs first</h2><span class="sec-toggle"><span class="ttext">COLLAPSE</span><span class="chev"></span></span></div>
+  <div class="sec-body"><div class="sec-body-inner">
+    <div class="tscroll compare-wrap"><table>
+      <thead><tr><th>Clock</th><th>Play</th><th class="n">Confidence</th><th>Why it slots here</th></tr></thead>
+      <tbody>
+        <tr><td>This week</td><td class="best">1A: The Warm Hundred</td><td class="n">65% / 85%</td><td>Zero build, zero spend, fastest cash, warms the same list Play 3A needs</td></tr>
+        <tr><td>Weeks 1-2</td><td class="best">2A: The Stacked Week</td><td class="n">60% / 80% to $3k</td><td>Runs on live offers; the phone agent carries the volume</td></tr>
+        <tr><td>Days 1-30</td><td class="best">3A: The Rolodex Sprint</td><td class="n">80-82%</td><td>Highest-confidence 10x on the board; 3B rides along for ~4 hours in week one</td></tr>
+        <tr><td>Parallel hours</td><td class="best">4A + jiggered subscriptions</td><td class="n">35-60% near-term</td><td>Days to build, recurring by design, fed by every other play's traffic</td></tr>
+        <tr><td>Fallback + product</td><td class="best">5A: Proof Before Pitch</td><td class="n">75-80%</td><td>Activates if warm paths stall; its documented run becomes the playbook product</td></tr>
+        <tr><td>Quarters</td><td class="best">Moonshot lane</td><td class="n">5-40%, labeled</td><td>One white-label partner first; the $5M version only after proof</td></tr>
+      </tbody>
+    </table></div>
+    <div class="pick-box">
+      <p class="pick-tag">If one play gets the money and the month</p>
+      <h3>The Rolodex Sprint, with The Warm Hundred as its opening 48 hours.</h3>
+      <p>They are the same motion at two speeds: the warm list produces this week's cash at $250 to $1,500 a ticket while qualifying who is ready for the $5,000 conversation. <strong>Two independent paths at roughly 80% each, where either one paying hits the month's target.</strong> Flywheels get built in the hours selling does not use, because assets built during a cash sprint cost nothing extra and keep paying after it ends.</p>
+      <p>And every run, win or miss, gets documented. That record is the marketing. Nothing on this board needs a single invented number to sell itself, which is exactly the point.</p>
+    </div>
+    <div class="dock" data-dock="overall" data-overall="1"></div>
+  </div></div>
+</section>
+
+</main>
+
+<footer>
+  <span>Prepared July 1, 2026 &middot; Honest numbers only &middot; Proceed = a real handoff to the Money Map.</span>
+  <span class="fmono">39 plays &middot; 8-part rubric &middot; database-synced decisions</span>
+</footer>
+
+<button id="toTop" aria-label="Back to top">
+  <svg viewBox="0 0 52 52" width="52" height="52" aria-hidden="true">
+    <circle cx="26" cy="26" r="23" fill="none" stroke="rgba(247,243,236,.25)" stroke-width="2.5"/>
+    <circle id="progRing" cx="26" cy="26" r="23" fill="none" stroke="#00B7C2" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="144.5" stroke-dashoffset="144.5" transform="rotate(-90 26 26)"/>
+  </svg>
+  <span class="arrow">&uarr;</span>
+</button>
+
+<script>
+(function(){
+  document.documentElement.classList.add('js-ready');
+
+  /* ============ DATA: the full field ============ */
+  /* s = [feasibility, speed, confidence/10, upside, effort(10=light), durability, moatFit, risk(10=safe)] */
+  var W = {feas:1.5, speed:1.5, conf:2.0, up:1.5, eff:1.0, dur:1.0, moat:1.0, risk:0.5};
+  var IDEAS = [
+    {k:'rolodex-sprint',cat:'10x month',t:'The Rolodex Sprint',v:'R',conf:81,exp:10000,ttc:14,s:[9,6,8.1,7,4,6,10,8],moats:'HR seat, Gen X, MBA',why:'Highest-confidence 10x: warm HR network, $5k fixed scope, ~100% margin.',unlock:''},
+    {k:'warm-hundred',cat:'48 hours',t:'The Warm Hundred',v:'R',conf:75,exp:1500,ttc:2,s:[10,10,7.5,3,8,3,9,9],moats:'Gen X peer trust, proof',why:'Fastest honest cash; 65% in strict 48h, ~85% inside a week.',unlock:''},
+    {k:'jig-rent-agent',cat:'Jiggered',t:'Rent the Receptionist ($149/mo)',v:'R',conf:60,exp:750,ttc:10,s:[9,6,6,7,6,10,8,8],moats:'Proof, Gen X owners',why:'Velcro moment: swap the $1,975 setup fee for a monthly rental. Kills the price objection and builds recurring revenue.',unlock:''},
+    {k:'jig-corp-workshop',cat:'Jiggered',t:'Corporate Lunch-and-Learn ($2,500)',v:'R',conf:55,exp:2500,ttc:21,s:[9,7,5.5,6,7,6,10,9],moats:'HR seat, Gen X, teach-fast',why:'Velcro moment: same workshop content, sold to one company as a $2,500 room instead of $47 seats. One booking beats 53 seats.',unlock:''},
+    {k:'jig-audit-sub',cat:'Jiggered',t:'Visibility Monitoring Subscription ($99/mo)',v:'R',conf:55,exp:500,ttc:21,s:[8,5,5.5,7,7,10,8,9],moats:'Proof, Gen X owners',why:'Velcro moment: the $250 one-off audit becomes a $99/mo monitor ("we watch what AI says about you every month"). Ten subscribers = durable $1,188/yr each.',unlock:''},
+    {k:'contract-anchor',cat:'10x month',t:'The Contract Anchor',v:'R',conf:80,exp:10000,ttc:30,s:[9,4,8,7,3,7,9,8],moats:'HR seat, MBA, Gen X buyers',why:'One signed interim HR engagement; five channels in parallel push past 80%.',unlock:''},
+    {k:'proof-first',cat:'Cold start',t:'Proof Before Pitch',v:'R',conf:77,exp:500,ttc:21,s:[9,6,7.7,4,6,6,9,9],moats:'Proof, Gen X frame',why:'First client from zero: scan first, pitch with their own findings, agent books the calls.',unlock:''},
+    {k:'stacked-week',cat:'5k week',t:'The Stacked Week',v:'R',conf:60,exp:4000,ttc:7,s:[9,9,6,5,4,5,8,8],moats:'Proof, Gen X bridge',why:'Three live offers stacked; 60% for the full $5k, 80% to $3k.',unlock:''},
+    {k:'jig-dwy-sprint',cat:'Jiggered',t:'Done-With-You Half-Day ($750)',v:'R',conf:50,exp:1500,ttc:10,s:[9,8,5,5,6,5,9,9],moats:'Teach-fast, Gen X',why:'Delivery swap: teach the owner’s own team to run the fix in a paid half-day. Fills the gap between the $250 audit and the $1,500 setup.',unlock:''},
+    {k:'main-street',cat:'48 hours',t:'Main Street, Live',v:'R',conf:52,exp:1000,ttc:2,s:[9,10,5.2,3,5,3,8,8],moats:'Gen X owners, proof',why:'Below coin-flip for 48h cash, but the documented run is the strongest story asset on the board.',unlock:''},
+    {k:'instant-report',cat:'While you sleep',t:'$47 Instant Visibility Report',v:'R',conf:35,exp:500,ttc:14,s:[8,5,3.5,6,7,9,7,9],moats:'Proof, Gen X owners',why:'Days to build on the live scanner; every buyer is a pre-qualified audit lead the phone agent can call.',unlock:''},
+    {k:'missed-call',cat:'10x month',t:'Missed-Call Rescue',v:'H',conf:72,exp:6000,ttc:21,s:[8,7,7.2,6,3,7,7,7],moats:'Proof, Gen X owners',why:'The live demo line is unbeatable proof, but 5 closes from 30 cold demos solo lands at 72%, under the 80% bar.',unlock:'One documented pilot case study (or a partner closer). Then cold scales and this re-scores above 80.'},
+    {k:'jig-whitelabel',cat:'Jiggered',t:'White-Label Scan for Consultants',v:'H',conf:35,exp:300,ttc:60,s:[6,3,3.5,9,5,9,9,8],moats:'Superpower, proof',why:'Channel swap: sell the scan TO other consultants and agencies as their tool. The on-ramp to the $5M moonshot.',unlock:'Engine hardened for a second operator + one public case study. Start with ONE hand-held partner.'},
+    {k:'moon-policy-box',cat:'Moonshot',t:'AI Policy in a Box for HR ($299 + $29/mo)',v:'H',conf:35,exp:300,ttc:45,s:[7,4,3.5,7,6,9,10,9],moats:'HR seat, teach-fast, superpower',why:'Productize the sprint byproduct: the policy pack as a licensed template with a monthly update subscription for small HR teams.',unlock:'Two paid readiness sprints prove the template with real teams. Then package what already sold.'},
+    {k:'moon-teardown-club',cat:'Moonshot',t:'72-Hour Tool Teardown Club ($19/mo)',v:'H',conf:30,exp:200,ttc:60,s:[8,4,3,7,5,9,10,9],moats:'Learn-fast + superpower',why:'First-mover teaching as a membership: every major new AI tool gets a plain-English operator teardown within 72 hours.',unlock:'Three free teardowns that each earn 1,000+ views. Proof of pull before the paywall.'},
+    {k:'moon-genx-cohort',cat:'Moonshot',t:'Gen X AI Operator Cohort ($497)',v:'H',conf:35,exp:500,ttc:45,s:[7,4,3.5,7,4,8,10,8],moats:'Gen X, teach-fast, cultural',why:'Four weeks, live, for operators who did not grow up with this: the workshop grown into its full form. Ten seats = $4,970 per run, repeatable.',unlock:'Workshop #1 delivered + a 15-name waitlist. The cohort is the workshop’s second gear, not its replacement.'},
+    {k:'moon-data-report',cat:'Moonshot',t:'State of AI Visibility (Data Product)',v:'H',conf:40,exp:0,ttc:60,s:[7,4,4,6,6,7,9,9],moats:'Superpower (byproduct play)',why:'Aggregate the scans into "State of AI visibility: Utah trades 2026." Free headline report as press bait; paid custom cuts behind it.',unlock:'A scan corpus of 500+ businesses, which the audit plays produce as a byproduct. Data first, report second.'},
+    {k:'playbook-product',cat:'Cold start',t:'The Playbook Is the Product',v:'H',conf:40,exp:300,ttc:45,s:[8,3,4,5,7,8,9,9],moats:'Proof, comms training',why:'The documented cold-start run as a sellable playbook; story value certain, sales volume unproven.',unlock:'Run Play 5A documented first. The product writes itself from the receipts.'},
+    {k:'national-report',cat:'While you sleep',t:'National AI-Recommendation Report',v:'H',conf:30,exp:200,ttc:60,s:[6,3,3,8,6,9,8,8],moats:'Cultural bridge, Gen X niche',why:'The $27-47 self-serve report at national scale, with the faceless channels as free distribution.',unlock:'Channels reach real distribution scale, or one partner list signs on. Quarters, not weeks.'},
+    {k:'product-shelf',cat:'While you sleep',t:'The Product Shelf + Email Loop',v:'H',conf:25,exp:300,ttc:45,s:[8,4,2.5,6,6,9,8,9],moats:'Proof, teach-fast',why:'$27-97 products built ONLY from documented challenge runs, plus the existing email loop.',unlock:'Each product needs a completed, documented run behind it. No run, no product.'},
+    {k:'workshop-funnel',cat:'5k week',t:'Workshop Seats Funnel',v:'H',conf:10,exp:900,ttc:29,s:[9,6,1,4,7,6,8,9],moats:'Gen X positioning, teach-fast',why:'106 seats in a week is not an honest target; one room of qualified buyers is.',unlock:'Reframe: sell the room, not the seats. Downstream audits and setups are where the $5k actually lives.'},
+    {k:'ghostwriting-path',cat:'5k week',t:'Premium Ghostwriting Path',v:'H',conf:15,exp:0,ttc:75,s:[6,2,1.5,7,5,8,8,8],moats:'Comms, Gen X exec voice',why:'Real path, wrong clock: accelerator mid-flight, outreach held until validation.',unlock:'Finish the accelerator assignments + land the first validation retainer. Then it re-enters as a recurring-revenue play.'},
+    {k:'channel-adrev',cat:'While you sleep',t:'Channel Ad Revenue',v:'H',conf:10,exp:0,ttc:120,s:[5,1,1,7,5,9,8,8],moats:'Cultural bridge',why:'Platform payout thresholds are months away; the audience is the real near-term yield.',unlock:'Cross platform monetization thresholds. Patience-gated, reviewed quarterly, not effort-gated.'},
+    {k:'moon-agency-engine',cat:'Moonshot',t:'License the Scan Engine to Agencies',v:'H',conf:25,exp:0,ttc:90,s:[5,2,2.5,10,3,10,8,7],moats:'Superpower, proof',why:'The $5M thought experiment: 1,000 seats at $99-499/mo = $1.2M-6M ARR. Honest odds of that scale in 24 months: 5-10%.',unlock:'Multi-tenant hardening, churn under 5%, self-serve onboarding, a distribution wedge. Starts as one hand-held white-label partner.'},
+    {k:'moon-agent-license',cat:'Moonshot',t:'Phone Agent as a White-Label Service',v:'H',conf:20,exp:0,ttc:90,s:[5,3,2,9,3,10,7,7],moats:'Proof, superpower',why:'Other consultants sell "an AI receptionist" without building one: his agent, their brand.',unlock:'Five stable client installs of his own first. Reliability is the product; prove it before renting it out.'},
+    {k:'moon-broker',cat:'Moonshot',t:'Implementer Marketplace (15% broker)',v:'X',conf:15,exp:0,ttc:120,s:[4,2,1.5,8,3,9,6,6],moats:'MBA operator',why:'Match vetted AI implementers with local business jobs, take 15%. Marketplaces need supply AND demand on day one; he has neither bench nor deal flow yet.',unlock:'Ten delivered client projects + a vetted bench of five implementers. Then the broker layer has something to broker.'},
+    {k:'kill-volume-audits',cat:'Rejected',t:'Volume $250 Audits, Solo Cold',v:'X',conf:25,exp:2500,ttc:30,s:[7,6,2.5,4,3,4,7,8],moats:'Proof',why:'REJECTED as a 10x play: 40 solo cold closes in 30 days is not an honest number.',unlock:'A second closer (partner, or the phone agent proven at closing rather than booking). At 2 closers the math changes.'},
+    {k:'kill-rebuild-sprints',cat:'Rejected',t:'Website Rebuild Sprints, Cold',v:'X',conf:20,exp:2000,ttc:30,s:[7,5,2,5,3,4,6,8],moats:'Proof',why:'REJECTED: cold demand for $3k rebuilds scored ~65% per close needed, no warm proof asset in that niche.',unlock:'Three public before/after case studies with real traffic numbers. Proof first, then price.'},
+    {k:'kill-ghost-cold',cat:'Rejected',t:'Ghostwriting Retainers, Cold',v:'X',conf:20,exp:0,ttc:45,s:[6,3,2,6,4,7,7,8],moats:'Comms',why:'REJECTED: cold-pitching an unvalidated writing offer scored ~60% per retainer; also deliberately held during the accelerator.',unlock:'Same as the ghostwriting path: first validation retainer. Cold outreach earns its place after proof exists.'},
+    {k:'kill-lead-broker',cat:'Rejected',t:'Selling Leads to Contractors',v:'X',conf:20,exp:1000,ttc:45,s:[5,4,2,6,4,6,5,7],moats:'MBA operator',why:'REJECTED for this window: ad-account ramp and buyer trust take 60-90 days, and the consulting ad account is restricted this month.',unlock:'A clean ad account + one anchor buyer on contract + a 90-day runway. Real business, wrong month.'},
+    {k:'kill-vendor-pilots',cat:'Rejected',t:'Advisory Pilots for HR-Tech Vendors',v:'X',conf:15,exp:0,ttc:90,s:[6,2,1.5,6,5,6,8,8],moats:'HR seat',why:'REJECTED: vendor sales cycles run 60-120 days. No 30-day version exists.',unlock:'A warm executive introduction at two or more vendors. Warm intros collapse the cycle; cold ones do not.'},
+    {k:'kill-presale',cat:'Rejected',t:'Info-Product Presale',v:'X',conf:15,exp:500,ttc:21,s:[7,5,1.5,4,6,5,6,8],moats:'Teach-fast',why:'REJECTED: the current audience cannot produce $10k of low-ticket presales in 30 days. Arithmetic, not opinion.',unlock:'An engaged list of 5,000+. The email loop and channels are how that list gets built.'},
+    {k:'kill-arbitrage',cat:'Rejected',t:'Retail Clearance Arbitrage',v:'X',conf:15,exp:1500,ttc:21,s:[6,5,1.5,3,3,2,2,7],moats:'None strong',why:'REJECTED: 2-3 flip cycles at 40-60% margin caps near $3-4k in 30 days. The math never reaches 10x.',unlock:'Reframed as a margin business with $10k+ working capital and a proven sourcing channel. Never a 10x-in-30-days play.'},
+    {k:'kill-equipment',cat:'Rejected',t:'Used Equipment Flips',v:'X',conf:15,exp:1000,ttc:30,s:[5,4,1.5,3,3,2,2,7],moats:'None strong',why:'REJECTED: same cycle math as arbitrage plus sourcing friction and transport.',unlock:'A niche he knows cold (e.g. specific commercial equipment) + transport + a 90-day window.'},
+    {k:'kill-ads-seats',cat:'Rejected',t:'Paid Ads to $47 Seats',v:'X',conf:10,exp:500,ttc:29,s:[6,4,1,4,5,4,6,7],moats:'Teach-fast',why:'REJECTED: needs ~213 seat sales; $1,000 of ads buys nowhere near that, and the ad account is restricted anyway.',unlock:'Funnel data proving downstream value per registrant beats acquisition cost (post-workshop-#2 data), plus a clean ad account.'},
+    {k:'kill-expense-recovery',cat:'Rejected',t:'Expense Recovery on Contingency',v:'X',conf:15,exp:0,ttc:75,s:[5,2,1.5,5,4,5,4,8],moats:'MBA operator',why:'REJECTED: contingency cash lands 45-90 days out. Wrong window by construction.',unlock:'A 90-day cash runway that makes the wait affordable. The window problem never goes away; it just stops mattering.'},
+    {k:'kill-domains',cat:'Rejected',t:'Domain Flips',v:'X',conf:10,exp:200,ttc:60,s:[5,2,1,4,6,3,3,6],moats:'Superpower (naming instinct)',why:'REJECTED: illiquid; a 30-day exit is a lottery ticket, and the no-luck rule kills lottery tickets.',unlock:'A 6-12 month horizon and a small portfolio budget treated as speculation, never as the month’s rent.'},
+    {k:'kill-tickets',cat:'Rejected',t:'Ticket Resale',v:'X',conf:8,exp:300,ttc:14,s:[5,6,0.8,3,4,2,1,4],moats:'None',why:'REJECTED: pure luck and market timing; platform risk on top. Fails the no-luck rule permanently.',unlock:'None. Some ideas stay dead, and this board says so out loud.'},
+    {k:'kill-trading',cat:'Rejected',t:'Trading (Crypto, Options)',v:'X',conf:5,exp:0,ttc:1,s:[8,9,0.5,5,7,1,1,1],moats:'None',why:'REJECTED on sight: gambling dressed as a plan. No honest confidence number above a coin flip exists.',unlock:'None. Permanent no, at any bankroll, in any market.'}
+  ];
+  IDEAS.forEach(function(d){
+    d.comp = Math.round(d.s[0]*W.feas + d.s[1]*W.speed + d.s[2]*W.conf + d.s[3]*W.up + d.s[4]*W.eff + d.s[5]*W.dur + d.s[6]*W.moat + d.s[7]*W.risk);
+  });
+  var byKey = {}; IDEAS.forEach(function(d){ byKey[d.k]=d; });
+  var VLABEL = {R:'RECOMMEND', H:'HOLD', X:'REJECT'};
+  var SUBS = ['Feasibility','Speed','Confidence','Upside','Effort (light=10)','Durability','Moat fit','Risk (safe=10)'];
+
+  /* ============ Supabase sync ============ */
+  var SB_URL = 'https://jscucboftaoaphticqci.supabase.co';
+  var SB_KEY = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
+  var state = {};            /* play_key -> {status, notes} */
+  var pill = document.getElementById('syncPill');
+  var pillTimer = null;
+  function setPill(mode, text){
+    pill.className = mode; pill.textContent = text;
+    if(mode==='saving'){ return; }
+    clearTimeout(pillTimer);
+  }
+  function sb(method, path, body){
+    return fetch(SB_URL + path, {
+      method: method,
+      headers: {
+        'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+  }
+  function cacheState(){ try{ localStorage.setItem('moneyplays:cache', JSON.stringify(state)); }catch(e){} }
+  function writeRow(key, patch){
+    setPill('saving','SAVING…');
+    sb('PATCH', '/rest/v1/money_plays?play_key=eq.' + encodeURIComponent(key), patch)
+      .then(function(r){
+        if(r.ok){ setPill('ok','SYNCED'); cacheState(); }
+        else { setPill('off','OFFLINE · SAVED LOCALLY'); cacheState(); }
+      })
+      .catch(function(){ setPill('off','OFFLINE · SAVED LOCALLY'); cacheState(); });
+  }
+  var noteTimers = {};
+  function setStatus(key, status){
+    state[key] = state[key] || {status:'undecided', notes:''};
+    state[key].status = status;
+    renderControls(key); renderApproved();
+    writeRow(key, {status: status});
+  }
+  function setNotes(key, notes){
+    state[key] = state[key] || {status:'undecided', notes:''};
+    state[key].notes = notes;
+    clearTimeout(noteTimers[key]);
+    noteTimers[key] = setTimeout(function(){ writeRow(key, {notes: notes}); }, 600);
+  }
+
+  /* ============ dock + row controls ============ */
+  function segHTML(key){
+    return '<div class="seg" role="group" aria-label="Decision">' +
+      '<button type="button" data-set="proceed">PROCEED</button>' +
+      '<button type="button" data-set="hold">HOLD</button>' +
+      '<button type="button" data-set="cancel">CANCEL</button></div>';
+  }
+  function buildDock(el){
+    var key = el.getAttribute('data-dock');
+    var overall = el.hasAttribute('data-overall');
+    el.innerHTML =
+      '<div class="dock-row"><span class="dock-label">' + (overall ? 'Overall verdict + notes' : 'Your call') + '</span>' + segHTML(key) + '</div>' +
+      '<textarea placeholder="' + (overall ? 'Your overall take: which plays, what changes, what starts tomorrow...' : 'Your notes on this play...') + '"></textarea>' +
+      '<p class="dock-hint">Saves to the database; your statuses and notes follow you to any device. Tap an active button again to clear it.</p>';
+    var ta = el.querySelector('textarea');
+    ta.addEventListener('input', function(){ setNotes(key, ta.value); });
+    el.querySelectorAll('.seg button').forEach(function(b){
+      b.addEventListener('click', function(){
+        var cur = (state[key]||{}).status || 'undecided';
+        var next = b.getAttribute('data-set');
+        setStatus(key, cur === next ? 'undecided' : next);
+      });
+    });
+  }
+  function renderControls(key){
+    var st = (state[key]||{}).status || 'undecided';
+    var notes = (state[key]||{}).notes || '';
+    document.querySelectorAll('[data-dock="' + key + '"]').forEach(function(el){
+      el.querySelectorAll('.seg button').forEach(function(b){
+        var v = b.getAttribute('data-set');
+        b.className = (st === v) ? ('on-' + v) : '';
+      });
+      var ta = el.querySelector('textarea');
+      if(ta && document.activeElement !== ta) ta.value = notes;
+    });
+    document.querySelectorAll('select[data-status="' + key + '"]').forEach(function(sel){
+      sel.value = st;
+    });
+  }
+  function renderAll(){
+    Object.keys(byKey).forEach(renderControls);
+    renderControls('overall');
+    renderApproved();
+  }
+  function renderApproved(){
+    var list = document.getElementById('approvedList');
+    var empty = document.getElementById('approvedEmpty');
+    list.innerHTML = ''; var count = 0;
+    IDEAS.forEach(function(d){
+      if(((state[d.k]||{}).status) === 'proceed'){
+        count++;
+        var li = document.createElement('li');
+        var cat = document.createElement('span'); cat.className='ap-cat'; cat.textContent = d.cat;
+        var name = document.createElement('span'); name.textContent = d.t;
+        li.appendChild(cat); li.appendChild(name); list.appendChild(li);
+      }
+    });
+    empty.style.display = count ? 'none' : 'block';
+  }
+  document.querySelectorAll('.dock').forEach(buildDock);
+
+  /* ============ mini cards (jiggered + moonshots) ============ */
+  function miniCard(d){
+    var art = document.createElement('article');
+    art.className = 'mini';
+    art.innerHTML =
+      '<div class="m-top"><div><p class="m-meta">' + d.cat.toUpperCase() + ' · ' + VLABEL[d.v] + '</p>' +
+      '<h3>' + d.t + '</h3></div><span class="m-conf" style="color:' + (d.v==='R' ? 'var(--pass)' : d.v==='H' ? 'var(--amber)' : 'var(--red)') + '">' + d.conf + '%</span></div>' +
+      '<p class="hook">' + d.why + '</p>' +
+      (d.unlock ? '<p class="m-body"><strong>Unlock:</strong> ' + d.unlock + '</p>' : '') +
+      '<p class="m-meta">MOATS: ' + d.moats + ' · COMPOSITE ' + d.comp + '/100</p>' +
+      '<div class="dock" data-dock="' + d.k + '"></div>';
+    return art;
+  }
+  var jigGrid = document.getElementById('jigGrid');
+  var moonGrid = document.getElementById('moonGrid');
+  IDEAS.filter(function(d){ return d.cat==='Jiggered'; }).forEach(function(d){ jigGrid.appendChild(miniCard(d)); });
+  IDEAS.filter(function(d){ return d.cat==='Moonshot'; }).forEach(function(d){ moonGrid.appendChild(miniCard(d)); });
+  document.querySelectorAll('.mini .dock').forEach(buildDock);
+
+  /* ============ full field table ============ */
+  var sortKey = 'comp', sortDesc = true;
+  function fmtExp(v){ return v >= 1000 ? '$' + (v/1000) + 'k' : (v > 0 ? '$' + v : '~$0'); }
+  function renderTable(){
+    var rows = IDEAS.slice().sort(function(a,b){
+      var d = (b[sortKey]||0) - (a[sortKey]||0);
+      return sortDesc ? d : -d;
+    });
+    var tb = document.getElementById('fieldBody');
+    tb.innerHTML = '';
+    rows.forEach(function(d){
+      var tr = document.createElement('tr');
+      tr.className = 'idea-row';
+      tr.innerHTML =
+        '<td class="n"><strong>' + d.comp + '</strong></td>' +
+        '<td class="t-title">' + d.t + '<br><span class="t-cat">' + d.cat + '</span></td>' +
+        '<td><span class="vpill v-' + d.v + '">' + VLABEL[d.v] + '</span></td>' +
+        '<td class="n">' + d.conf + '</td>' +
+        '<td class="n">' + fmtExp(d.exp) + '</td>' +
+        '<td class="n">' + d.ttc + '</td>' +
+        '<td></td>';
+      var sel = document.createElement('select');
+      sel.setAttribute('data-status', d.k);
+      sel.setAttribute('aria-label', 'Status for ' + d.t);
+      ['undecided','proceed','hold','cancel'].forEach(function(v){
+        var o = document.createElement('option'); o.value = v; o.textContent = v.toUpperCase(); sel.appendChild(o);
+      });
+      sel.value = (state[d.k]||{}).status || 'undecided';
+      sel.addEventListener('click', function(e){ e.stopPropagation(); });
+      sel.addEventListener('change', function(){ setStatus(d.k, sel.value); });
+      tr.lastElementChild.appendChild(sel);
+
+      var dtr = document.createElement('tr');
+      dtr.className = 'detail-row';
+      dtr.style.display = 'none';
+      var td = document.createElement('td');
+      td.setAttribute('colspan','7');
+      var bars = '<div class="bars">' + SUBS.map(function(name,i){
+        var v = d.s[i];
+        return '<div class="bar-item"><div class="b-lab"><span>' + name + '</span><span>' + v + '</span></div><div class="bar-track"><div class="bar-fill" style="width:' + (v*10) + '%"></div></div></div>';
+      }).join('') + '</div>';
+      td.innerHTML =
+        '<p class="why"><strong>' + (d.v==='R' ? 'Why it is recommended: ' : d.v==='H' ? 'Why it is held: ' : 'Why it was rejected: ') + '</strong>' + d.why + '</p>' +
+        (d.unlock ? '<p class="why"><strong>What would make it a yes: </strong>' + d.unlock + '</p>' : '') +
+        '<p class="why"><strong>Moats: </strong>' + d.moats + ' &middot; <strong>Effort in:</strong> see sub-score &middot; <strong>Time to first cash:</strong> ~' + d.ttc + ' days</p>' +
+        bars +
+        '<div class="row-dock"><textarea placeholder="Your notes on this idea..." data-rownotes="' + d.k + '"></textarea><span class="status-note">Notes + status save to the database and sync across devices.</span></div>';
+      dtr.appendChild(td);
+
+      tr.addEventListener('click', function(){
+        dtr.style.display = dtr.style.display === 'none' ? '' : 'none';
+        var ta = dtr.querySelector('textarea');
+        if(ta && document.activeElement !== ta) ta.value = (state[d.k]||{}).notes || '';
+      });
+      var rta = dtr.querySelector('textarea');
+      rta.addEventListener('input', function(){ setNotes(d.k, rta.value); });
+
+      tb.appendChild(tr); tb.appendChild(dtr);
+    });
+  }
+  document.querySelectorAll('#field-table th[data-sort]').forEach(function(th){
+    th.addEventListener('click', function(){
+      var k = th.getAttribute('data-sort');
+      if(sortKey === k){ sortDesc = !sortDesc; } else { sortKey = k; sortDesc = true; }
+      renderTable(); renderAll();
+    });
+  });
+  renderTable();
+
+  /* ============ load state from Supabase ============ */
+  (function loadState(){
+    fetch(SB_URL + '/rest/v1/money_plays?select=play_key,status,notes', {
+      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY}
+    }).then(function(r){ if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
+      .then(function(rows){
+        rows.forEach(function(row){ state[row.play_key] = {status: row.status, notes: row.notes}; });
+        setPill('ok','SYNCED'); cacheState(); renderAll(); renderTable(); renderAll();
+      })
+      .catch(function(){
+        try{ state = JSON.parse(localStorage.getItem('moneyplays:cache')) || {}; }catch(e){ state = {}; }
+        setPill('off','OFFLINE · LOCAL COPY'); renderAll(); renderTable(); renderAll();
+      });
+  })();
+
+  /* ============ chrome: collapse, nav, spy, dials, toTop ============ */
+  document.querySelectorAll('[data-toggle]').forEach(function(head){
+    head.setAttribute('role','button'); head.setAttribute('tabindex','0');
+    var sec = head.closest('section.block');
+    var syncLabel = function(){
+      var t = head.querySelector('.ttext');
+      if(t) t.textContent = sec.classList.contains('collapsed') ? 'EXPAND' : 'COLLAPSE';
+      head.setAttribute('aria-expanded', sec.classList.contains('collapsed') ? 'false' : 'true');
+    };
+    var flip = function(){ sec.classList.toggle('collapsed'); syncLabel(); };
+    head.addEventListener('click', flip);
+    head.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flip(); } });
+    syncLabel();
+  });
+
+  var burger = document.getElementById('navBurger');
+  var navList = document.getElementById('navList');
+  burger.addEventListener('click', function(){
+    var open = navList.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    burger.textContent = open ? 'CLOSE' : 'MENU';
+  });
+  navList.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      navList.classList.remove('open');
+      burger.setAttribute('aria-expanded','false'); burger.textContent = 'MENU';
+      var target = document.querySelector(a.getAttribute('href'));
+      if(target && target.classList.contains('collapsed')){
+        target.classList.remove('collapsed');
+        var t = target.querySelector('.ttext'); if(t) t.textContent = 'COLLAPSE';
+      }
+    });
+  });
+
+  var links = Array.prototype.slice.call(navList.querySelectorAll('a'));
+  var secs = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  var spy = function(){
+    var y = window.scrollY + 120, idx = -1;
+    secs.forEach(function(s,i){ if(s && s.offsetTop <= y) idx = i; });
+    links.forEach(function(a,i){ a.classList.toggle('active', i===idx); });
+  };
+  window.addEventListener('scroll', spy, {passive:true}); spy();
+
+  var toTop = document.getElementById('toTop');
+  var ring = document.getElementById('progRing');
+  var CIRC = 144.5;
+  var onScroll = function(){
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    var p = h > 0 ? window.scrollY / h : 0;
+    ring.style.strokeDashoffset = String(CIRC * (1 - p));
+    toTop.classList.toggle('show', window.scrollY > 500);
+  };
+  window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
+  toTop.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
+
+  document.querySelectorAll('.dial').forEach(function(d){
+    var val = parseInt(d.getAttribute('data-conf'),10) || 0;
+    var below = d.hasAttribute('data-below');
+    var color = below ? '#9A6A12' : '#1E7A46';
+    var R = 40, C = 2 * Math.PI * R;
+    var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 100 100'); svg.setAttribute('width','92'); svg.setAttribute('height','92');
+    svg.innerHTML =
+      '<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="#E4DCCB" stroke-width="8"/>' +
+      '<circle class="arc" cx="50" cy="50" r="'+R+'" fill="none" stroke="'+color+'" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+C+'" stroke-dashoffset="'+C+'" transform="rotate(-90 50 50)" style="transition:stroke-dashoffset 1.3s cubic-bezier(0.22,1,0.36,1)"/>' +
+      '<text x="50" y="55" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="700" font-size="22" fill="#0E1B29">'+val+'</text>' +
+      '<text x="50" y="70" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="#6B7684">/100</text>';
+    d.insertBefore(svg, d.firstChild);
+    var arc = svg.querySelector('.arc');
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){
+          requestAnimationFrame(function(){ arc.style.strokeDashoffset = String(C * (1 - val/100)); });
+          io.disconnect();
+        }
+      });
+    },{threshold:.4});
+    io.observe(d);
+  });
+
+  var rio = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); rio.unobserve(en.target); } });
+  },{threshold:.05});
+  document.querySelectorAll('.rv').forEach(function(el){ rio.observe(el); });
+})();
+</script>
+</body>
+</html>
+
