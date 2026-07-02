@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bo -- Native-Accent Voice Picks (2026-07-02)</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 980px; margin: 0 auto; padding: 32px 20px 100px; color: #1a1a1a; line-height: 1.55; }
+  h1 { font-size: 26px; margin-bottom: 4px; }
+  h2 { font-size: 20px; margin-top: 40px; border-bottom: 2px solid #222; padding-bottom: 6px; }
+  .meta { color: #666; font-size: 13px; margin-bottom: 24px; }
+  .tldr { background: #f4f7ff; border-left: 4px solid #2952cc; padding: 14px 18px; margin: 18px 0 28px; border-radius: 4px; font-size: 14.5px; }
+  .note { font-size: 13px; color: #555; background: #f7f7f7; padding: 10px 14px; border-radius: 4px; margin: 10px 0 24px; }
+  code { background: #eee; padding: 1px 5px; border-radius: 3px; font-size: 13px; }
+
+  .lang-block { margin: 32px 0 40px; }
+  .lang-title { font-size: 19px; font-weight: 700; margin-bottom: 4px; }
+  .lang-sub { font-size: 13px; color: #666; margin-bottom: 14px; }
+  .cand-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .cand {
+    border: 1px solid #ddd; border-radius: 8px; padding: 12px 16px;
+    display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start;
+    background: #fff;
+  }
+  .cand.picked { border-color: #2952cc; background: #f4f7ff; box-shadow: 0 0 0 1px #2952cc inset; }
+  .cand input[type="radio"] { width: 18px; height: 18px; margin-top: 3px; cursor: pointer; }
+  .cand-body { min-width: 0; }
+  .cand-name { font-weight: 600; font-size: 14.5px; }
+  .cand-meta { font-size: 12.5px; color: #666; margin: 3px 0 8px; }
+  .cand-meta span { display: inline-block; margin-right: 10px; }
+  .cand audio { width: 100%; max-width: 420px; height: 34px; }
+  .cand-id { font-size: 11px; color: #999; margin-top: 6px; }
+
+  #selection-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #1a1a1a; color: #fff;
+    padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 -2px 10px rgba(0,0,0,.25); z-index: 999; font-size: 14px; flex-wrap: wrap; gap: 8px; }
+  #selection-bar .count { font-weight: 600; }
+  #selection-bar button { background: #2952cc; color: #fff; border: none; padding: 9px 18px;
+    border-radius: 5px; font-size: 14px; cursor: pointer; margin-left: 10px; }
+  #selection-bar button:hover { background: #1e3d99; }
+  #selection-bar button.clear { background: #555; }
+  #selection-bar button.clear:hover { background: #3a3a3a; }
+  #copy-confirm { color: #7CFFB2; margin-left: 10px; font-size: 13px; opacity: 0; transition: opacity .3s; }
+  #copy-confirm.show { opacity: 1; }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-02-11:58:46 MT</div><!-- DEPLOY_STAMP_END -->
+
+<h1>Bo &mdash; Native-Accent Voice Picks</h1>
+<div class="meta">Built 2026-07-02 &middot; 5 candidates per language, pulled live from ElevenLabs' Voice Library (professional category, sorted by most-used) &middot; listen and pick one per language</div>
+
+<div class="tldr">
+<strong>TL;DR:</strong> Right now Bo's non-English languages all use his default English voice, which is why they can sound accented rather than native. Below are 5 real candidate voices per language &mdash; pick one you like per language by clicking the radio button after listening, then hit "Copy my picks" at the bottom and send that back. One thing worth knowing before you pick: today, these voices only apply when a call is STARTED in that language (an outbound call Bo places). If a caller switches languages mid-call on the inbound line, Bo keeps his English voice for now &mdash; giving that its own native voice too is a separate, bigger build, not done yet.
+</div>
+
+<div class="note">All 5 candidates per language come from ElevenLabs' Voice Library, "professional" category (real community-shared voice clones, each tagged with the language they were actually recorded in), sorted by how many other people have already used that voice. Every voice in the Library carries a free commercial-use license, so whichever one you pick is clear to use on real calls with no extra licensing step. The clip under each name is the voice's own official preview &mdash; press play to hear it.</div>
+
+<h2>Pick a voice, one per language</h2>
+<div id="lang-container"></div>
+
+<div id="selection-bar">
+  <span><span class="count" id="sel-count">0</span> of <span id="lang-total">12</span> languages picked</span>
+  <span>
+    <span id="copy-confirm">Copied!</span>
+    <button id="copy-btn">Copy my picks</button>
+    <button class="clear" id="clear-btn">Clear all</button>
+  </span>
+</div>
+
+<script>
+var VOICE_DATA = {
+"fr": [
+  {"voice_id":"aQROLel5sQbj1vuIVi6B","name":"Nicolas - Narrator","accent":"parisian","gender":"male","age":"middle_aged","cloned_by_count":752243,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/7593eab373974d1db7d45255c5986d46/voices/aQROLel5sQbj1vuIVi6B/shwzqRrR51OISZWUl7EN.mp3"},
+  {"voice_id":"93nuHbke4dTER9x2pDwE","name":"Adam - warm and friendly","accent":"quebec","gender":"male","age":"middle_aged","cloned_by_count":366779,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/eFmYIzNi7fVTAUiSkCFaPtNH8aQ2/voices/93nuHbke4dTER9x2pDwE/STGzl4JxizvFzZ6Hl8zW.mp3"},
+  {"voice_id":"a5n9pJUnAhX4fn7lx3uo","name":"Martin Dupont - Deep, Warm and Aged","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":313675,"preview_url":"https://storage.googleapis.com/eleven-public-prod/custom/voices/a5n9pJUnAhX4fn7lx3uo/I5TRksrWlXu6l80nTPu2.mp3"},
+  {"voice_id":"GPAQQPp9dazaB2bl4zg9","name":"Victor - Casual and Conversational","accent":"standard","gender":"male","age":"young","cloned_by_count":269743,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/6Qx5DdZM21fJXGpigprNh6g9z1x1/voices/GPAQQPp9dazaB2bl4zg9/24e6132c-fc82-4130-9e24-74d404641169.mp3"},
+  {"voice_id":"ohItIVrXTBI80RrUECOD","name":"Guillaume - Narrator","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":268653,"preview_url":"https://storage.googleapis.com/eleven-public-prod/custom/voices/ohItIVrXTBI80RrUECOD/9mwgJwmYqekI6JTMJTcv.mp3"}
+],
+"es": [
+  {"voice_id":"Nh2zY9kknu6z4pZy6FhD","name":"David Martin - Confident and Balanced","accent":"peninsular","gender":"male","age":"young","cloned_by_count":1273798,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/8RYUsFHsalUXjwVG0LjhNwH1j022/voices/Nh2zY9kknu6z4pZy6FhD/5VD3I67SoLbajJEbw7rH.mp3"},
+  {"voice_id":"l1zE9xgNpUTaQCZzpNJa","name":"Alberto Rodriguez - Serious, Narrative","accent":"latin american","gender":"male","age":"middle_aged","cloned_by_count":1049883,"preview_url":"https://storage.googleapis.com/eleven-public-prod/custom/voices/l1zE9xgNpUTaQCZzpNJa/sF0SJSVjERJtMSqfZLPN.mp3"},
+  {"voice_id":"9F4C8ztpNUmXkdDDbz3J","name":"Dan - Upbeat, Dynamic and Friendly","accent":"american","gender":"male","age":"young","cloned_by_count":808823,"preview_url":"https://storage.googleapis.com/eleven-public-prod/oDQDaQK0SGT9AtdG8VDe17L4KjX2/voices/9F4C8ztpNUmXkdDDbz3J/4d3e2bc3-b9f8-4bf0-84b2-22e0c15102f6.mp3"},
+  {"voice_id":"HJmys3t5KLr6DUWl0kSe","name":"Rada - Relaxed, Confident, Calm","accent":"latin american","gender":"male","age":"young","cloned_by_count":581577,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/Ut8zv9GhbGgqPeEW08YlxaqZ0Lv2/voices/HJmys3t5KLr6DUWl0kSe/855ed1ea-3dd8-4339-bcaf-fb9caf0bcba5.mp3"},
+  {"voice_id":"80lPKtzJMPh1vjYMUgwe","name":"Benjamin - Deep, Smooth and Rich","accent":"mexican","gender":"male","age":"old","cloned_by_count":574110,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/f5ece55944454e93adeeae7c95a0bccd/voices/80lPKtzJMPh1vjYMUgwe/OdLhfMeDosUS2KjiTnPS.mp3"}
+],
+"ar": [
+  {"voice_id":"IES4nrmZdUBHByLBde0P","name":"Haytham - Energetic, Warm and Cheerful","accent":"egyptian","gender":"male","age":"middle_aged","cloned_by_count":293558,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/9QU6MqZNA2gQa3xJofEAkVetJtm1/voices/IES4nrmZdUBHByLBde0P/k0uwHjffW70gT6nJ9gW5.mp3"},
+  {"voice_id":"A9ATTqUUQ6GHu0coCz8t","name":"Hamid - Friendly, Natural and Positive","accent":"moroccan","gender":"male","age":"young","cloned_by_count":191699,"preview_url":"https://storage.googleapis.com/eleven-public-prod/custom/voices/A9ATTqUUQ6GHu0coCz8t/52WpzlQwppmSVSQXa65L.mp3"},
+  {"voice_id":"OFHP1Qg30FPoNfkUFFlA","name":"Adam - Deep, Rich and Expressive","accent":"egyptian","gender":"male","age":"middle_aged","cloned_by_count":159381,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/6xGk10tnFoYNQEesvyt5wAixRrc2/voices/OFHP1Qg30FPoNfkUFFlA/d0EAPFshqfoHzLkWUsKz.mp3"},
+  {"voice_id":"JjTirzdD7T3GMLkwdd3a","name":"Hamida - Professional and Positive","accent":"modern standard","gender":"male","age":"middle_aged","cloned_by_count":129902,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/I3cwrAJrxaZcwTj3v3itRTI2Aq53/voices/JjTirzdD7T3GMLkwdd3a/hc6YcErP6oKlxrAgUvpK.mp3"},
+  {"voice_id":"UR972wNGq3zluze0LoIp","name":"Haytham - Dramatic, Warm and Friendly","accent":"egyptian","gender":"male","age":"middle_aged","cloned_by_count":123736,"preview_url":"https://api.us.elevenlabs.io/v1/voices/UR972wNGq3zluze0LoIp/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ1c2VyX2lkIjoiOVFVNk1xWk5BMmdRYTN4Sm9mRUFrVmV0SnRtMSIsImZpbGVuYW1lIjoiNU1FMUppc2ZtdFdpSXB6RER5SVkubXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"}
+],
+"pt": [
+  {"voice_id":"36rVQA1AOIPwpA3Hg1tC","name":"Matheus - Friendly and Energetic","accent":"","gender":"male","age":"young","cloned_by_count":726066,"preview_url":"https://storage.googleapis.com/eleven-public-prod/custom/voices/36rVQA1AOIPwpA3Hg1tC/ewP6z1S1gE5Mb9nBSNaV.mp3"},
+  {"voice_id":"tS45q0QcrDHqHoaWdCDR","name":"Lax - Funny, Sarcastic and Smooth","accent":"brazilian","gender":"male","age":"young","cloned_by_count":249740,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/9BSPmhBJkheqxBPDvE6kddOa9rF3/voices/tS45q0QcrDHqHoaWdCDR/JVXUiHFT0hC7wmBvKxRl.mp3"},
+  {"voice_id":"CstacWqMhJQlnfLPxRG4","name":"Will - Deep, Smooth and Affectionate","accent":"brazilian","gender":"male","age":"middle_aged","cloned_by_count":200032,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/FjJ1S0dyr4ceeNIPe2rWGz4lcH53/voices/CstacWqMhJQlnfLPxRG4/4jr0jR4qABSfo2InZ89w.mp3"},
+  {"voice_id":"YNOujSUmHtgN6anjqXPf","name":"Victor Power - Wise, Dramatic and Deep","accent":"brazilian","gender":"male","age":"middle_aged","cloned_by_count":126191,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/bfbe899cc4464016ac74a27cc6133fe3/voices/YNOujSUmHtgN6anjqXPf/XO9LV662IZQNDaLzvhVt.mp3"},
+  {"voice_id":"33B4UnXyTNbgLmdEDh5P","name":"Keren - Sweet, Vibrant and Rhythmic","accent":"brazilian","gender":"female","age":"young","cloned_by_count":126109,"preview_url":"https://storage.googleapis.com/eleven-public-prod/custom/voices/33B4UnXyTNbgLmdEDh5P/ArnzDsFaz6KDoDcDD8V2.mp3"}
+],
+"ru": [
+  {"voice_id":"3EuKHIEZbSzrHGNmdYsx","name":"Nikolay - Confident, Clear and Engaging","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":753884,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/fbf84673baa740ae87ecf80121645a80/voices/3EuKHIEZbSzrHGNmdYsx/eDCArYD3qxTq5zrHJjYL.mp3"},
+  {"voice_id":"gJEfHTTiifXEDmO687lC","name":"Prince Nur - Deep, Rich and Balanced","accent":"standard","gender":"male","age":"young","cloned_by_count":660169,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/lJ828Qq43ZUVkWzzuPT8tmVIlVB3/voices/gJEfHTTiifXEDmO687lC/bvLjXgefFonQ8qV9UFjN.mp3"},
+  {"voice_id":"txnCCHHGKmYIwrn7HfHQ","name":"Alexandr Vlasov - Vibrant and Energetic","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":369384,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/4c37c646e393427a98404da71421521a/voices/txnCCHHGKmYIwrn7HfHQ/9X9MXSKyYdsdkoNjOwY4.mp3"},
+  {"voice_id":"TUQNWEvVPBLzMBSVDPUA","name":"Alex Bell - Deep and Confident","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":236532,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/44c8749f186847bdbd9d3528691abac4/voices/TUQNWEvVPBLzMBSVDPUA/UzWaQN5WUSe5p5VTm1Z5.mp3"},
+  {"voice_id":"0BcDz9UPwL3MpsnTeUlO","name":"Denis - Pleasant, Engaging and Friendly","accent":"moscow","gender":"male","age":"middle_aged","cloned_by_count":186026,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/6vXiuCP61YbJ0ULh99L8p7W4oRf2/voices/0BcDz9UPwL3MpsnTeUlO/8slbP6V9zo96rm4BZtan.mp3"}
+],
+"zh": [
+  {"voice_id":"hZTuv9Zqrq4yHYrEmF1r","name":"Adam Li - Deep, Steady and Calm","accent":"singapore mandarin","gender":"male","age":"middle_aged","cloned_by_count":100922,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/quDcGrthgkcACCa12rwG8Xzyp5Q2/voices/hZTuv9Zqrq4yHYrEmF1r/MReL0fdboS5j8sjxEN0K.mp3"},
+  {"voice_id":"DowyQ68vDpgFYdWVGjc3","name":"Jason Chen - Deep, Magnetic and Calm","accent":"beijing mandarin","gender":"male","age":"middle_aged","cloned_by_count":73399,"preview_url":"https://api.us.elevenlabs.io/v1/voices/DowyQ68vDpgFYdWVGjc3/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ3b3Jrc3BhY2VfaWQiOiJmMTdlNzY0YjQ2MzU0OTM0YWViOTFhNDRkNDRiN2ZkMyIsImZpbGVuYW1lIjoiWjh6bnNZaXJXRTV3RVhNM1MxdTIubXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"},
+  {"voice_id":"fQj4gJSexpu8RDE2Ii5m","name":"Yu - Youthful, Energetic and Engaging","accent":"taiwan mandarin","gender":"male","age":"young","cloned_by_count":47326,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/8OXM7U7aZFcKI05Whl3sOM2HBaN2/voices/fQj4gJSexpu8RDE2Ii5m/xXnDtL0jvbLE622bVoEA.mp3"},
+  {"voice_id":"hkfHEbBvdQFNX4uWHqRF","name":"Stacy - Young, Sweet and Cute","accent":"standard","gender":"female","age":"young","cloned_by_count":44541,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/jZ7Y3eU070QEgdqA7ntHTX84tSo1/voices/hkfHEbBvdQFNX4uWHqRF/n5W0eNZRtazdqGAfoBDR.mp3"},
+  {"voice_id":"pU9NaAwkoR3v0Mrg3uKz","name":"Haoran - Deep, Calm and Steady","accent":"beijing mandarin","gender":"male","age":"middle_aged","cloned_by_count":41279,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/H79ZdRWHdQYLqHU5CQ9Fcdf6iE63/voices/pU9NaAwkoR3v0Mrg3uKz/OyAgLV46qFj8zWNuBRLa.mp3"}
+],
+"de": [
+  {"voice_id":"FTNCalFNG5bRnkkaP5Ug","name":"Otto - Casual and Normal","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":358711,"preview_url":"https://storage.googleapis.com/eleven-public-prod/custom/voices/FTNCalFNG5bRnkkaP5Ug/MQ8WiEa4ozV4HevPeMba.mp3"},
+  {"voice_id":"re2r5d74PqDzicySNW0I","name":"Leon Stern - Rich and Deep","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":306629,"preview_url":"https://storage.googleapis.com/eleven-public-prod/custom/voices/re2r5d74PqDzicySNW0I/iNJX2tky9IQZwwbPK4hC.mp3"},
+  {"voice_id":"kkJxCnlRCckmfFvzDW5Q","name":"Alexander - Deep TV Narrator","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":243582,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/9d5daecd4210450281f8157fe899598f/voices/kkJxCnlRCckmfFvzDW5Q/N7nzoxGsufAnISgpK2ml.mp3"},
+  {"voice_id":"bAFkvitDGeDMmqo9gJzO","name":"Niander Wallace","accent":"german","gender":"male","age":"middle_aged","cloned_by_count":232206,"preview_url":"https://api.us.elevenlabs.io/v1/voices/bAFkvitDGeDMmqo9gJzO/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ1c2VyX2lkIjoiRGVuRWZSQ1lkMmdtZ2l4Vk5uUGJKSGwwT1ZTMiIsImZpbGVuYW1lIjoiT1g3NEtDdzNDQzZNTGRJa2ZERzgubXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"},
+  {"voice_id":"dCnu06FiOZma2KVNUoPZ","name":"Mila - Confident and Opinionated","accent":"standard","gender":"female","age":"young","cloned_by_count":188491,"preview_url":"https://api.us.elevenlabs.io/v1/voices/dCnu06FiOZma2KVNUoPZ/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ1c2VyX2lkIjoiTzd5OWZPbG1iWVQ5cVFLV2h5SUFPUzNnZWxSMiIsImZpbGVuYW1lIjoiZDhsaW1rTkVMRnRzWVZLRHVnaUYubXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"}
+],
+"it": [
+  {"voice_id":"W71zT1VwIFFx3mMGH2uZ","name":"MarcoTrox - Warm, Balanced and Polished","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":475988,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/PmcWCeDWyhXdgWnKoeG8s6OvV0L2/voices/W71zT1VwIFFx3mMGH2uZ/rnNCyOY4g9O3iiz8jRAb.mp3"},
+  {"voice_id":"13Cuh3NuYvWOVQtLbRN8","name":"Marco - Deep, Rich and Reflective","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":203545,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/PmcWCeDWyhXdgWnKoeG8s6OvV0L2/voices/13Cuh3NuYvWOVQtLbRN8/cJBPziv7PCBbwkL4Nf48.mp3"},
+  {"voice_id":"HuK8QKF35exsCh2e7fLT","name":"Carmelo La Rosa - Deep and Balanced","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":136669,"preview_url":"https://api.us.elevenlabs.io/v1/voices/HuK8QKF35exsCh2e7fLT/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ1c2VyX2lkIjoiUG1jV0NlRFd5aFhkZ1duS29lRzhzNk92VjBMMiIsImZpbGVuYW1lIjoiaXZleTJ4cFptMTUzNWpMRG1Vd2EubXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"},
+  {"voice_id":"uScy1bXtKz8vPzfdFsFw","name":"Antonio Farina - Expressive and Warm","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":129669,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/PmcWCeDWyhXdgWnKoeG8s6OvV0L2/voices/uScy1bXtKz8vPzfdFsFw/72XDqSVONDw2YySevq9x.mp3"},
+  {"voice_id":"t3hJ92dgZhDVtsff084B","name":"Chris Basetta - Smiley and Engaging","accent":"standard","gender":"male","age":"young","cloned_by_count":118238,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/ziip9kMrVTVuk4QStOKUWqbvNpn1/voices/t3hJ92dgZhDVtsff084B/459cLRSqwtDinVzuyBzv.mp3"}
+],
+"hi": [
+  {"voice_id":"zgqefOY5FPQ3bB7OZTVR","name":"Niraj - Romantic and Smooth","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":1919537,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/514d94e9241c48e8b7905375729c436f/voices/zgqefOY5FPQ3bB7OZTVR/MVPA1HijF9jaZEyDPUw2.mp3"},
+  {"voice_id":"1qEiC6qsybMkmnNdVMbK","name":"Monika Sogam - Calm and Natural","accent":"standard","gender":"female","age":"middle_aged","cloned_by_count":1118128,"preview_url":"https://api.us.elevenlabs.io/v1/voices/1qEiC6qsybMkmnNdVMbK/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ3b3Jrc3BhY2VfaWQiOiI1MTRkOTRlOTI0MWM0OGU4Yjc5MDUzNzU3MjljNDM2ZiIsImZpbGVuYW1lIjoiM0FWQVFCWHUwdllzSXJnRGM2RmEubXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"},
+  {"voice_id":"FZkK3TvQ0pjyDmT8fzIW","name":"Bunty - Punchy, Crisp and Reel King","accent":"standard","gender":"male","age":"young","cloned_by_count":1079424,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/ed9b05e6324c457685490352e9a1ec90/voices/FZkK3TvQ0pjyDmT8fzIW/opgBS6JEyrQnlsYlwCAj.mp3"},
+  {"voice_id":"MF4J4IDTRo0AxOO4dpFR","name":"Devi - Encouraging and Motivating","accent":"standard","gender":"female","age":"young","cloned_by_count":892613,"preview_url":"https://api.us.elevenlabs.io/v1/voices/MF4J4IDTRo0AxOO4dpFR/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ3b3Jrc3BhY2VfaWQiOiI1MTRkOTRlOTI0MWM0OGU4Yjc5MDUzNzU3MjljNDM2ZiIsImZpbGVuYW1lIjoiSXpSTkhGUU1hNUw3NW4zMzNHd0subXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"},
+  {"voice_id":"zT03pEAEi0VHKciJODfn","name":"Raju - Clear, Natural and Warm","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":611946,"preview_url":"https://storage.googleapis.com/eleven-public-prod/custom/voices/zT03pEAEi0VHKciJODfn/E1SwTL1qIKPkIxyZQQfk.mp3"}
+],
+"ko": [
+  {"voice_id":"ZJCNdZEjYwkOElxugmW2","name":"Hyuk - Cold and Clear","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":346532,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/hSWXaUomcSNh92DBdVimNedwBFB2/voices/ZJCNdZEjYwkOElxugmW2/dOgEto9Z9e1UqrYhRSe0.mp3"},
+  {"voice_id":"uyVNoMrnUku1dZyVEXwD","name":"Anna Kim - Tender, Calm and Clear","accent":"seoul","gender":"female","age":"young","cloned_by_count":216737,"preview_url":"https://api.us.elevenlabs.io/v1/voices/uyVNoMrnUku1dZyVEXwD/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ1c2VyX2lkIjoiT0thQkRzWDRBd1dXak1hWkhCbWhDV0Z2dDlOMiIsImZpbGVuYW1lIjoiVzU1b1AxSXNMTmFOYWdsSnBVWmQubXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"},
+  {"voice_id":"s07IwTCOrCDCaETjUVjx","name":"Hyunbin - Diplomatic, Clear and Measured","accent":"seoul","gender":"male","age":"middle_aged","cloned_by_count":91956,"preview_url":"https://storage.googleapis.com/eleven-public-prod/hSWXaUomcSNh92DBdVimNedwBFB2/voices/s07IwTCOrCDCaETjUVjx/b9065609-ce5d-409b-b42d-59a39962f088.mp3"},
+  {"voice_id":"jB1Cifc2UQbq1gR3wnb0","name":"Bin - Measured and Serious","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":90412,"preview_url":"https://storage.googleapis.com/eleven-public-prod/hSWXaUomcSNh92DBdVimNedwBFB2/voices/jB1Cifc2UQbq1gR3wnb0/886e42f2-9973-476a-aa1f-f348f46d35a3.mp3"},
+  {"voice_id":"ksaI0TCD9BstzEzlxj4q","name":"Seulki - Inviting, Calm and Measured","accent":"seoul","gender":"female","age":"middle_aged","cloned_by_count":71411,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/2IzgfYjaHgaiOZ7ej6G902W3kKh1/voices/ksaI0TCD9BstzEzlxj4q/bizji0eQlVSfyOy39GQ7.mp3"}
+],
+"vi": [
+  {"voice_id":"3VnrjnYrskPMDsapTr8X","name":"Tung Dang - Deep, Warm and Resonant","accent":"northern","gender":"male","age":"middle_aged","cloned_by_count":314028,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/COsSJJG6gjWu8B6HtAYraUqntxT2/voices/3VnrjnYrskPMDsapTr8X/rTtnskqz8S0pmuxMwNB3.mp3"},
+  {"voice_id":"aN7cv9yXNrfIR87bDmyD","name":"Ninh Don - Deep and Warm","accent":"northern","gender":"male","age":"young","cloned_by_count":126464,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/sOwFF8ejIvSefUvvGpTJ63HXubh1/voices/aN7cv9yXNrfIR87bDmyD/hfxx2raRzt2YVxtQiM8H.mp3"},
+  {"voice_id":"UsgbMVmY3U59ijwK5mdh","name":"Trieu Duong - Deep, Calm and Resonant","accent":"southern","gender":"male","age":"young","cloned_by_count":82660,"preview_url":"https://api.us.elevenlabs.io/v1/voices/UsgbMVmY3U59ijwK5mdh/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ3b3Jrc3BhY2VfaWQiOiJhODZjMjc1ZmQyMTk0ZjcwOTFkMGMyNjdmYWVmYmRhYyIsImZpbGVuYW1lIjoiZjkwMGEwNDAtMGFiZS00N2RiLWFlYjQtYzIwYjYzMDU2NDMzLm1wMyIsInRpbWVzdGFtcCI6MTc4MzAxMTYwMDAwMDAwMH0%3D"},
+  {"voice_id":"ueSxRO0nLF1bj93J2hVt","name":"Trung Caha - Clear, Firm and Informative","accent":"northern","gender":"male","age":"middle_aged","cloned_by_count":82510,"preview_url":"https://api.us.elevenlabs.io/v1/voices/ueSxRO0nLF1bj93J2hVt/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ1c2VyX2lkIjoieTZmS1RGRUc3RWUxN1oxekRaSG9HRk5zVktZMiIsImZpbGVuYW1lIjoiZGU0YWM2ZTktNzVkNy00NGM1LWJiNTAtMjMwNWRmZGRhMjgwLm1wMyIsInRpbWVzdGFtcCI6MTc4MzAxMTYwMDAwMDAwMH0%3D"},
+  {"voice_id":"A5w1fw5x0uXded1LDvZp","name":"Nhu - Calm and Confident","accent":"standard","gender":"female","age":"young","cloned_by_count":80889,"preview_url":"https://api.us.elevenlabs.io/v1/voices/A5w1fw5x0uXded1LDvZp/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ1c2VyX2lkIjoiZThjRkFaM2pndVhabklTRTcyREp2NTJ1OGR0MiIsImZpbGVuYW1lIjoiUGw0NGR2cUFBR3J3eFpFdGE3bUUubXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"}
+],
+"tl": [
+  {"voice_id":"RnW8EXHv9GqGMgyP0sXG","name":"Ate Lyn - Captivating Voiceover Queen","accent":"standard","gender":"female","age":"middle_aged","cloned_by_count":93454,"preview_url":"https://api.us.elevenlabs.io/v1/voices/RnW8EXHv9GqGMgyP0sXG/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ3b3Jrc3BhY2VfaWQiOiIwMGQzZTQyNmE0ZWM0OGNkYTI0MTNkNzAzODM0NzYwMyIsImZpbGVuYW1lIjoiYW5NOHlnZVlkb2NtZHBLZ21PTWwubXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"},
+  {"voice_id":"jN7Z0yN1A1cDJRBH2ZZF","name":"Pedro - Calm, Laidback, and Clear","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":35770,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/user/wHTkrlfI6qdlWqSw8nHUpD7CqDB3/voices/jN7Z0yN1A1cDJRBH2ZZF/5NoZZMdkoGXVINijsAmj.mp3"},
+  {"voice_id":"EJV7H2baGt5ab95tOoSG","name":"Mely Uneskee - Smooth and Cheerful","accent":"standard","gender":"female","age":"middle_aged","cloned_by_count":27654,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/00d3e426a4ec48cda2413d7038347603/voices/EJV7H2baGt5ab95tOoSG/wFC70qQOrhBBE3uxJiCn.mp3"},
+  {"voice_id":"OkDfD8rwvBeYcTxaYXYj","name":"Mark - Horror Storyteller","accent":"standard","gender":"male","age":"old","cloned_by_count":24844,"preview_url":"https://storage.googleapis.com/eleven-public-prod/database/workspace/00d3e426a4ec48cda2413d7038347603/voices/OkDfD8rwvBeYcTxaYXYj/Lmy9DcG06tzV5403kAu4.mp3"},
+  {"voice_id":"sXmQtIh1TPtty63PTU6Q","name":"Alexander - Loud, Clear, and Friendly","accent":"standard","gender":"male","age":"middle_aged","cloned_by_count":22838,"preview_url":"https://api.us.elevenlabs.io/v1/voices/sXmQtIh1TPtty63PTU6Q/previews/audio?payload=eyJ2b2ljZV9zb3VyY2UiOiJjdXN0b20iLCJ3b3Jrc3BhY2VfaWQiOiIwMGQzZTQyNmE0ZWM0OGNkYTI0MTNkNzAzODM0NzYwMyIsImZpbGVuYW1lIjoiSFg4QldMSzVVeDRxRnpWaEVaWG0ubXAzIiwidGltZXN0YW1wIjoxNzgzMDExNjAwMDAwMDAwfQ%3D%3D"}
+]
+};
+
+var LANG_NAMES = {
+  fr: "French", es: "Spanish", ar: "Arabic", pt: "Portuguese", ru: "Russian",
+  zh: "Chinese (Mandarin)", de: "German", it: "Italian", hi: "Hindi",
+  ko: "Korean", vi: "Vietnamese", tl: "Tagalog"
+};
+var LANG_ORDER = ["fr", "es", "ar", "pt", "ru", "zh", "de", "it", "hi", "ko", "vi", "tl"];
+
+(function () {
+  var STORAGE_KEY = "bo-native-accent-picks-2026-07-02";
+  var container = document.getElementById("lang-container");
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  // Build the DOM for every language + candidate.
+  LANG_ORDER.forEach(function (langKey) {
+    var candidates = VOICE_DATA[langKey] || [];
+    var block = document.createElement("div");
+    block.className = "lang-block";
+
+    var title = document.createElement("div");
+    title.className = "lang-title";
+    title.textContent = LANG_NAMES[langKey] + " (" + langKey + ")";
+    block.appendChild(title);
+
+    var sub = document.createElement("div");
+    sub.className = "lang-sub";
+    sub.textContent = candidates.length + " candidates, sorted by most-used";
+    block.appendChild(sub);
+
+    var grid = document.createElement("div");
+    grid.className = "cand-grid";
+
+    candidates.forEach(function (c, idx) {
+      var row = document.createElement("label");
+      row.className = "cand";
+      row.setAttribute("for", "pick-" + langKey + "-" + idx);
+
+      var radioWrap = document.createElement("div");
+      var radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "pick-" + langKey;
+      radio.id = "pick-" + langKey + "-" + idx;
+      radio.value = c.voice_id;
+      radio.dataset.lang = langKey;
+      radio.dataset.name = c.name;
+      radioWrap.appendChild(radio);
+
+      var body = document.createElement("div");
+      body.className = "cand-body";
+      var metaParts = [];
+      if (c.accent) metaParts.push("accent: " + c.accent);
+      if (c.gender) metaParts.push("gender: " + c.gender);
+      if (c.age) metaParts.push("age: " + c.age.replace("_", " "));
+      if (c.cloned_by_count) metaParts.push("used by " + c.cloned_by_count.toLocaleString() + " creators");
+
+      body.innerHTML =
+        '<div class="cand-name">' + escapeHtml(c.name) + '</div>' +
+        '<div class="cand-meta">' + escapeHtml(metaParts.join(" &middot; ")) + '</div>' +
+        '<audio controls preload="none" src="' + c.preview_url + '"></audio>' +
+        '<div class="cand-id">voice_id: <code>' + escapeHtml(c.voice_id) + '</code></div>';
+
+      row.appendChild(radioWrap);
+      row.appendChild(body);
+      grid.appendChild(row);
+
+      radio.addEventListener("change", function () {
+        Array.prototype.forEach.call(grid.querySelectorAll(".cand"), function (el) {
+          el.classList.remove("picked");
+        });
+        row.classList.add("picked");
+        saveSelections(currentSelections());
+        updateCount();
+      });
+    });
+
+    block.appendChild(grid);
+    container.appendChild(block);
+  });
+
+  var countEl = document.getElementById("sel-count");
+  var copyBtn = document.getElementById("copy-btn");
+  var clearBtn = document.getElementById("clear-btn");
+  var confirmEl = document.getElementById("copy-confirm");
+  document.getElementById("lang-total").textContent = LANG_ORDER.length;
+
+  function allRadios() {
+    return Array.prototype.slice.call(document.querySelectorAll(".cand input[type=radio]"));
+  }
+
+  function currentSelections() {
+    var picks = {};
+    allRadios().forEach(function (r) {
+      if (r.checked) picks[r.dataset.lang] = { voice_id: r.value, name: r.dataset.name };
+    });
+    return picks;
+  }
+
+  function saveSelections(picks) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(picks)); } catch (e) {}
+  }
+
+  function loadSelections() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function updateCount() {
+    countEl.textContent = Object.keys(currentSelections()).length;
+  }
+
+  // Restore any saved picks.
+  var saved = loadSelections();
+  Object.keys(saved).forEach(function (langKey) {
+    var voiceId = saved[langKey].voice_id;
+    var radio = document.querySelector('input[name="pick-' + langKey + '"][value="' + voiceId + '"]');
+    if (radio) {
+      radio.checked = true;
+      radio.closest(".cand").classList.add("picked");
+    }
+  });
+  updateCount();
+
+  copyBtn.addEventListener("click", function () {
+    var picks = currentSelections();
+    var today = new Date().toISOString().slice(0, 10);
+    var text = "Bo native-accent voice picks (" + today + "):\n";
+    var keys = Object.keys(picks);
+    if (keys.length === 0) {
+      text += "(none picked yet)";
+    } else {
+      LANG_ORDER.forEach(function (langKey) {
+        if (picks[langKey]) {
+          text += "- " + LANG_NAMES[langKey] + " (" + langKey + "): " + picks[langKey].name +
+                  " -- voice_id " + picks[langKey].voice_id + "\n";
+        }
+      });
+    }
+    function done() {
+      confirmEl.classList.add("show");
+      setTimeout(function () { confirmEl.classList.remove("show"); }, 2000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text, done); });
+    } else {
+      fallbackCopy(text, done);
+    }
+  });
+
+  function fallbackCopy(text, done) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+    done();
+  }
+
+  clearBtn.addEventListener("click", function () {
+    allRadios().forEach(function (r) { r.checked = false; });
+    Array.prototype.forEach.call(document.querySelectorAll(".cand"), function (el) {
+      el.classList.remove("picked");
+    });
+    saveSelections({});
+    updateCount();
+  });
+})();
+</script>
+
+</body>
+</html>
+
