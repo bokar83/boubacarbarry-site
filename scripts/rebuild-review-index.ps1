@@ -40,6 +40,27 @@ function Test-Keep($item) {
     return (($item.PSObject.Properties.Name -contains 'keep') -and $item.keep)
 }
 
+function Test-DbKept([string]$slug) {
+    return ($dbStates.ContainsKey($slug) -and $dbStates[$slug].kept)
+}
+
+# Effective archived state = the human Keep/Archive decision in review_states (if a
+# row exists) overlaid on the manifest lifecycle flag. An explicit un-archive is only
+# honored while the page folder is still live under review/<slug>/ (a folder already
+# moved to review/archive/ would render a broken card link).
+function Get-EffArchived($item) {
+    $slug = $item.slug
+    if ($dbStates.ContainsKey($slug)) {
+        if ($dbStates[$slug].archived) { return $true }
+        if ($diskSlugs.ContainsKey($slug)) { return $false }
+    }
+    return [bool]$item.archived
+}
+
+function Get-EffKept($item) {
+    return ((Test-Keep $item) -or (Test-DbKept $item.slug))
+}
+
 function Get-PageTitle([string]$indexFile, [string]$slug) {
     try { $html = Get-Content $indexFile -Raw -Encoding UTF8 }
     catch { return ($slug -replace '-', ' ') }
@@ -63,7 +84,7 @@ function Get-FolderDate([string]$slug, [string]$folderPath) {
 }
 
 function Format-Card($item, [bool]$isArchived) {
-    $isKeep = Test-Keep $item
+    $isKeep = Get-EffKept $item
     $created = [datetime]::ParseExact($item.created, "yyyy-MM-dd", $null)
     $age = ($today - $created).Days
     $classes = "review-card"
@@ -125,6 +146,24 @@ $manifest = if (Test-Path $ManifestPath) {
 $bySlug = @{}
 foreach ($e in $manifest) { $bySlug[$e.slug] = $e }
 
+# --- Load cross-device decisions from Supabase review_states -----------------
+# The hub UI writes Keep/Archive decisions to this table (public publishable key with
+# RLS public_rw -- the same key already embedded in the public hub page, not a secret).
+# The generator MERGES these decisions into the render so a rebuild/republish can never
+# reset a decision made on any device. Fetch failure = warn + manifest-only render
+# (never fatal, never writes over the DB).
+$SupaUrl = 'https://jscucboftaoaphticqci.supabase.co'
+$SupaKey = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S'
+$SupaHdr = @{ apikey = $SupaKey; Authorization = "Bearer $SupaKey" }
+$dbStates = @{}
+try {
+    $rows = Invoke-RestMethod -Uri "$SupaUrl/rest/v1/review_states?select=slug,kept,archived" -Headers $SupaHdr -TimeoutSec 20
+    foreach ($r in @($rows)) { $dbStates[$r.slug] = $r }
+    Write-Host "review_states: loaded $($dbStates.Count) decision rows from Supabase."
+} catch {
+    Write-Warning "review_states fetch failed ($($_.Exception.Message)); rendering manifest-only."
+}
+
 # --- Scan disk and self-populate --------------------------------------------
 $diskSlugs = @{}
 $added = @()
@@ -172,6 +211,7 @@ $toArchive = @()
 foreach ($e in $manifest) {
     if ($e.archived) { continue }
     if (Test-Keep $e) { continue }
+    if (Test-DbKept $e.slug) { continue }   # kept via the hub UI -- never auto-archive
     if (-not $diskSlugs.ContainsKey($e.slug)) { continue }   # only archive live folders
     $created = [datetime]::ParseExact($e.created, "yyyy-MM-dd", $null)
     if (($today - $created).Days -gt $ArchiveAfterDays) { $toArchive += $e.slug }
@@ -230,11 +270,25 @@ if ($manifestChanged) {
     $manifest | ConvertTo-Json -Depth 3 | Set-Content $ManifestPath -Encoding UTF8
 }
 
+# Write the 21-day sweep result back to review_states so the DB and the manifest
+# converge (otherwise a stale archived=false row would re-activate a swept item).
+if ($toArchive.Count -gt 0) {
+    try {
+        $wb = @($toArchive | ForEach-Object { @{ slug = $_; kept = $false; archived = $true; updated_at = (Get-Date).ToUniversalTime().ToString('o') } })
+        $wbHdr = $SupaHdr + @{ 'Content-Type' = 'application/json'; Prefer = 'resolution=merge-duplicates' }
+        Invoke-RestMethod -Method Post -Uri "$SupaUrl/rest/v1/review_states" -Headers $wbHdr -Body (ConvertTo-Json $wb -Depth 3) -TimeoutSec 20 | Out-Null
+        Write-Host "review_states: wrote back archived=true for $($toArchive -join ', ')."
+    } catch {
+        Write-Warning "review_states write-back failed ($($_.Exception.Message)); the client will still show these as archived from the manifest."
+    }
+}
+
 # --- Partition + order ------------------------------------------------------
-# Active = not archived, not closed. Kept items pin to the top (then by date desc).
-$active = @($manifest | Where-Object { -not $_.archived -and -not $_.closed })
-$activeSorted = @($active | Sort-Object @{ Expression = { if (Test-Keep $_) { 0 } else { 1 } } }, @{ Expression = { $_.created }; Descending = $true })
-$archivedItems = @($manifest | Where-Object { $_.archived } | Sort-Object @{ Expression = { $_.created }; Descending = $true })
+# Active = not archived (manifest lifecycle MERGED with review_states decisions),
+# not closed. Kept items pin to the top (then by date desc).
+$active = @($manifest | Where-Object { -not (Get-EffArchived $_) -and -not $_.closed })
+$activeSorted = @($active | Sort-Object @{ Expression = { if (Get-EffKept $_) { 0 } else { 1 } } }, @{ Expression = { $_.created }; Descending = $true })
+$archivedItems = @($manifest | Where-Object { Get-EffArchived $_ } | Sort-Object @{ Expression = { $_.created }; Descending = $true })
 
 # --- Build card blocks ------------------------------------------------------
 $cards = ""
