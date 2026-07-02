@@ -236,7 +236,7 @@
   .pick .why b { color: var(--ink-strong); }
   .pick .dorm { font-size: 0.78rem; color: var(--faint); margin-top: 0.3rem; line-height: 1.5; }
   .pick .dorm::before { content: "Dormancy: "; font-weight: 700; color: var(--muted); }
-  .decide { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 0.55rem; align-items: center;
+  .decide { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 0.55rem; align-items: center;
     margin-top: 0.65rem; padding: 0.55rem 0.7rem; background: rgba(232,161,58,0.05);
     border: 1px dashed var(--amber-border); border-radius: 9px; }
   .d-lbl { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.09em; color: var(--amber); }
@@ -244,6 +244,13 @@
     border-radius: 6px; background: rgba(20,17,14,0.55); outline: none; }
   .d-cell:empty::before { content: attr(data-hint); color: var(--faint); font-size: 0.76rem; }
   .d-cell:focus { box-shadow: 0 0 0 1px var(--amber-border); }
+  .d-save { position: absolute; top: -0.6rem; right: 0.6rem; font-size: 0.56rem; font-weight: 800;
+    letter-spacing: 0.08em; text-transform: uppercase; padding: 0.1rem 0.45rem; border-radius: 999px;
+    background: var(--bg); pointer-events: none; }
+  .d-save:empty { display: none; }
+  .d-save.busy { color: var(--amber); border: 1px solid var(--amber-border); }
+  .d-save.ok { color: var(--green); border: 1px solid var(--green-border); }
+  .d-save.err { color: var(--red); border: 1px solid var(--red-border); }
   .brandon-box { background: linear-gradient(135deg, #221a2c 0%, #1c1916 70%); border: 1px solid rgba(176,138,224,0.32);
     border-radius: 14px; padding: 1.3rem 1.5rem; margin: 1.4rem 0; }
   .brandon-box .blbl { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--violet); margin-bottom: 0.45rem; }
@@ -282,7 +289,8 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-07-02-11:49:42 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-07-02-13:59:10 MT</div><!-- DEPLOY_STAMP_END -->
+
 <div class="wrap">
 
   <header class="doc-header">
@@ -326,7 +334,7 @@
   <!-- SECTION 00: FIRST DM WAVE (top 15, 2026-07-02) -->
   <div class="section" id="dmwave">
     <div class="s-head"><span class="s-num">00</span><h2>First DM wave: the top 15 (2026-07-02)</h2></div>
-    <p class="s-desc">Reweighted from the workshop ranking toward the current push: HR decision-makers first, realistic reply odds after years of dormancy, this-week transactability. Three plays only. Mark the Decision + Notes cell on each pick (send / swap / hold), relay back, and this page gets updated with your calls.</p>
+    <p class="s-desc">Reweighted from the workshop ranking toward the current push: HR decision-makers first, realistic reply odds after years of dormancy, this-week transactability. Three plays only. Mark the Decision + Notes cell on each pick (send / swap / hold). Edits save to the database automatically (watch for the "saved" badge) and show on every device.</p>
 
     <div class="plays">
       <div class="play prolo"><div class="pn">Rolodex reconnect</div><div class="pc">6 picks</div><div class="pd">CHRO/SVP-level. No ask in message one.</div></div>
@@ -901,7 +909,95 @@ renderAll({ ATIER, BTIER, AUDIT, PGA });
     if (stat) stat.textContent = 'embedded static (DB unreachable: ' + e.message + ')';
   }
 })();
+
+// ---- DECISION + NOTES PERSISTENCE (plain fetch to Supabase REST; no CDN, no localStorage) ----
+// Anon key is column-scoped by RLS: UPDATE allowed on decision + notes only.
+(function () {
+  const HDRS = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+  const picks = [];
+  document.querySelectorAll('ol.picks > li.pick').forEach(li => {
+    const rk = li.querySelector('.rk');
+    const cells = li.querySelectorAll('.d-cell');
+    const box = li.querySelector('.decide');
+    const rank = rk ? parseInt(rk.textContent, 10) : NaN;
+    if (!rank || cells.length < 2 || !box) return;
+    const stat = document.createElement('span');
+    stat.className = 'd-save';
+    stat.setAttribute('aria-live', 'polite');
+    box.appendChild(stat);
+    picks.push({ rank, decision: cells[0], notes: cells[1], stat });
+  });
+
+  function setStat(p, cls, txt) { p.stat.className = 'd-save' + (cls ? ' ' + cls : ''); p.stat.textContent = txt; }
+
+  // Load saved values on every visit so his calls show on every device.
+  fetch(SB_URL + '/rest/v1/warm_list_contacts?dm_rank=not.is.null&select=dm_rank,decision,notes', { headers: HDRS })
+    .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+    .then(rows => {
+      const byRank = {};
+      rows.forEach(r => { byRank[r.dm_rank] = r; });
+      picks.forEach(p => {
+        const row = byRank[p.rank];
+        if (!row) return;
+        if (row.decision != null && document.activeElement !== p.decision) p.decision.textContent = row.decision;
+        if (row.notes != null && document.activeElement !== p.notes) p.notes.textContent = row.notes;
+      });
+    })
+    .catch(() => picks.forEach(p => setStat(p, 'err', 'offline: saved notes not loaded')));
+
+  const timers = {};
+  const dirty = {};
+
+  function save(key) {
+    const d = dirty[key];
+    if (!d) return;
+    delete dirty[key];
+    const raw = d.cell.textContent.replace(/\u00a0/g, ' ').trim();
+    if (!raw && document.activeElement !== d.cell) d.cell.innerHTML = ''; // restore placeholder hint
+    setStat(d.p, 'busy', 'saving');
+    const body = {};
+    body[d.field] = raw || null;
+    fetch(SB_URL + '/rest/v1/warm_list_contacts?dm_rank=eq.' + d.p.rank, {
+      method: 'PATCH', keepalive: true,
+      headers: Object.assign({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, HDRS),
+      body: JSON.stringify(body)
+    }).then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      if (!dirty[key]) {
+        setStat(d.p, 'ok', 'saved');
+        setTimeout(() => { if (d.p.stat.textContent === 'saved') setStat(d.p, '', ''); }, 2600);
+      }
+    }).catch(() => {
+      if (!dirty[key]) dirty[key] = d; // keep for retry, unless newer edit already queued
+      setStat(d.p, 'err', 'not saved, retrying');
+      clearTimeout(timers[key]);
+      timers[key] = setTimeout(() => save(key), 5000);
+    });
+  }
+
+  function queue(p, field, cell, delay) {
+    const key = p.rank + ':' + field;
+    dirty[key] = { p, field, cell };
+    clearTimeout(timers[key]);
+    timers[key] = setTimeout(() => save(key), delay);
+  }
+
+  picks.forEach(p => {
+    [['decision', p.decision], ['notes', p.notes]].forEach(([field, cell]) => {
+      cell.addEventListener('input', () => queue(p, field, cell, 800));
+      cell.addEventListener('blur', () => queue(p, field, cell, 0));
+    });
+  });
+
+  // Flush pending edits if the tab is being hidden/closed (mobile-safe; keepalive carries it).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      Object.keys(dirty).forEach(k => { clearTimeout(timers[k]); save(k); });
+    }
+  });
+})();
 </script>
 </body>
 </html>
+
 
