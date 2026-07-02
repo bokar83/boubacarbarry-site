@@ -17,3 +17,16 @@ jobs:
       - name: Verify review hub is in sync
         shell: pwsh
         run: ./scripts/rebuild-review-index.ps1 -Check
+      - name: No placeholder pay links (guard, 2026-07-02)
+        shell: pwsh
+        run: |
+          # A live review page once shipped with buy.stripe.com/REPLACE_WITH_97_LINK
+          # on all 3 buy CTAs. Fail the push if any placeholder pay link is present.
+          $hits = Get-ChildItem review -Recurse -Include *.html -File |
+            Select-String -Pattern 'REPLACE_WITH|buy\.stripe\.com/(PLACEHOLDER|TODO|XXXX|YOUR_)'
+          if ($hits) {
+            $hits | ForEach-Object { Write-Host "$($_.Path):$($_.LineNumber): $($_.Line.Trim())" }
+            Write-Error "Placeholder pay link(s) found in review/ — fix before deploy."
+            exit 1
+          }
+          Write-Host "No placeholder pay links in review/."
