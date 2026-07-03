@@ -332,7 +332,7 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v4 · 2026-07-01-20:51:04 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v5 · 2026-07-02-18:10:00 MT</div><!-- DEPLOY_STAMP_END -->
 
 
 <div class="wrap">
@@ -611,11 +611,26 @@
     </div>
   </section>
 
+  <!-- PROGRESS LOG: dated, what actually happened. Your asks + decisions, truth-only. -->
+  <section class="panel" id="progresslog">
+    <div class="panel-head"><h2>Progress log &mdash; what actually happened</h2><span class="ph-date">Dated &middot; asks + decisions &middot; truth-only</span></div>
+    <div class="panel-body">
+      <ul class="shiplog">
+        <li id="p-2026-07-02-asks"><b>Jul 2</b> &middot; <b>Daily 5 asks: DONE (5/5). Gate met.</b> Five warm reconnect DMs sent: Joe Nabrotzky, Chris Farnsworth, PJ Schwartz, Kari Gardner, Aarif Aziz. Six more queued for Mon Jul 6; Monique and Lindy held until the research on them is in.</li>
+        <li><b>Jul 2</b> &middot; <b>Focus-3 plan approved:</b> the asks go to three plays &mdash; the national HR rolodex, the $97 national offer, and the $250 GEO scan. Meta ad spend is frozen until a funnel converts organically. The workshop kill-trigger is set.</li>
+      </ul>
+    </div>
+  </section>
+
   <!-- SYSTEM LOG: assets + pipeline the agent side shipped into this map. Never revenue. -->
   <section class="panel" id="shiplog">
     <div class="panel-head"><h2>System log &mdash; shipped for you</h2><span class="ph-date">Assets + pipeline only &middot; never counts as asks or cash</span></div>
     <div class="panel-body">
       <ul class="shiplog">
+        <li><b>Jul 2</b> &middot; Money-path fixes live: the $97 Two Front Doors page now takes payment (the dead Stripe link is fixed and a guard keeps it from silently breaking again), the $250 audit is deployed live on geolisted.co, the $1,500 done-for-you page 404 is patched, and the thank-you page purchase pixel is de-duplicated. The pay pages are no longer leaking.</li>
+        <li><b>Jul 2</b> &middot; Warm-list engine live and tracked: a board-backed page with 15 ranked contacts, per-contact notes that auto-save, LinkedIn links, proposed send dates, and sent-status tracking.</li>
+        <li><b>Jul 2</b> &middot; Workshop content locked: the hybrid agenda (business-brain opener &rarr; Council main event &rarr; live premortem &rarr; audit close) is pressure-tested and the plan + Days of '47 theme are live. On the table: a free SBDC-filled pilot Jul 16 ahead of the paid Jul 30 room.</li>
+        <li><b>Jul 2</b> &middot; PGA Modules 5&ndash;9 now carry submit-by dates (Jul 8 / 14 / 18 / 24 / 28) on this map and on the marketing calendar.</li>
         <li><b>Jul 1</b> &middot; Workshop funnel restructured and greenlit: a free demo video (you record it Jul 2) is now the free front door that feeds the paid $47 July 30 room. A pipeline milestone, not cash.</li>
         <li><b>Jul 1</b> &middot; The recording package for the free video is ready: script, shot plan, setup checklist. Tomorrow you just hit record.</li>
         <li><b>Jul 1</b> &middot; The $250-audit scan engine now runs a first-mover AI-search-visibility check, live-verified. No competing scan in the lane checks this yet.</li>
@@ -844,7 +859,9 @@
   function lsSet(k, v){ try { localStorage.setItem(LS + k, v); } catch(e){} }
 
   // ---- date helpers ----
-  function dkey(d){ return d.toISOString().slice(0,10); }
+  // v5 fix: dkey was UTC (toISOString), so evening logs after 6pm MT landed on
+  // TOMORROW's key (e.g. Jul 2 asks saved as ask-2026-07-03). Now local-date.
+  function dkey(d){ return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2); }
   function todayAskKey(){ return 'ask-' + dkey(new Date()); }
   function getAsk(dateStr){ var v = state['ask-'+dateStr]; if (v === undefined) v = lsGet('ask-'+dateStr); var n = parseInt(v,10); return isNaN(n) ? 0 : n; }
   var ASK_MIN = 5, WEEK_ASK_TARGET = 25;
@@ -977,10 +994,10 @@
 
   // ---- weekly scorecard: headline = ASKS SENT this week (sum of daily counts) ----
   // Map week number -> that week's Monday date (Week 1 Monday = 2026-06-29).
-  function weekMonday(wk){ var n = parseInt(wk,10); if (isNaN(n)) n = 1; var d = new Date(Date.UTC(2026,5,29)); d.setUTCDate(d.getUTCDate() + (n-1)*7); return d; }
+  function weekMonday(wk){ var n = parseInt(wk,10); if (isNaN(n)) n = 1; var d = new Date(2026,5,29); d.setDate(d.getDate() + (n-1)*7); return d; }
   function recomputeScorecard(){
     var mon = weekMonday(activeWeek), total = 0;
-    for (var i=0;i<7;i++){ var d = new Date(mon.getTime()); d.setUTCDate(d.getUTCDate()+i); total += getAsk(dkey(d)); }
+    for (var i=0;i<7;i++){ var d = new Date(mon.getTime()); d.setDate(d.getDate()+i); total += getAsk(dkey(d)); }
     var pctEl = document.getElementById('scPct'), fill = document.getElementById('scFill'), num = document.getElementById('scWeekNum');
     if (num) num.textContent = activeWeek;
     if (pctEl){ pctEl.textContent = total; pctEl.classList.toggle('under', total < WEEK_ASK_TARGET); }
