@@ -195,6 +195,26 @@
   .diagram-caption { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: center; margin-top: 16px; }
   .diagram-hint { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; margin: 0 0 18px; letter-spacing: 0.02em; }
 
+  /* ---- Horizontal scroll affordance (mobile): fade-edge cue + swipe caption on any diagram wider than its frame ---- */
+  .hscroll { position: relative; }
+  .hscroll-track { overflow-x: auto; }
+  .hscroll-fade {
+    display: none;
+    position: absolute; top: 0; bottom: 0; right: 0; width: 34px;
+    pointer-events: none; opacity: 0; transition: opacity 0.25s ease;
+    background: linear-gradient(to right, transparent, rgba(10,11,17,0.92));
+    border-radius: 0 8px 8px 0;
+  }
+  .hscroll-fade.is-visible { opacity: 1; }
+  .swipe-hint {
+    display: none;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.03em;
+    text-align: center; color: rgba(238,241,248,0.5); margin: 10px 0 0;
+  }
+  @media (max-width: 640px) {
+    .hscroll-fade, .swipe-hint { display: block; }
+  }
+
   /* ---- Diagram frame: dark glow canvas (matches the reference tool's mood).
      Always dark regardless of page theme, like a map viewport inside an editorial page.
      Independent token set (--c-*) so nothing here depends on the page's light/dark state. ---- */
@@ -329,7 +349,7 @@
   @media (prefers-reduced-motion: reduce) {
     header.hero { animation: none; opacity: 1; transform: none; }
     .reveal-init { opacity: 1 !important; transform: none !important; transition: none !important; }
-    .stage, .arrow, .bench-fill, .ring-hit, .ring-legend .chev { transition: none !important; }
+    .stage, .arrow, .bench-fill, .ring-hit, .ring-legend .chev, .hscroll-fade { transition: none !important; }
   }
 </style>
 </head>
@@ -370,7 +390,7 @@
     <div class="diagram-frame canvas-dark">
       <span class="canvas-tag">workspace map, reconstructed</span>
       <p class="diagram-hint">Click a ring, or its row below, to expand what agentsHQ has for that layer</p>
-      <div class="radial-wrap">
+      <div class="hscroll"><div class="hscroll-track"><div class="radial-wrap">
         <svg width="520" height="440" viewBox="0 0 520 440" role="img" aria-label="Four concentric rings around a glowing center node: Applications, Routines, Memory, Skills. Each ring is clickable.">
           <defs>
             <circle id="dot" r="3.6"/>
@@ -442,12 +462,15 @@
               </g>
             </g>
 
-            <!-- glowing central hub -->
-            <circle r="44" fill="#151a2b" stroke="#5fbcbc" stroke-width="1.6" filter="url(#hubglow)"/>
-            <text y="5" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="#eef1f8" font-weight="600">CLAUDE.md</text>
+            <!-- glowing central hub: decorative only, must never swallow clicks meant for the Applications ring beneath it -->
+            <circle r="44" fill="#151a2b" stroke="#5fbcbc" stroke-width="1.6" filter="url(#hubglow)" pointer-events="none"/>
+            <text y="5" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="#eef1f8" font-weight="600" pointer-events="none">CLAUDE.md</text>
           </g>
         </svg>
+      </div></div>
+      <div class="hscroll-fade" aria-hidden="true"></div>
       </div>
+      <p class="swipe-hint">Swipe to see more &rarr;</p>
 
       <div class="ring-legend">
         <details data-ring="applications">
@@ -495,8 +518,8 @@
     <div class="diagram-frame canvas-dark">
       <span class="canvas-tag">retrieval pipeline</span>
       <p class="diagram-hint">Highlight cycles automatically to show the flow. Click any stage to see what it does.</p>
-      <div class="wide" style="overflow-x:auto;">
-        <div class="pipeline">
+      <div class="hscroll wide">
+        <div class="hscroll-track"><div class="pipeline">
           <div class="stage" data-idx="0"><span class="n">01</span><div class="t">Strip query<br>to keywords</div></div>
           <div class="arrow">&rarr;</div>
           <div class="stage" data-idx="1"><span class="n">02</span><div class="t">Score candidates<br>unopened</div></div>
@@ -508,8 +531,10 @@
           <div class="stage" data-idx="4"><span class="n">05</span><div class="t">Follow pointer<br>if section is one</div></div>
           <div class="arrow">&rarr;</div>
           <div class="stage llm" data-idx="5"><span class="n">06</span><div class="t">Hand to the<br>model to answer</div></div>
-        </div>
+        </div></div>
+        <div class="hscroll-fade" aria-hidden="true"></div>
       </div>
+      <p class="swipe-hint">Swipe to see more &rarr;</p>
       <div class="pipeline-legend">
         <div class="item"><span class="pill-swatch" style="background:var(--surface-2); border:1px solid var(--line);"></span>Deterministic code, no LLM call</div>
         <div class="item"><span class="pill-swatch" style="background:var(--wire-soft); border:1px solid var(--wire);"></span>Only step that touches a model</div>
@@ -764,6 +789,21 @@
     g.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRing(); }
     });
+  });
+
+  /* ---- Horizontal scroll affordance: fade-edge hides once scrolled to the end (CSS gates it to mobile only) ---- */
+  document.querySelectorAll('.hscroll').forEach(function (wrap) {
+    var track = wrap.querySelector('.hscroll-track');
+    var fade = wrap.querySelector('.hscroll-fade');
+    if (!track || !fade) return;
+    function update() {
+      var hasOverflow = track.scrollWidth > track.clientWidth + 2;
+      var atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+      fade.classList.toggle('is-visible', hasOverflow && !atEnd);
+    }
+    track.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
   });
 })();
 </script>
