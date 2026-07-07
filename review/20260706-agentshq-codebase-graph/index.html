@@ -609,6 +609,7 @@ function applyPendingView(){
   else if(view.level==='dir') buildDirView(view.dir);
   else buildFileView(view.file);
   renderCrumbs();
+  renderStats();
   document.getElementById('backBtn').disabled = view.level==='overview';
 }
 function navOverview(){ setView({level:'overview'}); }
@@ -675,14 +676,37 @@ function renderCrumbs(){
   }
 }
 function renderStats(){
+  // Scoped to the current view: overview shows whole-atlas totals, dir/file show
+  // the section actually on screen (vnodes/vlinks reflect what buildOverview/buildDirView/
+  // buildFileView just built). Previously this only ran once at boot, so the chips stayed
+  // frozen on global totals no matter how deep the user drilled -- info never matched the section.
   const el=document.getElementById('stats');
-  const chips=[
-    ['nodes', fmt(NCOUNT)],
-    ['connections', fmt(ECOUNT)],
-    ['files', fmt(FILES.length)],
-    ['leiden communities', fmt(RAW.counts.communities)],
-  ];
-  el.innerHTML = chips.map(([k,v])=>'<span class="chip">'+k+' <b>'+v+'</b></span>').join('');
+  let chips;
+  if(view && view.level==='dir'){
+    const d=dirs[view.dir];
+    chips=[
+      ['section', d.name],
+      ['nodes', fmt(d.nodeCount)],
+      ['connections', fmt(vlinks.length)],
+      ['shown', fmt(vnodes.length)],
+    ];
+  } else if(view && view.level==='file'){
+    const f=view.file;
+    chips=[
+      ['section', shortFile(FILES[f])],
+      ['nodes', fmt(vnodes.length)],
+      ['connections', fmt(vlinks.length)],
+      ['rationale', fmt(fileRatCount[f])],
+    ];
+  } else {
+    chips=[
+      ['nodes', fmt(NCOUNT)],
+      ['connections', fmt(ECOUNT)],
+      ['files', fmt(FILES.length)],
+      ['leiden communities', fmt(RAW.counts.communities)],
+    ];
+  }
+  el.innerHTML = chips.map(([k,v])=>'<span class="chip">'+k+' <b>'+esc(String(v))+'</b></span>').join('');
 }
 function renderLegend(){
   const el=document.getElementById('legend');
@@ -948,8 +972,19 @@ canvas.addEventListener('pointerup',ev=>{
 });
 canvas.addEventListener('wheel',ev=>{
   ev.preventDefault();
-  const f=Math.exp(-ev.deltaY*0.0012);
-  zoomAt(ev.clientX,ev.clientY,f);
+  if(ev.ctrlKey || ev.metaKey){
+    // pinch-zoom gesture (trackpads report this as wheel+ctrlKey) or explicit zoom-modifier scroll
+    const f=Math.exp(-ev.deltaY*0.0012);
+    zoomAt(ev.clientX,ev.clientY,f);
+  } else {
+    // plain scroll (mouse wheel or two-finger trackpad pan) moves the camera, not the zoom --
+    // previously ALL wheel input zoomed, so trackpad users had no way to pan and could get
+    // stuck unable to reach nodes off to the side without click-dragging pixel by pixel.
+    camT.x += ev.deltaX/camT.k;
+    camT.y += ev.deltaY/camT.k;
+    cam.x = camT.x; cam.y = camT.y;
+    tip.style.display='none';
+  }
 },{passive:false});
 function zoomAt(px,py,f){
   const k2=Math.min(8,Math.max(0.12,camT.k*f));
