@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Approval Queue: 5 Decisions Pending</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --surface: #ffffff;
+    --surface-2: #eeece4;
+    --ink: #1c1d21;
+    --muted: #6b6f7a;
+    --line: rgba(28,29,33,0.12);
+    --accent: #b56a2e;
+    --accent-ink: #ffffff;
+    --wire: #2f7e7e;
+    --wire-soft: rgba(47,126,126,0.14);
+    --good: #3f7a52;
+    --gap: #ac4a36;
+    --partial: #a67c1f;
+    --shadow: 0 1px 2px rgba(28,29,33,0.06), 0 8px 24px rgba(28,29,33,0.05);
+    --serif: Charter, 'Iowan Old Style', 'Palatino Linotype', Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161c; --surface: #1b1e26; --surface-2: #21242e; --ink: #eae7e0; --muted: #9195a3;
+    --line: rgba(234,231,224,0.10); --accent: #dd9a56; --accent-ink: #1c1d21;
+    --wire: #5fbcbc; --wire-soft: rgba(95,188,188,0.12);
+    --good: #6fbf8a; --gap: #e0796a; --partial: #d1a94a;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px rgba(0,0,0,0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161c; --surface: #1b1e26; --surface-2: #21242e; --ink: #eae7e0; --muted: #9195a3;
+      --line: rgba(234,231,224,0.10); --accent: #dd9a56; --accent-ink: #1c1d21;
+      --wire: #5fbcbc; --wire-soft: rgba(95,188,188,0.12);
+      --good: #6fbf8a; --gap: #e0796a; --partial: #d1a94a;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px rgba(0,0,0,0.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--ink); font-family: var(--sans); margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  body { padding: 64px 24px 96px; }
+  a { color: var(--wire); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--wire); outline-offset: 2px; }
+  .col { max-width: 760px; margin: 0 auto; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--wire); margin: 0 0 14px; }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(28px, 4vw, 38px); line-height: 1.15; letter-spacing: -0.01em; text-wrap: balance; margin: 0 0 10px; }
+  .dek { font-size: 16.5px; line-height: 1.55; color: var(--muted); max-width: 62ch; margin: 0 0 6px; }
+  .meta { font-family: var(--mono); font-size: 12.5px; color: var(--muted); margin-top: 18px; display: flex; gap: 18px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  header.hero { margin-bottom: 40px; padding-bottom: 32px; border-bottom: 1px solid var(--line); }
+  h2 { font-family: var(--serif); font-weight: 500; font-size: 21px; letter-spacing: -0.005em; margin: 0 0 4px; }
+  .section-num { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.06em; }
+  .item-block { margin: 44px 0; }
+  .item-block > .section-head { margin-bottom: 16px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  p { font-size: 15px; line-height: 1.68; margin: 0 0 14px; }
+  p.lede { font-size: 16.5px; line-height: 1.6; }
+  strong { font-weight: 600; }
+  code { font-family: var(--mono); font-size: 0.92em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 9px; border-radius: 20px; white-space: nowrap; font-weight: 600; }
+  .chip.gap { background: color-mix(in srgb, var(--gap) 16%, transparent); color: var(--gap); }
+  .chip.partial { background: color-mix(in srgb, var(--partial) 16%, transparent); color: var(--partial); }
+  .chip.good { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
+  .chip.decided { background: color-mix(in srgb, var(--muted) 20%, transparent); color: var(--muted); }
+  .id-tag { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 24px; }
+  .sec { margin: 14px 0; }
+  .sec-h { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--wire); margin-bottom: 6px; }
+  .sec ul { margin: 0; padding-left: 18px; }
+  .sec li { font-size: 14px; line-height: 1.6; margin-bottom: 5px; color: var(--ink); }
+  .sec p { font-size: 14px; margin-bottom: 0; }
+  .worry-sec .sec-h { color: var(--gap); }
+  .worry-sec li { color: color-mix(in srgb, var(--gap) 70%, var(--ink)); }
+  .judge-sec .sec-h { color: var(--partial); }
+
+  .callout { position: relative; background: color-mix(in srgb, var(--accent) 7%, var(--surface)); border: 1px solid var(--line); border-radius: 10px; padding: 22px 22px 18px; box-shadow: var(--shadow); margin: 20px 0; }
+  .callout .label { position: absolute; top: -13px; left: 18px; background: var(--bg); border: 1px solid var(--line); padding: 3px 10px; border-radius: 5px; font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent); }
+  .callout p { margin-bottom: 0; font-size: 14.5px; }
+
+  .url-line { font-family: var(--mono); font-size: 12px; color: var(--wire); word-break: break-all; display: block; margin: 8px 0 0; text-decoration: none; }
+  .url-line:hover { text-decoration: underline; }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .btn { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.03em; padding: 10px 18px; border-radius: 7px; cursor: pointer; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); transition: filter .12s, transform .08s; }
+  .btn:hover { filter: brightness(1.06); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  .btn.approve { background: var(--good); color: #fff; border-color: var(--good); }
+  .btn.reject { background: var(--gap); color: #fff; border-color: var(--gap); }
+  .btn.dismiss { background: var(--partial); color: #1c1d21; border-color: var(--partial); }
+  .decision-status { font-family: var(--mono); font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+  .decision-status.ok { color: var(--good); }
+  .decision-status.err { color: var(--gap); }
+
+  /* PIN gate */
+  #pin-gate { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 28px; max-width: 420px; }
+  #pin-gate h2 { margin-bottom: 10px; }
+  #pin-gate p { font-size: 14px; color: var(--muted); }
+  #pin-form { display: flex; gap: 8px; margin-top: 14px; }
+  #pin-input { flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; font-size: 15px; background: var(--surface-2); color: var(--ink); font-family: var(--mono); }
+  #pin-input:focus { outline: none; border-color: var(--wire); }
+  #pin-submit { padding: 10px 18px; border-radius: 7px; border: 1px solid var(--wire); background: var(--wire); color: #fff; font-family: var(--mono); font-size: 13px; cursor: pointer; }
+  #pin-error { font-family: var(--mono); font-size: 12.5px; color: var(--gap); margin: 10px 0 0; min-height: 1em; }
+  #items-wrap { display: none; }
+  #items-wrap.visible { display: block; }
+  #logout-row { display: none; text-align: right; margin-bottom: 8px; }
+  #logout-row.visible { display: block; }
+  #logout-btn { font-family: var(--mono); font-size: 11.5px; color: var(--muted); background: none; border: none; cursor: pointer; text-decoration: underline; }
+
+  footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface); border: 1px solid var(--line); color: var(--ink); padding: 12px 20px; border-radius: 8px; font-family: var(--mono); font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 300; box-shadow: var(--shadow); max-width: calc(100vw - 32px); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 640px) {
+    body { padding: 40px 16px 64px; }
+    #pin-form { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-08-12:29:33 MT</div><!-- DEPLOY_STAMP_END -->
+
+<div class="col">
+  <header class="hero">
+    <p class="eyebrow">Approval queue &middot; 5 items pending your call</p>
+    <h1>Five decisions sitting in the approval queue</h1>
+    <p class="dek">Real rows pulled tonight from <code>approval_queue</code> (ids 32, 33, 228, 229, 21). My recommendation is under each one, first. Approve / Reject write directly back to the database &mdash; same PIN and endpoint the Atlas dashboard uses, nothing new.</p>
+    <div class="meta">
+      <span>Source: approval_queue Postgres, VPS</span>
+      <span>Pulled 2026-07-08</span>
+      <span>4 absorb dossiers + 1 stale content card</span>
+    </div>
+  </header>
+
+  <div id="pin-gate">
+    <h2>Enter PIN to unlock decisions</h2>
+    <p>Same PIN as agentshq.boubacarbarry.com/atlas. Approve/Reject calls the live orchestrator API &mdash; nothing fires until you tap a button below.</p>
+    <form id="pin-form">
+      <input id="pin-input" type="password" placeholder="PIN" autocomplete="off" inputmode="numeric" />
+      <button id="pin-submit" type="submit">Unlock</button>
+    </form>
+    <p id="pin-error"></p>
+  </div>
+
+  <div id="logout-row"><button id="logout-btn" type="button">Lock again</button></div>
+
+  <div id="items-wrap">
+
+    <!-- ITEM 1 -->
+    <div class="item-block" data-id="32">
+      <div class="section-head">
+        <span class="section-num">01</span>
+        <h2>browser-agent-isolated</h2>
+        <span class="id-tag">#32</span>
+        <span class="chip gap">my call: hold</span>
+      </div>
+      <div class="card">
+        <p class="lede"><strong>What it is:</strong> a proposal to build <code>skills/browser-agent-isolated</code> &mdash; a persistent, authenticated Chrome session (CDP-driven) that an agent can operate continuously without a human re-logging in each time.</p>
+        <div class="sec">
+          <div class="sec-h">Why it enhances us</div>
+          <ul>
+            <li>Lets agents act on authenticated surfaces (LinkedIn, Apollo, CRMs, portals) without me babysitting or re-entering credentials each session.</li>
+            <li>The one-time-login &rarr; inherited-session &rarr; autonomous-loop pattern is reusable across scraping, lead-gen verification, and any future authenticated-web automation.</li>
+            <li>Confirmed to work on Windows, our primary dev environment.</li>
+          </ul>
+        </div>
+        <div class="sec worry-sec">
+          <div class="sec-h">Worries / cons</div>
+          <ul>
+            <li>Source content is teaser-only (paywalled) &mdash; the verdict is based on the method description, not verified working code.</li>
+            <li>A persistent, credentialed browser session with no human in the loop is a real security surface: a runaway agent or bad tool call could act on live authenticated accounts.</li>
+            <li>Depends on a third-party library (browser-harness) with unknown update cadence.</li>
+          </ul>
+        </div>
+        <div class="sec judge-sec">
+          <div class="sec-h">Your call needed on</div>
+          <p>Security trade-off &mdash; persistent authenticated sessions handed to an autonomous agent are powerful but risky. This is a real blast-radius decision, not a build-quality one.</p>
+        </div>
+        <a class="url-line" href="https://www.skool.com/robonuggets/i-went-down-a-rabbit-hole-after-someone-dropped-horse-browser-browser-harness-in-here-heres-what-came-out" target="_blank" rel="noopener">skool.com/robonuggets &rarr; browser-harness rabbit hole</a>
+
+        <div class="callout">
+          <span class="label">My recommendation</span>
+          <p>Hold for your explicit call. This is a genuine autonomy and blast-radius expansion &mdash; a skill that can drive a real, persistent authenticated browser session. That's not something I should auto-approve regardless of how clean the technical pattern is. You decide the risk tolerance here, not me.</p>
+        </div>
+
+        <div class="actions">
+          <button class="btn approve" data-action="approve" data-id="32">Approve</button>
+          <button class="btn reject" data-action="reject" data-id="32">Reject</button>
+        </div>
+        <div class="decision-status" data-status="32"></div>
+      </div>
+    </div>
+
+    <!-- ITEM 2 -->
+    <div class="item-block" data-id="33">
+      <div class="section-head">
+        <span class="section-num">02</span>
+        <h2>seo-automation</h2>
+        <span class="id-tag">#33</span>
+        <span class="chip good">my call: approve</span>
+      </div>
+      <div class="card">
+        <p class="lede"><strong>What it is:</strong> an X post promoting a free Claude Code skill packaging 11 SEO automations (content, audits, keyword work) into one installable skill, multiple commands, install instructions included.</p>
+        <div class="sec">
+          <div class="sec-h">Why it enhances us</div>
+          <ul>
+            <li>Directly strengthens the Signal Works website-build motion &mdash; clients need SEO-ready sites, this lets me or an agent run audits and gap analysis without switching tools.</li>
+            <li>Free to evaluate; if even 3-4 of the 11 commands map to recurring deliverables, that's real time back.</li>
+            <li>The "one skill, many commands" shape matches how our skills are already structured &mdash; slots in cleanly, no new paradigm.</li>
+          </ul>
+        </div>
+        <div class="sec worry-sec">
+          <div class="sec-h">Worries / cons</div>
+          <ul>
+            <li>Content is heavily truncated (60 chars of substance) &mdash; the actual 11 automations are still unverified; the linked article was never recovered.</li>
+            <li>May partially overlap existing Firecrawl / website-intelligence scrape coverage.</li>
+            <li>SEO Claude Code skills are a crowded, uneven category right now &mdash; could be a thin listicle dressed as a skill.</li>
+          </ul>
+        </div>
+        <div class="sec judge-sec">
+          <div class="sec-h">Your call needed on</div>
+          <p>Full article body is unrecovered &mdash; worth a fetch of the actual skill file/link before build time commits, since the 11 commands may duplicate existing coverage.</p>
+        </div>
+        <a class="url-line" href="https://x.com/i/status/2071574963929088337" target="_blank" rel="noopener">x.com/i/status/2071574963929088337</a>
+
+        <div class="callout">
+          <span class="label">My recommendation</span>
+          <p>Approve to proceed. Low technical risk &mdash; this is a skill that runs SEO audits and drafts, nothing touching money, credentials, or client systems on its own. One flag: the content it generates still needs a final human read before anything ships publicly. Building the skill is fine now; publishing its output is a separate, later gate.</p>
+        </div>
+
+        <div class="actions">
+          <button class="btn approve" data-action="approve" data-id="33">Approve</button>
+          <button class="btn reject" data-action="reject" data-id="33">Reject</button>
+        </div>
+        <div class="decision-status" data-status="33"></div>
+      </div>
+    </div>
+
+    <!-- ITEM 3 -->
+    <div class="item-block" data-id="228">
+      <div class="section-head">
+        <span class="section-num">03</span>
+        <h2>website-cloner (Signal Works rebuild pipeline)</h2>
+        <span class="id-tag">#228</span>
+        <span class="chip gap">my call: hold</span>
+      </div>
+      <div class="card">
+        <p class="lede"><strong>What it is:</strong> a GitHub template that reverse-engineers a live website into a Next.js/shadcn/Tailwind codebase &mdash; screenshots + extracts design tokens, writes exact component specs, dispatches parallel builder agents in git worktrees, then visual-diffs against the original for QA.</p>
+        <div class="sec">
+          <div class="sec-h">Why it enhances us</div>
+          <ul>
+            <li>Signal Works' core motion is building client websites &mdash; a repeatable recon &rarr; spec &rarr; parallel-build &rarr; visual-diff-QA pipeline speeds up rebuild/migration jobs directly.</li>
+            <li>The git-worktree parallel-builder pattern (one agent per section, merge, visual-diff QA) is a portable process worth extracting on its own, independent of this specific template.</li>
+            <li>Cuts manual component-by-component rebuild time by giving builder agents exact computed-CSS specs upfront instead of guessing.</li>
+          </ul>
+        </div>
+        <div class="sec worry-sec">
+          <div class="sec-h">Worries / cons</div>
+          <ul>
+            <li>The template's own README explicitly flags ToS/legal risk &mdash; cloning sites that prohibit scraping/reproduction is a real exposure for client work.</li>
+            <li>Requires Claude Code + git worktrees + Opus-tier model; adds infra overhead vs. the current build flow.</li>
+            <li>Partial capability overlap with website-intelligence risks duplicate maintenance if scope isn't cleanly split.</li>
+          </ul>
+        </div>
+        <div class="sec judge-sec">
+          <div class="sec-h">Your call needed on</div>
+          <p>Whether to stand this up as a distinct skill (new build surface + ToS risk owner) vs. quietly folding the worktree-parallel-build pattern into the existing flow &mdash; a scope call that hinges on the legal-risk surface of cloning client-referenced sites.</p>
+        </div>
+        <a class="url-line" href="https://github.com/JCodesMore/ai-website-cloner-template" target="_blank" rel="noopener">github.com/JCodesMore/ai-website-cloner-template</a>
+
+        <div class="callout">
+          <span class="label">My recommendation</span>
+          <p>Hold. There's real legal and ToS exposure here &mdash; cloning another site's structure and content for client rebuilds. That's squarely your risk-tolerance call, not mine to approve on your behalf.</p>
+        </div>
+
+        <div class="actions">
+          <button class="btn approve" data-action="approve" data-id="228">Approve</button>
+          <button class="btn reject" data-action="reject" data-id="228">Reject</button>
+        </div>
+        <div class="decision-status" data-status="228"></div>
+      </div>
+    </div>
+
+    <!-- ITEM 4 -->
+    <div class="item-block" data-id="229">
+      <div class="section-head">
+        <span class="section-num">04</span>
+        <h2>seo-research (OpenSEO self-host)</h2>
+        <span class="id-tag">#229</span>
+        <span class="chip good">my call: lean approve</span>
+      </div>
+      <div class="card">
+        <p class="lede"><strong>What it is:</strong> OpenSEO, a self-hosted open-source Semrush/Ahrefs alternative &mdash; wraps DataForSEO's pay-as-you-go API for keyword research, rank tracking, backlinks, and site audits, ships with pre-built Claude Code skills plus an MCP server.</p>
+        <div class="sec">
+          <div class="sec-h">Why it enhances us</div>
+          <ul>
+            <li>Fills a real gap &mdash; no existing skill does keyword research, rank tracking, or backlink analysis; SW website builds currently ship with zero SEO deliverable.</li>
+            <li>Ships pre-built, agent-consumable skills (seo-coach, keyword-research, keyword-clustering, competitive-landscape, competitor-analysis, link-prospecting) plus an MCP server.</li>
+            <li>Turns "what's this client's keyword gap" from a manual Ahrefs-subscription task into an agent-run workflow, pay-as-you-go instead of a $99+/mo SaaS seat.</li>
+          </ul>
+        </div>
+        <div class="sec worry-sec">
+          <div class="sec-h">Worries / cons</div>
+          <ul>
+            <li>Requires self-hosting a full app (Docker + DB) &mdash; a new service to run and maintain on our infra, not a drop-in script.</li>
+            <li>DataForSEO costs are pay-as-you-go and can scale with usage ($50 minimum top-up) &mdash; needs a usage cap/owner before any auto-run crew touches it.</li>
+            <li>Docker default has no auth &mdash; internet-facing exposure needs hardening before any VPS deployment.</li>
+            <li>Young, single-maintainer project &mdash; roadmap risk.</li>
+          </ul>
+        </div>
+        <div class="sec judge-sec">
+          <div class="sec-h">Your call needed on</div>
+          <p>Self-host on the VPS now (new running service + DB to maintain) vs. wait until an actual client engagement needs SEO deliverables to justify the DataForSEO spend.</p>
+        </div>
+        <a class="url-line" href="https://github.com/every-app/open-seo" target="_blank" rel="noopener">github.com/every-app/open-seo</a>
+
+        <div class="callout">
+          <span class="label">My recommendation</span>
+          <p>Lean approve. This is optional infrastructure with no real downside to standing up now &mdash; no ongoing cost forced on you, no client exposure while it sits unused. Waiting for a client engagement mostly just delays learning the tool. That said, the alternative (wait) is also reasonable if you'd rather not maintain another self-hosted service without a concrete near-term use. Your call between "learn it now" and "stay lean."</p>
+        </div>
+
+        <div class="actions">
+          <button class="btn approve" data-action="approve" data-id="229">Approve</button>
+          <button class="btn reject" data-action="reject" data-id="229">Reject</button>
+        </div>
+        <div class="decision-status" data-status="229"></div>
+      </div>
+    </div>
+
+    <!-- ITEM 5 -->
+    <div class="item-block" data-id="21">
+      <div class="section-head">
+        <span class="section-num">05</span>
+        <h2>Griot LinkedIn test card</h2>
+        <span class="id-tag">#21</span>
+        <span class="chip partial">my call: dismiss</span>
+      </div>
+      <div class="card">
+        <p class="lede"><strong>What it is:</strong> a griot content-board draft, labeled "Manage vs lead your agents (test card 5)," LinkedIn platform. Created 2026-05-30 &mdash; 39 days stale as of tonight.</p>
+        <div class="sec">
+          <div class="sec-h">Hook</div>
+          <p>"You can manage an AI agent, or you can lead it. Only one of those scales."</p>
+        </div>
+        <div class="sec">
+          <div class="sec-h">Body</div>
+          <p>"You can manage an AI agent, or you can lead it. Only one of those scales. Managing means you approve every step; leading means you set the rule once and the system carries it."</p>
+        </div>
+
+        <div class="callout">
+          <span class="label">My recommendation</span>
+          <p>Dismiss. This reads like a forgotten test/draft content card sitting in the queue by accident &mdash; 39 days stale, never a real pending decision. Clearing it, not passing on a real proposal.</p>
+        </div>
+
+        <div class="actions">
+          <button class="btn approve" data-action="approve" data-id="21">Approve</button>
+          <button class="btn dismiss" data-action="dismiss" data-id="21">Dismiss</button>
+        </div>
+        <div class="decision-status" data-status="21"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Approve / Reject write straight to <code>approval_queue.status</code> on the VPS via <code>POST /atlas/queue/&#123;id&#125;/approve</code> and <code>/reject</code> &mdash; the same endpoints the Atlas Queue tab uses. Auth = the same short-lived JWT the Atlas PIN screen issues; nothing new was built for this page's write path.</p>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  var ORC_BASE = 'https://agentshq.boubacarbarry.com/api/orc';
+  var TOKEN_KEY = 'aq_review_token';
+  var TOKEN_TS_KEY = 'aq_review_token_ts';
+  var TTL_MS = 4 * 60 * 60 * 1000;
+
+  function getToken() {
+    var t = sessionStorage.getItem(TOKEN_KEY);
+    var ts = sessionStorage.getItem(TOKEN_TS_KEY);
+    if (!t || !ts || Date.now() - parseInt(ts, 10) >= TTL_MS) return null;
+    return t;
+  }
+  function setToken(tok) {
+    sessionStorage.setItem(TOKEN_KEY, tok);
+    sessionStorage.setItem(TOKEN_TS_KEY, String(Date.now()));
+  }
+  function clearToken() {
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_TS_KEY);
+  }
+
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function () { t.classList.remove('show'); }, 3200);
+  }
+
+  function showItems() {
+    document.getElementById('pin-gate').style.display = 'none';
+    document.getElementById('items-wrap').classList.add('visible');
+    document.getElementById('logout-row').classList.add('visible');
+  }
+
+  // Restore session if a valid token already exists
+  if (getToken()) showItems();
+
+  document.getElementById('pin-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var pin = document.getElementById('pin-input').value.trim();
+    var btn = document.getElementById('pin-submit');
+    var err = document.getElementById('pin-error');
+    if (!pin) return;
+    btn.disabled = true;
+    btn.textContent = 'Connecting...';
+    err.textContent = '';
+    fetch(ORC_BASE + '/chat-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: pin })
+    }).then(function (res) {
+      return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+    }).then(function (r) {
+      if (!r.ok) { err.textContent = r.data.detail || 'Wrong PIN.'; return; }
+      setToken(r.data.token);
+      showItems();
+    }).catch(function () {
+      err.textContent = 'Network error reaching the orchestrator. Is the VPS reachable?';
+    }).finally(function () {
+      btn.disabled = false;
+      btn.textContent = 'Unlock';
+    });
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', function () {
+    clearToken();
+    document.getElementById('pin-gate').style.display = '';
+    document.getElementById('items-wrap').classList.remove('visible');
+    document.getElementById('logout-row').classList.remove('visible');
+    document.getElementById('pin-input').value = '';
+  });
+
+  function setDecided(id, label, cls) {
+    var block = document.querySelector('.item-block[data-id="' + id + '"]');
+    if (!block) return;
+    block.querySelectorAll('.actions .btn').forEach(function (b) { b.disabled = true; });
+    var chip = block.querySelector('.chip');
+    if (chip) {
+      chip.textContent = label;
+      chip.className = 'chip ' + cls;
+    }
+  }
+
+  function decide(id, action) {
+    var token = getToken();
+    if (!token) {
+      showToast('Session expired. Re-enter PIN.');
+      document.getElementById('pin-gate').style.display = '';
+      document.getElementById('items-wrap').classList.remove('visible');
+      return;
+    }
+    var statusEl = document.querySelector('.decision-status[data-status="' + id + '"]');
+    var url, opts;
+    if (action === 'approve') {
+      url = ORC_BASE + '/atlas/queue/' + id + '/approve';
+      opts = { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } };
+    } else if (action === 'reject') {
+      url = ORC_BASE + '/atlas/queue/' + id + '/reject';
+      opts = {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: 'Rejected via approval-queue review page.' })
+      };
+    } else if (action === 'dismiss') {
+      url = ORC_BASE + '/atlas/queue/' + id + '/reject';
+      opts = {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: 'Dismissed: stale griot test card, not a live decision.' })
+      };
+    }
+
+    if (statusEl) { statusEl.textContent = 'Saving...'; statusEl.className = 'decision-status'; }
+
+    fetch(url, opts).then(function (res) {
+      if (res.status === 401) {
+        clearToken();
+        throw new Error('Session expired. Re-enter PIN and try again.');
+      }
+      if (res.status === 404) {
+        throw new Error('Already decided elsewhere (not pending anymore).');
+      }
+      if (!res.ok) {
+        return res.text().then(function (t) { throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 150)); });
+      }
+      return res.json();
+    }).then(function () {
+      var label = action === 'approve' ? 'decided: approved' : (action === 'dismiss' ? 'decided: dismissed' : 'decided: rejected');
+      var cls = action === 'approve' ? 'good' : 'decided';
+      setDecided(id, label, cls);
+      if (statusEl) { statusEl.textContent = 'Saved to approval_queue -- status now "' + (action === 'approve' ? 'approved' : 'rejected') + '".'; statusEl.className = 'decision-status ok'; }
+      showToast('#' + id + ' saved: ' + action);
+    }).catch(function (err) {
+      if (statusEl) { statusEl.textContent = err.message; statusEl.className = 'decision-status err'; }
+      showToast('#' + id + ' failed: ' + err.message);
+    });
+  }
+
+  document.querySelectorAll('.actions .btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      decide(btn.getAttribute('data-id'), btn.getAttribute('data-action'));
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
+
