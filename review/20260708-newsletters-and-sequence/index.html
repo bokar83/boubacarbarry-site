@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Newsletters + Sequence Review</title>
+<style>
+  :root{
+    --bg:#15120d; --bg2:#1c1811; --panel:#221d15; --panel2:#282116;
+    --line:rgba(236,226,210,0.13); --line-strong:rgba(236,226,210,0.22);
+    --ink:#ece3d3; --mut:#a59783; --mut2:#8a7d6a;
+    --amber:#d9a45b; --amber-deep:#c2863a;
+    --paper:#f4efe2; --paper-ink:#2b2620; --paper-mut:#6b6252;
+    --ok:#7bbf8f; --warn:#d9a45b; --off:#c98a8a;
+    --radius:14px;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:
+      radial-gradient(1100px 640px at 82% -8%, rgba(217,164,91,0.10), transparent 60%),
+      linear-gradient(180deg,var(--bg2),var(--bg) 42%);
+    color:var(--ink); font-family:var(--sans); line-height:1.6;
+    -webkit-font-smoothing:antialiased; padding:0 0 96px;
+  }
+  a{color:var(--amber)}
+  .wrap{max-width:860px; margin:0 auto; padding:0 18px}
+
+  /* header */
+  header.top{padding:46px 0 8px}
+  .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--amber); margin:0 0 12px}
+  h1{font-family:var(--serif); font-weight:600; font-size:clamp(30px,6vw,46px); line-height:1.06; letter-spacing:-.01em; margin:0 0 12px}
+  .lede{font-size:17px; color:var(--mut); max-width:60ch; margin:0 0 18px}
+  .how{font-size:14px; color:var(--mut2); max-width:64ch; margin:0 0 22px}
+  .how b{color:var(--ink); font-weight:600}
+
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:0 0 6px}
+  .btn{font-family:var(--sans); font-size:13.5px; font-weight:600; color:var(--ink);
+    background:var(--panel); border:1px solid var(--line-strong); border-radius:999px;
+    padding:9px 15px; cursor:pointer; transition:.15s; display:inline-flex; align-items:center; gap:7px}
+  .btn:hover{border-color:var(--amber); color:#fff}
+  .btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+  .btn.primary{background:linear-gradient(180deg,var(--amber),var(--amber-deep)); color:#241a0c; border-color:transparent}
+  .btn.primary:hover{color:#160f04}
+  .pill{font-family:var(--mono); font-size:11.5px; letter-spacing:.04em; padding:6px 11px; border-radius:999px;
+    border:1px solid var(--line-strong); color:var(--mut); display:inline-flex; align-items:center; gap:7px; white-space:nowrap}
+  .pill .dot{width:7px; height:7px; border-radius:50%; background:var(--mut2)}
+  .pill.ok{color:var(--ok); border-color:rgba(123,191,143,.4)} .pill.ok .dot{background:var(--ok)}
+  .pill.saving{color:var(--warn); border-color:rgba(217,164,91,.4)} .pill.saving .dot{background:var(--warn)}
+  .pill.off{color:var(--off); border-color:rgba(201,138,138,.4)} .pill.off .dot{background:var(--off)}
+
+  /* section */
+  section.grp{margin-top:40px}
+  .grp-head{display:flex; align-items:baseline; gap:12px; padding-bottom:12px; border-bottom:1px solid var(--line); margin-bottom:20px; position:sticky; top:0; background:linear-gradient(180deg,var(--bg) 72%,transparent); z-index:6; padding-top:14px}
+  .grp-head h2{font-family:var(--serif); font-size:24px; font-weight:600; margin:0; letter-spacing:-.01em}
+  .grp-head .count{font-family:var(--mono); font-size:12px; color:var(--mut2); margin-left:auto}
+  .grp-cap{font-size:14px; color:var(--mut); margin:-8px 0 22px}
+
+  /* cadence rail */
+  .rail{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 24px; padding:14px; background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  .rail .step{font-family:var(--mono); font-size:11.5px; color:var(--mut); display:flex; align-items:center; gap:8px}
+  .rail .step b{color:var(--ink); font-weight:600}
+  .rail .arw{color:var(--mut2)}
+  .rail .step.sent b{color:var(--ok)} .rail .step.gate b{color:var(--warn)}
+
+  /* card */
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:14px; overflow:hidden; transition:border-color .15s}
+  .card.open{border-color:var(--line-strong)}
+  .chead{width:100%; text-align:left; background:none; border:0; color:inherit; cursor:pointer; padding:16px 18px; display:flex; gap:14px; align-items:center; font-family:inherit}
+  .chead:focus-visible{outline:2px solid var(--amber); outline-offset:-2px}
+  .chead .kick{font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); display:block; margin-bottom:5px}
+  .chead .ctitle{font-family:var(--serif); font-size:18px; line-height:1.25; color:var(--ink); display:block}
+  .chead .cmeta{min-width:0; flex:1}
+  .chead .when{font-family:var(--mono); font-size:11px; color:var(--mut2); display:block; margin-top:6px}
+  .chip{font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.06em; padding:5px 9px; border-radius:6px; white-space:nowrap; border:1px solid var(--line-strong); color:var(--mut)}
+  .chip.sent{color:var(--ok); border-color:rgba(123,191,143,.4); background:rgba(123,191,143,.08)}
+  .chip.sched{color:var(--amber); border-color:rgba(217,164,91,.35); background:rgba(217,164,91,.07)}
+  .chip.today{color:#241a0c; background:var(--amber); border-color:transparent}
+  .chip.gate{color:var(--warn); border-color:rgba(217,164,91,.35)}
+  .chev{color:var(--mut2); transition:transform .2s; flex:none}
+  .card.open .chev{transform:rotate(90deg)}
+  .cbody{display:none; padding:2px 18px 20px}
+  .card.open .cbody{display:block}
+
+  .subj{font-family:var(--mono); font-size:12.5px; color:var(--mut); margin:6px 0 14px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:9px; word-break:break-word}
+  .subj b{color:var(--ink); font-weight:600}
+
+  /* letter (newsletter) */
+  .letter{background:var(--paper); color:var(--paper-ink); border-radius:10px; padding:26px 26px; box-shadow:0 14px 40px rgba(0,0,0,.34); font-family:var(--serif); font-size:16.5px; line-height:1.72; white-space:pre-wrap; word-wrap:break-word; max-width:100%}
+  .letter::selection{background:#d9c8a2}
+
+  /* email (sequence) */
+  .mail{background:var(--panel2); border:1px solid var(--line); border-radius:10px; overflow:hidden}
+  .mail .mhead{font-family:var(--mono); font-size:11.5px; color:var(--mut2); padding:11px 15px; border-bottom:1px solid var(--line); background:var(--bg)}
+  .mail .mhead b{color:var(--mut)}
+  .mail .mbody{padding:18px 18px; font-size:15px; line-height:1.68; color:#e2d9c9; white-space:pre-wrap; word-wrap:break-word}
+
+  .note-info{font-family:var(--mono); font-size:12.5px; color:var(--mut); line-height:1.6; white-space:pre-wrap; background:var(--bg); border:1px dashed var(--line-strong); border-radius:9px; padding:14px 15px}
+
+  /* item toolbar + notes */
+  .itools{display:flex; gap:10px; align-items:center; margin:14px 0 6px; flex-wrap:wrap}
+  .copied{font-family:var(--mono); font-size:11.5px; color:var(--ok); opacity:0; transition:opacity .15s}
+  .copied.show{opacity:1}
+  .nlabel{font-size:12.5px; color:var(--mut2); margin:12px 0 6px; font-weight:600}
+  textarea.notes{width:100%; min-height:82px; resize:vertical; background:var(--bg); color:var(--ink);
+    border:1px solid var(--line-strong); border-radius:9px; padding:11px 12px; font-family:var(--sans); font-size:14.5px; line-height:1.55}
+  textarea.notes:focus{outline:2px solid var(--amber); outline-offset:1px; border-color:transparent}
+
+  /* back to top */
+  #totop{position:fixed; right:16px; bottom:18px; z-index:50; background:var(--panel); border:1px solid var(--line-strong);
+    color:var(--ink); border-radius:999px; padding:11px 15px; font-size:13px; font-weight:600; cursor:pointer; opacity:0; pointer-events:none; transition:.2s; box-shadow:0 8px 22px rgba(0,0,0,.4)}
+  #totop.show{opacity:1; pointer-events:auto}
+  #totop:hover{border-color:var(--amber)}
+
+  footer.foot{max-width:860px; margin:44px auto 0; padding:22px 18px 0; border-top:1px solid var(--line); color:var(--mut2); font-size:13px}
+  @media (max-width:560px){
+    .chead{padding:14px 14px; gap:10px}
+    .chead .ctitle{font-size:16.5px}
+    .letter{padding:20px 18px; font-size:16px}
+    .grp-head{position:static}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; scroll-behavior:auto !important}}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-08-14:18:29 MT</div><!-- DEPLOY_STAMP_END -->
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Review · 2026-07-08</p>
+    <h1>Newsletters + Sequence</h1>
+    <p class="lede">Read, mark up, and copy the four July newsletters and the cold outreach sequence. This is a review surface only. Nothing here sends or publishes.</p>
+    <p class="how"><b>How to use:</b> tap any card to open it. Write in a notes box and it saves to the cloud, so your notes follow you to your phone or laptop. Hit Copy to grab the exact text of any item, or Copy all my notes to paste your feedback straight back into chat.</p>
+    <div class="toolbar">
+      <button class="btn primary" id="copyNotes">Copy all my notes</button>
+      <button class="btn" id="toggleAll">Expand all</button>
+      <span class="pill" id="syncPill"><span class="dot"></span>Notes sync ready</span>
+    </div>
+  </header>
+
+  <section class="grp" id="grp-nl">
+    <div class="grp-head"><h2>Newsletters (July)</h2><span class="count" id="cnt-nl"></span></div>
+    <p class="grp-cap">The Weekly Signal. All four are drafts on a per-batch go, not scheduled sends. Each one ends with the locked v3 footer, so you are reading the real final version.</p>
+    <div id="list-nl"></div>
+  </section>
+
+  <section class="grp" id="grp-seq">
+    <div class="grp-head"><h2>Cold Outreach Sequence (T1 to T4)</h2><span class="count" id="cnt-seq"></span></div>
+    <p class="grp-cap">AI-visibility outreach to Salt Lake area roofers. Each touch is rendered with a real scan finding so you see the actual personalized output. Touch 1 already went out today.</p>
+    <div class="rail" aria-label="Cadence">
+      <span class="step sent"><b>T1</b> Tue Jul 8 · sent</span><span class="arw">-&gt;</span>
+      <span class="step"><b>T2</b> Fri Jul 11</span><span class="arw">-&gt;</span>
+      <span class="step"><b>T3</b> Tue Jul 15</span><span class="arw">-&gt;</span>
+      <span class="step gate"><b>Bo call</b> Jul 17 · gated</span><span class="arw">-&gt;</span>
+      <span class="step"><b>T4</b> Tue Jul 22</span>
+    </div>
+    <div id="list-seq"></div>
+  </section>
+
+  <footer class="foot">
+    Reply or bounce on any touch halts the rest of the sequence. Prices and links shown are as written in the live templates. Notes on this page save to a private table and are visible only with this link.
+  </footer>
+</div>
+
+<button id="totop">Back to top</button>
+
+<script>
+/* ============ content (exact copy; do not alter reviewed text) ============ */
+var FOOTER =
+"Three things before you go\n\n"+
+"1. Forward this to one business owner who is trying to figure out where AI fits in their business. One forward is more useful to me than ten retweets.\n\n"+
+"2. Was this forwarded to you? Subscribe at signal.catalystworks.consulting. The moment you do, you also get a free scan that shows how visible your business is when people ask AI for a recommendation.\n\n"+
+"3. Reply with one sentence about what is stuck in your week. I read every one and it shapes what ships next.\n\n"+
+"Boubacar\n"+
+"I spent over a decade in HR at a Fortune 100. Now I'm a fractional AI leader who helps small businesses put AI to work.\n"+
+"boubacar@catalystworks.consulting · signal.catalystworks.consulting";
+
+var NL1 =
+"Owners keep asking me the same question. How do I show up in Google? And they are asking about the wrong search box.\n\n"+
+"More people are opening ChatGPT, Claude, and Gemini and asking them straight out: who is the best [whatever you do] near me. The AI answers with a short list. If your name is not on that list, the customer never knows you exist. No ad, no blue link, no second chance.\n\n"+
+"The part most owners miss is this. That list is not random and it is not fair. The AI pulls from what it has read about you across the web, and for a lot of good businesses the answer is almost nothing. So it recommends a competitor who is louder online, even when you do better work.\n\n"+
+"I got tired of telling people this and asking them to take my word for it. So I built a small tool that just shows you.\n\n"+
+"You type in your business name, your city, and what you do. It runs your business through the questions a real customer would ask an AI, across the major engines, and shows you where you land and who takes your spot when you are not there. It takes about two minutes, there is no sign-up, and you generate the number yourself so you do not have to trust me on it.\n\n"+
+"See where you stand: geolisted.co/rank-check\n\n"+
+"If what you find surprises you, reply and tell me. I read every reply, and the surprising ones usually turn into the next thing I build.\n\n"+
+"Know an owner who would want to see whether AI points customers to them or to a competitor? Forward this and tell them to run their own check.\n\n"+FOOTER;
+
+var NL2 =
+"I have a bad habit I am not proud of. When the scary part of the work shows up, I hide inside the easy part.\n\n"+
+"The scary part is the ask. Sending the email that might get a no. Telling someone what I charge. Following up when they went quiet. The easy part is building. Polishing something. Reorganizing my files. Reading one more thread. Building feels like progress, so I can hide in it all day and tell myself I worked hard.\n\n"+
+"For a long time I did not see it. I thought I was just busy. Then I looked at my week and saw that I had touched a lot of things and asked for almost nothing.\n\n"+
+"So I put a lock on the hiding place. The rule is simple. I do not get to open the building work until I have made my asks for the day. The asks come first, on purpose, because they are the thing I avoid. It is the same trick a parent uses when they make you eat before dessert.\n\n"+
+"I say the number out loud to a friend who checks on me. That part matters more than I expected. It is easy to move a line on my own spreadsheet. It is hard to explain to a person why I hid again.\n\n"+
+"If you run your own thing, ask yourself one honest question this week. What is the part you avoid, and what is the comfortable work you hide in instead. Then put the avoided part first, before the comfortable part unlocks.\n\n"+
+"That is most of the game. The tools help, but the tools were never the thing stopping me.\n\n"+
+"Reply and tell me what you hide in. I will tell you mine.\n\n"+
+"Forward this to someone who hides in busywork the way I do. It might be the nudge they need this week.\n\n"+FOOTER;
+
+var NL3 =
+"I want to push back on something the internet keeps selling you.\n\n"+
+"Every week there is a new AI course, a new prompt pack, a new list of forty tools you must try. I have bought some of them. Most left me with more tabs open and no more done.\n\n"+
+"After building real systems with it, here is what I believe. You do not need another course. You need a stack.\n\n"+
+"A stack is not a pile of tools. It is a small set of instructions and connections that let one person do the work of a few. It is the difference between owning a drill and having a finished shelf on the wall.\n\n"+
+"Here is a real piece of mine. I keep a plain file that tells my AI assistant who I am, who I serve, how I write, and what I never say. Every tool I connect reads that file first. So I am not re-explaining myself ten times a day to ten different apps. I explain myself once, and the whole stack behaves.\n\n"+
+"That one habit did more for me than any course. It is boring. It is not for sale. It just works.\n\n"+
+"If you take one thing from this letter, make it this. Stop collecting tools. Pick one job you do every week that drains you, and build one small piece of a stack around it. One file. One connection. Then keep it and add the next piece next week.\n\n"+
+"That is how I built what I have. Slowly, in the open, one boring piece at a time.\n\n"+
+"If you want to see what a finished piece looks like from the outside, run your own business through the free tool I built. It takes about two minutes and no sign-up: geolisted.co/rank-check\n\n"+
+"Know someone drowning in AI tools with nothing to show for it? Send them this letter.\n\n"+FOOTER;
+
+var NL4 =
+"This week I am doing something that still makes me a little nervous.\n\n"+
+"On Thursday I am running a workshop where a group of business owners build their own AI assistant, live. Not a demo. Their real thing, running on a real decision they walked in with.\n\n"+
+"I have been getting the session ready, and I keep coming back to one idea. Most people do not have an AI problem. They have a starting problem. They know it could help, they have poked at it, and then the blank box asks what they want and they close the tab.\n\n"+
+"So here is the first thing we are going to do in that room, and you can do it right now without me.\n\n"+
+"Open your AI assistant and write it a short note about yourself. Not a clever prompt. Just plain facts. Who you are. What your business does. Who you serve. How you talk. One thing you never want it to say. Save that, and from now on paste it in before you ask for anything.\n\n"+
+"That is it. That one paragraph turns the assistant from a stranger who forgets you every time into something that answers like it knows your business. It is the same file I described last week, and it is where I start with everyone.\n\n"+
+"I am building this workshop in the open, which means I will tell you how Thursday actually goes, the good and the awkward. You will hear about it either way.\n\n"+
+"If you want the outside view of your own business first, the free tool is still there. Two minutes, no sign-up: geolisted.co/rank-check\n\n"+
+"Know an owner who keeps closing the tab? Forward this. The first step is right here in the letter.\n\n"+FOOTER;
+
+/* sequence bodies (rendered from the live templates with real scan findings) */
+var SIG = "Boubacar\ngeolisted.co\nI run the free AI-visibility check for local businesses\n\nReply STOP to opt out";
+
+var T1_REVIVE =
+"I ran a free visibility scan on reviveroofingut.com, the kind that checks what an AI assistant can actually read about you. Right now your homepage carries no structured business details, so an assistant cannot confirm your name, your service area, or a clear way to reach you.\n\n"+
+"When someone in Sandy asks ChatGPT or Google's AI for a roofer near them, that gap is what decides whether your name comes up or the next roofer's does.\n\n"+
+"The rest is in the free scan at geolisted.co.\n\n"+
+"Want the two things I would fix first?\n\n"+
+"Boubacar\ngeolisted.co";
+
+var T1_TOPLOCAL =
+"I ran a free visibility scan on toplocaldevelopment.com, the kind that checks what an AI assistant can actually read about you. Right now your robots file is blocking 9 of the AI crawlers by name, including the ones behind ChatGPT and Perplexity, so those tools are told to stay off your site entirely.\n\n"+
+"When someone in South Jordan asks ChatGPT or Google's AI for a roofer near them, that gap is what decides whether your name comes up or the next roofer's does.\n\n"+
+"The rest is in the free scan at geolisted.co.\n\n"+
+"Want the two things I would fix first?\n\n"+
+"Boubacar\ngeolisted.co";
+
+var T2_REVIVE =
+"No reply needed. I said I would send the two things I would fix first, so here is the first one.\n\n"+
+"Add one plain block of text to your homepage and footer with your business name, phone number, the cities you cover, and your hours. That alone lets an assistant confirm who you are and where you work.\n\n"+
+"That one gets you the most back for the least effort, because Sandy homeowners are already asking ChatGPT and Google's AI for a roofer, and an assistant only recommends a business it can actually read.\n\n"+
+"The second fix is a little more technical: a small piece of code that tells Google and ChatGPT you are a roofer in Sandy, not just any website. I will send that one in a few days.\n\n"+
+"If you would rather I just handle both for you, reply and I will show you what that looks like.\n\n"+SIG;
+
+var T2_TOPLOCAL =
+"No reply needed. I said I would send the two things I would fix first, so here is the first one.\n\n"+
+"Open the robots.txt file on your site and remove the lines that block those AI crawlers by name. Right now you are telling ChatGPT and Perplexity to stay away, so they never even read your site. Deleting those blocks takes minutes.\n\n"+
+"That one gets you the most back for the least effort, because South Jordan homeowners are already asking ChatGPT and Google's AI for a roofer, and an assistant only recommends a business it can actually read.\n\n"+
+"The second fix is a little more technical: adding the structured details that let an assistant confirm you are a roofer in South Jordan once it is allowed back in. I will send that one in a few days.\n\n"+
+"If you would rather I just handle both for you, reply and I will show you what that looks like.\n\n"+SIG;
+
+var T3_REVIVE =
+"One more thing on the AI-visibility piece, then I will leave it alone.\n\n"+
+"I run this scan on a lot of roofing contractors around Sandy. The ones that come up when someone asks ChatGPT for a roofer are almost never the biggest or the oldest. They are the ones whose website an assistant can read in plain terms: a clear name, a service area, real answers to the questions homeowners actually type.\n\n"+
+"That is the whole game right now. The roofers who look invisible to AI are not worse at roofing. Their site just does not speak the language these tools read. It is a quiet head start, and in Sandy it is still open.\n\n"+
+"You already have the free scan at geolisted.co. If you want, I will point out the exact two or three lines standing between Revive Roofing & Construction and those answers.\n\n"+SIG;
+
+var T4_REVIVE =
+"Last note from me on this, and no hard feelings if the timing is wrong.\n\n"+
+"The free scan showed the gaps. The two fixes I sent are yours to run whenever you like. But if you would rather not touch any of it, I do a $250 Walkthrough Audit: I record myself going through reviveroofingut.com and hand you the exact list of what to change and in what order, so you or whoever runs your site can just do it. No retainer, no meetings.\n\n"+
+"If that is useful, reply and I will send the link. If not, I will close the loop here and you keep the scan either way.\n\n"+
+"Either way, thanks for reading this far.\n\n"+SIG;
+
+var BO_CALL =
+"Touch type: phone call, not email. Day 9 (Thu Jul 17). Status: gated.\n\n"+
+"An AI phone agent follows up by voice on the free scan. This only goes live after the Bo live-test to your own number passes. If that test does not pass, this touch is skipped and the sequence continues straight to T4.\n\n"+
+"Nothing calls anyone until you have heard it work on your own phone first.";
+
+/* ============ card data ============ */
+var DATA = [
+  {sec:'nl', key:'nl-2026-07-08-issue1', kind:'letter', kick:'Issue 1 · Catch-up', title:'I built a way to see what AI says about you', when:'Send Wed, Jul 8', chip:'today', chipTxt:'TODAY',
+    label:'Newsletter Issue 1 (Jul 8): I built a way to see what AI says about you',
+    subject:'I built a way to see what AI says about you', body:NL1, copyKind:'issue'},
+  {sec:'nl', key:'nl-2026-07-14-issue2', kind:'letter', kick:'Issue 2', title:'I put a lock on my own hiding place', when:'Schedule Tue, Jul 14', chip:'sched', chipTxt:'SCHEDULED',
+    label:'Newsletter Issue 2 (Jul 14): I put a lock on my own hiding place',
+    subject:'I put a lock on my own hiding place', body:NL2, copyKind:'issue'},
+  {sec:'nl', key:'nl-2026-07-21-issue3', kind:'letter', kick:'Issue 3', title:'You do not need another course', when:'Schedule Tue, Jul 21', chip:'sched', chipTxt:'SCHEDULED',
+    label:'Newsletter Issue 3 (Jul 21): You do not need another course',
+    subject:'You do not need another course', body:NL3, copyKind:'issue'},
+  {sec:'nl', key:'nl-2026-07-28-issue4', kind:'letter', kick:'Issue 4', title:'This week I am putting people in a room', when:'Schedule Tue, Jul 28', chip:'sched', chipTxt:'SCHEDULED',
+    label:'Newsletter Issue 4 (Jul 28): This week I am putting people in a room',
+    subject:'This week I am putting people in a room', body:NL4, copyKind:'issue'},
+
+  {sec:'seq', key:'seq-t1-revive', kind:'mail', kick:'Touch 1 · Revive Roofing (Sandy)', title:'what AI says about Revive Roofing & Construction', when:'Sent Tue, Jul 8', chip:'sent', chipTxt:'SENT',
+    label:'T1 Revive Roofing (sent Jul 8)', from:'Boubacar <boubacar@catalystworks.consulting>',
+    subject:'what AI says about Revive Roofing & Construction', body:T1_REVIVE, copyKind:'email'},
+  {sec:'seq', key:'seq-t1-toplocal', kind:'mail', kick:'Touch 1 · Top Local Roofing (9-crawler variant)', title:'what AI says about Top Local Roofing', when:'Sent Tue, Jul 8', chip:'sent', chipTxt:'SENT',
+    label:'T1 Top Local Roofing, 9-crawler variant (sent Jul 8)', from:'Boubacar <boubacar@catalystworks.consulting>',
+    subject:'what AI says about Top Local Roofing', body:T1_TOPLOCAL, copyKind:'email'},
+  {sec:'seq', key:'seq-t2-revive', kind:'mail', kick:'Touch 2 · Revive Roofing (first self-fix)', title:'The two things I would fix first', when:'Scheduled Fri, Jul 11', chip:'sched', chipTxt:'SCHEDULED',
+    label:'T2 Revive Roofing (Jul 11)', from:'Boubacar <boubacar@catalystworks.consulting>',
+    subject:'Re: what AI says about Revive Roofing & Construction', subjNote:'threaded reply to T1 (fallback subject: The two things I would fix first)', body:T2_REVIVE, copyKind:'email'},
+  {sec:'seq', key:'seq-t2-toplocal', kind:'mail', kick:'Touch 2 · Top Local Roofing (robots-fix variant)', title:'The two things I would fix first', when:'Scheduled Fri, Jul 11', chip:'sched', chipTxt:'SCHEDULED',
+    label:'T2 Top Local Roofing, robots variant (Jul 11)', from:'Boubacar <boubacar@catalystworks.consulting>',
+    subject:'Re: what AI says about Top Local Roofing', subjNote:'threaded reply to T1 (fallback subject: The two things I would fix first)', body:T2_TOPLOCAL, copyKind:'email'},
+  {sec:'seq', key:'seq-t3-revive', kind:'mail', kick:'Touch 3 · Revive Roofing (contrast)', title:'Why some roofers come up and some do not', when:'Scheduled Tue, Jul 15', chip:'sched', chipTxt:'SCHEDULED',
+    label:'T3 Revive Roofing (Jul 15)', from:'Boubacar <boubacar@catalystworks.consulting>',
+    subject:'Re: what AI says about Revive Roofing & Construction', subjNote:'threaded reply to T1 (fallback subject: Why some roofers come up and some do not)', body:T3_REVIVE, copyKind:'email'},
+  {sec:'seq', key:'seq-bo-call', kind:'note', kick:'Touch (Bo) · AI phone follow-up', title:'AI phone call on the scan', when:'Gated, Thu Jul 17', chip:'gate', chipTxt:'GATED',
+    label:'Bo call, gated (Jul 17)', subject:'Phone call, not email', body:BO_CALL, copyKind:'note'},
+  {sec:'seq', key:'seq-t4-revive', kind:'mail', kick:'Touch 4 · Revive Roofing (soft final)', title:'Want me to just do it?', when:'Scheduled Tue, Jul 22', chip:'sched', chipTxt:'SCHEDULED',
+    label:'T4 Revive Roofing (Jul 22)', from:'Boubacar <boubacar@catalystworks.consulting>',
+    subject:'Re: what AI says about Revive Roofing & Construction', subjNote:'threaded reply to T1 (fallback subject: Want me to just do it?)', body:T4_REVIVE, copyKind:'email'}
+];
+
+/* ============ Supabase notes sync ============ */
+var SB_URL = 'https://jscucboftaoaphticqci.supabase.co';
+var SB_KEY = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
+var LS_KEY = 'reviewnotes:2026-07-08-newsletters-sequence:v1';
+var state = {};            /* item_key -> note */
+var noteTimers = {};
+var pill = document.getElementById('syncPill');
+var pillTimer = null;
+function setPill(mode, text){
+  pill.className = 'pill ' + (mode||'');
+  pill.innerHTML = '<span class="dot"></span>' + text;
+}
+function cacheLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+function readLocal(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'{}'); }catch(e){ return {}; } }
+function sbUpsert(key, note){
+  setPill('saving','Saving');
+  return fetch(SB_URL + '/rest/v1/review_notes', {
+    method:'POST',
+    headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify([{ item_key:key, note:note, updated_at:new Date().toISOString() }])
+  }).then(function(r){
+    if(r.ok){ setPill('ok','Synced'); } else { setPill('off','Offline, saved on this device'); }
+    cacheLocal();
+  }).catch(function(){ setPill('off','Offline, saved on this device'); cacheLocal(); });
+}
+function onNote(key, val){
+  state[key] = val;
+  cacheLocal();
+  clearTimeout(noteTimers[key]);
+  noteTimers[key] = setTimeout(function(){ sbUpsert(key, val); }, 650);
+}
+function loadNotes(){
+  state = readLocal();
+  applyNotes();
+  fetch(SB_URL + '/rest/v1/review_notes?select=item_key,note', {
+    headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY }
+  }).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(rows){
+      if(!rows){ setPill('off','Offline, saved on this device'); return; }
+      rows.forEach(function(row){ if(row && row.item_key){ state[row.item_key] = row.note || ''; } });
+      cacheLocal(); applyNotes();
+      setPill('ok','Synced');
+    }).catch(function(){ setPill('off','Offline, saved on this device'); });
+}
+function applyNotes(){
+  document.querySelectorAll('textarea.notes').forEach(function(ta){
+    var k = ta.getAttribute('data-key');
+    if(document.activeElement !== ta){ ta.value = state[k] || ''; }
+  });
+}
+
+/* ============ copy ============ */
+function copyText(txt, btn){
+  var done = function(){
+    var tag = btn.parentNode.querySelector('.copied');
+    if(tag){ tag.classList.add('show'); setTimeout(function(){ tag.classList.remove('show'); }, 1600); }
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done, function(){ legacyCopy(txt); done(); });
+  } else { legacyCopy(txt); done(); }
+}
+function legacyCopy(txt){
+  var t=document.createElement('textarea'); t.value=txt; t.style.position='fixed'; t.style.opacity='0';
+  document.body.appendChild(t); t.focus(); t.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(t);
+}
+function itemCopyText(d){
+  if(d.copyKind === 'note'){ return d.title + '\n\n' + d.body; }
+  return d.subject + '\n\n' + d.body;
+}
+
+/* ============ render ============ */
+function esc(s){ var p=document.createElement('div'); p.textContent=s==null?'':s; return p.innerHTML; }
+function renderCard(d){
+  var card=document.createElement('div'); card.className='card'; card.id=d.key;
+  var bodyId=d.key+'-body';
+
+  var head=document.createElement('button');
+  head.className='chead'; head.setAttribute('aria-expanded','false'); head.setAttribute('aria-controls',bodyId);
+  head.innerHTML =
+    '<span class="cmeta"><span class="kick">'+esc(d.kick)+'</span>'+
+    '<span class="ctitle">'+esc(d.title)+'</span>'+
+    '<span class="when">'+esc(d.when)+'</span></span>'+
+    '<span class="chip '+d.chip+'">'+esc(d.chipTxt)+'</span>'+
+    '<span class="chev" aria-hidden="true">&#9656;</span>';
+
+  var body=document.createElement('div'); body.className='cbody'; body.id=bodyId;
+
+  /* subject / meta line */
+  var subj=document.createElement('div'); subj.className='subj';
+  if(d.kind==='note'){
+    subj.innerHTML='<b>Type:</b> '+esc(d.subject);
+  } else {
+    subj.innerHTML='<b>Subject:</b> '+esc(d.subject)+(d.subjNote?('<br><span style="color:var(--mut2)">'+esc(d.subjNote)+'</span>'):'');
+  }
+  body.appendChild(subj);
+
+  /* content block (textContent = exact copy) */
+  var block;
+  if(d.kind==='letter'){
+    block=document.createElement('div'); block.className='letter'; block.textContent=d.body;
+  } else if(d.kind==='mail'){
+    block=document.createElement('div'); block.className='mail';
+    var mh=document.createElement('div'); mh.className='mhead';
+    mh.innerHTML='<b>From:</b> '+esc(d.from)+'<br><b>Subject:</b> '+esc(d.subject);
+    var mb=document.createElement('div'); mb.className='mbody'; mb.textContent=d.body;
+    block.appendChild(mh); block.appendChild(mb);
+  } else {
+    block=document.createElement('div'); block.className='note-info'; block.textContent=d.body;
+  }
+  body.appendChild(block);
+
+  /* item toolbar */
+  var tools=document.createElement('div'); tools.className='itools';
+  var cbtn=document.createElement('button'); cbtn.className='btn';
+  cbtn.textContent = d.copyKind==='issue' ? 'Copy issue (subject + body)' : (d.copyKind==='email' ? 'Copy email (subject + body)' : 'Copy details');
+  cbtn.addEventListener('click', function(){ copyText(itemCopyText(d), cbtn); });
+  var cd=document.createElement('span'); cd.className='copied'; cd.textContent='Copied';
+  tools.appendChild(cbtn); tools.appendChild(cd);
+  body.appendChild(tools);
+
+  /* notes */
+  var nl=document.createElement('div'); nl.className='nlabel'; nl.textContent='Your notes for '+d.label;
+  var ta=document.createElement('textarea'); ta.className='notes'; ta.setAttribute('data-key',d.key);
+  ta.setAttribute('aria-label','Your notes for '+d.label);
+  ta.placeholder = d.sec==='nl' ? 'Your notes for this issue...' : 'Your notes for this email...';
+  ta.addEventListener('input', function(){ onNote(d.key, ta.value); });
+  body.appendChild(nl); body.appendChild(ta);
+
+  head.addEventListener('click', function(){
+    var open=card.classList.toggle('open');
+    head.setAttribute('aria-expanded', open?'true':'false');
+  });
+
+  card.appendChild(head); card.appendChild(body);
+  return card;
+}
+
+(function init(){
+  var lnl=document.getElementById('list-nl'), lseq=document.getElementById('list-seq');
+  var nNl=0,nSeq=0;
+  DATA.forEach(function(d){
+    var c=renderCard(d);
+    if(d.sec==='nl'){ lnl.appendChild(c); nNl++; } else { lseq.appendChild(c); nSeq++; }
+  });
+  document.getElementById('cnt-nl').textContent=nNl+' issues';
+  document.getElementById('cnt-seq').textContent=nSeq+' touches';
+
+  /* expand/collapse all */
+  var tgl=document.getElementById('toggleAll');
+  tgl.addEventListener('click', function(){
+    var anyClosed=Array.prototype.some.call(document.querySelectorAll('.card'), function(c){ return !c.classList.contains('open'); });
+    document.querySelectorAll('.card').forEach(function(c){
+      var h=c.querySelector('.chead');
+      if(anyClosed){ c.classList.add('open'); h.setAttribute('aria-expanded','true'); }
+      else { c.classList.remove('open'); h.setAttribute('aria-expanded','false'); }
+    });
+    tgl.textContent = anyClosed ? 'Collapse all' : 'Expand all';
+  });
+
+  /* copy all notes */
+  document.getElementById('copyNotes').addEventListener('click', function(){
+    var out=[];
+    DATA.forEach(function(d){
+      var n=(state[d.key]||'').trim();
+      if(n){ out.push('['+d.label+']\n'+n); }
+    });
+    var txt = out.length ? ('My notes on the newsletters + sequence review\n\n'+out.join('\n\n')) : 'No notes yet. Write in any notes box, then copy again.';
+    copyText(txt, document.getElementById('copyNotes'));
+  });
+
+  /* back to top */
+  var tt=document.getElementById('totop');
+  tt.addEventListener('click', function(){ window.scrollTo({top:0}); });
+  window.addEventListener('scroll', function(){
+    if(window.scrollY>520){ tt.classList.add('show'); } else { tt.classList.remove('show'); }
+  }, {passive:true});
+
+  loadNotes();
+  window.addEventListener('focus', function(){ /* light refresh from cache on tab return */ applyNotes(); });
+})();
+</script>
+</body>
+</html>
+
