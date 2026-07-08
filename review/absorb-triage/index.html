@@ -37,6 +37,26 @@ nav.tnav a.here{color:#58a6ff;border-color:#0d419d}
 .dot.skip{background:#6e7681}
 .dot.unset{background:#21262d;border:1px solid #6e7681}
 
+/* --- Top-level category filter bar --- */
+.topfilters{background:#161b22;border-bottom:1px solid #30363d;padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.topfilter-btn{background:#0d1117;border:1.5px solid #30363d;color:#c9d1d9;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all .12s;display:flex;align-items:center;gap:7px}
+.topfilter-btn:hover{border-color:#58a6ff;color:#f0f6fc}
+.topfilter-btn.on{background:#0d419d33;border-color:#58a6ff;color:#58a6ff}
+.topfilter-btn .tf-count{background:#30363d;color:#8b949e;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600}
+.topfilter-btn.on .tf-count{background:#0d419d66;color:#a5d1ff}
+.topfilter-note{color:#6e7681;font-size:11.5px;width:100%;padding-top:2px;font-style:italic}
+.subfilter-row{display:flex;gap:6px;align-items:center;padding:0 16px 10px;flex-wrap:wrap}
+.subfilter-row .sf-label{color:#6e7681;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-right:2px}
+.subfilter-btn{background:#0d1117;border:1px solid #30363d;color:#8b949e;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11.5px;font-weight:500}
+.subfilter-btn:hover{border-color:#58a6ff}
+.subfilter-btn.on{background:#f8514922;border-color:#f85149;color:#ffa198}
+.load-more-row{display:flex;align-items:center;gap:10px;padding:10px 16px 14px;flex-wrap:wrap}
+.load-more-btn{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+.load-more-btn:hover{background:#30363d}
+.load-more-btn:disabled{opacity:.5;cursor:default}
+.load-status{color:#6e7681;font-size:11.5px}
+.hold-badge{font-family:ui-monospace,monospace;font-size:10px;padding:2px 7px;border-radius:4px;background:#d2992222;color:#d29922;font-weight:600}
+
 /* --- Section shells (Active / Archived / Done) --- */
 .section{margin:0 16px 14px;border:1px solid #30363d;border-radius:8px;background:#0d1117}
 .section > summary{list-style:none;cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:10px;background:#161b22;border-radius:8px;user-select:none}
@@ -140,6 +160,22 @@ nav.tnav a.here{color:#58a6ff;border-color:#0d419d}
   </nav>
 </header>
 
+<div class="topfilters" id="topfilters">
+  <button class="topfilter-btn" id="tf-active" data-tf="active">
+    <span>Active — needs your call</span><span class="tf-count" id="tf-count-active">0</span>
+  </button>
+  <button class="topfilter-btn" id="tf-progress" data-tf="progress" title="Best-effort proxy: no dedicated 'in progress' status exists in the DB. This shows Active items already marked TODAY (you've greenlit them to move now).">
+    <span>In Progress</span><span class="tf-count" id="tf-count-progress">0</span>
+  </button>
+  <button class="topfilter-btn" id="tf-implemented" data-tf="implemented">
+    <span>Implemented</span><span class="tf-count" id="tf-count-implemented">0</span>
+  </button>
+  <button class="topfilter-btn" id="tf-archived" data-tf="archived">
+    <span>Archived</span><span class="tf-count" id="tf-count-archived">0</span>
+  </button>
+  <span class="topfilter-note" id="tf-note" style="display:none"></span>
+</div>
+
 <div class="toolbar">
   <input id="filter" type="text" placeholder="Filter Active by ID, target, reason, URL..." autocomplete="off">
   <button class="btn-bulk" id="assign-all-later">↓ All Active → LATER</button>
@@ -191,8 +227,18 @@ nav.tnav a.here{color:#58a6ff;border-color:#0d419d}
     <span class="section-count" id="cnt-archived-section">0</span>
     <span class="section-sub">-- reviewed / decided, kept for reference (never deleted)</span>
   </summary>
+  <div class="subfilter-row">
+    <span class="sf-label">Show:</span>
+    <button class="subfilter-btn" id="sf-archived-all">All archived</button>
+    <button class="subfilter-btn" id="sf-archived-skipped">Skipped only (declined)</button>
+  </div>
   <div class="section-sub-note" id="archived-note"></div>
   <div class="flat-list" id="archived-list"></div>
+  <div class="load-more-row">
+    <button class="load-more-btn" id="archived-load-more">Load more</button>
+    <button class="load-more-btn" id="archived-load-all">Load ALL remaining</button>
+    <span class="load-status" id="archived-load-status"></span>
+  </div>
 </details>
 
 <details class="section" id="sec-done">
@@ -204,6 +250,11 @@ nav.tnav a.here{color:#58a6ff;border-color:#0d419d}
   </summary>
   <div class="section-sub-note" id="done-note"></div>
   <div class="flat-list" id="done-list"></div>
+  <div class="load-more-row">
+    <button class="load-more-btn" id="done-load-more">Load more</button>
+    <button class="load-more-btn" id="done-load-all">Load ALL remaining</button>
+    <span class="load-status" id="done-load-status"></span>
+  </div>
 </details>
 
 <div class="toast" id="toast"></div>
@@ -219,13 +270,17 @@ const ORC_BASE = "https://agentshq.boubacarbarry.com/api/orc";
 let ITEMS = [];        // Active items
 let ARCHIVED = [];     // Archived reference items
 let ARCHIVED_TOTAL = 0;
+let ARCHIVED_SKIPPED_ONLY = false;   // sub-filter: All archived vs Skipped-only (verdict=DONT_PROCEED)
 let DONE = [];         // Done/shipped reference items
 let DONE_TOTAL = 0;
+let HOLD_IDS = new Set(); // ids with real DB status='hold' (marked on Archived cards, not its own top button)
 let STATE = {};
 let NOTES = {};
 let FILTER = "";
 let activeFilter = null;
 let dragCard = null;
+let topFilter = null;   // 'active' | 'progress' | 'implemented' | 'archived' | null
+let paginationEndpointsLive = true; // flips false on first 404 so we stop retrying and just say so
 
 try { STATE = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (e) { STATE = {}; }
 try { NOTES = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}"); } catch (e) { NOTES = {}; }
@@ -586,6 +641,7 @@ function render() {
 
   document.getElementById("cnt-active-section").textContent = ITEMS.length;
   renderStats();
+  if (typeof updateTopFilterCounts === "function") updateTopFilterCounts();
 }
 
 function renderStats() {
@@ -656,6 +712,16 @@ function buildRefCard(item, kind) {
   badge.className = "verdict-badge";
   badge.textContent = kind === "done" ? "SHIPPED" : (item.verdict || "ARCHIVED");
   idRow.appendChild(badge);
+
+  // Real DB status='hold' rows (currently 1) also carry a terminal verdict
+  // that already routes them into Archived above -- marked here rather
+  // than given a whole separate top-level section for a single-row status.
+  if (kind === "archived" && HOLD_IDS.has(item.id)) {
+    const holdBadge = document.createElement("span");
+    holdBadge.className = "hold-badge";
+    holdBadge.textContent = "ON HOLD (status=hold)";
+    idRow.appendChild(holdBadge);
+  }
 
   const placeEl = document.createElement("span");
   placeEl.className = "card-placement";
@@ -787,8 +853,10 @@ function loadItems() {
       ARCHIVED_TOTAL = data.archived_total || ARCHIVED.length;
       DONE = data.done || [];
       DONE_TOTAL = data.done_total || DONE.length;
+      HOLD_IDS = new Set((data.hold || []).map(it => it.id));
       renderArchived();
       renderDone();
+      updateTopFilterCounts();
       const now = new Date();
       meta.textContent = ITEMS.length + " active | " + ARCHIVED_TOTAL + " archived | " + DONE_TOTAL + " shipped | loaded " + now.toLocaleTimeString();
     })
@@ -804,6 +872,7 @@ function loadItems() {
           DONE = []; DONE_TOTAL = 0;
           renderArchived();
           renderDone();
+          updateTopFilterCounts();
           document.getElementById("archived-note").textContent = "Archived/Done sections need the newer backend endpoint -- pending deploy.";
           document.getElementById("done-note").textContent = "Archived/Done sections need the newer backend endpoint -- pending deploy.";
           const now = new Date();
@@ -816,6 +885,135 @@ function loadItems() {
         });
     });
 }
+
+// TOP-LEVEL CATEGORY FILTER BAR (2026-07-08b)
+// Buttons: Active / In Progress (proxy) / Implemented / Archived.
+// "Skipped" lives as a sub-filter inside Archived (Boubacar: "you decide
+// the categories" -- fine either as its own button or nested; nesting
+// keeps the top bar to 4 buttons since most decided/shelved items are
+// already literally archived-status or ARCHIVE-AND-NOTE verdict, with
+// DONT_PROCEED as the distinct "declined" subset).
+function updateTopFilterCounts() {
+  document.getElementById("tf-count-active").textContent = ITEMS.length;
+  document.getElementById("tf-count-progress").textContent = ITEMS.filter(it => (STATE[it.id] || "") === "today").length;
+  document.getElementById("tf-count-implemented").textContent = DONE_TOTAL;
+  document.getElementById("tf-count-archived").textContent = ARCHIVED_TOTAL;
+}
+
+function setTopFilter(which) {
+  topFilter = which;
+  for (const btn of document.querySelectorAll(".topfilter-btn")) {
+    btn.classList.toggle("on", btn.dataset.tf === which);
+  }
+  const note = document.getElementById("tf-note");
+  const sections = { active: "sec-active", progress: "sec-active", implemented: "sec-done", archived: "sec-archived" };
+  const targetId = sections[which];
+  if (!targetId) { note.style.display = "none"; return; }
+
+  document.getElementById(targetId).open = true;
+  document.getElementById(targetId).scrollIntoView({ behavior: "smooth", block: "start" });
+
+  if (which === "progress") {
+    activeFilter = "today";
+    render();
+    note.textContent = "Proxy view -- no dedicated 'in progress' status exists in this system. Showing Active items you've already marked TODAY (greenlit to move now). Not a precise build-status signal.";
+    note.style.display = "block";
+  } else if (which === "active") {
+    activeFilter = null;
+    render();
+    note.style.display = "none";
+  } else {
+    note.style.display = "none";
+  }
+}
+
+for (const btn of document.querySelectorAll(".topfilter-btn")) {
+  btn.addEventListener("click", () => {
+    // Clicking the already-selected button toggles it off (back to no filter).
+    setTopFilter(topFilter === btn.dataset.tf ? null : btn.dataset.tf);
+  });
+}
+
+// ARCHIVED SUB-FILTER: All vs Skipped-only (verdict=DONT_PROCEED)
+function setArchivedSkippedOnly(skippedOnly) {
+  ARCHIVED_SKIPPED_ONLY = skippedOnly;
+  document.getElementById("sf-archived-all").classList.toggle("on", !skippedOnly);
+  document.getElementById("sf-archived-skipped").classList.toggle("on", skippedOnly);
+  document.getElementById("archived-load-status").textContent = "Loading...";
+  fetch(ORC_BASE + "/atlas/absorb-triage-archived?offset=0&limit=150&skipped_only=" + (skippedOnly ? "true" : "false"))
+    .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(data => {
+      ARCHIVED = data.items || [];
+      ARCHIVED_TOTAL = data.total || ARCHIVED.length;
+      renderArchived();
+      updateTopFilterCounts();
+      document.getElementById("archived-load-status").textContent = "";
+    })
+    .catch(err => {
+      console.warn("archived sub-filter fetch failed:", err);
+      document.getElementById("archived-load-status").textContent = "Sub-filter needs the paginated endpoint -- pending deploy.";
+    });
+}
+document.getElementById("sf-archived-all").addEventListener("click", () => setArchivedSkippedOnly(false));
+document.getElementById("sf-archived-skipped").addEventListener("click", () => setArchivedSkippedOnly(true));
+document.getElementById("sf-archived-all").classList.add("on"); // default visual state, no fetch -- board load already supplies "All archived"
+
+// LOAD MORE / LOAD ALL -- Archived and Done are 2,500+ / 200+ rows; the
+// board endpoint only returns the first 150 for a fast initial paint.
+// Boubacar: "see every single one" -- these page through the rest via
+// the new paginated endpoints, appending rather than replacing.
+function loadMore(kind) {
+  const isArchived = kind === "archived";
+  const arr = isArchived ? ARCHIVED : DONE;
+  const total = isArchived ? ARCHIVED_TOTAL : DONE_TOTAL;
+  const statusEl = document.getElementById(kind + "-load-status");
+  if (arr.length >= total) { statusEl.textContent = "All " + total + " loaded."; return Promise.resolve(); }
+
+  const path = isArchived
+    ? "/atlas/absorb-triage-archived?offset=" + arr.length + "&limit=150&skipped_only=" + (ARCHIVED_SKIPPED_ONLY ? "true" : "false")
+    : "/atlas/absorb-triage-done?offset=" + arr.length + "&limit=150";
+  statusEl.textContent = "Loading " + arr.length + "-" + Math.min(arr.length + 150, total) + " of " + total + "...";
+  return fetch(ORC_BASE + path)
+    .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(data => {
+      const newItems = data.items || [];
+      if (isArchived) { ARCHIVED = ARCHIVED.concat(newItems); ARCHIVED_TOTAL = data.total || ARCHIVED_TOTAL; renderArchived(); }
+      else { DONE = DONE.concat(newItems); DONE_TOTAL = data.total || DONE_TOTAL; renderDone(); }
+      updateTopFilterCounts();
+      const nowArr = isArchived ? ARCHIVED : DONE;
+      const nowTotal = isArchived ? ARCHIVED_TOTAL : DONE_TOTAL;
+      statusEl.textContent = nowArr.length >= nowTotal ? "All " + nowTotal + " loaded." : "Showing " + nowArr.length + " of " + nowTotal + ".";
+    })
+    .catch(err => {
+      console.warn(kind + " load-more failed:", err);
+      statusEl.textContent = "Load-more needs the paginated endpoint -- pending deploy.";
+      throw err;
+    });
+}
+
+async function loadAllRemaining(kind) {
+  const btn = document.getElementById(kind + "-load-all");
+  btn.disabled = true;
+  try {
+    // Loop until the array length reaches the true total, or a fetch fails.
+    while (true) {
+      const arr = kind === "archived" ? ARCHIVED : DONE;
+      const total = kind === "archived" ? ARCHIVED_TOTAL : DONE_TOTAL;
+      if (arr.length >= total) break;
+      await loadMore(kind);
+    }
+    showToast("Loaded every " + kind + " item.");
+  } catch (e) {
+    // status line already shows the reason; nothing further to do.
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById("archived-load-more").addEventListener("click", () => loadMore("archived"));
+document.getElementById("archived-load-all").addEventListener("click", () => loadAllRemaining("archived"));
+document.getElementById("done-load-more").addEventListener("click", () => loadMore("done"));
+document.getElementById("done-load-all").addEventListener("click", () => loadAllRemaining("done"));
 
 function applyActive(items) {
   ITEMS = items;
