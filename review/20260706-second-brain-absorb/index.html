@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Second Brain Absorb: Jay/RoboNuggets vs agentsHQ</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --surface: #ffffff;
+    --surface-2: #eeece4;
+    --ink: #1c1d21;
+    --muted: #6b6f7a;
+    --line: rgba(28,29,33,0.12);
+    --accent: #b56a2e;
+    --accent-ink: #ffffff;
+    --wire: #2f7e7e;
+    --wire-soft: rgba(47,126,126,0.14);
+    --good: #3f7a52;
+    --gap: #ac4a36;
+    --partial: #a67c1f;
+    --shadow: 0 1px 2px rgba(28,29,33,0.06), 0 8px 24px rgba(28,29,33,0.05);
+    --serif: Charter, 'Iowan Old Style', 'Palatino Linotype', Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161c;
+    --surface: #1b1e26;
+    --surface-2: #21242e;
+    --ink: #eae7e0;
+    --muted: #9195a3;
+    --line: rgba(234,231,224,0.10);
+    --accent: #dd9a56;
+    --accent-ink: #1c1d21;
+    --wire: #5fbcbc;
+    --wire-soft: rgba(95,188,188,0.12);
+    --good: #6fbf8a;
+    --gap: #e0796a;
+    --partial: #d1a94a;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px rgba(0,0,0,0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161c;
+      --surface: #1b1e26;
+      --surface-2: #21242e;
+      --ink: #eae7e0;
+      --muted: #9195a3;
+      --line: rgba(234,231,224,0.10);
+      --accent: #dd9a56;
+      --accent-ink: #1c1d21;
+      --wire: #5fbcbc;
+      --wire-soft: rgba(95,188,188,0.12);
+      --good: #6fbf8a;
+      --gap: #e0796a;
+      --partial: #d1a94a;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px rgba(0,0,0,0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding: 64px 24px 96px; }
+  a { color: var(--wire); }
+  a:focus-visible, button:focus-visible, .ring-group:focus-visible, .stage:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--wire); outline-offset: 2px;
+  }
+
+  .col { max-width: 720px; margin: 0 auto; }
+  .wide { max-width: 1080px; margin: 0 auto; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--wire);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(30px, 4vw, 42px);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0 0 10px;
+  }
+  .dek {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0 0 6px;
+  }
+  .meta {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 18px;
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  header.hero {
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+    animation: riseIn 0.9s var(--ease) both;
+  }
+  @keyframes riseIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 24px;
+    letter-spacing: -0.005em;
+    margin: 0 0 4px;
+  }
+  .section-num { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.06em; }
+  section { margin: 56px 0; }
+  section > .section-head { margin-bottom: 20px; }
+
+  p { font-size: 15.5px; line-height: 1.7; margin: 0 0 16px; }
+  p.lede { font-size: 17px; line-height: 1.65; }
+  strong { font-weight: 600; }
+  .col p:last-child { margin-bottom: 0; }
+  code { font-family: var(--mono); font-size: 0.92em; }
+
+  /* ---- Scroll reveal: class only added by JS, never CSS-default-hidden. ---- */
+  .reveal-init { opacity: 0; transform: translateY(18px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+  .reveal-init.revealed { opacity: 1; transform: translateY(0); }
+
+  /* ---- Callouts: no side-stripe. Tab-label pokes above a tinted panel. ---- */
+  .callout {
+    position: relative;
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px 22px 18px;
+    box-shadow: var(--shadow);
+    margin: 36px 0 20px;
+  }
+  .callout p { margin-bottom: 0; font-size: 15px; }
+  .callout .label {
+    position: absolute; top: -13px; left: 18px;
+    background: var(--bg); border: 1px solid var(--line);
+    padding: 3px 10px; border-radius: 5px;
+    font-family: var(--mono); font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--accent);
+  }
+  .callout.done { background: color-mix(in srgb, var(--good) 6%, var(--surface)); }
+  .callout.done .label { color: var(--good); }
+  .callout.done::after {
+    content: '\2713'; position: absolute; top: -13px; right: 16px;
+    width: 23px; height: 23px; border-radius: 50%;
+    background: var(--good); color: var(--bg);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow);
+  }
+
+  blockquote {
+    margin: 20px 0; padding: 0 0 0 18px; border-left: 2px solid var(--wire);
+    font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 1.6; color: var(--ink);
+  }
+  blockquote cite { display: block; font-family: var(--mono); font-style: normal; font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  /* ---- Diagram frame: default (theme-aware) ---- */
+  .diagram-frame {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 32px;
+    overflow-x: auto;
+    position: relative;
+  }
+  .diagram-caption { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: center; margin-top: 16px; }
+  .diagram-hint { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; margin: 0 0 18px; letter-spacing: 0.02em; }
+
+  /* ---- Horizontal scroll affordance (mobile): fade-edge cue + swipe caption on any diagram wider than its frame ---- */
+  .hscroll { position: relative; }
+  .hscroll-track { overflow-x: auto; }
+  .hscroll-fade {
+    display: none;
+    position: absolute; top: 0; bottom: 0; right: 0; width: 34px;
+    pointer-events: none; opacity: 0; transition: opacity 0.25s ease;
+    background: linear-gradient(to right, transparent, rgba(10,11,17,0.92));
+    border-radius: 0 8px 8px 0;
+  }
+  .hscroll-fade.is-visible { opacity: 1; }
+  .swipe-hint {
+    display: none;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.03em;
+    text-align: center; color: rgba(238,241,248,0.5); margin: 10px 0 0;
+  }
+  @media (max-width: 640px) {
+    .hscroll-fade, .swipe-hint { display: block; }
+  }
+
+  /* ---- Diagram frame: dark glow canvas (matches the reference tool's mood).
+     Always dark regardless of page theme, like a map viewport inside an editorial page.
+     Independent token set (--c-*) so nothing here depends on the page's light/dark state. ---- */
+  .diagram-frame.canvas-dark {
+    --c-ink: #eef1f8;
+    --c-muted: rgba(238,241,248,0.56);
+    --c-line: rgba(255,255,255,0.11);
+    --c-panel: rgba(255,255,255,0.05);
+    --c-teal: #5fbcbc;
+    --c-teal-soft: rgba(95,188,188,0.16);
+    background: radial-gradient(ellipse at 50% 22%, #181d2c 0%, #0a0b11 72%);
+    border-color: var(--c-line);
+  }
+  .canvas-dark .diagram-hint, .canvas-dark .diagram-caption { color: var(--c-muted); }
+  .canvas-tag {
+    position: absolute; top: 14px; left: 18px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(238,241,248,0.4);
+  }
+
+  /* ---- Radial workspace map ---- */
+  .radial-wrap { display: flex; justify-content: center; min-width: 560px; }
+  .ring-hit { fill: none; stroke: transparent; stroke-width: 26; transition: stroke 0.3s ease, stroke-opacity 0.3s ease; }
+  .ring-group { cursor: pointer; }
+  .ring-group:hover .ring-hit { stroke: var(--ring-color); stroke-opacity: 0.20; }
+  .ring-group:focus-visible .ring-hit { stroke: var(--ring-color); stroke-opacity: 0.34; }
+  .ring-group.pulse .ring-hit { stroke: var(--ring-color); stroke-opacity: 0.38; }
+
+  .ring-legend { border-top: 1px solid var(--line); margin-top: 26px; }
+  .ring-legend details { border-bottom: 1px solid var(--line); padding: 13px 4px; }
+  .ring-legend details.flash { background: var(--wire-soft); }
+  .ring-legend summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; font-size: 13.5px; }
+  .ring-legend summary::-webkit-details-marker { display: none; }
+  .swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 6px 1px var(--sw-glow, transparent); }
+  .ring-legend .label-txt { font-weight: 600; }
+  .ring-legend .desc { color: var(--muted); font-size: 12.5px; }
+  .ring-legend .chev { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); transition: transform 0.3s var(--ease); }
+  .ring-legend details[open] .chev { transform: rotate(90deg); }
+  .ring-legend .more { padding: 8px 0 2px 20px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  .canvas-dark .ring-legend { border-top-color: var(--c-line); }
+  .canvas-dark .ring-legend details { border-bottom-color: var(--c-line); }
+  .canvas-dark .ring-legend details.flash { background: var(--c-teal-soft); }
+  .canvas-dark .ring-legend .label-txt { color: var(--c-ink); }
+  .canvas-dark .ring-legend .desc,
+  .canvas-dark .ring-legend .more,
+  .canvas-dark .ring-legend .chev { color: var(--c-muted); }
+
+  /* ---- Pipeline diagram ---- */
+  .pipeline { display: flex; align-items: stretch; gap: 0; min-width: 780px; }
+  .stage {
+    flex: 1; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px 12px; text-align: center; position: relative; cursor: pointer;
+    transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, transform 0.3s var(--ease);
+  }
+  .stage .n { font-family: var(--mono); font-size: 10.5px; color: var(--wire); letter-spacing: 0.05em; }
+  .stage .t { font-size: 12.5px; font-weight: 600; margin-top: 6px; line-height: 1.35; }
+  .arrow { display: flex; align-items: center; padding: 0 6px; color: var(--muted); font-size: 14px; transition: color 0.4s ease; }
+  .stage.llm { background: var(--wire-soft); border-color: var(--wire); }
+  .stage.active:not(.llm) { background: var(--wire-soft); border-color: var(--wire); box-shadow: 0 0 0 1px var(--wire), 0 6px 16px rgba(47,126,126,0.22); transform: translateY(-3px); }
+  .stage.llm.active { box-shadow: 0 0 0 2px var(--wire), 0 8px 20px rgba(47,126,126,0.32); transform: translateY(-4px) scale(1.03); }
+  .arrow.active { color: var(--wire); }
+  .pipeline-legend { display: flex; gap: 24px; margin-top: 20px; font-size: 12.5px; justify-content: center; flex-wrap: wrap; color: var(--ink); }
+  .pipeline-legend .item { display: flex; align-items: center; gap: 7px; }
+  .pill-swatch { width: 12px; height: 12px; border-radius: 3px; }
+  #stage-detail { margin-top: 16px; font-size: 13.5px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  #stage-detail[hidden] { display: none; }
+
+  .canvas-dark .stage { background: var(--c-panel); border-color: var(--c-line); color: var(--c-ink); }
+  .canvas-dark .stage .t { color: var(--c-ink); }
+  .canvas-dark .stage .n { color: var(--c-teal); }
+  .canvas-dark .arrow { color: var(--c-muted); }
+  .canvas-dark .arrow.active { color: var(--c-teal); }
+  .canvas-dark .stage.llm { background: var(--c-teal-soft); border-color: var(--c-teal); }
+  .canvas-dark .stage.active:not(.llm) { background: var(--c-teal-soft); border-color: var(--c-teal); box-shadow: 0 0 0 1px var(--c-teal), 0 6px 18px rgba(95,188,188,0.28); }
+  .canvas-dark .stage.llm.active { box-shadow: 0 0 0 2px var(--c-teal), 0 8px 22px rgba(95,188,188,0.4); }
+  .canvas-dark .pipeline-legend { color: var(--c-muted); }
+  .canvas-dark .pipeline-legend .pill-swatch { border-color: var(--c-line); }
+  .canvas-dark #stage-detail { background: var(--c-panel); border-color: var(--c-line); color: var(--c-ink); }
+
+  /* ---- Typographic stat moment ---- */
+  .stat-moment { margin: 30px 0 10px; text-align: center; }
+  .stat-num { display: block; font-family: var(--serif); font-weight: 500; font-size: clamp(56px, 11vw, 104px); line-height: 1; color: var(--wire); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stat-label { display: block; font-family: var(--mono); font-size: 12.5px; color: var(--muted); margin-top: 10px; letter-spacing: 0.02em; }
+
+  /* ---- Benchmark bars ---- */
+  .bench { display: grid; gap: 14px; margin: 22px 0; }
+  .bench-row { display: grid; grid-template-columns: 110px 1fr 70px; align-items: center; gap: 12px; font-size: 13px; }
+  .bench-track { height: 10px; background: var(--surface-2); border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+  .bench-fill { height: 100%; border-radius: 6px 0 0 6px; transform: scaleX(0); transform-origin: left center; transition: transform 1s var(--ease); }
+  .bench.in-view .bench-fill { transform: scaleX(1); }
+  .bench-fill.brain { background: var(--wire); }
+  .bench-fill.default { background: var(--muted); }
+  .bench-val { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ---- Comparison table ---- */
+  .table-frame { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 760px; background: var(--surface); }
+  th, td { text-align: left; padding: 13px 16px; font-size: 13.5px; line-height: 1.5; border-bottom: 1px solid var(--line); vertical-align: top; font-variant-numeric: tabular-nums; }
+  th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--surface-2); }
+  tr:last-child td { border-bottom: none; }
+  td.cap { width: 20%; font-weight: 600; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 20px; margin-bottom: 8px; white-space: nowrap; }
+  .chip.gap { background: color-mix(in srgb, var(--gap) 16%, transparent); color: var(--gap); }
+  .chip.partial { background: color-mix(in srgb, var(--partial) 16%, transparent); color: var(--partial); }
+  .chip.good { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
+  td details { margin-top: 9px; }
+  td details summary { cursor: pointer; font-family: var(--mono); font-size: 10.5px; color: var(--wire); list-style: none; text-transform: uppercase; letter-spacing: 0.05em; }
+  td details summary::-webkit-details-marker { display: none; }
+  td details summary::before { content: '+ more detail'; }
+  td details[open] summary::before { content: '- less detail'; }
+  td details p { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+
+  /* ---- Refs ---- */
+  .refs { display: grid; gap: 10px; }
+  .ref { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .ref .name { font-weight: 600; font-size: 14px; }
+  .ref .url { font-family: var(--mono); font-size: 12px; color: var(--wire); }
+  .ref .d { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+
+  ul.plain { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  ul.plain li { font-size: 15px; line-height: 1.6; padding-left: 18px; position: relative; }
+  ul.plain li::before { content: '\2014'; position: absolute; left: 0; color: var(--muted); }
+
+  footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  @media (max-width: 640px) {
+    body { padding: 40px 16px 64px; }
+    .bench-row { grid-template-columns: 84px 1fr 60px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    header.hero { animation: none; opacity: 1; transform: none; }
+    .reveal-init { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .stage, .arrow, .bench-fill, .ring-hit, .ring-legend .chev, .hscroll-fade { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-07-06-18:50:54 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<div class="col">
+  <header class="hero">
+    <p class="eyebrow">Absorb + build: COMPLETE 2026-07-06</p>
+    <h1>What Jay actually built, and where agentsHQ's "second brain" isn't one yet</h1>
+    <p class="dek">Full absorb of the RoboNuggets "Fable 5 Second Brain System" lesson (video + Skool post), verified against two independent fetches of the same transcript. Update: the build below was not put on hold. All 6 phases shipped in the same session, with real numbers at the bottom.</p>
+    <div class="meta">
+      <span>Source: youtu.be/VoKiKvgpk78 + skool.com/robonuggets</span>
+      <span>Posted 2026&#8209;07&#8209;06</span>
+      <span>Absorbed + built on Sonnet 5</span>
+    </div>
+  </header>
+
+  <section class="reveal-init">
+    <div class="section-head">
+      <span class="section-num">01</span>
+      <h2>The honest headline</h2>
+    </div>
+    <p class="lede">You were right that what we call a "second brain" isn't one. Jay's system does two things ours doesn't do at all: it draws a live map of the whole workspace, and it finds files with code before it ever asks a model to think.</p>
+    <div class="callout">
+      <span class="label">Direct check against your suspicion</span>
+      <p>The closest thing agentsHQ has to a "second brain" roadmap item is <code>atlas-second-brain-phase-a</code>, and it solves a different problem entirely (routing X bookmarks and saved links into a queue), not mapping or retrieving from the live workspace. It's also two months past its own target date. That's about as direct a confirmation of the gap as it gets.</p>
+    </div>
+  </section>
+
+  <section class="reveal-init">
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <h2>The visual: what Jay's map actually shows</h2>
+    </div>
+    <p>A live, generated graph of his entire workspace, centered on his root instructions file, in four rings. Click any node and it opens the real file on his machine.</p>
+
+    <div class="diagram-frame canvas-dark">
+      <span class="canvas-tag">workspace map, reconstructed</span>
+      <p class="diagram-hint">Click a ring, or its row below, to expand what agentsHQ has for that layer</p>
+      <div class="hscroll"><div class="hscroll-track"><div class="radial-wrap">
+        <svg width="520" height="440" viewBox="0 0 520 440" role="img" aria-label="Four concentric rings around a glowing center node: Applications, Routines, Memory, Skills. Each ring is clickable.">
+          <defs>
+            <circle id="dot" r="3.6"/>
+            <rect id="diamond" x="-3.8" y="-3.8" width="7.6" height="7.6" transform="rotate(45)"/>
+            <polygon id="hex" points="0,-4.4 3.8,-2.2 3.8,2.2 0,4.4 -3.8,2.2 -3.8,-2.2"/>
+            <filter id="nodeglow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="2.6" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="hubglow" x="-120%" y="-120%" width="340%" height="340%">
+              <feGaussianBlur stdDeviation="5" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <g transform="translate(260,220)">
+            <circle r="188" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+            <circle r="140" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+            <circle r="92" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+
+            <!-- faint connective threads, sample -->
+            <g stroke="rgba(120,180,255,0.28)" stroke-width="1" pointer-events="none">
+              <line x1="0" y1="-44" x2="0" y2="-92"/>
+              <line x1="38" y1="22" x2="80" y2="46"/>
+              <line x1="-40" y1="20" x2="-83" y2="42"/>
+              <line x1="0" y1="-92" x2="0" y2="-140"/>
+              <line x1="80" y1="46" x2="99" y2="99"/>
+            </g>
+
+            <!-- ring 4: skills (outer, orange diamonds) -->
+            <g class="ring-group" data-ring="skills" role="button" tabindex="0" aria-label="Skills ring. Click for detail.">
+              <circle class="ring-hit" r="188" style="--ring-color:#f97316"/>
+              <g fill="#f97316" filter="url(#nodeglow)">
+                <use href="#diamond" x="0" y="-188"/>
+                <use href="#diamond" x="132" y="-134"/>
+                <use href="#diamond" x="184" y="20"/>
+                <use href="#diamond" x="88" y="167"/>
+                <use href="#diamond" x="-100" y="159"/>
+                <use href="#diamond" x="-186" y="-30"/>
+              </g>
+            </g>
+            <!-- ring 3: memory (glowing cyan circles) -->
+            <g class="ring-group" data-ring="memory" role="button" tabindex="0" aria-label="Memory ring. Click for detail.">
+              <circle class="ring-hit" r="140" style="--ring-color:#22d3ee"/>
+              <g fill="#22d3ee" filter="url(#nodeglow)">
+                <use href="#dot" x="0" y="-140"/>
+                <use href="#dot" x="121" y="-71"/>
+                <use href="#dot" x="99" y="99"/>
+                <use href="#dot" x="-60" y="126"/>
+                <use href="#dot" x="-138" y="14"/>
+              </g>
+            </g>
+            <!-- ring 2: routines (gold hexagons) -->
+            <g class="ring-group" data-ring="routines" role="button" tabindex="0" aria-label="Routines ring. Click for detail.">
+              <circle class="ring-hit" r="92" style="--ring-color:#eab308"/>
+              <g fill="#eab308" filter="url(#nodeglow)">
+                <use href="#hex" x="0" y="-92"/>
+                <use href="#hex" x="80" y="46"/>
+                <use href="#hex" x="-83" y="42"/>
+                <use href="#hex" x="-14" y="91"/>
+              </g>
+            </g>
+            <!-- ring 1: applications (inner, dark-blue hexagons) -->
+            <g class="ring-group" data-ring="applications" role="button" tabindex="0" aria-label="Applications ring. Click for detail.">
+              <circle class="ring-hit" r="44" style="--ring-color:#3b5bdb"/>
+              <g fill="#3b5bdb" filter="url(#nodeglow)">
+                <use href="#hex" x="0" y="-44"/>
+                <use href="#hex" x="38" y="22"/>
+                <use href="#hex" x="-40" y="20"/>
+              </g>
+            </g>
+
+            <!-- glowing central hub: decorative only, must never swallow clicks meant for the Applications ring beneath it -->
+            <circle r="44" fill="#151a2b" stroke="#5fbcbc" stroke-width="1.6" filter="url(#hubglow)" pointer-events="none"/>
+            <text y="5" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="#eef1f8" font-weight="600" pointer-events="none">CLAUDE.md</text>
+          </g>
+        </svg>
+      </div></div>
+      <div class="hscroll-fade" aria-hidden="true"></div>
+      </div>
+      <p class="swipe-hint">Swipe to see more &rarr;</p>
+
+      <div class="ring-legend">
+        <details data-ring="applications">
+          <summary><span class="swatch" style="background:#3b5bdb;--sw-glow:#3b5bdb"></span><span class="label-txt">Applications</span><span class="chev">&#10148;</span></summary>
+          <p class="desc" style="padding-left:20px;margin-top:6px;">MCP, API, and CLI connections such as Calendar and Drive. Doubles as a risk surface map.</p>
+          <p class="more">Not deep-dived in this absorb. Jay's own description covers live MCP/API/CLI links; agentsHQ's own equivalent inventory (which connections exist, which are actually used) was not the target of this build. Flagged, not closed.</p>
+        </details>
+        <details data-ring="routines">
+          <summary><span class="swatch" style="background:#eab308;--sw-glow:#eab308"></span><span class="label-txt">Routines</span><span class="chev">&#10148;</span></summary>
+          <p class="desc" style="padding-left:20px;margin-top:6px;">Scheduled background jobs. Unused ones are candidates to retire.</p>
+          <p class="more">agentsHQ's real equivalent is the existing cron and scheduler stack: <code>weekly_synthesis_crew.py</code> (Sunday 20:00 MT), <code>memory_distillation_crew.py</code> (monthly), and the new <code>dream_cycle.py</code> nightly tick (09:45 UTC, see section 03). Not a visual map yet, but a real, running list.</p>
+        </details>
+        <details data-ring="memory">
+          <summary><span class="swatch" style="background:#22d3ee;--sw-glow:#22d3ee"></span><span class="label-txt">Memory</span><span class="chev">&#10148;</span></summary>
+          <p class="desc" style="padding-left:20px;margin-top:6px;">35,466 files, mapped with real relationships. Click a node, open the file.</p>
+          <p class="more">This is the ring where the actual build lives. <code>memory_edges</code> now carries 1,376 cross-links (up from 0), 1,550 file references, 338 SYS references. QMD's local corpus is embedded 1204/1204 and persists across sessions. Both numbers are measured against production, not a demo.</p>
+        </details>
+        <details data-ring="skills">
+          <summary><span class="swatch" style="background:#f97316;--sw-glow:#f97316"></span><span class="label-txt">Skills</span><span class="chev">&#10148;</span></summary>
+          <p class="desc" style="padding-left:20px;margin-top:6px;">Linked back to the routines and files each one touches.</p>
+          <p class="more">Reconstructed from Jay's description; he shows this as prose. agentsHQ's version is now real, walkable graph data via the Graphify codebase map (947 nodes touching this exact relationship), not a description a human has to read and remember. See section 05.</p>
+        </details>
+      </div>
+      <p class="diagram-caption">Reconstructed from Jay's on-camera description, not a screenshot of his actual tool</p>
+    </div>
+
+    <blockquote>
+      "No matter how good or fancy or flashy this visualization is&hellip; it only captures around 30% of the value of a second brain system."
+      <cite>Jay, RoboNuggets, on his own map</cite>
+    </blockquote>
+
+    <div class="callout done">
+      <span class="label">agentsHQ's equivalent: shipped, not reconstructed</span>
+      <p>Graphify absorb produced a REAL generated graph of this actual codebase: 1,031 files &rarr; 15,165 nodes / 30,614 edges / 945 communities, zero LLM tokens, live and clickable at <a href="https://boubacarbarry.com/review/20260706-agentshq-codebase-graph/">boubacarbarry.com/review/20260706-agentshq-codebase-graph/</a>. It surfaced a real surprise: the Notion/Forge content-integration layer is the actual structural backbone, not gate_agent/absorb_crew as assumed going in.</p>
+    </div>
+  </section>
+
+  <section class="reveal-init">
+    <div class="section-head">
+      <span class="section-num">03</span>
+      <h2>The other 70%: brain.js</h2>
+    </div>
+    <p>The part that actually changes how the system behaves: a script that scores and narrows down to the answer before the model is ever called. Every stage up to the last one costs zero tokens.</p>
+
+    <div class="diagram-frame canvas-dark">
+      <span class="canvas-tag">retrieval pipeline</span>
+      <p class="diagram-hint">Highlight cycles automatically to show the flow. Click any stage to see what it does.</p>
+      <div class="hscroll wide">
+        <div class="hscroll-track"><div class="pipeline">
+          <div class="stage" data-idx="0"><span class="n">01</span><div class="t">Strip query<br>to keywords</div></div>
+          <div class="arrow">&rarr;</div>
+          <div class="stage" data-idx="1"><span class="n">02</span><div class="t">Score candidates<br>unopened</div></div>
+          <div class="arrow">&rarr;</div>
+          <div class="stage" data-idx="2"><span class="n">03</span><div class="t">Open only the<br>top-scored file</div></div>
+          <div class="arrow">&rarr;</div>
+          <div class="stage" data-idx="3"><span class="n">04</span><div class="t">Find the section,<br>not the whole file</div></div>
+          <div class="arrow">&rarr;</div>
+          <div class="stage" data-idx="4"><span class="n">05</span><div class="t">Follow pointer<br>if section is one</div></div>
+          <div class="arrow">&rarr;</div>
+          <div class="stage llm" data-idx="5"><span class="n">06</span><div class="t">Hand to the<br>model to answer</div></div>
+        </div></div>
+        <div class="hscroll-fade" aria-hidden="true"></div>
+      </div>
+      <p class="swipe-hint">Swipe to see more &rarr;</p>
+      <div class="pipeline-legend">
+        <div class="item"><span class="pill-swatch" style="background:var(--surface-2); border:1px solid var(--line);"></span>Deterministic code, no LLM call</div>
+        <div class="item"><span class="pill-swatch" style="background:var(--wire-soft); border:1px solid var(--wire);"></span>Only step that touches a model</div>
+      </div>
+      <p id="stage-detail" hidden></p>
+    </div>
+
+    <div class="stat-moment reveal-init">
+      <span class="stat-num">49%</span>
+      <span class="stat-label">cheaper in tokens on our own hybrid retrieval, our own measured number, not his</span>
+    </div>
+
+    <p style="margin-top:8px;">He proved it, not just claimed it: two live Claude Code sessions on the same real question, one wired to the brain and one on default Grep/Glob, compared with <code>/context</code>:</p>
+
+    <div class="bench">
+      <div class="bench-row">
+        <span>Live demo</span>
+        <div class="bench-track"><div class="bench-fill brain" style="width:60%"></div></div>
+        <span class="bench-val">30k tok</span>
+      </div>
+      <div class="bench-row">
+        <span>&nbsp;</span>
+        <div class="bench-track"><div class="bench-fill default" style="width:100%"></div></div>
+        <span class="bench-val">50k tok</span>
+      </div>
+    </div>
+    <p style="font-size:13.5px; color:var(--muted); margin-top:-6px;">&#8776;40% fewer tokens, visibly faster on camera. A separate self&#8209;reported slide claims &minus;51.2% tokens, &minus;60.2% time, and 8 of 8 correct across a broader test: his own number, not independently reproduced, but directionally consistent.</p>
+
+    <div class="callout done">
+      <span class="label">agentsHQ's equivalent: our own measured number, not his</span>
+      <p>Built a real <code>memory_edges</code> kernel (regex-only, zero-LLM edge extraction) + QMD hybrid retrieval (tsvector + local semantic, fused via RRF) and ran our own A/B on real questions, same method (token count + latency via <code>/context</code>): 3 of 5 clean wins, ~49% cheaper in tokens vs. old grep, 36&ndash;96ms vs. grep's 300&ndash;700ms. 1 real documented miss (qmd's BM25 keyword gap on certain word co-occurrences), 1 retracted false-miss from a bad test setup. Honest result, not spun to look better than it is.</p>
+    </div>
+  </section>
+
+  <section class="reveal-init">
+    <div class="section-head">
+      <span class="section-num">04</span>
+      <h2>How he actually built it</h2>
+    </div>
+    <ul class="plain">
+      <li>Ran a <code>/last30days</code> skill (credited to Matt Van Horn, Lyft co-founder): live research across Reddit, X, YouTube, and Hacker News for current second-brain practice.</li>
+      <li>Fed Fable 5 three named, real, inspectable reference systems, not vague inspiration: actual repos to study.</li>
+      <li>Had Fable scan his real 35,466-file workspace and synthesize a system combining all of it.</li>
+      <li>Used a <code>/goal</code> self-check loop so Fable kept iterating on its own UI until it actually loaded fast, without lag.</li>
+    </ul>
+
+    <div class="refs" style="margin-top:20px;">
+      <div class="ref">
+        <div class="name">QMD: Query My Docs</div>
+        <div class="url">github.com/tobi/qmd &middot; Tobi L&uuml;tke, Shopify</div>
+        <div class="d">Local-first: BM25 full-text + vector semantic search + LLM re-ranking, local models, exposed as an MCP server.</div>
+      </div>
+      <div class="ref">
+        <div class="name">GBrain</div>
+        <div class="url">github.com/garrytan/gbrain &middot; Garry Tan, Y Combinator</div>
+        <div class="d">Memory as markdown in a git repo. Self-wiring knowledge graph: every write extracts entities and typed edges with zero LLM calls.</div>
+      </div>
+      <div class="ref">
+        <div class="name">Graphify</div>
+        <div class="url">github.com/safishamsi/graphify &middot; YC-backed (S26)</div>
+        <div class="d">Whole-project AST extraction (code, docs, PDFs, transcripts) into a queryable graph, outputting graph.json, an interactive visualization, and a written report.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal-init">
+    <div class="section-head">
+      <span class="section-num">05</span>
+      <h2>Jay's system vs. what agentsHQ has today</h2>
+    </div>
+    <div class="table-frame wide">
+      <table>
+        <thead>
+          <tr><th>Capability</th><th>Jay's system</th><th>agentsHQ: post-build (2026-07-06)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="cap">Live workspace map</td>
+            <td>Generated from an actual file scan, visual, clickable through to real files.</td>
+            <td><span class="chip good">closed</span><br>Graphify: 1,031 files &rarr; 15,165 nodes, live at <a href="https://boubacarbarry.com/review/20260706-agentshq-codebase-graph/">/review/20260706-agentshq-codebase-graph/</a>.
+              <details>
+                <summary></summary>
+                <p>Live subagent run, verified: 1,031 files scanned, zero LLM tokens spent on the graph itself. 30,614 edges, 945 Leiden communities. God-nodes surfaced were <code>NotionClient</code> (117), <code>ForgeDB</code> (105), <code>NotionStylist</code> (98): the real structural backbone, not the assumed gate_agent/absorb_crew.</p>
+              </details>
+            </td>
+          </tr>
+          <tr>
+            <td class="cap">Pre-LLM deterministic retrieval</td>
+            <td>brain.js: score, open one file, find section, follow pointer, then the model.</td>
+            <td><span class="chip good">closed</span><br><code>memory_edges</code> kernel (zero-LLM regex extraction, 1,376 cross-links) + QMD hybrid retrieval fused via RRF.
+              <details>
+                <summary></summary>
+                <p>Regex-only: wiki-links, SYS-NNN references, file-path citations, same_entity/same_pipeline edges. A cardinality guard was added live after an 83k-edge O(n^2) bug was caught mid-build. 8/8 new tests plus 5/5 existing memory_store tests pass.</p>
+              </details>
+            </td>
+          </tr>
+          <tr>
+            <td class="cap">Fast indexed search over arbitrary content</td>
+            <td>Built into the brain, persists across sessions.</td>
+            <td><span class="chip good">closed</span><br>QMD corpus embedded 1204/1204, persists across sessions: no longer re-indexed from scratch.
+              <details>
+                <summary></summary>
+                <p>The embed run had silently stalled at 43% earlier from a transient "LLM session expired" timeout. Fixing it and running it for real also surfaced 3 bugs: a Windows subprocess shim, a qmd output-format change, and a hyphen/underscore entity_ref mismatch.</p>
+              </details>
+            </td>
+          </tr>
+          <tr>
+            <td class="cap">Persistent, tiered, curated memory</td>
+            <td>Not demonstrated in this video: his is closer to one big graph.</td>
+            <td><span class="chip good">our edge</span><br><code>memory/*.md</code> with always-load tiers, still arguably more disciplined than what he showed.
+              <details>
+                <summary></summary>
+                <p>Tier flips (always-load vs. archived) are managed by a dedicated memory-curator pass once the index grows past its size cap, not a single flat graph that keeps growing forever.</p>
+              </details>
+            </td>
+          </tr>
+          <tr>
+            <td class="cap">Measured proof it's faster/cheaper</td>
+            <td>Live A/B test on camera, real token counts.</td>
+            <td><span class="chip good">closed</span><br>Ran the same test on our own system: 3/5 wins, ~49% cheaper tokens, 36&ndash;96ms vs. 300&ndash;700ms latency. See section 03.
+              <details>
+                <summary></summary>
+                <p>Latency was re-measured after a first SSH-tunnel pass was flagged as unrepresentative. The one real miss was qmd's BM25 keyword gap on certain word co-occurrences (documented, not dropped); one false-miss was retracted after finding the test itself was set up wrong.</p>
+              </details>
+            </td>
+          </tr>
+          <tr>
+            <td class="cap">Skill&#8594;routine&#8594;file relationship graph</td>
+            <td>Explicit, browsable, structural.</td>
+            <td><span class="chip good">closed</span><br>Graphify graph traverses this as real data now (947 nodes, god-node analysis), not prose a human has to read.
+              <details>
+                <summary></summary>
+                <p>The first real gap-analysis run on this data found 1,043 of 2,084 memory rows came back as orphans, mostly from a <code>seed_hard_rules</code> write path that bypassed the normal edge-extraction step. That bug was found and fixed as a direct follow-up of running this analysis for real, not left as a known gap.</p>
+              </details>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="reveal-init">
+    <div class="section-head">
+      <span class="section-num">06</span>
+      <h2>Worth adopting, flagged honestly</h2>
+    </div>
+    <p><strong>Already built:</strong> the brain.js pattern (score before opening, section before whole file, pointer-follow before giving up) and a live-generated visual map are both shipped now, not just flagged as gaps. QMD, GBrain, and Graphify were each read directly and adapted, not ported wholesale.</p>
+    <p><strong>Already covered before this build:</strong> tiered, curated persistent memory: agentsHQ's approach here was already more mature than what this video showed, and it stayed that way.</p>
+    <div class="callout done">
+      <span class="label">Resolved this session: no longer an open unknown</span>
+      <p>Whether the Postgres memory table's ranking is functionally like brain.js or just superficially similar: benchmarked against a real baseline (grep), same method Jay used (token count + latency via <code>/context</code>). Genuine wins on 3/5 real questions, one documented miss, one retracted false-miss. Not asserting more than the numbers show.</p>
+    </div>
+    <div class="callout">
+      <span class="label">Evaluated and correctly NOT built</span>
+      <p>pgvector consolidation (collapsing tsvector / Qdrant / QMD-local into one surface) was gated on this benchmark showing vector recall as the actual bottleneck. It didn't: the real miss was QMD's BM25 keyword layer, not semantic recall. The 2026-05-10 design spec's deferral holds. Not building it speculatively.</p>
+    </div>
+  </section>
+
+  <footer>
+    Build shipped same-session, all 6 phases, verified live on prod. First real "new since last run" cron test: 2026-07-07 09:45 UTC.
+  </footer>
+</div>
+<script>
+(function () {
+  "use strict";
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- Scroll reveal: add hidden class only from JS, never as a CSS default ---- */
+  if ('IntersectionObserver' in window) {
+    var revealTargets = document.querySelectorAll('section.reveal-init, .stat-moment.reveal-init');
+    var revealObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          revealObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    revealTargets.forEach(function (el) { revealObs.observe(el); });
+
+    var benchEls = document.querySelectorAll('.bench');
+    var benchObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          benchObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    benchEls.forEach(function (el) { benchObs.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal-init').forEach(function (el) { el.classList.add('revealed'); });
+    document.querySelectorAll('.bench').forEach(function (el) { el.classList.add('in-view'); });
+  }
+
+  /* ---- Pipeline: auto-cycling highlight (paused under reduced motion) + click for detail ---- */
+  var stages = Array.prototype.slice.call(document.querySelectorAll('.pipeline .stage'));
+  var arrows = Array.prototype.slice.call(document.querySelectorAll('.pipeline .arrow'));
+  var stageDetail = document.getElementById('stage-detail');
+  var stageCopy = [
+    "Strip the query down to bare keywords. No file opened yet, no tokens spent.",
+    "Every candidate file gets a relevance score from those keywords alone. Still zero tokens.",
+    "Only the single top-scored file is opened. Every other candidate stays closed.",
+    "Inside that one file, the matching section is located. The rest of the file is never read.",
+    "If that section is itself a pointer to another file or section, it gets followed automatically.",
+    "Only now does the model see anything: the narrowed section, not the raw workspace."
+  ];
+
+  function setActive(i) {
+    stages.forEach(function (s) { s.classList.remove('active'); });
+    arrows.forEach(function (a) { a.classList.remove('active'); });
+    if (stages[i]) stages[i].classList.add('active');
+    if (arrows[i]) arrows[i].classList.add('active');
+  }
+
+  var cycle = 0;
+  if (!reduceMotion && stages.length) {
+    setActive(0);
+    setInterval(function () {
+      cycle = (cycle + 1) % stages.length;
+      setActive(cycle);
+    }, 850);
+  }
+
+  stages.forEach(function (s, idx) {
+    function showDetail() {
+      if (!stageDetail) return;
+      stageDetail.textContent = stageCopy[idx] || '';
+      stageDetail.hidden = false;
+      if (reduceMotion) setActive(idx);
+    }
+    s.addEventListener('click', showDetail);
+    s.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showDetail(); }
+    });
+  });
+
+  /* ---- Radial diagram: click a ring, open + scroll to its legend row ---- */
+  document.querySelectorAll('.ring-group').forEach(function (g) {
+    function openRing() {
+      var ring = g.getAttribute('data-ring');
+      var det = document.querySelector('details[data-ring="' + ring + '"]');
+      if (!det) return;
+      det.open = true;
+      det.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+      det.classList.add('flash');
+      setTimeout(function () { det.classList.remove('flash'); }, 900);
+      g.classList.add('pulse');
+      setTimeout(function () { g.classList.remove('pulse'); }, 900);
+    }
+    g.addEventListener('click', openRing);
+    g.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRing(); }
+    });
+  });
+
+  /* ---- Horizontal scroll affordance: fade-edge hides once scrolled to the end (CSS gates it to mobile only) ---- */
+  document.querySelectorAll('.hscroll').forEach(function (wrap) {
+    var track = wrap.querySelector('.hscroll-track');
+    var fade = wrap.querySelector('.hscroll-fade');
+    if (!track || !fade) return;
+    function update() {
+      var hasOverflow = track.scrollWidth > track.clientWidth + 2;
+      var atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+      fade.classList.toggle('is-visible', hasOverflow && !atEnd);
+    }
+    track.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  });
+})();
+</script>
+</body>
+</html>
+
+
