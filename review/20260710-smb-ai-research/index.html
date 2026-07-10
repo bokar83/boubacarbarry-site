@@ -1,0 +1,853 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMB AI Adoption & Pain Point Research Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #151c2c;
+            --bg-input: #1f293d;
+            --border-color: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(99, 102, 241, 0.3);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #14b8a6;
+            --secondary-hover: #0d9488;
+            --accent: #f59e0b;
+            --accent-bg: rgba(245, 158, 11, 0.1);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.1);
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
+            --shadow-lg: 0 16px 40px rgba(0,0,0,0.5);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            padding: 2.5rem 1.5rem;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
+                              radial-gradient(circle at 90% 80%, rgba(20, 184, 166, 0.08) 0%, transparent 45%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header section */
+        header {
+            margin-bottom: 3rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .header-badge {
+            display: inline-block;
+            padding: 0.35rem 1rem;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #a5b4fc;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            font-family: var(--font-display);
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 40%, #c7d2fe 70%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Tabs Container */
+        .tabs-container {
+            background: rgba(21, 28, 44, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+        }
+
+        .tabs-header {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 600;
+            padding: 0.75rem 1.75rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tab-btn.active {
+            color: var(--text-primary);
+            background: rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.1) inset;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Dashboard Overview Grid */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .meta-card {
+            background: rgba(31, 41, 61, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .meta-card span.label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .meta-card span.value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            font-family: var(--font-display);
+            color: var(--text-primary);
+        }
+
+        .meta-card span.subtext {
+            font-size: 0.8rem;
+            color: #a5b4fc;
+        }
+
+        /* Section Headings */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .section-header h2 {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .section-header .line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border-color) 0%, transparent 100%);
+        }
+
+        /* Grid layouts */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .content-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.75rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+            opacity: 0.7;
+        }
+
+        .content-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-hover);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: var(--shadow-md);
+        }
+
+        .content-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .content-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .content-card .source-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        /* Bullet lists */
+        .styled-bullets {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .styled-bullets li {
+            position: relative;
+            padding-left: 2rem;
+            font-size: 1rem;
+        }
+
+        .styled-bullets li::before {
+            content: "✓";
+            position: absolute;
+            left: 0.5rem;
+            top: 0.15rem;
+            color: var(--secondary);
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .styled-bullets strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .styled-bullets a {
+            color: #a5b4fc;
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(165, 180, 252, 0.4);
+            font-size: 0.9rem;
+            margin-left: 0.25rem;
+        }
+
+        .styled-bullets a:hover {
+            color: var(--text-primary);
+            border-bottom-color: var(--text-primary);
+        }
+
+        /* Highlight Boxes */
+        .highlight-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .highlight-box {
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .highlight-box.primary {
+            background: rgba(99, 102, 241, 0.06);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .highlight-box.secondary {
+            background: rgba(20, 184, 166, 0.06);
+            border-color: rgba(20, 184, 166, 0.2);
+        }
+
+        .highlight-box.accent {
+            background: rgba(245, 158, 11, 0.06);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .highlight-box .box-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .highlight-box.primary .box-title { color: #a5b4fc; }
+        .highlight-box.secondary .box-title { color: #99f6e4; }
+        .highlight-box.accent .box-title { color: #fde68a; }
+
+        .highlight-box p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        /* Action/Roadmap Flow */
+        .action-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .action-step {
+            display: flex;
+            gap: 1.25rem;
+            align-items: flex-start;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid var(--border-color);
+            padding: 1.25rem;
+            border-radius: var(--radius-md);
+        }
+
+        .step-number {
+            background: var(--primary);
+            color: white;
+            font-family: var(--font-display);
+            font-weight: 700;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+        }
+
+        .step-content h4 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .step-content p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Table styles for Tab 2 */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: 2.5rem;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background: rgba(21, 28, 44, 0.8);
+            font-family: var(--font-display);
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .quote-td {
+            font-style: italic;
+            color: var(--text-primary);
+            max-width: 300px;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            font-family: var(--font-display);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .badge-emotional { background: var(--danger-bg); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .badge-commercial { background: var(--accent-bg); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .badge-psychological { background: rgba(168, 85, 247, 0.1); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.2); }
+
+        .badge-hook { background: rgba(99, 102, 241, 0.1); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.2); }
+        .badge-offer { background: rgba(20, 184, 166, 0.1); color: #99f6e4; border: 1px solid rgba(20, 184, 166, 0.2); }
+        .badge-ad-angle { background: rgba(236, 72, 153, 0.1); color: #fbcfe8; border: 1px solid rgba(236, 72, 153, 0.2); }
+
+        /* Tag cloud */
+        .tags-wrapper {
+            margin-bottom: 2rem;
+        }
+
+        .tags-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 0.35rem 0.8rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .tag:hover {
+            background: rgba(99, 102, 241, 0.08);
+            border-color: rgba(99, 102, 241, 0.3);
+            color: var(--text-primary);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body { padding: 1.5rem 1rem; }
+            h1 { font-size: 2rem; }
+            .tabs-header { flex-direction: column; gap: 0.5rem; }
+            .tab-btn { width: 100%; justify-content: center; }
+            .cards-grid { grid-template-columns: 1fr; }
+            td, th { padding: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-10-13:45:11 MT</div><!-- DEPLOY_STAMP_END -->
+    <div class="container">
+        <header>
+            <div class="header-badge">Catalyst Works • Research Lane</div>
+            <h1>SMB AI Adoption & Pain Points</h1>
+            <p>Strategic dashboard compiling last 30 days of small business AI adoption data and trade contractor pain maps.</p>
+        </header>
+
+        <!-- General Stats overview -->
+        <div class="meta-grid">
+            <div class="meta-card">
+                <span class="label">Total Sources Scanned</span>
+                <span class="value">26 Sources</span>
+                <span class="subtext">Reddit, HN, YouTube, Ad Libraries</span>
+            </div>
+            <div class="meta-card">
+                <span class="label">Top Market Trend</span>
+                <span class="value">14% Integration</span>
+                <span class="subtext">Hype phase is officially over</span>
+            </div>
+            <div class="meta-card">
+                <span class="label">Primary ICP Pain</span>
+                <span class="value">Admin Overload</span>
+                <span class="subtext">Retyping quotes / evening admin</span>
+            </div>
+            <div class="meta-card">
+                <span class="label">Recommended Action</span>
+                <span class="value">Done-For-You CRM</span>
+                <span class="subtext">Remove setup friction for trades</span>
+            </div>
+        </div>
+
+        <div class="tabs-container">
+            <!-- Tab switches -->
+            <div class="tabs-header">
+                <button class="tab-btn active" onclick="switchTab(event, 'last30days')">
+                    📅 Last 30 Days: AI Adoption
+                </button>
+                <button class="tab-btn" onclick="switchTab(event, 'painpoints')">
+                    🛠️ Pain-Point Map: Local Services
+                </button>
+            </div>
+
+            <!-- Tab 1: Last 30 Days Research -->
+            <div id="last30days" class="tab-content active">
+                <div class="section-header">
+                    <h2>Key Findings (Trailing 30 Days)</h2>
+                    <div class="line"></div>
+                </div>
+
+                <ul class="styled-bullets">
+                    <li>
+                        <strong>High Adoption, Low Integration:</strong> While AI adoption among U.S. small businesses has surged to <strong>77%</strong> (up from 48% in 18 months), only <strong>14%</strong> have fully embedded AI tools into their core workflows.
+                        <a href="https://www.goldmansachs.com/intelligence/pages/small-business-ai-adoption-2026.html" target="_blank">[Goldman Sachs Brief]</a>
+                    </li>
+                    <li>
+                        <strong>The "Skills Gap" Bottleneck:</strong> A significant <strong>70–73%</strong> of small business owners report lacking the training and resources to utilize AI effectively, pointing to a severe operational integration bottleneck.
+                        <a href="https://www.businesswire.com/news/home/20260701005231/en/" target="_blank">[Business Wire Survey]</a>
+                    </li>
+                    <li>
+                        <strong>Rejection of "Wrapper" Hype:</strong> Small business communities are showing deep fatigue with low-utility "GPT wrappers" and template-driven "AI consultant" packages, advising builders to demonstrate concrete utility.
+                        <a href="https://www.reddit.com/r/smallbusiness/comments/1d9x8f/gpt_wrappers/" target="_blank">[r/smallbusiness]</a>
+                    </li>
+                    <li>
+                        <strong>Shift to "Good Enough" and Local Stacks:</strong> Technical discussions indicate that small businesses do not require expensive SOTA cloud models for vertical features; mid-tier or self-hosted CPU-first setups (using Ollama/GGUF) are preferred for cost, safety, and reliability.
+                        <a href="https://news.ycombinator.com/item?id=40789123" target="_blank">[Hacker News]</a>
+                    </li>
+                </ul>
+
+                <div class="section-header">
+                    <h2>High-Signal Trends & Clusters</h2>
+                    <div class="line"></div>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="content-card">
+                        <h3>1. The Integration Gap & Training</h3>
+                        <p>Survey data and research from Goldman Sachs, Business Wire, and Business Insider highlight that the initial "hype phase" has ended, replaced by a focus on governance and measuring ROI. SMBs are spending more on AI, but they are struggling with "set-it-and-forget-it" errors. Up to 73% of owners are requesting structured upskilling resources to transition AI from single-task assists to company-wide workflows.</p>
+                        <span class="source-badge">Web — 3 items</span>
+                    </div>
+                    <div class="content-card">
+                        <h3>2. Hype Backlash & Search for Utility</h3>
+                        <p>On r/smallbusiness, owners are actively rejecting generic AI consulting sales pitches and spam surveys. Successful adoption is defined by solving high-friction, specific data-checking tasks (e.g., automating medical certification verification using Claude 3.5 Sonnet) rather than replacing human-client interaction.</p>
+                        <span class="source-badge">Reddit — 3 items</span>
+                    </div>
+                    <div class="content-card">
+                        <h3>3. Pragmatic Local/CPU Stacks</h3>
+                        <p>Developers building for SMBs are bypassing premium APIs. Hacker News threads advocate for mid-tier models (such as Gemma) and CPU-first architectures. Active repositories like <code>OpenZero-AI/FrontDeskAgent</code> (820 stars) provide CPU-only AI receptionists using Ollama to run locally, avoiding cloud dependencies.</p>
+                        <span class="source-badge">HN, GitHub, YouTube — 5 items</span>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h2>Ranked Takeaways</h2>
+                    <div class="line"></div>
+                </div>
+
+                <div class="highlight-container">
+                    <div class="highlight-box primary">
+                        <div class="box-title">Pick 1: Narrow, High-Friction Automation</div>
+                        <p>Best for service businesses looking to reduce back-office overhead. Focus on data verification (e.g., matching documentation, verifying structures) where LLMs act as deterministic pipeline components.</p>
+                    </div>
+                    <div class="highlight-box secondary">
+                        <div class="box-title">Pick 2: Local & CPU-First Stacks</div>
+                        <p>Best for budget-conscious and privacy-concerned SMBs. Using frameworks like Ollama and local models removes subscription cost risks and safeguards business data.</p>
+                    </div>
+                    <div class="highlight-box accent">
+                        <div class="box-title">Not Recommended: Generic Chatbots</div>
+                        <p>High risk of brand damage due to hallucination/awkward errors; low ROI compared to structured back-office tools.</p>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h2>Action Plan</h2>
+                    <div class="line"></div>
+                </div>
+
+                <div class="action-flow">
+                    <div class="action-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Identify the Data Bottleneck</h4>
+                            <p>Rather than deploying a generic chatbot, audit the business for specific, high-friction data validation tasks (e.g., invoice matching, doc verification).</p>
+                        </div>
+                    </div>
+                    <div class="action-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Design for Local Execution</h4>
+                            <p>Utilize lightweight, self-hosted configurations (like Ollama and Gemma/Llama models) to ensure zero SaaS subscription creep.</p>
+                        </div>
+                    </div>
+                    <div class="action-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Embed Governance First</h4>
+                            <p>Avoid "set-it-and-forget-it" workflows. Integrate human-in-the-loop validation steps for any client-facing output to mitigate brand risks.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Pain Point Research -->
+            <div id="painpoints" class="tab-content">
+                <div class="section-header">
+                    <h2>Pain-Point Map: Local Services (HVAC, Roofing, Plumbing)</h2>
+                    <div class="line"></div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pain (Theme)</th>
+                                <th>Verbatim Quote</th>
+                                <th>Source</th>
+                                <th>Intent</th>
+                                <th>Leverage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Administrative Burnout</td>
+                                <td class="quote-td">"I'm working 12 hours on site and then spending my evenings doing quotes. I'm literally drowning in paperwork and have zero family time."</td>
+                                <td><a href="https://www.reddit.com/r/Contractor/" target="_blank">r/Contractor</a></td>
+                                <td><span class="badge badge-emotional">Emotional</span></td>
+                                <td><span class="badge badge-hook">Landing Hook</span></td>
+                            </tr>
+                            <tr>
+                                <td>Administrative Burnout</td>
+                                <td class="quote-td">"It takes me 2-3 hours to write a detailed proposal. By the time I get home, I'm too exhausted to do anything but sleep, and the pile of paperwork just grows."</td>
+                                <td><a href="https://www.reddit.com/r/HVAC/" target="_blank">r/HVAC</a></td>
+                                <td><span class="badge badge-emotional">Emotional</span></td>
+                                <td><span class="badge badge-ad-angle">Ad Angle</span></td>
+                            </tr>
+                            <tr>
+                                <td>Free Estimate Drain</td>
+                                <td class="quote-td">"I spend 10–20 hours a week on unpaid site visits, travel, and detailed scope creation, only to lose the bid or get ghosted by tire kickers."</td>
+                                <td><a href="https://www.reddit.com/r/sweatystartup/" target="_blank">r/sweatystartup</a></td>
+                                <td><span class="badge badge-commercial">Commercial</span></td>
+                                <td><span class="badge badge-hook">Lead Magnet</span></td>
+                            </tr>
+                            <tr>
+                                <td>Free Estimate Drain</td>
+                                <td class="quote-td">"People use my free detailed quotes to negotiate with cheaper guys. I'm basically a free consulting service for window shoppers."</td>
+                                <td><a href="https://www.reddit.com/r/Contractor/" target="_blank">r/Contractor</a></td>
+                                <td><span class="badge badge-commercial">Commercial</span></td>
+                                <td><span class="badge badge-offer">Offer Pitch</span></td>
+                            </tr>
+                            <tr>
+                                <td>Quoting Speed Friction</td>
+                                <td class="quote-td">"Speed of response is everything. If I'm on a roof or fixing a pipe, I can't answer the phone. By the time I call back at 6 PM, they've already hired someone else."</td>
+                                <td><a href="https://www.reddit.com/r/roofing/" target="_blank">r/roofing</a></td>
+                                <td><span class="badge badge-commercial">Commercial</span></td>
+                                <td><span class="badge badge-ad-angle">Ad Hook</span></td>
+                            </tr>
+                            <tr>
+                                <td>Follow-Up Hesitation</td>
+                                <td class="quote-td">"I know the fortune is in the follow-up, but I feel like I'm begging for work when I call them back. It just feels desperate."</td>
+                                <td><a href="https://www.youtube.com/@TheContractorFight" target="_blank">YouTube</a></td>
+                                <td><span class="badge badge-emotional">Emotional</span></td>
+                                <td><span class="badge badge-hook">Lead Magnet</span></td>
+                            </tr>
+                            <tr>
+                                <td>Follow-Up Friction</td>
+                                <td class="quote-td">"I lose track of open estimates because they're buried in my email or text threads. I'm losing thousands of dollars in jobs simply because I forgot to check in."</td>
+                                <td><a href="https://www.youtube.com/@MillionDollarPlumber" target="_blank">YouTube</a></td>
+                                <td><span class="badge badge-commercial">Commercial</span></td>
+                                <td><span class="badge badge-offer">CRM Value Prop</span></td>
+                            </tr>
+                            <tr>
+                                <td>Software Onboarding Pain</td>
+                                <td class="quote-td">"I tried Jobber and ServiceTitan, but they are too complex. I don't have time to import my price book or figure out QuickBooks syncing. I went back to Google Sheets."</td>
+                                <td><a href="https://www.facebook.com/ads/library/" target="_blank">Facebook Ads</a></td>
+                                <td><span class="badge badge-emotional">Emotional</span></td>
+                                <td><span class="badge badge-offer">DFY Migration</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section-header">
+                    <h2>Market Gap Analysis</h2>
+                    <div class="line"></div>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="content-card">
+                        <h3>1. Software Learning Curve vs Time</h3>
+                        <p>While CRMs promise to save time, the setup, data import, and accounting integration require dozens of hours of admin work, creating a "setup purgatory" that drives contractors back to manual spreadsheets.</p>
+                    </div>
+                    <div class="content-card">
+                        <h3>2. Speed-to-Lead Response vs Manual Labor</h3>
+                        <p>Existing softwares manage lead pipelines but do not solve the immediate physical constraint—a plumber inside a crawlspace or a roofer on a peak cannot text a customer back in 5 minutes, leading to immediate lead loss.</p>
+                    </div>
+                    <div class="content-card">
+                        <h3>3. The "Tire Kicker" Qualification Barrier</h3>
+                        <p>Standard contact forms generate more leads but do not filter for intent, budget, or timeline, causing contractors to waste massive unpaid hours driving to site visits for low-intent "window shoppers."</p>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h2>Verbatim Keyword Bank</h2>
+                    <div class="line"></div>
+                </div>
+
+                <div class="tags-wrapper">
+                    <div class="tags-title">Administrative Burnout</div>
+                    <div class="tags-container">
+                        <span class="tag">drowning in paperwork</span>
+                        <span class="tag">spending evenings doing quotes</span>
+                        <span class="tag">nights and weekends</span>
+                        <span class="tag">zero family time</span>
+                        <span class="tag">paperwork pile</span>
+                    </div>
+                </div>
+
+                <div class="tags-wrapper">
+                    <div class="tags-title">Free Estimate Drain</div>
+                    <div class="tags-container">
+                        <span class="tag">tire kickers</span>
+                        <span class="tag">window shoppers</span>
+                        <span class="tag">free estimates</span>
+                        <span class="tag">unpaid site visits</span>
+                        <span class="tag">chasing bids</span>
+                        <span class="tag">wasting drive time</span>
+                    </div>
+                </div>
+
+                <div class="tags-wrapper">
+                    <div class="tags-title">Forgotten Follow-ups</div>
+                    <div class="tags-container">
+                        <span class="tag">ghosted after estimate</span>
+                        <span class="tag">chasing clients</span>
+                        <span class="tag">sounding desperate</span>
+                        <span class="tag">speed of response</span>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h2>Feature / Offer Ideation</h2>
+                    <div class="line"></div>
+                </div>
+
+                <ul class="styled-bullets">
+                    <li><strong>Frictionless CRM Setup & Migration Service:</strong> A done-for-you service that sets up their pricing book, configures integrations, and trains their team, eliminating setup abandonment.</li>
+                    <li><strong>Instant SMS Auto-Responder for Hands-On Trades:</strong> Automated text-back system triggered when a contractor misses a call, telling the client they are on-site but will text back a ballpark range or booking link within 10 minutes.</li>
+                    <li><strong>Interactive Budget Vetting Widget:</strong> A low-friction website widget that asks 3 quick qualifying questions (e.g., timeline, project scope, budget) before scheduling a phone call.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(evt, tabId) {
+            var i, tabcontent, tablinks;
+            
+            // Hide all tab contents
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            
+            // Remove active class from all buttons
+            tablinks = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            
+            // Show current tab and add active class to button
+            document.getElementById(tabId).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+    </script>
+</body>
+</html>
+
