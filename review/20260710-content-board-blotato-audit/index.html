@@ -208,7 +208,7 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-10-09:16:06 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-07-10-09:21:23 MT</div><!-- DEPLOY_STAMP_END -->
 <div class="navbar">
   <div class="brand">Content Board Audit</div>
   <button class="hamburger" onclick="document.getElementById('navlinks').classList.toggle('open')">&#9776;</button>
@@ -231,15 +231,18 @@
     <p style="color:var(--text-dim); margin:0;">
       Blotato only ever picks up a Content Board row when Status is exactly <code>Queued</code>, the score
       passes the CTQ bar, and the Platform maps to an account ID. 50 finished or approved posts across the
-      last seven weeks never cleared all three gates and sat silently. The two July 30 workshop posts you
-      flagged are fixed and back in the queue. The rest are listed below with the exact reason each one is stuck.
+      last seven weeks never cleared all three gates and sat silently. The LinkedIn workshop post is fixed and
+      queued for July 14. The X workshop post's Status bug is fixed too, and flipping it proved the pipeline
+      works, but it then hit a separate, real voice-integrity gate and needs one more look before it can go out
+      (details below). The rest of the missed posts are listed with the exact reason each one is stuck.
     </p>
     <div class="kpis">
       <div class="kpi"><div class="num">50</div><div class="lbl">posts silently never fired (May 26 - Jul 8)</div></div>
       <div class="kpi warn"><div class="num">18</div><div class="lbl">never left "Ready/Draft/Idea" - Queued was never set</div></div>
       <div class="kpi warn"><div class="num">14</div><div class="lbl">stuck in Queued behind a scoring bug</div></div>
       <div class="kpi warn"><div class="num">18</div><div class="lbl">correctly held below the CTQ bar, but never alerted for a rewrite</div></div>
-      <div class="kpi good"><div class="num">2</div><div class="lbl">workshop posts fixed today</div></div>
+      <div class="kpi good"><div class="num">1</div><div class="lbl">workshop post confirmed queued (LinkedIn, fires Jul 14)</div></div>
+      <div class="kpi warn"><div class="num">1</div><div class="lbl">workshop post (X) needs a copy tweak or gate fix, see below</div></div>
     </div>
   </div>
 
@@ -259,17 +262,24 @@
         </div>
         <div class="card">
           <h4>X - July 30 workshop promo</h4>
-          <div class="row"><span>Status</span><span><span class="tag fixed">Queued</span> (was Ready)</span></div>
-          <div class="row"><span>CTQ score</span><span>90 / 100 (bar: 88)</span></div>
-          <div class="row"><span>Account mapping</span><span>X -&gt; account 17065 (present in .env)</span></div>
-          <div class="row"><span>Scheduled</span><span>2026-07-10, 09:00 MT</span></div>
-          <div class="row"><span>Will fire</span><span>today, 11:00 MT slot (the 07:00 slot was already claimed by a different X post that published this morning)</span></div>
+          <div class="row"><span>Status</span><span><span class="tag bug">PublishFailed</span> (fixed Ready -&gt; Queued, then the pipeline actually ran)</span></div>
+          <div class="row"><span>CTQ score</span><span>90 / 100 (bar: 88) - passed</span></div>
+          <div class="row"><span>Account mapping</span><span>X -&gt; account 17065 - passed</span></div>
+          <div class="row"><span>What happened</span><span>Fired at the 09:13 MT tick, then failed a separate voice-integrity check (lowercase_gate) before it reached Blotato</span></div>
         </div>
       </div>
-      <p class="footnote">No time bump was needed on the X row. The publisher does not read the specific time on
-      the Scheduled Date field, it assigns each platform's next open daily slot (07:00 / 11:00 / 14:00 MT for X).
-      Slot 1 (07:00) was already used today, so this row automatically claims slot 2 (11:00) the moment it is Queued.
-      I read both rows back after the edit and confirmed Status, Platform, and Total Score all match the values above.</p>
+      <p class="footnote">Update made mid-audit: flipping Status to Queued was correct and proved the pipeline works
+      end to end - it was picked up on the very next tick. It then hit a real, working gate that has nothing to do
+      with the Status bug: a sentence-case check (locked since May 20, Boubacar does not publish all-lowercase
+      copy) scored this draft's sentence-case ratio at 0.60 against an 0.80 minimum, and flipped it to
+      PublishFailed with a Telegram alert already sent (standard failure path, so this was not silent). Root
+      cause of the false-ish positive: the draft's link (<code>catalystworks.consulting/w/x</code>) has no
+      <code>https://</code> scheme, so the gate's URL-stripper does not recognize it as a URL and counts it as
+      a lowercase-starting sentence; the "$47, small group." line also reads as a lowercase-starting fragment
+      once the currency symbol and digits are skipped. Both sentences are legitimate copy, not a lowercase
+      violation in spirit, but the heuristic reads it as one. I did not rewrite the copy or touch the gate
+      code - that is a call for Boubacar (either tweak the line, or loosen the gate's URL/fragment handling).
+      The LinkedIn row's Status and fields were read back and confirmed unchanged at Queued.</p>
     </div>
   </details>
 
