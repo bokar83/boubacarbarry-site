@@ -1,0 +1,459 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Board -> Blotato Audit (2026-07-10)</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #12151c;
+    --panel-2: #171b24;
+    --border: #262b36;
+    --text: #e8eaf0;
+    --text-dim: #9aa3b5;
+    --accent: #5ea1ff;
+    --good: #3fd08a;
+    --warn: #f5b94d;
+    --bad: #ff6b6b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f5f6f9;
+      --panel: #ffffff;
+      --panel-2: #f0f1f5;
+      --border: #dde1e9;
+      --text: #14161c;
+      --text-dim: #565d6d;
+      --accent: #1a63d1;
+      --good: #147a4c;
+      --warn: #94640a;
+      --bad: #b3261e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0d12; --panel: #12151c; --panel-2: #171b24; --border: #262b36;
+    --text: #e8eaf0; --text-dim: #9aa3b5; --accent: #5ea1ff; --good: #3fd08a; --warn: #f5b94d; --bad: #ff6b6b;
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f6f9; --panel: #ffffff; --panel-2: #f0f1f5; --border: #dde1e9;
+    --text: #14161c; --text-dim: #565d6d; --accent: #1a63d1; --good: #147a4c; --warn: #94640a; --bad: #b3261e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    margin: 0;
+    line-height: 1.5;
+    padding-bottom: 60px;
+  }
+  a { color: var(--accent); }
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .navbar .brand {
+    font-weight: 700;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .navlinks {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    overflow-x: auto;
+  }
+  .navlinks a {
+    font-size: 13px;
+    text-decoration: none;
+    color: var(--text-dim);
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .navlinks a:hover { background: var(--panel-2); color: var(--text); }
+  .hamburger {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 16px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  @media (max-width: 760px) {
+    .navlinks { display: none; flex-direction: column; width: 100%; }
+    .navlinks.open { display: flex; }
+    .navbar { flex-wrap: wrap; }
+    .hamburger { display: inline-block; }
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px; }
+  .stamp {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 18px;
+  }
+  .hero {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 22px;
+  }
+  .hero h1 { margin: 0 0 10px; font-size: 22px; }
+  .verdict {
+    display: inline-block;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  .verdict.confirmed { background: rgba(255,107,107,0.15); color: var(--bad); border: 1px solid var(--bad); }
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .kpi {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .kpi .num { font-size: 24px; font-weight: 800; color: var(--bad); }
+  .kpi .lbl { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .kpi.good .num { color: var(--good); }
+  .kpi.warn .num { color: var(--warn); }
+
+  details.section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  details.section > summary {
+    cursor: pointer;
+    padding: 14px 18px;
+    font-weight: 700;
+    font-size: 15px;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  details.section > summary::-webkit-details-marker { display: none; }
+  details.section > summary::after {
+    content: "+";
+    font-size: 18px;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  details.section[open] > summary::after { content: "-"; }
+  details.section > summary:hover { background: var(--panel-2); }
+  .section-body { padding: 0 18px 18px; }
+  .section-body p { color: var(--text-dim); }
+  .section-body h3 { font-size: 14px; margin: 16px 0 8px; }
+  code {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 12.5px;
+  }
+  pre {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    overflow-x: auto;
+    font-size: 12.5px;
+  }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 640px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--panel-2); position: sticky; top: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text-dim); }
+  tr:last-child td { border-bottom: none; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .tag.fixed { background: rgba(63,208,138,0.15); color: var(--good); border: 1px solid var(--good); }
+  .tag.bug { background: rgba(255,107,107,0.15); color: var(--bad); border: 1px solid var(--bad); }
+  .tag.hold { background: rgba(245,185,77,0.15); color: var(--warn); border: 1px solid var(--warn); }
+  .footnote { font-size: 12.5px; color: var(--text-dim); margin-top: 8px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .card h4 { margin: 0 0 8px; font-size: 14px; }
+  .card .row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+  .card .row:last-child { border-bottom: none; }
+  .card .row span:first-child { color: var(--text-dim); }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-10-09:16:06 MT</div><!-- DEPLOY_STAMP_END -->
+<div class="navbar">
+  <div class="brand">Content Board Audit</div>
+  <button class="hamburger" onclick="document.getElementById('navlinks').classList.toggle('open')">&#9776;</button>
+  <div class="navlinks" id="navlinks">
+    <a href="#tldr">TL;DR</a>
+    <a href="#fix">The Fix</a>
+    <a href="#missed">Missed Content</a>
+    <a href="#rootcause">Root Cause</a>
+    <a href="#structural">Structural Fix</a>
+    <a href="#evidence">Code Evidence</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="stamp">Published 2026-07-10 &middot; Content Board -&gt; Blotato pickup audit</div>
+
+  <div class="hero" id="tldr">
+    <div class="verdict confirmed">HYPOTHESIS CONFIRMED</div>
+    <h1>Yes, this is why you have not seen content going out</h1>
+    <p style="color:var(--text-dim); margin:0;">
+      Blotato only ever picks up a Content Board row when Status is exactly <code>Queued</code>, the score
+      passes the CTQ bar, and the Platform maps to an account ID. 50 finished or approved posts across the
+      last seven weeks never cleared all three gates and sat silently. The two July 30 workshop posts you
+      flagged are fixed and back in the queue. The rest are listed below with the exact reason each one is stuck.
+    </p>
+    <div class="kpis">
+      <div class="kpi"><div class="num">50</div><div class="lbl">posts silently never fired (May 26 - Jul 8)</div></div>
+      <div class="kpi warn"><div class="num">18</div><div class="lbl">never left "Ready/Draft/Idea" - Queued was never set</div></div>
+      <div class="kpi warn"><div class="num">14</div><div class="lbl">stuck in Queued behind a scoring bug</div></div>
+      <div class="kpi warn"><div class="num">18</div><div class="lbl">correctly held below the CTQ bar, but never alerted for a rewrite</div></div>
+      <div class="kpi good"><div class="num">2</div><div class="lbl">workshop posts fixed today</div></div>
+    </div>
+  </div>
+
+  <details class="section" open id="fix">
+    <summary>What I fixed on the 2 workshop rows</summary>
+    <div class="section-body">
+      <p>Both rows only needed one change: Status flipped from <code>Ready</code> to <code>Queued</code>.
+      Everything else was already in place.</p>
+      <div class="grid2">
+        <div class="card">
+          <h4>LinkedIn - July 30 workshop promo</h4>
+          <div class="row"><span>Status</span><span><span class="tag fixed">Queued</span> (was Ready)</span></div>
+          <div class="row"><span>CTQ score</span><span>91 / 100 (bar: 88)</span></div>
+          <div class="row"><span>Account mapping</span><span>LinkedIn -&gt; account 19365 (present in .env)</span></div>
+          <div class="row"><span>Scheduled</span><span>2026-07-14, 08:00 MT</span></div>
+          <div class="row"><span>Will fire</span><span>2026-07-14 at the 07:00 MT LinkedIn slot</span></div>
+        </div>
+        <div class="card">
+          <h4>X - July 30 workshop promo</h4>
+          <div class="row"><span>Status</span><span><span class="tag fixed">Queued</span> (was Ready)</span></div>
+          <div class="row"><span>CTQ score</span><span>90 / 100 (bar: 88)</span></div>
+          <div class="row"><span>Account mapping</span><span>X -&gt; account 17065 (present in .env)</span></div>
+          <div class="row"><span>Scheduled</span><span>2026-07-10, 09:00 MT</span></div>
+          <div class="row"><span>Will fire</span><span>today, 11:00 MT slot (the 07:00 slot was already claimed by a different X post that published this morning)</span></div>
+        </div>
+      </div>
+      <p class="footnote">No time bump was needed on the X row. The publisher does not read the specific time on
+      the Scheduled Date field, it assigns each platform's next open daily slot (07:00 / 11:00 / 14:00 MT for X).
+      Slot 1 (07:00) was already used today, so this row automatically claims slot 2 (11:00) the moment it is Queued.
+      I read both rows back after the edit and confirmed Status, Platform, and Total Score all match the values above.</p>
+    </div>
+  </details>
+
+  <details class="section" id="missed">
+    <summary>The missed content - 50 posts, May 26 to July 8</summary>
+    <div class="section-body">
+      <p>Pulled every Content Board row with a Scheduled Date set (359 rows total), reconciled against the live
+      auto_publisher tick log, and split the ones that never reached a published state into four buckets by
+      exact cause. Rows that are intentionally manual (Facebook page cards, the newsletter, HyperFrames posted
+      through Blotato's own native scheduler) are excluded from the 50 and footnoted separately below each table.</p>
+
+      <h3><span class="tag bug">Bucket 1</span> Status never flipped to Queued (18 posts)</h3>
+      <p>Finished or approved LinkedIn/X copy - several with a CTQ pass already logged in the Source Note, two
+      explicitly marked "Boubacar-approved, verbatim" on July 8 - sitting at Ready, Draft, Idea, or In Review
+      with a scheduled date already in the past. This is the same failure the workshop rows had.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Date</th><th>Status</th><th>Platform</th><th>Title</th><th>Why it's stuck</th></tr></thead>
+        <tbody>
+          <tr><td>2026-05-26</td><td>Ready</td><td>LinkedIn</td><td>Manage agents like people, you stay a manager forever (LI single)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-05-26</td><td>Idea</td><td>X</td><td>X THREAD: lead-not-manage your agents (6 posts)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-05-26</td><td>Draft</td><td>LinkedIn</td><td>Leading agents vs managing: the operator&#x27;s case (LI long-form)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-05-27</td><td>Ready</td><td>LinkedIn</td><td>Everyone is copying the product. Nobody is copying the org.</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-05-27</td><td>Idea</td><td>X</td><td>X THREAD: operator research mode (4 posts)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-03</td><td>Ready</td><td>X</td><td>Manage vs lead your agents (X single)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-05</td><td>Ready</td><td>LinkedIn</td><td>[HyperFrame Carousel IDEA] The Conakry leapfrog (5 slides)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-05</td><td>Ready</td><td>LinkedIn</td><td>[HyperFrame Carousel IDEA] Adversarial review story (5 slides)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-05</td><td>Ready</td><td>LinkedIn</td><td>[HyperFrame Carousel IDEA] AI as anesthetic (3 patterns)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-08</td><td>Ready</td><td>LinkedIn</td><td>[LI] Why I do not soften my AI take</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-08</td><td>Idea</td><td>X</td><td>[X] AI as the most polite scapegoat</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-08</td><td>Ready</td><td>LinkedIn</td><td>[LI] The silent veto runs your calendar</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-08</td><td>Ready</td><td>LinkedIn</td><td>[LI] A guess wearing a suit (unowned decision)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-09</td><td>Ready</td><td>LinkedIn</td><td>[HyperFrame Carousel IDEA] Three places work disappears (LinkedIn)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-16</td><td>Draft</td><td>X</td><td>Venue unlock: building in public works (X)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-06-18</td><td>Ready</td><td>LinkedIn</td><td>IC Workshop long stand-alone (LinkedIn) - scheduled 2026-06-18</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-07-08</td><td>Ready</td><td>X</td><td>Jul 8 X: I built geolisted.co and nobody saw it (story)</td><td>never flipped to Queued</td></tr>
+<tr><td>2026-07-08</td><td>Ready</td><td>LinkedIn</td><td>Jul 8 LI: Where are you actually stuck (value/story)</td><td>never flipped to Queued</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3><span class="tag bug">Bucket 2</span> Queued, but the score gate can't read the score (13 posts)</h3>
+      <p>These rows correctly reached Status=Queued and had a human voice/CTQ pass recorded in the Scores field,
+      but the pass used a pipe-delimited format ("Voice 92 | CTQ 88 |") or was left blank. The gate's parser
+      only recognizes an "X/100" or "X/10" pattern, so it reads these as "no score" and blocks silently every
+      5 minutes - confirmed live in tonight's tick log, still firing the same block warning right now.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Date</th><th>Status</th><th>Platform</th><th>Title</th><th>Why it's stuck</th></tr></thead>
+        <tbody>
+          <tr><td>2026-06-23</td><td>Queued</td><td>X</td><td>IC-LAUNCH | 2026-06-23 | X</td><td>score text unparseable: Voice 91 | CTQ 87 | Hormozi 86 | Composi</td></tr>
+<tr><td>2026-06-23</td><td>Queued</td><td>LinkedIn</td><td>IC-LAUNCH | 2026-06-23 | LinkedIn</td><td>score text unparseable: Voice 92 | CTQ 88 | Hormozi 91 | Composi</td></tr>
+<tr><td>2026-06-23</td><td>Queued</td><td>X</td><td>FG-02 P2: 880 runs, zero output (X, no CTA)</td><td>score text unparseable: voice 94 / ctq 93 / hook 94 / overall 94</td></tr>
+<tr><td>2026-06-23</td><td>Queued</td><td>LinkedIn</td><td>FG-02 P2: 880 runs, zero output (LinkedIn, no CTA)</td><td>score text unparseable: voice 95 / ctq 94 / hook 95 / overall 94</td></tr>
+<tr><td>2026-06-24</td><td>Queued</td><td>X</td><td>IC-LAUNCH | 2026-06-24 | X</td><td>score text unparseable: </td></tr>
+<tr><td>2026-06-24</td><td>Queued</td><td>LinkedIn</td><td>IC-LAUNCH | 2026-06-24 | LinkedIn</td><td>score text unparseable: Voice 91 | CTQ 87 | Hormozi 93 | Composi</td></tr>
+<tr><td>2026-06-24</td><td>Queued</td><td>X</td><td>FG-02 P3: the field guide itself (X, CTA /k/finder)</td><td>score text unparseable: voice 92 / ctq 92 / hook 92 / VE 8.3 / o</td></tr>
+<tr><td>2026-06-24</td><td>Queued</td><td>LinkedIn</td><td>FG-02 P3: the field guide itself (LinkedIn, CTA finder)</td><td>score text unparseable: voice 93 / ctq 92 / hook 91 / VE 8.5 / o</td></tr>
+<tr><td>2026-06-25</td><td>Queued</td><td>X</td><td>IC-LAUNCH | 2026-06-25 | X</td><td>score text unparseable: </td></tr>
+<tr><td>2026-06-25</td><td>Queued</td><td>LinkedIn</td><td>IC-LAUNCH | 2026-06-25 | LinkedIn</td><td>score text unparseable: Voice 91 | CTQ 89 | Hormozi 93 | Composi</td></tr>
+<tr><td>2026-06-26</td><td>Queued</td><td>LinkedIn</td><td>FG-02 P4: before/after picking (LinkedIn, CTA finder)</td><td>score text unparseable: voice 93 / ctq 93 / hook 91 / VE 8.5 / o</td></tr>
+<tr><td>2026-06-29</td><td>Queued</td><td>X</td><td>Fintech wedge 2: silence is filtering (X)</td><td>score text unparseable: voice 93 / ctq 92 / hook 93 / overall 93</td></tr>
+<tr><td>2026-06-30</td><td>Queued</td><td>LinkedIn</td><td>Fintech authority: proof looks like teaching (LinkedIn)</td><td>score text unparseable: voice 93 / ctq 93 / hook 91 / overall 93</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3><span class="tag bug">Bucket 3</span> Queued, score is fine, but Platform is blank (1 post)</h3>
+      <p>This row cleared the score bar (90.5/100) but its Platform field was never populated on the board, so
+      the publisher has nothing to loop over and skips it with zero log line - the quietest failure mode found.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Date</th><th>Status</th><th>Platform</th><th>Title</th><th>Why it's stuck</th></tr></thead>
+        <tbody>
+          <tr><td>2026-06-30</td><td>Queued</td><td></td><td>HAW | 3-Signal Tracker Carousel (LinkedIn) - Draft 2026-06-17</td><td>Platform property blank on the board row</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3><span class="tag hold">Bucket 4</span> Correctly held below the score bar, but never surfaced (18 posts)</h3>
+      <p>All 18 are the "Stanley" persona X thread, tagged Evergreen (90-point bar) and scored 87/100 - a real,
+      working gate decision, not a bug. The problem is what happens next: nothing. A failed publish gets a
+      Telegram alert; a CTQ-blocked post just logs a warning and sits there. These have been silently blocked
+      on every 5-minute tick for up to two and a half weeks with no signal that they needed a rewrite.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Date</th><th>Status</th><th>Platform</th><th>Title</th><th>Why it's stuck</th></tr></thead>
+        <tbody>
+          <tr><td>2026-06-23</td><td>Queued</td><td>X</td><td>Stanley P19: I&#x27;m building Catalyst Works as a one-person consulting firm </td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-24</td><td>Queued</td><td>X</td><td>Stanley P22: People romanticize the solo founder life. The reality is you</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-24</td><td>Queued</td><td>X</td><td>Stanley P21: I run a team of AI agents, and the thing that finally made i</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-25</td><td>Queued</td><td>X</td><td>Stanley P24: A writing coach I pay tore into my email course this week. S</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-25</td><td>Queued</td><td>X</td><td>Stanley P23: I spend more time organizing than executing. That sounds bac</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-26</td><td>Queued</td><td>X</td><td>Stanley P28: English is not my first language. For years that meant prepa</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-26</td><td>Queued</td><td>X</td><td>Stanley P27: Your network doesn&#x27;t grow when you&#x27;re comfortable. It grows </td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-26</td><td>Queued</td><td>X</td><td>Stanley P5: AI governance gets filed under compliance. Wrong folder. It </td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-27</td><td>Queued</td><td>X</td><td>Stanley P31: I think about legacy differently than most people in tech. L</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-27</td><td>Queued</td><td>X</td><td>Stanley P30: Things I learned building an AI consulting practice from scr</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-28</td><td>Queued</td><td>X</td><td>Stanley P33: At the big company, one division tried to run like a startup</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-28</td><td>Queued</td><td>X</td><td>Stanley P25: Every AI tool vendor will tell you their product is &quot;enterpr</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-28</td><td>Queued</td><td>X</td><td>Stanley P32: The person you are when nobody is watching is the person you</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-29</td><td>Queued</td><td>X</td><td>Stanley P35: I sent the same event inquiry to a list of venues this week.</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-06-29</td><td>Queued</td><td>X</td><td>Stanley P34: I don&#x27;t build AI tools. I build decision frameworks that hap</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-07-01</td><td>Queued</td><td>X</td><td>Stanley P20: Most &quot;build in public&quot; content is highlight reels. I want to</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-07-01</td><td>Queued</td><td>X</td><td>Stanley P11: The best advice I ever ignored was &quot;pick a niche.&quot; I didn&#x27;t </td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+<tr><td>2026-07-02</td><td>Queued</td><td>X</td><td>Stanley P29: Most weeks on my calendar, infrastructure beats revenue. Tha</td><td>score 87.0/100 vs 90 bar, no rewrite alert sent</td></tr>
+        </tbody>
+      </table></div>
+
+      <p class="footnote">
+        Excluded from the 50 as working-as-intended: 13 rows explicitly marked MANUAL in the Source Note
+        (CW Facebook Page cards, the Beehiiv newsletter - Facebook and Beehiiv have no Blotato account mapping
+        at all, by design). 2 more Beehiiv rows stuck in Queued for the same reason. 4 rows (TikTok/Instagram/
+        YouTube reels, May 19-22) were sent through Blotato's own native scheduledTime API instead of this
+        Status=Queued path - worth a manual spot-check on Blotato's dashboard to confirm those actually posted,
+        since the board was never written back either way. 4 more are "[PLACEHOLDER]" drafts from a content-week
+        planning session, never finished copy, not a miss.
+      </p>
+    </div>
+  </details>
+
+  <details class="section" id="rootcause">
+    <summary>Root cause</summary>
+    <div class="section-body">
+      <p>Two separate failures are stacked on top of each other, and both point at the same gap: every block
+      point in this pipeline except one is silent.</p>
+      <ul>
+        <li><strong>No forcing function moves a row from "written and scored" to "Queued."</strong> Approving a
+        post and scheduling it are two different actions on the board, and only a human or an agent remembering
+        to flip the Status field connects them. On July 9 this exact mistake was made and corrected once for the
+        workshop rows; this audit shows it is not a one-off, it is the default failure mode - 18 more posts hit
+        it going back to May 26.</li>
+        <li><strong>The score gate has no alerting on the block path.</strong> auto_publisher's CTQ gate is doing
+        its job (block underscored content, block unparseable scores), but it only writes a log line. The
+        publish-failure path writes to the same log AND pings Telegram. The block path never got the same
+        treatment, so a genuinely blocked post looks identical to a silently-stuck one from where you sit - you
+        never hear about either.</li>
+      </ul>
+      <p>Account-ID mapping (the fourth hypothesis in scope) is not the cause: LinkedIn and X both have valid
+      Blotato account IDs configured, confirmed in the live .env and in the fact that 150+ rows have
+      successfully published this way already.</p>
+    </div>
+  </details>
+
+  <details class="section" id="structural">
+    <summary>The one structural fix</summary>
+    <div class="section-body">
+      <p><strong>Recommendation: give the block path the same Telegram alert the failure path already has.</strong>
+      Concretely, extend the existing auto_publisher heartbeat (or add one daily tick) to message you once a day
+      with two lists, not zero:</p>
+      <ul>
+        <li>Any row with a Scheduled Date in the past and Status still Ready / Draft / In Review / Idea - the
+        "someone forgot to flip it to Queued" list.</li>
+        <li>Any Queued row that has failed the CTQ or Platform check for more than 24 hours - the "genuinely
+        stuck, needs a human decision" list.</li>
+      </ul>
+      <p>That turns a log line nobody reads into a message you actually see, the same way a failed publish
+      already does. As a smaller companion fix: the score-text parser should also accept the pipe-delimited
+      "Voice NN | CTQ NN" format that a chunk of the battery output actually uses today, so bucket 2's 13 posts
+      stop being invisible to the gate. Both are small, contained changes - no redesign of the publish pipeline.</p>
+    </div>
+  </details>
+
+  <details class="section" id="evidence">
+    <summary>Verified code conditions (for the record)</summary>
+    <div class="section-body">
+      <p>Read directly from <code>orchestrator/auto_publisher.py</code> on the server. A row only auto-fires
+      when every one of these is true:</p>
+      <pre>1. Status == "Queued"                       (_fetch_due_queued, exact string match)
+2. Scheduled Date &lt;= today                   (date part only, time-of-day is ignored)
+3. Platform resolves to a Blotato account id (_account_id_for_platform; LinkedIn, X,
+                                               Facebook, Instagram, TikTok, YouTube,
+                                               Pinterest, Bluesky, Threads only)
+4. Today's slot time has arrived             (per-platform daily slots, default
+                                               LinkedIn 07:00/11:00/12:00, X 07:00/11:00/14:00 MT;
+                                               past-due dates skip this check)
+5. CTQ score >= threshold                     (Total Score field, or Scores text parsed
+                                               with regex \d+(\.\d+)?\s*/\s*(100|10);
+                                               88 for most content, 90 for Content Type=Evergreen)
+6. Not a Sunday in America/Denver             (Sabbath gate, whole tick no-ops)
+
+On success: Status -&gt; "Published", Posted Date set, platform-specific Posted URL written.
+On failure: Status -&gt; "PublishFailed", Source Note gets the error, Telegram alert sent.
+On CTQ/platform block: a WARNING log line only. No board write, no alert.</pre>
+      <p class="footnote">Live confirmation: the 15:03 and 15:08 UTC ticks on 2026-07-10 (today, during this
+      audit) logged CTQ gate BLOCK warnings for the same 13 unparseable-score rows and 18 Stanley rows listed
+      above, proving the block is active and recurring right now, not historical.</p>
+    </div>
+  </details>
+
+</div>
+</body>
+</html>
+
