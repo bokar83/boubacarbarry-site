@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drive Remap Audit and Corrected Plan, 2026-07-12</title>
+<style>
+:root{--bg:#0f1420;--panel:#171e2e;--panel2:#1d2639;--text:#dce3f0;--muted:#8b97ad;--accent:#4fc3f7;--good:#5dd39e;--warn:#f0b45b;--bad:#ef7b7b;--border:#2a3550;}
+@media (prefers-color-scheme: light){:root{--bg:#f5f7fb;--panel:#ffffff;--panel2:#eef2f9;--text:#1c2536;--muted:#5b6778;--accent:#0277bd;--good:#1b8a5a;--warn:#b26a00;--bad:#c62828;--border:#d5dcea;}}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;padding-bottom:60px;}
+nav{position:sticky;top:0;z-index:50;background:var(--panel);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+nav .brand{font-weight:700;color:var(--accent);white-space:nowrap;}
+nav .links{display:flex;gap:4px;flex-wrap:wrap;}
+nav a{color:var(--muted);text-decoration:none;font-size:.83rem;padding:5px 10px;border-radius:6px;white-space:nowrap;}
+nav a:hover{background:var(--panel2);color:var(--text);}
+#hamburger{display:none;background:var(--panel2);border:1px solid var(--border);color:var(--text);font-size:1.1rem;padding:4px 12px;border-radius:6px;cursor:pointer;}
+@media(max-width:820px){#hamburger{display:block;} nav .links{display:none;width:100%;flex-direction:column;} nav .links.open{display:flex;}}
+main{max-width:1080px;margin:0 auto;padding:22px 16px;}
+h1{font-size:1.35rem;margin:8px 0 4px;}
+.sub{color:var(--muted);font-size:.85rem;margin-bottom:18px;}
+.tldr{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:8px;padding:14px 18px;margin-bottom:14px;}
+.tldr b{color:var(--accent);}
+.conf{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--good);border-radius:8px;padding:12px 18px;margin-bottom:22px;font-size:.92rem;}
+details{background:var(--panel);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;overflow:hidden;}
+summary{cursor:pointer;padding:13px 18px;font-weight:600;font-size:1rem;color:var(--accent);list-style:none;display:flex;justify-content:space-between;align-items:center;}
+summary::after{content:"+";font-size:1.2rem;color:var(--muted);}
+details[open] summary::after{content:"–";}
+summary:hover{background:var(--panel2);}
+.body{padding:4px 18px 18px;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin:10px 0;}
+th,td{border:1px solid var(--border);padding:6px 8px;text-align:left;vertical-align:top;}
+th{background:var(--panel2);color:var(--accent);font-weight:600;}
+.tw{overflow-x:auto;max-width:100%;}
+code,.id{font-family:Consolas,monospace;font-size:.78rem;background:var(--panel2);padding:1px 5px;border-radius:4px;word-break:break-all;}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.72rem;font-weight:700;}
+.t-move{background:rgba(93,211,158,.15);color:var(--good);}
+.t-copy{background:rgba(79,195,247,.15);color:var(--accent);}
+.t-leave{background:rgba(139,151,173,.18);color:var(--muted);}
+.t-verify{background:rgba(240,180,91,.15);color:var(--warn);}
+.t-flag{background:rgba(239,123,123,.15);color:var(--bad);}
+.rc{background:var(--panel2);border-radius:6px;padding:10px 14px;margin:8px 0;font-size:.9rem;}
+.rc b{color:var(--bad);}
+ul,ol{margin:8px 0 8px 22px;}
+li{margin:4px 0;font-size:.92rem;}
+h3{font-size:.98rem;color:var(--text);margin:16px 0 6px;}
+.note{color:var(--muted);font-size:.83rem;font-style:italic;}
+.tree{font-family:Consolas,monospace;font-size:.84rem;background:var(--panel2);border-radius:6px;padding:14px 16px;white-space:pre-wrap;}
+.pill-row{margin:6px 0;}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-12-12:03:59 MT</div><!-- DEPLOY_STAMP_END -->
+<nav>
+<span class="brand">Drive Remap Audit</span>
+<button id="hamburger" onclick="document.querySelector('nav .links').classList.toggle('open')">☰</button>
+<span class="links">
+<a href="#tldr">TL;DR</a>
+<a href="#method">Method</a>
+<a href="#sec-a">A. Inventory</a>
+<a href="#sec-b">B. Diagnosis</a>
+<a href="#sec-c">C. Remap Plan</a>
+<a href="#sec-d">D. Logic Fixes</a>
+<a href="#sec-e">E. Council + Iterations</a>
+<a href="#sec-f">F. Librarian Rules</a>
+<a href="#next">Next Steps</a>
+</span>
+</nav>
+<main>
+<h1>Google Drive Remap Audit and Corrected Plan</h1>
+<div class="sub">bokar83 personal Drive · audit date 2026-07-12 · READ-ONLY (zero mutations made) · original tree untouched · private family folder handled as opaque ID only</div>
+
+<div class="tldr" id="tldr">
+<b>TL;DR:</b> The prior reorg <b>copied</b> (never moved) content into the approved new structure, classified files item-by-item instead of folder-by-folder, and silently skipped <b>10 of 38</b> original top-level folders, including the critical Guinea documents folder and a 495-subfolder Guinea family archive. Taxes ended up in <b>5+ locations</b>; the private family folder is fragmented across <b>3 top-levels</b>; one verified tax-folder copy silently lost 3 of 31 files. The corrected plan below moves whole folders to topic magnets, consolidates Taxes into one parent with tax-year subfolders, reunites Guinea and the private folder, assigns homes to the 10 skipped folders, and ships a standing Librarian rule-set so every future drop routes predictably for humans and AI agents alike. Nothing moves until Boubacar approves.
+</div>
+
+<div class="conf">
+<b>Confidence: 95%</b> that the plan and Librarian Rules hold up long-term. The three named residual risks: (1) file-level completeness of "already landed" folders is verified only by spot checks so far; the plan bakes count+hash verification into every execution step to close this at run time. (2) The private folder's internal merge can only be verified by ID and hash, never by content, by design. (3) Two inbox top-levels exist (00 Inbox and 01 The Drop Zone); the rules pick one operationally but the structural merge is Boubacar's call.
+</div>
+
+<details id="method">
+<summary>Method, access and limits (read first)</summary>
+<div class="body">
+<ul>
+<li><b>Access path:</b> read-only DriveOps (scripts/drive_ops.py) via the orc-crewai container on the VPS. Account identity asserted: bokar83@gmail.com. Methods used: list_children, resolve, scoped files().list. <b>Zero mutating calls.</b></li>
+<li><b>Coverage:</b> all 38,808 folders in the Drive enumerated (complete folder-level ground truth). Full file-level enumeration (360k+ files) was deliberately aborted: two bulk fetch attempts pushed the 1.5GB container into restarts of the production scheduler. Container verified healthy afterward (running, healthy, RestartCount 0). File counts below are exact for every spot-checked folder; folder counts are exact everywhere.</li>
+<li><b>Snapshot cache</b> for the execution session: <code>/app/data/recon5_folders.json</code> (VPS) and the prior agent's own manifests found at <code>00 _SYSTEM/_reports</code> (migration-manifest.csv, manifest-summary.json) plus <code>_REVIEW - Did Not Move</code> and <code>_REVIEW - Potential Duplicates</code> CSVs.</li>
+<li><b>Hard boundaries honored:</b> original tree (<span class="id">_ORIGINAL_TREE</span>, ID <span class="id">1lKkd9HFaT8fYc7rHIw71iwGTZTu0HPpD</span>) is reference only, never touched; the private family folder is referenced only as [PRIVATE] + ID; no content of it was read, listed into this report, or summarized.</li>
+<li><b>Source baselines:</b> repo handoff docs/handoff/2026-07-06-drive-remap-audit-handoff.md + memory mirror; the move-whole-default, catch-all-exception and dedup-by-hash rules defined there are the baseline this plan satisfies.</li>
+</ul>
+</div>
+</details>
+
+<details id="sec-a">
+<summary>A. Original-structure inventory (38 folders, reference only)</summary>
+<div class="body">
+<p class="note">SubF = recursive subfolder count. Class drives the default action: COHERENT = move/copy whole; CATCH-ALL = item-level routing permitted (checklist in Section F). All IDs are inside _ORIGINAL_TREE: do not touch, copy-from only.</p>
+<div class="tw"><table>
+<tr><th>ID</th><th>Name</th><th>SubF</th><th>Class</th></tr>
+<tr><td class="id">1ZS7VXt5HMxU3GmFQ_gmn9mWLZZ-bckT1</td><td>_loose_files_archive</td><td>0</td><td>CATCH-ALL (swept loose files by construction)</td></tr>
+<tr><td class="id">1zB0-k9u2M-JolOvRHcNRqvbivT2ikf0F</td><td>* HOLDING *</td><td>258</td><td>CATCH-ALL (transfer dumps: GEV, PDR, D-Drive; mixed tax/immigration/misc)</td></tr>
+<tr><td class="id">1-ClUMiGIwCMj56hij-nW9e514lKSZOTn</td><td>* Scans 📇</td><td>0</td><td>COHERENT (scans)</td></tr>
+<tr><td class="id">1X_R2dxTl7d2rqVQDYnW5HD1cUqkDFeSn</td><td>***🗄️ARCHIVE***</td><td>995</td><td>COHERENT (frozen old-life archive, one unit)</td></tr>
+<tr><td class="id">1-Dc3JKRD3crJn-dwVVo-sDTkULFBVVrX</td><td>**🧩NEED 2 ORGANIZE**</td><td>112</td><td>CATCH-ALL (self-labeled)</td></tr>
+<tr><td class="id">1fO-52PGwdyjYIF0DcMO92pGVbjkSJDkM</td><td>*🔐Dossiers Importants - Guinee</td><td>2</td><td>COHERENT (critical Guinea documents)</td></tr>
+<tr><td class="id">1cOOP9VesOuN6YllOfhQFvqjztN08tr2c</td><td>1-GN Closure Files ⛓️‍💥❤️‍🩹</td><td>495</td><td>COHERENT (Guinea family archive; contains private material; opaque handling)</td></tr>
+<tr><td class="id">1QuKXpkUi9VZYS3pEzwZ_qEhuM8B_vwam</td><td>2021 VW ID4-jpeg</td><td>1</td><td>COHERENT (media unit)</td></tr>
+<tr><td class="id">1s1NZw4v78MES6Rs-gN9fAGbwl6pEAQ6Y</td><td>aaaaaaa Duplicates Holding</td><td>2426</td><td>Pre-existing duplicate quarantine (leave frozen)</td></tr>
+<tr><td class="id">1iRzxzVCwKnr4vdpYcaywr_BniKqRwyY0</td><td>AI Automations Tools</td><td>7</td><td>COHERENT</td></tr>
+<tr><td class="id">1eyZL4MCn_LGzJFPd_4FpotAjfwqqV2BA</td><td>aiHQ</td><td>217</td><td>COHERENT</td></tr>
+<tr><td class="id">1AospdVeUXljy_6NE0FRmKq8vJGzN6z37</td><td>Airtable</td><td>0</td><td>COHERENT (tool exports)</td></tr>
+<tr><td class="id">1v_iQAuNSJyuwh9LwrOc_JLwtmzGnm-2M</td><td>Anansi Works</td><td>3</td><td>COHERENT (venture)</td></tr>
+<tr><td class="id">1XXoVkti7sZyUWIxpdcDwe6CCFytkGDyw</td><td>Boubacar-v1-8336b836-...</td><td>8</td><td>COHERENT</td></tr>
+<tr><td class="id">1tNbf96gc2YLPeDDFPVSiLGglFhFfxaX3</td><td>Catalyst10K💵</td><td>20280</td><td>COHERENT topic; bulk is dev junk (node_modules), see exclusion rule</td></tr>
+<tr><td class="id">1BGPbMYTV6kuhJvPU89qbYvY-7NOJxyWY</td><td>Dubai 🐫</td><td>31</td><td>COHERENT (media)</td></tr>
+<tr><td class="id">1YiiQ5CSSre3QR-SypiKGZ2GB1JgI0PAv</td><td>ES File Explorer (SD)</td><td>2</td><td>COHERENT (phone backup)</td></tr>
+<tr><td class="id">1U1pRSTNViAUwebPzwToPLdi4cHLNNKFS</td><td>ES File Explorer (SD) 🔍</td><td>141</td><td>COHERENT (phone backup)</td></tr>
+<tr><td class="id">1z7mu3bvvalNb65B9-PWuQB7mktFe4Ybp</td><td>Frozen Datasets</td><td>1</td><td>COHERENT</td></tr>
+<tr><td class="id">1xRjjq8Y3y9JEdQE_l79gQUSK8Qd-cA66</td><td>Google AI Studio</td><td>0</td><td>COHERENT</td></tr>
+<tr><td class="id">1PWWjAdlYrpjcY8vphJLtmZwl25XrVLUs</td><td>Guinee 🛖</td><td>19</td><td>COHERENT (Guinea)</td></tr>
+<tr><td class="id">1_obxVVLuPtWqPtQGJKHipm9xtm-AE0Md</td><td>HirzAI</td><td>0</td><td>COHERENT</td></tr>
+<tr><td class="id">1ztopaEkfURgP4mCs0E4VAgg77k5yAotK</td><td>JobHunt</td><td>0</td><td>COHERENT</td></tr>
+<tr><td class="id">1-IIKBjKXfXR-ybckd15qIHtzJZsA3KXD</td><td>Languages 🗣️🌍</td><td>0</td><td>COHERENT (learning)</td></tr>
+<tr><td class="id">1m-Z2ndJ21hJTBYL_89UcHdF5kO8Y4Qja</td><td>Lean Body 90 - Dan Go</td><td>0</td><td>COHERENT (learning)</td></tr>
+<tr><td class="id">1vLzp0u3024KpZV_UD-UQGjJfS11WzVHJ</td><td>Learning - Education - Personal Development 🧠</td><td>209</td><td>COHERENT (learning)</td></tr>
+<tr><td class="id">1s0rOxNNL5XkcRs3LZprHYUUT37nWVbgB</td><td>Logos</td><td>0</td><td>COHERENT (brand media)</td></tr>
+<tr><td class="id">19eNZyOkO0HikrK1uW1uZxDfzC7USgllA</td><td>Musique 🎧</td><td>0</td><td>COHERENT (media)</td></tr>
+<tr><td class="id">1QhpkuIZRIk-DjuE4I8JYeWkO8vGrnhvI</td><td>n8n_backups</td><td>0</td><td>COHERENT</td></tr>
+<tr><td class="id">1mq9gL82FL5Pq44sSFNujE5vQOFa8tBZ8</td><td>n8n_old</td><td>0</td><td>COHERENT (superseded)</td></tr>
+<tr><td class="id">1-JbyV0AQUFkNHd24VSLS40LJyxvtjcWl</td><td>NotebookLM</td><td>0</td><td>COHERENT (knowledge)</td></tr>
+<tr><td class="id">0B3InkdHW3yXSbjZtOWRQZ2VqclE</td><td>Personal 🌱</td><td>190</td><td>COHERENT parent, mixed children (taxes live at Impots + Budget/Impots inside it)</td></tr>
+<tr><td class="id">1-XTFUx-HXOeSrvimrjzDvxFF9Z-pAJxj</td><td>Saved from Chrome</td><td>1</td><td>CATCH-ALL (browser saves)</td></tr>
+<tr><td class="id">1Y1lu4xEFnq0CWSEb-Ea-s7Cs7hof_Kyp</td><td>Saved from Chrome (2nd, same name)</td><td>1</td><td>CATCH-ALL</td></tr>
+<tr><td class="id">1E_jKQaZTZHQnhRUfi6OzFiQxQha-9uuO</td><td>Saved from the Google app</td><td>0</td><td>CATCH-ALL</td></tr>
+<tr><td class="id">1RuIsB6_HHANfdlfMGCELuy23SEKEdV9P</td><td>Signatures</td><td>0</td><td>COHERENT (personal identity assets)</td></tr>
+<tr><td class="id">19P-4jGZ9k3U5Lbp03uxYROYyhvqy48nZ</td><td>THP Jump Training 🦘🪽</td><td>0</td><td>COHERENT (learning)</td></tr>
+<tr><td class="id">1-AmftApUM63mkUjCHoIQLRC23ARdUeEN</td><td>Voice Recordings</td><td>0</td><td>COHERENT (media)</td></tr>
+</table></div>
+<h3>Key original sub-locations (tax + Guinea, reference)</h3>
+<ul>
+<li><span class="id">1ubJ8Qrpj7fsREJDVGmSxxtNd5b9_a_tM</span> Personal 🌱/Impots (Impots 2025 inside: <b>31 files</b>, 28 pdf + 2 jpg + 1 Google-native)</li>
+<li><span class="id">0B3InkdHW3yXSU1pnUEcwZzhxWk0</span> Personal 🌱/Budget/Impots (2 files + 2 subfolders)</li>
+<li><span class="id">1jOJwhc7ukgywUNIVOPjxyBpnBS7RaEet</span> * HOLDING */GEV Files/PDR_GEV_Personal_Files_20250529/Impots (<b>109 pdf</b> + 8 subfolders incl. 2021, 2022, 2023, 2024 Impots)</li>
+<li><span class="id">1fO-52PGwdyjYIF0DcMO92pGVbjkSJDkM</span> *🔐Dossiers Importants - Guinee (2 subfolders)</li>
+</ul>
+</div>
+</details>
+
+<details id="sec-b">
+<summary>B. What actually happened: diagnosis + named root causes</summary>
+<div class="body">
+<p>The reorg <b>copied</b> content into the new structure (every new-tree folder has a new ID; the originals remain fully populated). Five findings:</p>
+<h3>F1. Taxes scattered across 5+ new-tree locations</h3>
+<ul>
+<li><span class="id">1Lbjt0wPTIX2fJKhZSFpDIJbosRmDa4YY</span> 10 Me &amp; Mine/Personal 🌱/Impots/Impots 2025 (<b>28 files</b>, vs 31 in the original: 3 lost silently)</li>
+<li><span class="id">10AlFIq041jUcDqu9i6vgFhfcFht06der</span> 10 Me &amp; Mine/Personal 🌱/Budget/Impots (2 files + 2 subfolders)</li>
+<li><span class="id">1wmNn1CzmRmfNFX5Nn2sMBJArtdwGQZJg</span> 10 Me &amp; Mine/Finances &amp; Taxes: the obvious intended home received only <b>4 loose PDFs</b> (2022 amended return, 2023 return, HRBlock receipt, IRS PIN)</li>
+<li><span class="id">1ABXFeizJUMp_jKuZQIkZ68jFrpEEnhYa</span> 01 The Drop Zone/* HOLDING */GEV.../Impots: <b>115 W2/tax PDFs + year subfolders 2021-2024 parked inside an inbox</b></li>
+<li><span class="id">1nUXNkGtB00htKp6-c7tIhchcTqopwufG</span> + <span class="id">1MFs3uKiOdKNuyFY6GjemwLhmXFwYazGk</span> two more Impots copies inside 90 The Holding Pen/_dedup_archive</li>
+</ul>
+<h3>F2. Guinea split incoherently</h3>
+<ul>
+<li>30 Guinea &amp; Roots received only Guinee 🛖 (<b>14 of 19</b> original subfolders arrived) plus the private folder.</li>
+<li><b>Never migrated at all:</b> *🔐Dossiers Importants - Guinee (critical documents) and 1-GN Closure Files (495 subfolders).</li>
+<li>Other Guinea items sit in 40 (La Guinee under a business archive), 10 (Guinea 2019 Backup under Photography/iPhone), 80 (misc Guinee, b2guinee, SSI-Guinee inside archive units).</li>
+</ul>
+<h3>F3. Private family folder fragmented (opaque, IDs only)</h3>
+<ul>
+<li>Main body at <span class="id">1fsP6McqA9wr0ELFabHq6_nfQn31t9hO9</span> under 30 Guinea &amp; Roots, but internally restructured into "_dups (VERIFIED DUPLICATES...)" and "_MERGE-LATER (has UNIQUE files...)" buckets, 2,327 subfolders.</li>
+<li>Stray opaque fragments left in 40 Work &amp; Ventures: <span class="id">1dKf56pHyn-4Dx31Jq4-N7aDGud1ixWQG</span>, <span class="id">1quDjaD40Ruw5PfCkqtlb2OZi4TDh1Mwo</span>, <span class="id">1BrIQlRjJJoBanIz4nTWZwHGDAlcnpV4x</span>; and in 90 Holding Pen: <span class="id">1q9uvQXpDQ9QbNbIuZOsQx4sdbpwBjGRM</span> (photos). Media split across top-levels violates the never-split-media rule.</li>
+</ul>
+<h3>F4. 10 of 38 original folders never migrated</h3>
+<p>_loose_files_archive, Dossiers Importants - Guinee, 1-GN Closure Files, 2021 VW ID4-jpeg, Airtable, Anansi Works, ES File Explorer (SD), Languages, Logos, n8n_old, Signatures. The prior agent's own "_REVIEW - Did Not Move" manifest tracked only 2 root files.</p>
+<h3>F5. Silent copy loss</h3>
+<p>Impots 2025: original 31 files, copy 28 files. No verification step existed to catch it.</p>
+<h3>Named root causes</h3>
+<div class="rc"><b>RC1 Item-level classification, no folder-coherence gate.</b> Files were routed one by one: 4 loose PDFs landed in Finances &amp; Taxes while their sibling year-folders went elsewhere. Category folders like Travel (3 loose Dubai files) and Important Docs (1 passport) were populated per-file while the folders those files came from went to different tops.</div>
+<div class="rc"><b>RC2 Path-mirroring instead of topic-consolidation.</b> The router keyed on source path: Budget/Impots stayed under Budget, HOLDING/Impots stayed under HOLDING, so one topic landed in five places.</div>
+<div class="rc"><b>RC3 No coverage reconciliation.</b> Nothing asserted "every source folder has exactly one disposition." 10 folders silently dropped, including the two most personally critical Guinea units.</div>
+<div class="rc"><b>RC4 No verify-after-copy.</b> No recursive count or hash-set equality per unit, hence 31 became 28 with no alarm.</div>
+<div class="rc"><b>RC5 Dedup ran during migration, not after.</b> Pre-move fragmentation into _dups, _MERGE-LATER and _dedup_archive created three parallel shadow trees.</div>
+<div class="rc"><b>RC6 Media split.</b> Private photos separated across 30, 40 and 90.</div>
+</div>
+</details>
+
+<details id="sec-c" open>
+<summary>C. Corrected remapping plan (full scope, every folder)</summary>
+<div class="body">
+<p class="note">All actions target <b>new-tree copies by ID</b>. The original tree is reference only (copy-FROM permitted for never-migrated content; source never modified). No deletes anywhere: 90 The Holding Pen is the single quarantine; Boubacar deletes manually. Dedup = md5Checksum only, after landing, inside the destination; Google-native files (null md5) are quarantined for human review, never auto-deleted. Every row cites its placement principle from Section F.</p>
+<p class="pill-row">
+<span class="tag t-move">MOVE-WHOLE</span> reparent one ID within the new tree ·
+<span class="tag t-copy">COPY-WHOLE</span> copy from frozen original into the new tree ·
+<span class="tag t-leave">LEAVE</span> correct as-is ·
+<span class="tag t-verify">VERIFY</span> keep + count/hash check ·
+<span class="tag t-flag">BOUBACAR CALL</span> decidable only by him
+</p>
+
+<h3>Program 1: Taxes (highest retrieval value)</h3>
+<p>Create <code>Taxes</code> under 10 Me &amp; Mine/Finances &amp; Taxes (<span class="id">1wmNn1CzmRmfNFX5Nn2sMBJArtdwGQZJg</span>) with year subfolders. Two-phase: land each unit whole, then file into year subfolders <b>inside</b> the destination by the tax year the document COVERS (a return filed in 2026 for tax year 2025 goes in 2025: retrieval is always by tax year, the way an accountant or the IRS asks). Name canon: "Taxes"; "Impots" folders merge into year subfolders.</p>
+<div class="tw"><table>
+<tr><th>Source (new tree)</th><th>Action</th><th>Why this destination (principle)</th></tr>
+<tr><td><span class="id">1oW32ErKdrTxoXDe5Ln-Ck4XKXgk_b1B5</span> 10/Personal 🌱/Impots</td><td><span class="tag t-move">MOVE-WHOLE</span> then year-file</td><td>Life-domain rule: personal tax filings belong to the Finances &amp; Taxes domain, not the legacy Personal tree. Extracting a coherent sub-unit whole is a unit move, not a split.</td></tr>
+<tr><td><span class="id">10AlFIq041jUcDqu9i6vgFhfcFht06der</span> 10/Personal 🌱/Budget/Impots</td><td><span class="tag t-move">MOVE-WHOLE</span> then year-file</td><td>Same domain rule; "lives under Budget" was a path accident (RC2), the subject is tax filings.</td></tr>
+<tr><td><span class="id">1ABXFeizJUMp_jKuZQIkZ68jFrpEEnhYa</span> 01 Drop Zone/* HOLDING */GEV.../Impots (115 pdf, years 2021-2024)</td><td><span class="tag t-move">MOVE-WHOLE</span> then year-file</td><td>Inbox/holding is never a final home; subject = tax records (W2s file under their wage year).</td></tr>
+<tr><td>4 loose PDFs already in Finances &amp; Taxes</td><td>file-in-place into year subfolders</td><td>Already at the magnet; in-destination organization only.</td></tr>
+<tr><td><span class="id">1nUXNkGtB00htKp6-c7tIhchcTqopwufG</span> + <span class="id">1MFs3uKiOdKNuyFY6GjemwLhmXFwYazGk</span> (90/_dedup_archive Impots copies)</td><td><span class="tag t-leave">LEAVE</span> in quarantine</td><td>Already flagged duplicates; md5-verify against the consolidated Taxes tree, then Boubacar deletes manually.</td></tr>
+<tr><td><span class="id">1mnj_63IctCFgvNPwikbHtpMc_c4n1lPK</span> 40/.../07_Legal_and_Tax (business)</td><td><span class="tag t-leave">LEAVE</span> (intentional)</td><td>Work-vs-personal rule: business sales-tax is a venture asset filed with its venture, never mixed into personal Taxes.</td></tr>
+</table></div>
+<p class="note">Done-condition (machine-verifiable): a folder-name search for tax synonyms (Tax, Taxes, Impot, Impots) in the new tree returns only paths under Finances &amp; Taxes/Taxes plus the 90 quarantine; each year subfolder's file count reconciles against the union of source manifests; the md5 set of the original tax folders is a subset of the destination's.</p>
+
+<h3>Program 2: Guinea (run first: only content with NO new-tree home, highest loss exposure)</h3>
+<div class="tw"><table>
+<tr><th>Source</th><th>Action</th><th>Why this destination (principle)</th></tr>
+<tr><td><span class="id">1fO-52PGwdyjYIF0DcMO92pGVbjkSJDkM</span> ORIGINAL *🔐Dossiers Importants - Guinee</td><td><span class="tag t-copy">COPY-WHOLE</span> → 30 Guinea &amp; Roots</td><td>Entity rule: the subject IS Guinea family/legal documents. Never migrated; critical.</td></tr>
+<tr><td><span class="id">1cOOP9VesOuN6YllOfhQFvqjztN08tr2c</span> ORIGINAL 1-GN Closure Files</td><td><span class="tag t-copy">COPY-WHOLE</span> → 30, opaque (no content reads)</td><td>Entity rule; contains private-family material so the whole unit moves as one opaque ID.</td></tr>
+<tr><td><span class="id">18sNO8A4nI3h7xRbS1Jbpes8WdwvGyBXG</span> 30/Guinee 🛖 (14 vs 19 subfolders)</td><td><span class="tag t-verify">VERIFY</span> vs original <span class="id">1PWWjAdlYrpjcY8vphJLtmZwl25XrVLUs</span>, copy the missing 5 subtrees</td><td>Partial copy defect (RC4); diff by subtree names then md5.</td></tr>
+<tr><td><span class="id">1GS1ZW8r8fPOjwBG5dV5_E7e9zUADwnZc</span> 40/.../GOOD Businesses/La Guinee</td><td><span class="tag t-leave">LEAVE</span> + <span class="tag t-flag">BOUBACAR CALL</span></td><td>Tie between entity (Guinea) and unit-integrity (nested in a coherent business-ideas archive). Unit-integrity wins by default: extracting it would split its parent. His call to override.</td></tr>
+<tr><td><span class="id">1fAQUwzK7CvmV6xvTuCNPxNY7gUNrFWD3</span> 10/.../iPhone/Guinea 2019 Backup</td><td><span class="tag t-leave">LEAVE</span> + <span class="tag t-flag">BOUBACAR CALL</span></td><td>Media unit inside a coherent Photography hierarchy; never-split-media plus unit-integrity beat the entity pull. His call to override.</td></tr>
+<tr><td>misc Guinee / b2guinee / SSI-Guinee items in 80 The Attic</td><td><span class="tag t-leave">LEAVE</span></td><td>Lifecycle rule: frozen business archive, inside coherent archive units.</td></tr>
+</table></div>
+<p class="note">Done-condition: Dossiers Importants and GN Closure exist under 30 with recursive counts equal to their originals; a Guinea-synonym folder search outside 30 hits only the flagged LEAVE rows and archives.</p>
+
+<h3>Program 3: Private family folder (all opaque, ID-only)</h3>
+<div class="tw"><table>
+<tr><th>Source (ID)</th><th>Action</th><th>Why</th></tr>
+<tr><td><span class="id">1dKf56pHyn-4Dx31Jq4-N7aDGud1ixWQG</span> (in 40/SANDBOX)</td><td><span class="tag t-move">MOVE-WHOLE</span> → <span class="id">1fsP6McqA9wr0ELFabHq6_nfQn31t9hO9</span></td><td>Reunite fragment with the single private home (entity rule, opaque).</td></tr>
+<tr><td><span class="id">1quDjaD40Ruw5PfCkqtlb2OZi4TDh1Mwo</span> (in 40/_PDR_...)</td><td><span class="tag t-move">MOVE-WHOLE</span> → same</td><td>Same.</td></tr>
+<tr><td><span class="id">1BrIQlRjJJoBanIz4nTWZwHGDAlcnpV4x</span> (in 40/enunciation)</td><td><span class="tag t-move">MOVE-WHOLE</span> → same</td><td>Same.</td></tr>
+<tr><td><span class="id">1q9uvQXpDQ9QbNbIuZOsQx4sdbpwBjGRM</span> (in 90/_dedup_archive/Photos)</td><td><span class="tag t-move">MOVE-WHOLE</span> → same</td><td>Media never stays split from its unit.</td></tr>
+<tr><td>_dups and _MERGE-LATER buckets inside the private home</td><td>md5-verified merge AFTER all fragments land; null-md5 items to 90 quarantine list</td><td>Buckets are labeled "DO NOT DELETE"; merge then human review. Agents never delete.</td></tr>
+</table></div>
+<p class="note">Done-condition: no folder outside 30 Guinea &amp; Roots matches the private ID list; merge report (counts + hash groups) delivered for Boubacar's manual dedup decision. No content is ever read or named.</p>
+
+<h3>Program 4: The 10 never-migrated folders + loose root files</h3>
+<div class="tw"><table>
+<tr><th>Original source</th><th>New destination</th><th>Action</th><th>Why (principle)</th></tr>
+<tr><td><span class="id">1ZS7VXt5...</span> _loose_files_archive</td><td>80 The Attic <span class="id">1C6F_yMYZxTQOEeXuhuTpwaB6DJs2ds9C</span></td><td><span class="tag t-copy">COPY-WHOLE</span></td><td>Lifecycle: an archive of swept loose files is frozen material; it stays one unit inside The Attic.</td></tr>
+<tr><td><span class="id">1QuKXpk...</span> 2021 VW ID4-jpeg</td><td>60 Memories <span class="id">1GchRlvSu6MwjhOGaN5-NWvdLOl-bc0r9</span></td><td><span class="tag t-copy">COPY-WHOLE</span></td><td>Media fallback (no entity/work/domain claim); md5-dedup vs the copy already under 60/Dubai afterward.</td></tr>
+<tr><td><span class="id">1AospdV...</span> Airtable</td><td>40 Work &amp; Ventures <span class="id">1VAI4GhDewHwjQHPislx6ahR9xCRVjRU7</span></td><td><span class="tag t-copy">COPY-WHOLE</span></td><td>Work rule: tool exports produced by/for ventures.</td></tr>
+<tr><td><span class="id">1v_iQAu...</span> Anansi Works</td><td>40 Work &amp; Ventures</td><td><span class="tag t-copy">COPY-WHOLE</span></td><td>Work rule: it is a venture.</td></tr>
+<tr><td><span class="id">1YiiQ5C...</span> ES File Explorer (SD)</td><td>80 The Attic</td><td><span class="tag t-copy">COPY-WHOLE</span></td><td>Lifecycle: phone-backup snapshot, sibling of the 🔍 variant already in 80; backups are frozen units.</td></tr>
+<tr><td><span class="id">1-IIKBj...</span> Languages 🗣️🌍</td><td>50 Brain Food <span class="id">1G3UokiPgY-n1msVcCl3IWsmyANrLKlMB</span></td><td><span class="tag t-copy">COPY-WHOLE</span></td><td>Learning rule: language study material.</td></tr>
+<tr><td><span class="id">1s0rOxN...</span> Logos</td><td>40 Work &amp; Ventures (beside brand-assets)</td><td><span class="tag t-copy">COPY-WHOLE</span></td><td>Work beats media fallback: brand assets serve the ventures. Media unit stays whole (not merged item-level into brand-assets).</td></tr>
+<tr><td><span class="id">1mq9gL8...</span> n8n_old</td><td>80 The Attic</td><td><span class="tag t-copy">COPY-WHOLE</span></td><td>Lifecycle: explicitly superseded ("old"); its successor n8n_backups is active in 40.</td></tr>
+<tr><td><span class="id">1RuIsB6...</span> Signatures</td><td>10 Me &amp; Mine <span class="id">1-dSH9r-nMp41awzrAMiZL2fuJ2TcM7Ih</span> (beside Important Docs)</td><td><span class="tag t-copy">COPY-WHOLE</span></td><td>Life-domain: personal identity assets, same domain as Important Docs.</td></tr>
+<tr><td><span class="id">1s1NZw4...</span> aaaaaaa Duplicates Holding</td><td>none</td><td><span class="tag t-leave">LEAVE</span> frozen in original</td><td>A duplicate-quarantine has no place in the active tree; its partial copy inside 90/_dedup_archive is the working set.</td></tr>
+<tr><td>~12 loose files at My Drive root (jpg, mp4, sheets, docs)</td><td>01 Drop Zone <span class="id">15G6QIMicN7qJaqGj7WWuUKAvRdrPveO4</span></td><td><span class="tag t-move">MOVE</span> for triage</td><td>Undecided-items rule: loose drops go to the single inbox, never guessed into categories.</td></tr>
+</table></div>
+<h3>Already landed correctly: keep + verify (count gap → subtree diff + md5 spot-set)</h3>
+<div class="tw"><table>
+<tr><th>Unit (orig SubF → new SubF)</th><th>Home</th><th>Note</th></tr>
+<tr><td>* Scans, Frozen Datasets, Google AI Studio, HirzAI, JobHunt, Lean Body, Musique, n8n_backups, NotebookLM, Saved-from-*, THP, Voice Recordings</td><td>as placed</td><td><span class="tag t-leave">LEAVE</span>: placements match the rules (work/learning/media/knowledge/inbox).</td></tr>
+<tr><td>***🗄️ARCHIVE*** (995→763)</td><td>80</td><td><span class="tag t-verify">VERIFY</span>: part sits in 90/_dedup_archive; reconcile, pull anything that landed in neither.</td></tr>
+<tr><td>**🧩NEED 2 ORGANIZE** (112→20)</td><td>01</td><td><span class="tag t-verify">VERIFY</span>: legitimate catch-all split, but all 112 subfolders must be accounted for in manifests.</td></tr>
+<tr><td>* HOLDING * (258→186)</td><td>01</td><td><span class="tag t-verify">VERIFY</span> after Program 1 pulls the tax/immigration magnets out; remainder stays as grandfathered triage stock.</td></tr>
+<tr><td>AI Automations (7→6), aiHQ (217→123), Boubacar-v1 (8→3), Dubai (31→25), ES 🔍 (141→123), Learning (209→151)</td><td>40/10/60/80/50</td><td><span class="tag t-verify">VERIFY</span> each gap; aiHQ and Catalyst gaps are presumed dev-junk pruning, unverified until the manifest diff runs.</td></tr>
+<tr><td>Catalyst10K💵 (20280→813)</td><td>40</td><td><span class="tag t-verify">VERIFY</span> by document/media classes only; node_modules, .git, build dirs are excluded from migration and verification by rule.</td></tr>
+<tr><td>Personal 🌱 (190→392)</td><td>10</td><td><span class="tag t-verify">VERIFY</span> + grandfathered read-only for new filing; the new copy absorbed extra transfer-dump copies (RC5); md5 sweep after Program 1.</td></tr>
+</table></div>
+<p class="note">Execution order: Program 2 → 1 → 3 → 4 → verifications. Every mutation by immutable ID, verify-after-state, stop-on-anomaly, staged in batches with a written receipt per batch. Estimated Phase 1 (Programs 2+1): roughly 60-80 mutations.</p>
+</div>
+</details>
+
+<details id="sec-d">
+<summary>D. Migration-logic fixes (for any future reorg, not just this dataset)</summary>
+<div class="body">
+<ol>
+<li><b>Folder-coherence gate before any move:</b> classify every source folder COHERENT vs CATCH-ALL first (checklist in Section F); item-level routing only inside declared catch-alls, justification logged. (Kills RC1.)</li>
+<li><b>Topic magnets over path mirrors:</b> one canonical destination per topic; matching FOLDERS route there regardless of the path they came from. (Kills RC2.)</li>
+<li><b>Coverage ledger with hard fail:</b> every source top-level folder gets exactly one recorded disposition; an unmapped folder is a blocker, not a silence. (Kills RC3, F4.)</li>
+<li><b>Verify-after-copy per unit:</b> recursive file count + md5-set equality; Google-native files reconciled by name+parent and quarantined; any mismatch halts the run. (Kills RC4, F5.)</li>
+<li><b>Dedup strictly after consolidation, inside the destination,</b> md5 only, one quarantine (90). Never pre-fragment sources into dup-buckets. (Kills RC5.)</li>
+<li><b>Media units are atomic.</b> (Kills RC6.)</li>
+<li><b>Sensitive folders are opaque IDs:</b> move whole by ID, zero content reads, zero names in outputs.</li>
+<li><b>Two-phase landing:</b> land whole at the magnet, organize inside the destination afterward. Never reorganize mid-flight.</li>
+<li><b>Dev-junk exclusion list:</b> node_modules, .git, dist, build, __pycache__ never migrate and never count in verification.</li>
+<li><b>Manifests are inputs:</b> the prior run's own manifests (00 _SYSTEM/_reports: migration-manifest.csv, manifest-summary.json; _REVIEW folders) seed the coverage ledger instead of recomputing blind.</li>
+<li><b>Operational:</b> bulk enumeration = folders first (cheap), files only per-scope with streaming and a memory cap, never unbounded inside the production container. Two full-drive file fetches tripped the 1.5GB container into restarts during this audit; the safe pattern is documented in the Method section.</li>
+<li><b>Copy vs move discipline:</b> within the working tree, MOVE (reparent by ID). COPY only from a declared frozen reference. Declare which tree is canonical before the first operation; state the endgame for the reference tree (here: Boubacar manually decides the fate of _ORIGINAL_TREE after all verifications pass, agents never delete).</li>
+</ol>
+</div>
+</details>
+
+<details id="sec-e">
+<summary>E. Council verdict, iteration log, Karpathy audit</summary>
+<div class="body">
+<h3>Iteration protocol run</h3>
+<p>Two full premortem → red-team → blue-team rounds, then a third clean pass that found no new structural issues (converged), then a Council re-run and a Karpathy simplicity audit. What each round changed:</p>
+<ul>
+<li><b>Premortem round 1</b> (assume dead in 6 months, why): two inboxes kept collecting drops → rules name 01 Drop Zone as the single agent inbox, 00 Inbox demoted to human drop-point swept at triage. Tax years unguessable on some files → Taxes/_unsorted protocol, never guess a year. Grandfathered legacy tree kept growing → read-only-for-filing rule. Shortcut spam → shortcuts restricted to cross-entity legal docs. Dev junk re-imported → exclusion list. Quarantine grew unbounded → per-program review manifest for Boubacar's manual delete pass. Future reorg copies again → copy-vs-move discipline (fix 12).</li>
+<li><b>Red team round 1:</b> "entity beats domain" was undecidable for Guinea-related tax docs → refined: entity applies only when the document's subject IS the entity (estate, family, property, heritage); a US tax return mentioning foreign assets is still a Taxes doc. Catch-all test was fuzzy → made mechanical: dump-name list match OR (no subfolders AND more than 20 files); everything else defaults to coherent, which biases toward move-whole exactly as the standing rule demands.</li>
+<li><b>Premortem + red team round 2:</b> alias table added (French/emoji variants: Impots=Taxes, Guinee=Guinea, Musique=Music) so greps match canon; stale-ID self-heal step (resolve name, verify ID, re-resolve on mismatch); superseded-rule scoped to standalone units so it never extracts from a coherent parent; legacy multi-parent files get one canonical parent during dedup.</li>
+<li><b>Round 3:</b> no new findings. Converged.</li>
+</ul>
+<h3>Council re-run (5 voices, on the revised full-scope plan + rules)</h3>
+<ul>
+<li><b>Contrarian: PASS with note.</b> Attacked the grandfathered Personal 🌱 tree as perpetuating two structures. Held: dissolving a 190-subfolder legacy tree item-by-item is exactly the class of error being fixed; phased instead (grandfather now, dissolve later as its own Boubacar-scoped project).</li>
+<li><b>First Principles: PASS.</b> Reframed the question from "where does X go" to "how will X be asked for"; the precedence order (entity → domain → work/personal → lifecycle → media) is derived from retrieval queries, which is why it is the routing spine.</li>
+<li><b>Expansionist: PASS.</b> Added: rules + alias table ship into the librarian skill as a data file after approval (follow-up, needs the normal review path); prior-run manifests become execution inputs.</li>
+<li><b>Outsider: PASS.</b> Demanded the canonical-ID table so a cold AI session can act without re-deriving anything; included in Section F.</li>
+<li><b>Executor: PASS.</b> Sequence fixed: this report → Boubacar approves → execution session runs Programs 2, 1, 3, 4 with verify-after-state → librarian rules land in the skill. No approval, nothing moves.</li>
+<li><b>Chairman:</b> converged, SHIP. One tension preserved deliberately rather than resolved: total-consolidation vs unit-integrity on La Guinee and Guinea 2019 Backup; default is unit-integrity (LEAVE), flagged as Boubacar's call.</li>
+<li><b>First-pass Council</b> (on the earlier draft) had already forced 7 revisions: canonical-tree declaration, two-phase landing, null-md5 quarantine, storage endgame, node_modules verification scope-out, manifest reuse, Impots→Taxes naming.</li>
+</ul>
+<h3>Karpathy audit (simplicity/logic, 10 principles)</h3>
+<ul>
+<li>P2 Simplicity flagged WARN: the draft carried two overlapping layers (a principles list plus a rules list). Fixed: consolidated into ONE 10-step decision tree plus 3 constants tables; that consolidated form is what Section F ships.</li>
+<li>P4 Goal-driven: machine-verifiable done-conditions added per program (visible in Section C).</li>
+<li>P9 Communication: unverified items are labeled as presumptions (Catalyst10K gap pending manifest diff), not asserted.</li>
+<li>All other principles PASS. Final call: SHIP.</li>
+</ul>
+</div>
+</details>
+
+<details id="sec-f" open>
+<summary>F. Librarian Rules: the standing filing algorithm</summary>
+<div class="body">
+<p class="note">This is the mechanical rule-set the librarian skill and any future AI session applies to EVERY new inbox drop, with no human judgment in the room. First match wins. If a placement cannot be justified by one of these steps, it goes to the inbox, never guessed.</p>
+
+<h3>Constants</h3>
+<div class="tw"><table>
+<tr><th>Table</th><th>Contents</th></tr>
+<tr><td><b>Canon map</b> (name → ID; verify the ID at session start, on mismatch re-resolve by name and update this table)</td><td>00 _SYSTEM <span class="id">1B_IqwZnlGWUVikTR6Bkgv6YuO85KFfqg</span> · 01 The Drop Zone <span class="id">15G6QIMicN7qJaqGj7WWuUKAvRdrPveO4</span> · 05 Second Brain <span class="id">1LM8qCuqtdy-tssKHbvGQ3fxPqUsNr540</span> · 10 Me &amp; Mine <span class="id">1-dSH9r-nMp41awzrAMiZL2fuJ2TcM7Ih</span> · 30 Guinea &amp; Roots <span class="id">12rZpbN5u1Aw1ZMmwFCJImRgeR1NNH5r1</span> · 40 Work &amp; Ventures <span class="id">1VAI4GhDewHwjQHPislx6ahR9xCRVjRU7</span> · 50 Brain Food <span class="id">1G3UokiPgY-n1msVcCl3IWsmyANrLKlMB</span> · 60 Memories &amp; Media <span class="id">1GchRlvSu6MwjhOGaN5-NWvdLOl-bc0r9</span> · 80 The Attic <span class="id">1C6F_yMYZxTQOEeXuhuTpwaB6DJs2ds9C</span> · 90 Holding Pen <span class="id">1CJTcTi1P3ro3Kw_VuZe45TyiLqdwqoWI</span> · Finances &amp; Taxes <span class="id">1wmNn1CzmRmfNFX5Nn2sMBJArtdwGQZJg</span> · Private home <span class="id">1fsP6McqA9wr0ELFabHq6_nfQn31t9hO9</span> (opaque) · Taxes parent: created in Program 1, record its ID here at creation</td></tr>
+<tr><td><b>Alias table</b> (synonyms collapse to canon; folder names only, file names untouched)</td><td>Impots / Impôts / Tax Docs → Taxes · Guinee / Guinée / GN → Guinea · Musique → Music · private name tokens → [Private home, by ID] · inbox variants → 01 The Drop Zone</td></tr>
+<tr><td><b>Dump-name list</b> (marks catch-alls)</td><td>misc, inbox, to organize, NEED 2 ORGANIZE, HOLDING, downloads, saved from chrome, saved from the google app, loose, zzz, temp, new folder</td></tr>
+<tr><td><b>Dev-junk exclusions</b> (never filed, never migrated, never verified)</td><td>node_modules, .git, dist, build, __pycache__, venv</td></tr>
+</table></div>
+
+<h3>The decision tree (apply in order, first match wins)</h3>
+<div class="tree">0. UNIT CHECK  -- Is the item inside a folder that arrived as a unit?
+   Classify the FOLDER once; every child inherits its destination.
+   A folder nested inside a coherent parent is never extracted
+   (unit-integrity), unless a step below routes the PARENT itself.
+
+1. CATCH-ALL TEST (folders only)
+   Name matches the dump-name list, OR (zero subfolders AND more
+   than 20 files)?
+   YES: route each child individually through steps 2-8; log the test.
+   NO: the folder is COHERENT. Route it WHOLE using steps 2-8 on its
+   overall subject.
+   (Default bias = coherent = move-whole. Misjudging a dump as coherent
+   costs little: it stays together in one findable place. Misjudging a
+   coherent folder as a dump caused this entire incident.)
+
+2. PRIVATE  -- Matches the private ID list or private name tokens?
+   File by ID into the private home. No content reads, ever.
+   Notify Boubacar. STOP.
+
+3. ENTITY (Guinea)  -- Is the SUBJECT the Guinea family / estate /
+   heritage / legal status? ("Mentions Guinea" is not "about Guinea":
+   a US tax return listing foreign assets is still a tax doc.)
+   File to 30 Guinea &amp; Roots.
+   Multi-entity doc: primary subject wins; a true tie goes to the side
+   with legal/identity stakes; a Drive SHORTCUT (never a copy) may mark
+   the other home, cross-entity legal docs only.
+
+4. WORK  -- Produced for or by a venture, client, or employer?
+   File to 40 Work &amp; Ventures, inside that venture's folder.
+
+5. PERSONAL ADMIN  -- Personal life-domain document?
+   File to 10 Me &amp; Mine, canonical domains ONLY:
+     Finances &amp; Taxes  (tax docs go to Taxes/&lt;tax year COVERED&gt;;
+       year undeterminable: Taxes/_unsorted, never guess;
+       W2s file under the wage year; payment receipts under the
+       tax year paid for)
+     Important Docs (identity: passports, licenses, certificates)
+     Benefits &amp; Insurance · Immigration · Health · Travel
+   Grandfathered legacy trees (Personal 🌱) are READ-ONLY for new filing.
+
+6. LEARNING  -- Courses, tutorials, books, training?  File to 50.
+
+7. SUPERSEDED STANDALONE  -- Explicitly old/replaced backup or archive
+   unit, NOT nested inside a coherent active parent?  File to 80.
+
+8. MEDIA FALLBACK  -- Photo/video/audio with no match above?
+   File to 60 Memories &amp; Media, by type folder.
+   Media folders are never split.
+
+9. UNDECIDED  -- Nothing matched?
+   File to 01 The Drop Zone root. THE single agent inbox. Never guess,
+   never create a new top-level. (00 Inbox = human drop point; triage
+   sweeps it into 01.)
+
+ALWAYS: one primary home, no duplication (shortcuts per step 3 only).
+New filing never exceeds 4 folder levels below My Drive root
+(top / domain / subdomain / unit); deeper trees exist only inside
+grandfathered or archive units. Dedup only AFTER landing, md5Checksum
+only, null-md5 (Google-native) goes to the 90 quarantine list.
+Agents never delete anything; 90 The Holding Pen plus Boubacar's
+manual pass is the only deletion path.</div>
+
+<h3>Why the rules are shaped this way</h3>
+<ul>
+<li><b>Precedence = retrieval order.</b> The tree mirrors how content is asked for: "everything about Guinea" (entity) beats "my tax stuff" (domain) beats work-vs-personal beats "old stuff" beats "some video." A placement that cannot be restated as one of these rules is by definition wrong and goes to the inbox instead.</li>
+<li><b>Tax year = year covered,</b> because the accountant and the IRS ask by tax year; filing by received-date scatters one year's return across two folders.</li>
+<li><b>Move-whole bias is deliberate:</b> the cost of wrongly moving a dump whole is one messy-but-findable folder; the cost of wrongly splitting a coherent folder is this entire incident.</li>
+<li><b>Greppability:</b> canon names + alias table + the depth cap mean a future AI can predict a path (10 Me &amp; Mine / Finances &amp; Taxes / Taxes / 2024 / ...) without listing the tree first.</li>
+</ul>
+<p class="note">Follow-up (after Boubacar approves): these constants + tree ship into the librarian skill as a data file via the normal review path, so every future session loads them mechanically.</p>
+</div>
+</details>
+
+<details id="next">
+<summary>Next steps and open calls for Boubacar</summary>
+<div class="body">
+<ol>
+<li><b>Approve or amend this plan.</b> Nothing has moved; nothing moves without your explicit go-ahead.</li>
+<li><b>Three calls only you can make:</b> (a) pull La Guinee from the 40 business archive into 30, or leave (default: leave); (b) pull Guinea 2019 Backup from Photography into 30, or leave (default: leave); (c) keep both 00 Inbox and 01 Drop Zone top-levels, or merge them (rules treat 01 as the single agent inbox either way).</li>
+<li><b>Execution order on approval:</b> Program 2 (Guinea, never-migrated content first) → 1 (Taxes) → 3 (private folder reunion) → 4 (the 10 skipped folders + loose root files) → verification sweep. Every mutation by ID, verify-after-state, stop-on-anomaly, batch receipts.</li>
+<li><b>Endgame:</b> after all verifications pass, you (never an agent) decide the fate of _ORIGINAL_TREE and empty 90 The Holding Pen manually. Until then the Drive intentionally holds duplicates.</li>
+<li><b>Librarian skill update</b> with Section F constants + tree, via the normal review path.</li>
+</ol>
+</div>
+</details>
+
+<p class="note" style="margin-top:18px">Read-only audit by the drive-plan lane, 2026-07-12. Sources: full folder enumeration (38,808 folders), scoped file spot-checks, prior-run manifests, 2026-07-06 handoff docs. Private family folder referenced by ID only throughout.</p>
+</main>
+<script>
+document.querySelectorAll('nav .links a').forEach(a=>{a.addEventListener('click',()=>{const id=a.getAttribute('href');const d=document.querySelector(id);if(d&&d.tagName==='DETAILS')d.open=true;document.querySelector('nav .links').classList.remove('open');});});
+</script>
+</body>
+</html>
+
