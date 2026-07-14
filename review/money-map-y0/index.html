@@ -52,6 +52,16 @@
     .mini { position: sticky; top: 0; z-index: 50; display: flex; gap: 0.4rem; padding: 0.55rem 0.6rem; margin: 0.9rem 0 1rem; background: rgba(20,18,16,0.94); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 11px; overflow-x: auto; }
     .mini a { flex-shrink: 0; font-size: 0.72rem; font-weight: 800; text-decoration: none; color: var(--ink); background: var(--card-2); border: 1px solid var(--line); padding: 0.32rem 0.66rem; border-radius: 999px; white-space: nowrap; }
     .mini a:hover { background: var(--ember); color: #fff; border-color: transparent; }
+    .mini .nav-links { display: flex; gap: 0.4rem; align-items: center; }
+    .nav-burger { display: none; align-items: center; gap: 0.5rem; min-height: 44px; min-width: 44px; padding: 0.3rem 0.75rem; background: var(--card-2); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; font-size: 0.72rem; font-weight: 800; cursor: pointer; }
+    .nav-burger:hover { background: var(--ember); color: #fff; border-color: transparent; }
+    .nav-burger .bars { position: relative; display: inline-block; width: 16px; height: 2px; background: currentColor; border-radius: 2px; }
+    .nav-burger .bars::before, .nav-burger .bars::after { content: ""; position: absolute; left: 0; width: 16px; height: 2px; background: currentColor; border-radius: 2px; transition: transform 0.2s; }
+    .nav-burger .bars::before { top: -5px; }
+    .nav-burger .bars::after { top: 5px; }
+    .mini.open .nav-burger .bars { background: transparent; }
+    .mini.open .nav-burger .bars::before { transform: translateY(5px) rotate(45deg); }
+    .mini.open .nav-burger .bars::after { transform: translateY(-5px) rotate(-45deg); }
 
     /* PANELS */
     .panel { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); margin-bottom: 1.1rem; overflow: hidden; }
@@ -325,6 +335,11 @@
       .wy-strip { grid-template-columns: repeat(4, 1fr); }
       .lag-grid { grid-template-columns: 1fr 1fr; }
       .wrap { padding-left: 0.85rem; padding-right: 0.85rem; }
+      .mini { flex-wrap: wrap; overflow: visible; }
+      .nav-burger { display: inline-flex; }
+      .mini .nav-links { display: none; flex-direction: column; width: 100%; gap: 0.35rem; margin-top: 0.5rem; }
+      .mini.open .nav-links { display: flex; }
+      .mini .nav-links a { width: 100%; min-height: 44px; display: flex; align-items: center; }
     }
     .shiplog { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
     .shiplog li { font-size: 0.85rem; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 0.55rem 0.7rem; line-height: 1.45; }
@@ -332,7 +347,8 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v9 · 2026-07-14-11:53:00 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v10 · 2026-07-14-12:21:37 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -348,14 +364,19 @@
     <span class="sync" id="syncPill"><span class="dot"></span><span id="syncText">Connecting</span></span>
   </header>
 
-  <nav class="mini" aria-label="Jump">
-    <a href="#today">Today</a>
-    <a href="#vision">Vision + goal</a>
-    <a href="#weeks">12-week year</a>
-    <a href="#week">This week by lane</a>
-    <a href="#auto">Runs itself</a>
-    <a href="#revlanes">Revenue lanes</a>
-    <a href="#system">The system</a>
+  <nav class="mini" id="jumpnav" aria-label="Jump">
+    <button type="button" class="nav-burger" id="navBurger" aria-expanded="false" aria-controls="navLinks" aria-label="Open section menu">
+      <span class="bars" aria-hidden="true"></span><span>Sections</span>
+    </button>
+    <div class="nav-links" id="navLinks">
+      <a href="#today">Today</a>
+      <a href="#vision">Vision + goal</a>
+      <a href="#weeks">12-week year</a>
+      <a href="#week">This week by lane</a>
+      <a href="#auto">Runs itself</a>
+      <a href="#revlanes">Revenue lanes</a>
+      <a href="#system">The system</a>
+    </div>
   </nav>
 
   <!-- DAILY EXECUTION CHECKLIST (the thing he looks at each day) -->
@@ -1178,8 +1199,23 @@
   btt.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
 })();
 </script>
+<script>
+  // Mobile hamburger toggle for the jump nav (aria-driven; closes on link tap, outside tap, Esc)
+  (function(){
+    var nav = document.getElementById('jumpnav');
+    var burger = document.getElementById('navBurger');
+    var links = document.getElementById('navLinks');
+    if (!nav || !burger || !links) return;
+    function setOpen(o){ nav.classList.toggle('open', o); burger.setAttribute('aria-expanded', o ? 'true' : 'false'); }
+    burger.addEventListener('click', function(e){ e.stopPropagation(); setOpen(!nav.classList.contains('open')); });
+    links.addEventListener('click', function(e){ if (e.target.closest('a')) setOpen(false); });
+    document.addEventListener('click', function(e){ if (nav.classList.contains('open') && !nav.contains(e.target)) setOpen(false); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
 </body>
 </html>
+
 
 
 
