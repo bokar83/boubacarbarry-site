@@ -353,6 +353,7 @@
     <a href="#weeks">12-week year</a>
     <a href="#week">This week by lane</a>
     <a href="#auto">Runs itself</a>
+    <a href="#revlanes">Revenue lanes</a>
     <a href="#system">The system</a>
   </nav>
 
@@ -661,6 +662,26 @@
     </div>
   </section>
 
+  <!-- REVENUE LANES (live from the money map: every status-* + kpi-* row) -->
+  <details class="sec revlanes" id="revlanes" open>
+    <summary><span class="chev">&#9656;</span><span class="s-title">Revenue lanes (live)</span><span class="toggle-hint"></span></summary>
+    <div class="sec-body">
+      <p class="lede">Every revenue lane and KPI, read live from the money map. Motion switches show where each lane stands right now; KPIs show the targets and counters. Anything you change in the board shows here the moment it updates.</p>
+      <div id="revlanes-body" class="rl"><div class="rl-empty">Syncing lanes from the money map...</div></div>
+    </div>
+    <style>
+      .rl .rl-group-h { font-size:0.66rem; font-weight:850; text-transform:uppercase; letter-spacing:0.09em; color:var(--faint); margin:1rem 0 0.5rem; }
+      .rl .rl-group-h:first-child { margin-top:0; }
+      .rl .lr-tag.t-status { background:rgba(227,98,47,0.16); color:var(--ember-bright); }
+      .rl .lr-tag.t-kpi { background:rgba(110,168,230,0.12); color:#8fc0ff; }
+      .rl .lr-status.st-good { background:var(--green-soft); color:var(--green); border:1px solid var(--green-border); }
+      .rl .lr-status.st-warn { background:var(--amber-soft); color:var(--amber); border:1px solid var(--amber-border); }
+      .rl .lr-status.st-bad { background:var(--red-soft); color:var(--red); border:1px solid var(--red-border); }
+      .rl .lr-status.st-neut { background:var(--card-2); color:var(--muted); border:1px solid var(--line); }
+      .rl .rl-empty { color:var(--faint); font-size:0.85rem; padding:0.4rem 0; }
+    </style>
+  </details>
+
   <!-- THE SYSTEM (collapsible deep layer) -->
   <h2 style="font-size:1.3rem;font-weight:850;letter-spacing:-0.02em;margin:1.6rem 0 0.8rem;color:var(--ink-strong);" id="system">The system (open when you want the why)</h2>
 
@@ -905,6 +926,9 @@
     if (cb){ var on = (value === '1'); cb.checked = on; var act = cb.closest('.act'); if(act) act.classList.toggle('done', on); return; }
     var txt = document.querySelector('input[type=text][data-item="'+CSS.escape(item)+'"]');
     if (txt){ txt.value = value || ''; return; }
+    // read-only text bindings ([data-mmtext]) stay in sync like the inputs above
+    var mm = document.querySelector('[data-mmtext][data-item="'+CSS.escape(item)+'"]');
+    if (mm){ mm.textContent = value || ''; return; }
     // ask-* and yes-* items drive the gate widgets; refresh them
     if (item.indexOf('ask-') === 0){ if (window.__y0_renderAsk) window.__y0_renderAsk(); }
     if (item.indexOf('yes-') === 0){ if (window.__y0_renderBrandon) window.__y0_renderBrandon(); }
@@ -1051,6 +1075,63 @@
   })();
 
   // ---- initial load from Supabase: fetch all, render, then subscribe realtime ----
+  // ---- Revenue lanes: render every status-* and kpi-* row live from `state` ----
+  function rlEsc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[m]; }); }
+  function rlLabel(id, prefix){
+    var s = id.slice(prefix.length).replace(/-/g, ' ').trim();
+    return s.replace(/\b\w/g, function(m){ return m.toUpperCase(); });
+  }
+  function rlStatusChip(value){
+    var head = String(value || '').toLowerCase().split(':')[0].trim();
+    var bad  = /(stalled|blocked|dead|offline)/;
+    var warn = /(dormant|pending|open-decision|hold|warmup|unconfirmed|needs|starts|freeze|paused|superseded)/;
+    var good = /(launch|live|active|keep-execute|synced|done|restarting|submitted|workstream-open|brand)/;
+    var cls = 'st-neut';
+    if (bad.test(head)) cls = 'st-bad';
+    else if (warn.test(head)) cls = 'st-warn';
+    else if (good.test(head)) cls = 'st-good';
+    var label = (head || 'set').split(/\s+/).slice(0, 2).join(' ');
+    return { cls: cls, label: label };
+  }
+  function rlRow(id, value, kind){
+    var isKpi = (kind === 'kpi');
+    var name = rlLabel(id, isKpi ? 'kpi-' : 'status-');
+    var tag = isKpi ? '<span class="lr-tag t-kpi">KPI</span>' : '<span class="lr-tag t-status">LANE</span>';
+    var chipHtml = '';
+    if (!isKpi){ var chip = rlStatusChip(value); chipHtml = '<span class="lr-status ' + chip.cls + '">' + rlEsc(chip.label) + '</span>'; }
+    return '<div class="lane-row"><div class="lr-head">' + tag +
+      '<span class="lr-name">' + rlEsc(name) + '</span>' + chipHtml +
+      '</div><div class="lr-body"><div class="lr-next">' + rlEsc(value) + '</div></div></div>';
+  }
+  function renderRevLanes(){
+    var host = document.getElementById('revlanes-body');
+    if (!host) return;
+    var statusKeys = [], kpiKeys = [];
+    for (var k in state){
+      if (!Object.prototype.hasOwnProperty.call(state, k)) continue;
+      var val = state[k];
+      if (val == null || String(val).indexOf('superseded-by-per-channel-rows') === 0) continue; // hide tombstones
+      if (k.indexOf('status-') === 0) statusKeys.push(k);
+      else if (k.indexOf('kpi-') === 0) kpiKeys.push(k);
+    }
+    statusKeys.sort(); kpiKeys.sort();
+    if (!statusKeys.length && !kpiKeys.length){
+      host.innerHTML = '<div class="rl-empty">No lanes loaded yet. If this persists, the board is offline.</div>';
+      return;
+    }
+    var html = '';
+    if (statusKeys.length){
+      html += '<div class="rl-group-h">Motion switches (' + statusKeys.length + ')</div>';
+      html += statusKeys.map(function(k){ return rlRow(k, state[k], 'status'); }).join('');
+    }
+    if (kpiKeys.length){
+      html += '<div class="rl-group-h">KPIs and targets (' + kpiKeys.length + ')</div>';
+      html += kpiKeys.map(function(k){ return rlRow(k, state[k], 'kpi'); }).join('');
+    }
+    host.innerHTML = html;
+  }
+  window.__y0_renderRevLanes = renderRevLanes;
+
   function hydrateFromRemote(rows){
     rows.forEach(function(r){ state[r.item_id] = r.value; lsSet(r.item_id, r.value); applyToDom(r.item_id, r.value); });
     // goal target
@@ -1058,6 +1139,7 @@
     if (gt){ var num = document.querySelector('.goal .g-num span'); if (num) num.textContent = '$' + gt; }
     if (window.__y0_renderAsk) window.__y0_renderAsk();
     if (window.__y0_renderBrandon) window.__y0_renderBrandon();
+    renderRevLanes();
     recomputeScorecard();
   }
 
@@ -1076,6 +1158,7 @@
               var item = row.item_id, value = (payload.eventType === 'DELETE') ? '' : row.value;
               state[item] = value; lsSet(item, value); applyToDom(item, value);
               if (window.__y0_renderAsk) window.__y0_renderAsk();
+              renderRevLanes();
               recomputeScorecard();
             })
           .subscribe(function(status){ if (status === 'SUBSCRIBED') setSync('live', 'Live sync on'); });
