@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Loops — Everything Owed, Nothing Dropped</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a30; --panel2:#0f1729; --ink:#e8ecf6; --muted:#a3adc7;
+    --line:#26304d; --indigo:#6d7cff; --indigo2:#8b97ff; --teal:#3fd0c9; --amber:#f4c66a;
+    --green:#57d98a; --red:#ff7a8a; --chip:#1b2440;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--indigo2);text-decoration:none}
+  .wrap{max-width:900px;margin:0 auto;padding:0 18px 96px}
+
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(11,16,32,.92);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;
+    justify-content:space-between;padding:12px 18px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px}
+  .brand .dotpair{display:flex;gap:4px}
+  .brand .dotpair span{width:9px;height:9px;border-radius:50%;background:var(--indigo)}
+  .brand .dotpair span:last-child{background:var(--teal)}
+  .navlinks{display:flex;gap:18px}
+  .navlinks a{color:var(--muted);font-size:.9rem;font-weight:600}
+  .navlinks a:hover{color:var(--ink)}
+  .burger{display:none;background:none;border:1px solid var(--line);border-radius:9px;
+    padding:8px;cursor:pointer;color:var(--ink)}
+  .mobile-menu{display:none;flex-direction:column;border-top:1px solid var(--line);
+    background:var(--panel2)}
+  .mobile-menu a{padding:13px 22px;color:var(--muted);font-weight:600;
+    border-bottom:1px solid var(--line)}
+  .mobile-menu a:active{color:var(--ink);background:var(--chip)}
+  @media(max-width:720px){
+    .navlinks{display:none}
+    .burger{display:inline-flex}
+    .mobile-menu.open{display:flex}
+  }
+
+  .hero{padding:40px 0 8px}
+  .kicker{display:inline-flex;align-items:center;gap:8px;font-size:.74rem;font-weight:700;
+    letter-spacing:1.4px;text-transform:uppercase;color:var(--teal);
+    border:1px solid var(--line);background:var(--chip);padding:6px 12px;border-radius:999px}
+  h1{font-size:2.05rem;line-height:1.18;margin:18px 0 10px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:1.06rem;max-width:660px}
+
+  .scoreboard{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:24px 0 6px}
+  @media(max-width:620px){.scoreboard{grid-template-columns:repeat(2,1fr)}}
+  .stat{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:16px 16px}
+  .stat .n{font-size:1.7rem;font-weight:800;line-height:1}
+  .stat .l{font-size:.78rem;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.6px}
+  .stat.red .n{color:var(--red)} .stat.amber .n{color:var(--amber)}
+  .stat.indigo .n{color:var(--indigo2)} .stat.green .n{color:var(--green)}
+
+  .callout{margin:22px 0 6px;border:1px solid rgba(255,122,138,.3);border-radius:14px;
+    background:rgba(255,122,138,.06);padding:16px 18px;color:var(--muted)}
+  .callout b{color:var(--ink)}
+
+  section{margin-top:34px;scroll-margin-top:70px}
+  h2{font-size:1.05rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--indigo2);
+    margin:0 0 10px;display:flex;align-items:center;gap:9px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:2px 2px}
+  details{border-bottom:1px solid var(--line)}
+  details:last-child{border-bottom:none}
+  summary{cursor:pointer;list-style:none;padding:15px 18px;font-weight:700;font-size:1.0rem;
+    display:flex;align-items:center;justify-content:space-between;gap:12px}
+  summary::-webkit-details-marker{display:none}
+  summary .chev{transition:transform .2s;color:var(--muted);flex:none}
+  details[open] summary .chev{transform:rotate(90deg)}
+  summary .st{display:flex;align-items:center;gap:10px}
+  .det-body{padding:2px 18px 18px;color:var(--muted)}
+
+  table{width:100%;border-collapse:collapse;font-size:.92rem}
+  .tbl-scroll{overflow-x:auto}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--indigo2);font-size:.74rem;text-transform:uppercase;letter-spacing:.7px}
+  td b{color:var(--ink)}
+  tr:last-child td{border-bottom:none}
+  .pill{font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;display:inline-block}
+  .p-over{background:rgba(255,122,138,.13);color:var(--red);border:1px solid rgba(255,122,138,.35)}
+  .p-soon{background:rgba(244,198,106,.14);color:var(--amber);border:1px solid rgba(244,198,106,.32)}
+  .p-flow{background:rgba(87,217,138,.13);color:var(--green);border:1px solid rgba(87,217,138,.3)}
+  .p-hold{background:rgba(109,124,255,.14);color:var(--indigo2);border:1px solid rgba(109,124,255,.35)}
+
+  .foot{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:.85rem}
+  .foot b{color:var(--ink)}
+  ul.clean{list-style:none;padding:0;margin:.4em 0}
+  ul.clean li{position:relative;padding:5px 0 5px 22px}
+  ul.clean li::before{content:"";position:absolute;left:2px;top:13px;width:7px;height:7px;
+    border-radius:2px;background:var(--indigo)}
+  ul.clean li b{color:var(--ink)}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-15-13:16:44 MT</div><!-- DEPLOY_STAMP_END -->
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand"><span class="dotpair"><span></span><span></span></span> Open Loops</div>
+    <nav class="navlinks">
+      <a href="#now">Needs You Now</a>
+      <a href="#you">Your List</a>
+      <a href="#us">Our List</a>
+      <a href="#content">Content Board</a>
+      <a href="#tracking">How It's Tracked</a>
+    </nav>
+    <button class="burger" aria-label="Menu" onclick="document.getElementById('mm').classList.toggle('open')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <nav class="mobile-menu" id="mm">
+    <a href="#now" onclick="document.getElementById('mm').classList.remove('open')">Needs You Now</a>
+    <a href="#you" onclick="document.getElementById('mm').classList.remove('open')">Your List</a>
+    <a href="#us" onclick="document.getElementById('mm').classList.remove('open')">Our List</a>
+    <a href="#content" onclick="document.getElementById('mm').classList.remove('open')">Content Board</a>
+    <a href="#tracking" onclick="document.getElementById('mm').classList.remove('open')">How It's Tracked</a>
+  </nav>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <span class="kicker">Internal &middot; Every commitment, one view</span>
+    <h1>Open Loops</h1>
+    <p class="sub">Everything you said you'd do and everything we said we'd do that isn't finished yet &mdash; pulled from the content board, the Money Map, the roadmaps, the task board and this week's asks. Sorted by urgency. Grouped by who owns the next move.</p>
+  </div>
+
+  <div class="scoreboard">
+    <div class="stat red"><div class="n">2</div><div class="l">Overdue on you</div></div>
+    <div class="stat amber"><div class="n">7</div><div class="l">Your list, dated</div></div>
+    <div class="stat indigo"><div class="n">9</div><div class="l">On us, in flight</div></div>
+    <div class="stat green"><div class="n">30+</div><div class="l">Content queued</div></div>
+  </div>
+
+  <div class="callout">
+    <b>Why this page exists.</b> A newsletter you committed to sat unposted for days because nothing was tracking it. Two Beehiiv issues are still sitting Queued right now. From today, every commitment below is a first-class row in the Money Map, so it shows on your daily brief until it's done &mdash; not buried in a log line. Details in <a href="#tracking">How It's Tracked</a>.
+  </div>
+
+  <!-- NEEDS YOU NOW -->
+  <section id="now">
+    <h2>Needs you now &middot; overdue</h2>
+    <div class="card">
+      <details open>
+        <summary><span class="st"><span class="pill p-over">OVERDUE</span> Send the newsletter</span><span class="chev">&#9656;</span></summary>
+        <div class="det-body">
+          <p><b>This is the miss.</b> Two issues are sitting <b>Queued</b> in Beehiiv right now: <b>Issue 5 &mdash; "The cleanup that became infrastructure"</b> and <b>Issue 6 &mdash; "AI without getting burned"</b>, plus several more written and Ready. All gate-passed. It's paste-ready. The only blocker is your send go-ahead (Beehiiv is manual paste-send by design).</p>
+          <p><b>Next move (you):</b> send Issue 5 and/or 6, or tell us which to hold. <b>Source:</b> Content Board (Notion) + Money Map log.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="st"><span class="pill p-over">BEHIND</span> Daily 5 asks</span><span class="chev">&#9656;</span></summary>
+        <div class="det-body">
+          <p>The Year-0 gate is 5 asks/day toward $3k+ clients by Sep 20. The last logged asks were <b>July 8</b> (6 asks). Nothing recorded July 9&ndash;15. Either the asks stopped or they aren't being logged &mdash; both are worth 30 seconds to close.</p>
+          <p><b>Next move (you):</b> resume the 5/day and log them (or tell us to). <b>Source:</b> Money Map asks ledger.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- YOUR LIST -->
+  <section id="you">
+    <h2>Your list &middot; by due date</h2>
+    <div class="card tbl-scroll">
+      <table>
+        <thead><tr><th>Commitment</th><th>When</th><th>Status</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><b>July 16 session</b> &mdash; confirm details + prep.</td><td><span class="pill p-soon">TMRW 7/16</span></td><td>Not started</td><td>Your to-dos</td></tr>
+          <tr><td><b>PGA Module 5</b> &mdash; submit Assignment 5 + your fintech founder/faucet outreach <em>sends</em> (target sheet already built for you). Coach Devin Bray. Day ~56/90, 0 sends / 0 calls so far.</td><td><span class="pill p-soon">DUE 7/18</span></td><td>In progress</td><td>Money Map (status-pga), ghost.md</td></tr>
+          <tr><td><b>IC July action plan</b> &mdash; tighten ICP to Recruiting Services first, finalize the workshop/audit funnel, push outreach volume. Coach Jordan Phoenix. North star: 10 discovery calls/mo.</td><td><span class="pill p-soon">DUE ~7/18</span></td><td>In progress</td><td>Money Map (status-ic-linkedin-outreach)</td></tr>
+          <tr><td><b>3 workshop LinkedIn posts</b> &mdash; to drive July 30 seats. We draft; you approve + post (only you post to your account).</td><td><span class="pill p-soon">This week</span></td><td>Not started</td><td>Your to-dos</td></tr>
+          <tr><td><b>Workshop pre-spend</b> &mdash; raise the Stripe seat cap; sign the SLCC room paperwork / venue COI (confirm which are still open).</td><td><span class="pill p-soon">Before 7/30</span></td><td>Verify</td><td>Task board (workshop-ads)</td></tr>
+          <tr><td><b>Permanent Meta token</b> &mdash; mint it. The current one keeps expiring, which breaks workshop ad management + the conversions API.</td><td><span class="pill p-soon">This week</span></td><td>Not started</td><td>Your to-dos</td></tr>
+          <tr><td><b>Lead magnet</b> &mdash; pick 1 greenlit topic from the demand review, then we pilot it.</td><td><span class="pill p-hold">Your pick</span></td><td>Waiting on you</td><td>Money Map (status-lead-magnet)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- YOUR DECISIONS / CLEANUP -->
+  <section id="you2">
+    <h2>Your list &middot; decisions &amp; cleanup</h2>
+    <div class="card tbl-scroll">
+      <table>
+        <thead><tr><th>Commitment</th><th>Status</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td><b>Cancel Paddle</b></td><td><span class="pill p-soon">Open</span></td><td>Unused &mdash; stop the spend.</td></tr>
+          <tr><td><b>Fix or cancel Apollo + Hunter</b></td><td><span class="pill p-over">Blocking</span></td><td>Both API-broken 3+ weeks. Cold-email harvest is blocked and the leads table is empty &mdash; 0 sends possible until keys/quota are fixed or the tools are dropped.</td></tr>
+          <tr><td><b>Bo phone go-live</b></td><td><span class="pill p-hold">Hold</span></td><td>After your morning test call, flip the ring-all live. Currently hold-until-proven.</td></tr>
+          <tr><td><b>Fractional HR + AI lane</b> (new CW lane)</td><td><span class="pill p-hold">Review</span></td><td>Design is built + published for you (<a href="/review/20260715-fractional-hr-ai-lane/">review page</a>). Needs your go / no-go.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- OUR LIST -->
+  <section id="us">
+    <h2>Our list &middot; owed by us / in flight</h2>
+    <div class="card tbl-scroll">
+      <table>
+        <thead><tr><th>Deliverable</th><th>Owner</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><b>Recruiting outreach fix</b> &mdash; subject-line casing + real staggered sending, then enable auto-send.</td><td>recruiting lane</td><td><span class="pill p-flow">In progress</span> &middot; auto-send step blocked on Gate</td></tr>
+          <tr><td><b>Newsletter prep</b> &mdash; today's issue paste-ready.</td><td>newsletter lane</td><td><span class="pill p-flow">Done</span> &middot; waiting on your send</td></tr>
+          <tr><td><b>CoS brief fix</b> &mdash; make the daily brief nag any "needs-you / due" item automatically (the fix that stops another silent newsletter).</td><td>this audit</td><td><span class="pill p-soon">Spec ready</span> &middot; routing to systems/Gate</td></tr>
+          <tr><td><b>Meta Advantage+ / instant-forms test</b> for the free workshop track.</td><td>workshop lane</td><td><span class="pill p-hold">Day-3 trigger</span></td></tr>
+          <tr><td><b>Workshop deferred build</b> &mdash; post-event converter, Stripe&rarr;Beehiiv sync, ad-goal flip.</td><td>workshop lane</td><td><span class="pill p-hold">Queued</span></td></tr>
+          <tr><td><b>Bounce-suppression code fix</b> &mdash; opt-out writer still points at the old Supabase endpoint, not the live table; reports success but doesn't flip opt-out.</td><td>lighthouse lane</td><td><span class="pill p-soon">Flagged</span> &middot; needs a branch</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- CONTENT BOARD -->
+  <section id="content">
+    <h2>Content board &middot; stuck &amp; aging</h2>
+    <div class="card">
+      <details open>
+        <summary><span class="st"><span class="pill p-over">FAILED</span> 2 posts failed to publish</span><span class="chev">&#9656;</span></summary>
+        <div class="det-body">
+          <ul class="clean">
+            <li><b>[LI Article] "AI Won't Fix What You Won't Face"</b> &mdash; status PublishFailed.</li>
+            <li><b>"Build: dashboards said green, feed went dark" (X)</b> &mdash; status PublishFailed.</li>
+          </ul>
+          <p>These broke on publish and nobody was told. Our lane retries or clears them; flagging so you know they didn't go out.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="st"><span class="pill p-soon">STALE</span> 2 reels scheduled 8 weeks ago</span><span class="chev">&#9656;</span></summary>
+        <div class="det-body">
+          <p>Two HAW short-video reels are still marked <b>Scheduled for May 21&ndash;22</b>. Either they posted and the status was never updated, or they're stuck. Our lane reconciles.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span class="st"><span class="pill p-hold">BACKLOG</span> Queued &amp; ready, not yet shipped</span><span class="chev">&#9656;</span></summary>
+        <div class="det-body">
+          <ul class="clean">
+            <li><b>2 Beehiiv newsletters Queued</b> (Issue 5, Issue 6) + several more newsletters marked Ready &mdash; see "Send the newsletter" above.</li>
+            <li><b>~5 LinkedIn posts Queued</b> (e.g. "A guess wearing a suit", "Why I do not soften my AI take", "The silent veto runs your calendar", 3-Signal Tracker carousel).</li>
+            <li><b>~18 X posts Queued</b> (the "Stanley" build-in-public series).</li>
+            <li><b>6 posts In Review</b> (AI-Use Policy checklist, fintech wedge/authority, FG-02 finder, HyperFrame B).</li>
+          </ul>
+          <p>Not urgent, but it's a real queue with no ship dates flowing to you. Our content lane owns cadence; surfaced here so the backlog is visible, not invisible.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- HOW IT'S TRACKED -->
+  <section id="tracking">
+    <h2>How this now gets tracked daily</h2>
+    <div class="card"><div style="padding:16px 18px;color:var(--muted)">
+      <p><b>1. Wired into the Money Map (done).</b> Five commitments that had no home are now first-class rows on <a href="/review/money-map-y0/">/review/money-map-y0/</a>: the newsletter send, the permanent Meta token, the Paddle/Apollo/Hunter cleanup, the 3 workshop posts, and the July 16 session. Your PGA-M5 and IC lanes already carry their July 18 dates.</p>
+      <p><b>2. The exact CoS-brief fix (spec ready, routing to systems).</b> Today the daily brief only nags items that were <em>hand-coded</em> into a fixed list &mdash; which is why the newsletter never nagged. The fix makes it automatic: any Money-Map row whose text says <b>NEEDS-BO:</b> or carries a <b>DUE &lt;date&gt;</b> is auto-surfaced in the brief's "needs you" section, past-due first. One data write = one daily nag, forever, no code change. As a bonus it makes your existing PGA + IC rows (which already say "DUE 2026-07-18") start nagging with zero extra work.</p>
+      <p><b>3. The content-board gap named.</b> The brief currently only checks whether the content digest <em>fired</em>, not whether specific items are unsent, failed, or aging. The same fix folds in a count of PublishFailed + aging-Queued items so a stuck newsletter or a failed post reaches you the next morning.</p>
+    </div></div>
+  </section>
+
+  <div class="foot">
+    <p><b>Sources cross-checked:</b> Content Board (Notion, live), Money Map (Supabase y0, live), roadmaps (ghost.md / lighthouse.md), the task board, the workshop lane, recruiting, and your stated to-dos this session. Real rows, not a guess &mdash; where a source was empty it's noted in the report.</p>
+    <p>Built by the open-loops audit lane &middot; 2026-07-15. This page updates in place when the list changes.</p>
+  </div>
+
+</div>
+</body>
+</html>
+
