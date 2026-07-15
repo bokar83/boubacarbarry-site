@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your morning brief</title>
+<style>
+  :root{
+    --ink:#1c1b19;
+    --ink-soft:#4a453e;
+    --muted:#8a8175;
+    --surface:#faf7f2;
+    --surface-raised:#ffffff;
+    --line:#e6ddd0;
+    --accent:#a85c2b;
+    --accent-ink:#5c2f14;
+    --accent-tint:#f3e2d2;
+    --focus:#2c5f6b;
+    --radius:14px;
+    --radius-sm:8px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--surface);
+    color:var(--ink);
+    font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{
+    font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif;
+    font-weight:600;
+    margin:0;
+    color:var(--ink);
+  }
+  a{color:var(--focus);}
+  .skip-link{
+    position:absolute;left:-999px;top:0;background:var(--ink);color:#fff;
+    padding:10px 16px;border-radius:var(--radius-sm);z-index:200;
+  }
+  .skip-link:focus{left:12px;top:12px;}
+
+  /* ---------- NAV ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:100;
+    background:rgba(250,247,242,0.96);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:none;
+  }
+  .topbar-inner{
+    max-width:640px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 18px;
+  }
+  .brand{
+    font-family:ui-serif,Georgia,serif;
+    font-size:1.05rem;font-weight:600;color:var(--ink);
+    letter-spacing:-0.01em;
+  }
+  .nav-links{
+    display:flex;gap:4px;flex-wrap:wrap;list-style:none;margin:0;padding:0;
+  }
+  .nav-links a{
+    display:inline-block;
+    padding:8px 10px;
+    font-size:0.86rem;
+    color:var(--ink-soft);
+    text-decoration:none;
+    border-radius:var(--radius-sm);
+    white-space:nowrap;
+  }
+  .nav-links a:hover,.nav-links a:focus-visible{
+    background:var(--accent-tint);
+    color:var(--accent-ink);
+    outline:none;
+  }
+  .hamburger{
+    display:none;
+    width:44px;height:44px;
+    align-items:center;justify-content:center;
+    background:transparent;border:1px solid var(--line);
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .hamburger:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+  .hamburger span{
+    display:block;width:20px;height:2px;background:var(--ink);
+    position:relative;
+  }
+  .hamburger span::before,.hamburger span::after{
+    content:"";position:absolute;left:0;width:20px;height:2px;background:var(--ink);
+    transition:transform .18s ease-out, opacity .18s ease-out;
+  }
+  .hamburger span::before{top:-6px;}
+  .hamburger span::after{top:6px;}
+  .hamburger[aria-expanded="true"] span{background:transparent;}
+  .hamburger[aria-expanded="true"] span::before{transform:translateY(6px) rotate(45deg);}
+  .hamburger[aria-expanded="true"] span::after{transform:translateY(-6px) rotate(-45deg);}
+
+  @media (max-width:640px){
+    .nav-links{
+      display:none;
+      position:absolute;top:100%;left:0;right:0;
+      flex-direction:column;gap:0;
+      background:var(--surface-raised);
+      border-bottom:1px solid var(--line);
+      padding:8px;
+      box-shadow:0 8px 20px -12px rgba(28,27,25,0.25);
+    }
+    .nav-links.open{display:flex;}
+    .nav-links a{padding:12px 14px;font-size:0.95rem;width:100%;}
+    .hamburger{display:flex;}
+  }
+
+  /* ---------- LAYOUT ---------- */
+  main{max-width:640px;margin:0 auto;padding:20px 18px 60px;}
+  .masthead{padding:6px 0 22px;}
+  .masthead h1{font-size:1.9rem;line-height:1.15;letter-spacing:-0.01em;}
+  .masthead .sub{
+    margin-top:8px;color:var(--ink-soft);font-size:0.98rem;line-height:1.55;
+  }
+
+  /* ---------- MONEY MOVES (pinned, dominant) ---------- */
+  .money{
+    background:var(--surface-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 20px 8px;
+    margin-bottom:28px;
+    box-shadow:0 1px 0 rgba(28,27,25,0.02);
+  }
+  .money-label{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:0.74rem;letter-spacing:0.09em;text-transform:uppercase;
+    color:var(--accent-ink);font-weight:700;margin-bottom:4px;
+  }
+  .money-label::before{
+    content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);
+    flex-shrink:0;
+  }
+  .money h2{font-size:1.5rem;margin-bottom:14px;line-height:1.2;}
+  .move{
+    padding:16px 0;
+    border-top:1px solid var(--line);
+  }
+  .move:first-of-type{border-top:none;padding-top:2px;}
+  .move-title{
+    font-size:1.08rem;font-weight:700;color:var(--ink);
+    margin-bottom:6px;line-height:1.3;
+  }
+  .move-num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;
+    background:var(--accent);color:#fff;
+    font-size:0.78rem;font-weight:700;
+    margin-right:8px;flex-shrink:0;position:relative;top:-1px;
+  }
+  .move-body{
+    color:var(--ink-soft);font-size:0.96rem;line-height:1.55;margin:0 0 12px;
+  }
+  .chip{
+    display:inline-block;
+    background:var(--accent-tint);
+    color:var(--accent-ink);
+    border:1px solid #e6bd97;
+    padding:8px 14px;
+    border-radius:999px;
+    font-size:0.85rem;font-weight:600;
+    line-height:1.3;
+  }
+
+  /* ---------- COLLAPSIBLE SECTIONS ---------- */
+  section.block{
+    scroll-margin-top:70px;
+    margin-bottom:16px;
+  }
+  details{
+    background:var(--surface-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  details[open]{padding-bottom:4px;}
+  summary{
+    list-style:none;
+    cursor:pointer;
+    padding:16px 18px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    font-family:ui-serif,Georgia,serif;
+    font-weight:600;
+    font-size:1.12rem;
+    color:var(--ink);
+  }
+  summary::-webkit-details-marker{display:none;}
+  summary .arrow{
+    flex-shrink:0;
+    width:22px;height:22px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--muted);
+    transition:transform .18s ease-out;
+    font-size:0.9rem;
+  }
+  details[open] summary .arrow{transform:rotate(90deg);}
+  summary:focus-visible{outline:2px solid var(--focus);outline-offset:-2px;}
+  .block-body{padding:0 18px 16px;}
+  .block-body ul{margin:0;padding:0;list-style:none;}
+  .block-body li{
+    padding:10px 0;
+    border-top:1px solid var(--line);
+    font-size:0.95rem;
+    color:var(--ink-soft);
+    line-height:1.55;
+  }
+  .block-body li:first-child{border-top:none;padding-top:0;}
+  .sub-label{
+    font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;
+    margin:14px 0 4px;
+  }
+  .sub-label:first-child{margin-top:0;}
+  .note-line{
+    font-size:0.86rem;color:var(--muted);font-style:italic;
+    margin-top:10px;
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    max-width:640px;margin:32px auto 0;padding:22px 18px 40px;
+    border-top:1px solid var(--line);
+  }
+  footer .reply{
+    font-size:1rem;color:var(--ink);margin-bottom:14px;line-height:1.5;
+  }
+  footer .sources{
+    font-size:0.82rem;color:var(--muted);line-height:1.55;
+  }
+
+  @media (max-width:400px){
+    .masthead h1{font-size:1.6rem;}
+    .money h2{font-size:1.3rem;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-15-10:47:31 MT</div><!-- DEPLOY_STAMP_END -->
+
+<a href="#money-moves" class="skip-link">Skip to money moves</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="brand">Morning brief</span>
+    <nav aria-label="Section navigation" style="position:relative;">
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#money-moves">Money moves</a></li>
+        <li><a href="#what-moved">What moved</a></li>
+        <li><a href="#needs-you">Needs you</a></li>
+        <li><a href="#calendar">Calendar</a></li>
+        <li><a href="#on-track">On track</a></li>
+        <li><a href="#emails">Emails</a></li>
+      </ul>
+    </nav>
+    <button class="hamburger" id="hamburgerBtn" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle section menu">
+      <span></span>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+  <div class="masthead">
+    <h1>Your morning brief</h1>
+    <p class="sub">Wednesday, July 15. Money moves first, then what moved, what needs you, and your day. Skim the top in 30 seconds. Open a section for depth.</p>
+  </div>
+
+  <section id="money-moves" class="money" aria-labelledby="money-h2">
+    <span class="money-label">Today, your money moves</span>
+    <h2 id="money-h2">Do these today</h2>
+
+    <div class="move">
+      <div class="move-title"><span class="move-num">1</span>Lock the July 30 venue. Today.</div>
+      <p class="move-body">The room for your workshop is not secured yet. The contract is unsigned, and the deposit and certificate of insurance are still owed. The cancellation terms harden tomorrow. You are already paying for ads to fill this room, so this is the one that cannot wait.</p>
+      <span class="chip">Your call: sign, send the deposit, send the certificate of insurance, today.</span>
+    </div>
+
+    <div class="move">
+      <div class="move-title"><span class="move-num">2</span>Make your pipeline asks.</div>
+      <p class="move-body">The recruiting emails already went out this morning, so today's revenue work is the part only you can do. Your direct outreach and warm follow-ups to people who could actually pay. Five new, five follow-ups. Skip anyone already contacted.</p>
+      <span class="chip">Your call: five sends, five follow-ups.</span>
+    </div>
+
+    <div class="move">
+      <div class="move-title"><span class="move-num">3</span>Put the phone line live.</div>
+      <p class="move-body">As of last night this was your one remaining step. Place a test call, and if it sounds like you, flip it to ring live. If you already did this, ignore it.</p>
+      <span class="chip">Your call: test it, then flip it live.</span>
+    </div>
+  </section>
+
+  <section id="what-moved" class="block">
+    <details open>
+      <summary>What moved <span class="arrow">&#8250;</span></summary>
+      <div class="block-body">
+        <ul>
+          <li>Your cold outreach went live. The first emails reached four staffing-firm owners this morning and landed in their inboxes, not spam. First real pipeline in motion.</li>
+          <li>New workshop pages shipped and are live. Shorter, clearer, a free seat and a paid seat, and the tracking is fixed. This replaces the long page that was losing people.</li>
+          <li>The ads are fixed and running. The account issue was cleared and both angles are live at about twenty-five dollars a day. Saturday is the first real read on whether they convert.</li>
+          <li>The phone assistant is finished and verified end to end. One test call from live.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section id="needs-you" class="block">
+    <details open>
+      <summary>Needs you <span class="arrow">&#8250;</span></summary>
+      <div class="block-body">
+        <ul>
+          <li>The venue, today. It hardens tomorrow. (money move 1)</li>
+          <li>The phone line go-live. (money move 3)</li>
+          <li>Saturday: a keep or kill call on the ads after three days of numbers. Nothing to do today, just know it is coming.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section id="calendar" class="block">
+    <details>
+      <summary>Today's calendar <span class="arrow">&#8250;</span></summary>
+      <div class="block-body">
+        <ul>
+          <li>No client meetings and nothing locked today.</li>
+          <li>Two optional coaching clinics if you want them. Niche and Content Clinic with Oli at 5:00 in the morning, and with Katie at 9:00.</li>
+          <li>Otherwise your standard day. The 10:00 outreach sprint, three deep-work blocks, family time at 5:15, shutdown at 8:15.</li>
+        </ul>
+        <p class="note-line">Note: Skool and Stack events are not wired in yet. See the sources note at the bottom.</p>
+      </div>
+    </details>
+  </section>
+
+  <section id="on-track" class="block">
+    <details>
+      <summary>On track / off track <span class="arrow">&#8250;</span></summary>
+      <div class="block-body">
+        <ul>
+          <li>Workshop, July 30: at risk. The venue is not locked yet, and no seats have sold. Saturday is the go or no-go on the ads. The pieces are built. The room and the first sale are what is missing.</li>
+          <li>PGA coaching: no clean status yet. Your assignments live across Skool and Slack with no due-date list we can read. To tell you on track or off track here, we need a simple due-date list. Flagged.</li>
+          <li>Consulting: the target exists, ten discovery calls a month, but the actuals are not being logged anywhere we can read. Same fix as above.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section id="emails" class="block">
+    <details>
+      <summary>Important emails <span class="arrow">&#8250;</span></summary>
+      <div class="block-body">
+        <p class="sub-label">Business</p>
+        <ul>
+          <li>The July 30 venue contract from the college (this is money move 1).</li>
+          <li>No new prospect replies yet. The four recruiting firms were emailed this morning. A reply is your cue to book a call.</li>
+        </ul>
+        <p class="sub-label">Personal</p>
+        <ul>
+          <li>Capital One flagged your account ending 5071 as overdrawn. Worth a quick look.</li>
+          <li>Namecheap says some of your domains expire in 30 days.</li>
+        </ul>
+        <p class="note-line">Sensitive personal threads are never shown here.</p>
+      </div>
+    </details>
+  </section>
+
+  <section id="other" class="block">
+    <details>
+      <summary>Other <span class="arrow">&#8250;</span></summary>
+      <div class="block-body">
+        <ul>
+          <li>Three other daily emails still hit your inbox this morning. Once you approve this brief, those get switched off so this is the only one you get.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+</main>
+
+<footer>
+  <p class="reply">Reply with what you got done and anything you want teed up. Nothing sends without your word.</p>
+  <p class="sources">Sample for your approval. Format not yet live. Live data today: money moves, what moved, calendar, emails. Needs a source before it is fully automatic: Skool and Stack events, and the PGA and consulting status lines.</p>
+</footer>
+
+<script>
+(function(){
+  var btn = document.getElementById('hamburgerBtn');
+  var nav = document.getElementById('navLinks');
+  if(!btn || !nav) return;
+
+  function closeNav(){
+    nav.classList.remove('open');
+    btn.setAttribute('aria-expanded','false');
+  }
+  function openNav(){
+    nav.classList.add('open');
+    btn.setAttribute('aria-expanded','true');
+  }
+
+  btn.addEventListener('click', function(){
+    var expanded = btn.getAttribute('aria-expanded') === 'true';
+    if(expanded){ closeNav(); } else { openNav(); }
+  });
+
+  nav.addEventListener('click', function(e){
+    if(e.target.tagName === 'A'){ closeNav(); }
+  });
+
+  document.addEventListener('click', function(e){
+    if(!nav.contains(e.target) && !btn.contains(e.target)){ closeNav(); }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){ closeNav(); btn.focus(); }
+  });
+
+  window.addEventListener('resize', function(){
+    if(window.innerWidth > 640){ closeNav(); }
+  });
+})();
+</script>
+</body>
+</html>
+
