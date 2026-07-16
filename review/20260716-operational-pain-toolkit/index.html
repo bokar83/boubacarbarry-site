@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Operational Pain Toolkit (run this with anyone)</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a30; --panel2:#0f1729; --ink:#e8ecf6; --muted:#a3adc7;
+    --line:#26304d; --indigo:#6d7cff; --indigo2:#8b97ff; --teal:#3fd0c9; --amber:#f4c66a;
+    --green:#57d98a; --red:#ff7a8a; --chip:#1b2440;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--indigo2);text-decoration:none}
+  .wrap{max-width:860px;margin:0 auto;padding:0 18px 96px}
+
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(11,16,32,.92);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-inner{max-width:860px;margin:0 auto;display:flex;align-items:center;
+    justify-content:space-between;padding:12px 18px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px;font-size:.98rem}
+  .brand .dotpair{display:flex;gap:4px}
+  .brand .dotpair span{width:9px;height:9px;border-radius:50%;background:var(--indigo)}
+  .brand .dotpair span:last-child{background:var(--teal)}
+  .navlinks{display:flex;gap:16px}
+  .navlinks a{color:var(--muted);font-size:.9rem;font-weight:600}
+  .navlinks a:hover{color:var(--ink)}
+  .burger{display:none;background:none;border:1px solid var(--line);border-radius:9px;
+    padding:8px;cursor:pointer;color:var(--ink)}
+  .mobile-menu{display:none;flex-direction:column;border-top:1px solid var(--line);
+    background:var(--panel2)}
+  .mobile-menu a{padding:13px 22px;color:var(--muted);font-weight:600;
+    border-bottom:1px solid var(--line)}
+  .mobile-menu a:active{color:var(--ink);background:var(--chip)}
+  @media(max-width:760px){
+    .navlinks{display:none}
+    .burger{display:inline-flex}
+    .mobile-menu.open{display:flex}
+  }
+
+  .hero{padding:40px 0 8px}
+  .kicker{display:inline-flex;align-items:center;gap:8px;font-size:.72rem;font-weight:700;
+    letter-spacing:1.4px;text-transform:uppercase;color:var(--teal);
+    border:1px solid var(--line);background:var(--chip);padding:6px 12px;border-radius:999px}
+  h1{font-size:2rem;line-height:1.16;margin:18px 0 8px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:1.06rem;max-width:660px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px}
+  .meta .m{font-size:.82rem;background:var(--chip);border:1px solid var(--line);
+    border-radius:8px;padding:6px 11px;color:var(--muted)}
+  .meta .m b{color:var(--ink);font-weight:700}
+
+  section{margin-top:30px;scroll-margin-top:70px}
+  h2{font-size:1rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--indigo2);
+    margin:0 0 10px;display:flex;align-items:center;gap:9px}
+
+  .saythis{border:1px solid rgba(87,217,138,.35);border-radius:16px;
+    background:linear-gradient(180deg,#122a20,#0f1f19);padding:6px 20px 20px;margin-top:22px}
+  .saythis .lead{font-size:1.28rem;line-height:1.5;color:var(--ink);font-weight:700;
+    padding:18px 0 6px;border-bottom:1px solid rgba(87,217,138,.22)}
+  .saythis .lead .accent{color:var(--teal)}
+  .tp{padding:13px 0;border-bottom:1px solid var(--line)}
+  .tp:last-child{border-bottom:none}
+  .tp .tag{font-size:.7rem;font-weight:800;letter-spacing:.7px;text-transform:uppercase;
+    color:var(--green);display:block;margin-bottom:3px}
+  .tp p{margin:0;color:var(--ink)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:2px 2px}
+  details{border-bottom:1px solid var(--line)}
+  details:last-child{border-bottom:none}
+  summary{cursor:pointer;list-style:none;padding:15px 18px;font-weight:700;font-size:1rem;
+    display:flex;align-items:center;justify-content:space-between;gap:12px}
+  summary::-webkit-details-marker{display:none}
+  summary .chev{transition:transform .2s;color:var(--muted);flex:none}
+  details[open] summary .chev{transform:rotate(90deg)}
+  .det-body{padding:2px 18px 18px;color:var(--muted)}
+  .det-body p{margin:.5em 0}
+  .det-body strong{color:var(--ink)}
+
+  .thesis{font-size:1.16rem;line-height:1.5;color:var(--ink);font-weight:600;
+    padding:20px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--indigo);
+    border-radius:12px}
+  .thesis .accent{color:var(--teal)}
+
+  ul.clean{list-style:none;padding:0;margin:.4em 0}
+  ul.clean li{position:relative;padding:6px 0 6px 24px}
+  ul.clean li::before{content:"";position:absolute;left:2px;top:14px;width:7px;height:7px;
+    border-radius:2px;background:var(--indigo)}
+  ul.clean li strong{color:var(--ink)}
+
+  .say{background:rgba(63,208,201,.07);border:1px solid rgba(63,208,201,.28);
+    border-radius:10px;padding:12px 15px;margin:10px 0;color:var(--ink);font-weight:600}
+  .say .lbl{display:block;font-size:.68rem;font-weight:800;letter-spacing:.7px;
+    text-transform:uppercase;color:var(--teal);margin-bottom:5px}
+
+  .q{border:1px solid var(--line);border-radius:12px;background:var(--panel2);
+    padding:14px 16px;margin:11px 0}
+  .q .qtext{color:var(--ink);font-weight:600;font-size:1.02rem}
+  .q .why{color:var(--muted);font-size:.9rem;margin-top:5px}
+  .q .why b{color:var(--teal)}
+  .q .pin{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.6px;
+    text-transform:uppercase;color:var(--muted);background:var(--chip);
+    border:1px solid var(--line);border-radius:6px;padding:3px 8px;margin-top:8px}
+
+  .mine{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .mine:last-child{border-bottom:none}
+  .mine .x{color:var(--red);font-weight:800;flex:none;margin-top:1px}
+  .mine p{margin:0;color:var(--muted)}
+  .mine p b{color:var(--ink)}
+
+  .flag{background:rgba(244,198,106,.07);border:1px solid rgba(244,198,106,.28);
+    border-radius:12px;padding:14px 18px;color:var(--muted)}
+  .flag b{color:var(--amber)}
+
+  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+  table{border-collapse:collapse;width:100%;min-width:600px;font-size:.92rem}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--indigo2);font-size:.72rem;text-transform:uppercase;letter-spacing:.9px;
+    background:var(--chip);position:sticky;top:0}
+  tr:last-child td{border-bottom:none}
+  td b{color:var(--ink)}
+  .pill{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.4px;
+    border-radius:999px;padding:3px 9px;white-space:nowrap}
+  .p-proc{background:rgba(109,124,255,.14);color:#a9b3ff;border:1px solid rgba(109,124,255,.4)}
+  .p-auto{background:rgba(63,208,201,.12);color:var(--teal);border:1px solid rgba(63,208,201,.4)}
+  .p-ai{background:rgba(244,198,106,.12);color:var(--amber);border:1px solid rgba(244,198,106,.4)}
+  .p-meas{background:rgba(87,217,138,.12);color:var(--green);border:1px solid rgba(87,217,138,.4)}
+
+  .foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:.84rem}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-16-16:18:34 MT</div><!-- DEPLOY_STAMP_END -->
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand"><span class="dotpair"><span></span><span></span></span> Operational Pain Toolkit</div>
+    <nav class="navlinks">
+      <a href="#ask">Ask This</a>
+      <a href="#map">Pain Map</a>
+      <a href="#tools">Tool Map</a>
+      <a href="#reuse">Other Rooms</a>
+      <a href="#arch">Architects</a>
+      <a href="#mines">Landmines</a>
+    </nav>
+    <button class="burger" aria-label="Menu" onclick="document.getElementById('mm').classList.toggle('open')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <nav class="mobile-menu" id="mm">
+    <a href="#ask" onclick="document.getElementById('mm').classList.remove('open')">Ask This (live block)</a>
+    <a href="#map" onclick="document.getElementById('mm').classList.remove('open')">The Pain Map</a>
+    <a href="#tools" onclick="document.getElementById('mm').classList.remove('open')">Pain to Tool Map</a>
+    <a href="#reuse" onclick="document.getElementById('mm').classList.remove('open')">Same Sheet, Other Rooms</a>
+    <a href="#arch" onclick="document.getElementById('mm').classList.remove('open')">Architecture Flavor</a>
+    <a href="#mines" onclick="document.getElementById('mm').classList.remove('open')">Landmines</a>
+    <a href="#why" onclick="document.getElementById('mm').classList.remove('open')">Why This Is Reusable</a>
+  </nav>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <span class="kicker">Diagnostic, not a pitch deck</span>
+    <h1>The Operational Pain Toolkit</h1>
+    <p class="sub">The questions I ask to find out where a business is bleeding, and what to listen for in the answer. Built for the architect conversation. Runs with a recruiter, a CPA, or an insurance agency without changing a word.</p>
+    <div class="meta">
+      <span class="m"><b>Use:</b> live, on the call</span>
+      <span class="m"><b>Opener:</b> where are your hours leaking</span>
+      <span class="m"><b>Rule:</b> question first, tool second</span>
+      <span class="m"><b>Never:</b> lead with AI</span>
+    </div>
+  </div>
+
+  <div class="thesis">
+    Pain is <span class="accent">industry agnostic</span>. I don't come in with a hammer looking for a nail. I have a full toolbox, and by asking the right question I know which tool to pull out. So I go narrow on the <span class="accent">problem</span> and stay wide open on <span class="accent">who has it</span>.
+  </div>
+
+  <!-- ===================== TOP BLOCK: what he says live ===================== -->
+  <section id="ask">
+    <h2>Ask This (the live block)</h2>
+
+    <div class="saythis">
+      <p class="lead">Open here, every time:<br><span class="accent">"Where are your hours leaking?"</span></p>
+
+      <div class="tp">
+        <span class="tag">How to run it</span>
+        <p>Ask, then stop talking. The pain that comes out first is usually the loudest, not the most expensive. Keep going. I'm listening for which one they get emotional about, because that's the one they'll pay to fix.</p>
+      </div>
+      <div class="tp">
+        <span class="tag">The whole move</span>
+        <p>I'm listening for what's costing them, in their words. The tool comes after, and often it isn't AI.</p>
+      </div>
+      <div class="tp">
+        <span class="tag">Close on their priority, not mine</span>
+        <p>"Of everything you just told me, which one costs you the most?" Let them rank it. Then I fix what matters most first.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--muted);margin:22px 0 4px;font-size:.9rem">Eight questions. I don't need all of them. Two good ones and real listening beats running the list.</p>
+
+    <div class="q">
+      <div class="qtext">1. "What eats your week that has nothing to do with the work you trained for?"</div>
+      <div class="why"><b>Listen for:</b> paperwork, email, chasing people, fixing someone else's mistake. Anything an owner resents is a pain they'll fund. If they laugh before answering, that's the one.</div>
+      <div class="pin">Reveals: admin eating the billable day</div>
+    </div>
+
+    <div class="q">
+      <div class="qtext">2. "What's the last thing that fell through the cracks? What happened?"</div>
+      <div class="why"><b>Listen for:</b> "it was in my inbox," "I thought she had it," "nobody told me." Dropped work points at a missing system. Ask what it cost them and let the number sit.</div>
+      <div class="pin">Reveals: work that gets dropped</div>
+    </div>
+
+    <div class="q">
+      <div class="qtext">3. "If you took two weeks off with no phone, what breaks first?"</div>
+      <div class="why"><b>Listen for:</b> a name. Sometimes it's their own. That name is the bottleneck and the risk in one answer. Follow with "and what happens if that person leaves?"</div>
+      <div class="pin">Reveals: the one-person dependency</div>
+    </div>
+
+    <div class="q">
+      <div class="qtext">4. "Walk me through what happens between winning the work and starting it."</div>
+      <div class="why"><b>Listen for:</b> the pauses and the "then I send it to." Every handoff is a place work waits or gets re-typed. Count the times the same information gets entered twice.</div>
+      <div class="pin">Reveals: handoffs that leak</div>
+    </div>
+
+    <div class="q">
+      <div class="qtext">5. "How long does it take to get a number in front of a client?"</div>
+      <div class="why"><b>Listen for:</b> "it depends," "a few days," "I have to dig up the last one we did." Slow quoting loses work they never hear about. Ask how many they'd win if it took an hour.</div>
+      <div class="pin">Reveals: quoting and estimating drag</div>
+    </div>
+
+    <div class="q">
+      <div class="qtext">6. "Who do you have to chase, and how often?"</div>
+      <div class="why"><b>Listen for:</b> clients, subs, approvals, unpaid invoices. Chasing is pure unpaid labor, and it's usually the cheapest thing on this list to fix.</div>
+      <div class="pin">Reveals: chasing and follow-up</div>
+    </div>
+
+    <div class="q">
+      <div class="qtext">7. "If I asked how many hours went into that project last month, how fast could you tell me?"</div>
+      <div class="why"><b>Listen for:</b> the hesitation before the answer. If they can't see it, they can't price it, and they've been eating the difference. "We'd have to pull that together" is the whole diagnosis.</div>
+      <div class="pin">Reveals: utilization blind spots</div>
+    </div>
+
+    <div class="q">
+      <div class="qtext">8. "What takes a week that you feel should take a day?"</div>
+      <div class="why"><b>Listen for:</b> waiting on one approval, one person, one file. Usually the work is fine and the waiting between the work is what stretches it. Ask where it sits and who it sits with.</div>
+      <div class="pin">Reveals: work that takes too long</div>
+    </div>
+
+    <div class="say">
+      <span class="lbl">If they ask what I'd do about it</span>
+      Most of what I just heard doesn't need AI. A lot of it is plain automation, and some of it is just a better process. I'll tell you straight which is which, and if AI isn't the answer, I'll say so.
+    </div>
+  </section>
+
+  <!-- ===================== THE MAP ===================== -->
+  <section id="map">
+    <h2>The Pain Map (the detail, read before the call)</h2>
+    <p style="color:var(--muted);margin:0 0 12px;font-size:.94rem">Eight pains that keep showing up, whatever the business does for a living. The bones are industry agnostic. The examples underneath are architecture-flavored, and they're the only part I swap when I walk into a different room.</p>
+
+    <div class="card">
+      <details open>
+        <summary><span>1. Admin eating the billable day</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p><strong>The shape:</strong> the people who make the money spend their day on work that doesn't make money. The most expensive person in the building is doing $20-an-hour tasks.</p>
+          <p><strong>In an architecture firm:</strong> a principal who bills for design judgment is formatting fee proposals, filing RFIs, and chasing consultant drawings.</p>
+          <p><strong>What it costs:</strong> this one is measured in the gap between the rate they charge and the work they're actually doing.</p>
+          <p><strong>The question:</strong> "What eats your week that has nothing to do with the work you trained for?"</p>
+        </div>
+      </details>
+      <details>
+        <summary><span>2. Work that gets dropped</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p><strong>The shape:</strong> things fall through, and nobody finds out until the client does. The tracking lives in an inbox or a head, so there's no moment where a miss becomes visible.</p>
+          <p><strong>In an architecture firm:</strong> an RFI answered in an email thread and never logged. A revision request from a client that dies in someone's inbox and shows up at the next milestone.</p>
+          <p><strong>What it costs:</strong> rework, an unpaid change, and the client's trust, which is the expensive one.</p>
+          <p><strong>The question:</strong> "What's the last thing that fell through the cracks? What happened?"</p>
+        </div>
+      </details>
+      <details>
+        <summary><span>3. The one-person dependency</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p><strong>The shape:</strong> one person is the only one who can do a thing, and it isn't written down anywhere. That's a capacity ceiling and a business risk wearing the same coat.</p>
+          <p><strong>In an architecture firm:</strong> one person knows the drafting standards, the sheet setup, and how the firm does things. New hires learn by interrupting them. When they're out, everything queues behind them.</p>
+          <p><strong>What it costs:</strong> the firm can't grow past that person, and can't survive them leaving.</p>
+          <p><strong>The question:</strong> "If you took two weeks off with no phone, what breaks first?"</p>
+        </div>
+      </details>
+      <details>
+        <summary><span>4. Handoffs that leak</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p><strong>The shape:</strong> work is fine inside each step and falls apart between them. Information gets re-typed, context gets lost, and the work waits.</p>
+          <p><strong>In an architecture firm:</strong> design to production. Production to the consultants. Drawings to the contractor. Every boundary is a place where a decision made in a meeting never makes it onto the sheet.</p>
+          <p><strong>What it costs:</strong> the same information entered three times, and errors that surface downstream where they're most expensive.</p>
+          <p><strong>The question:</strong> "Walk me through what happens between winning the work and starting it."</p>
+        </div>
+      </details>
+      <details>
+        <summary><span>5. Quoting and estimating drag</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p><strong>The shape:</strong> getting a number to a client is slow and starts from scratch every time, so it's inconsistent and often wrong.</p>
+          <p><strong>In an architecture firm:</strong> fee proposals rebuilt by hand from the last similar project, which someone has to find first. The hours get guessed because nobody's sure what the last one actually took.</p>
+          <p><strong>What it costs:</strong> work lost to whoever answered first, and work won at a fee that loses money.</p>
+          <p><strong>The question:</strong> "How long does it take to get a number in front of a client?"</p>
+        </div>
+      </details>
+      <details>
+        <summary><span>6. Chasing and follow-up</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p><strong>The shape:</strong> a human being's day spent asking other people for things they already agreed to send. Nobody's job, everybody's problem.</p>
+          <p><strong>In an architecture firm:</strong> chasing consultant deliverables, chasing client sign-off on a revision, chasing an unanswered RFI, chasing an invoice that's forty days out.</p>
+          <p><strong>What it costs:</strong> unpaid hours, plus a schedule that slips for reasons that have nothing to do with the work.</p>
+          <p><strong>The question:</strong> "Who do you have to chase, and how often?"</p>
+        </div>
+      </details>
+      <details>
+        <summary><span>7. Utilization blind spots</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p><strong>The shape:</strong> they can't see where the hours went until after the money's gone. Every decision about pricing and capacity is a guess.</p>
+          <p><strong>In an architecture firm:</strong> the classic one. Billable hours against a fixed fee, found out at the end. Which projects actually made money, and which phase ate the budget, is a question answered in hindsight.</p>
+          <p><strong>What it costs:</strong> underpriced work repeated, because nobody knew the last one lost money.</p>
+          <p><strong>The question:</strong> "If I asked how many hours went into that project last month, how fast could you tell me?"</p>
+        </div>
+      </details>
+      <details>
+        <summary><span>8. Work that takes too long</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p><strong>The shape:</strong> the cycle is slow, but the work isn't. It's the waiting between the work. Approvals, reviews, one person's attention.</p>
+          <p><strong>In an architecture firm:</strong> a revision loop that runs three rounds because the first round asked the wrong question. Spec compliance checked at the end instead of along the way, so it fails late.</p>
+          <p><strong>What it costs:</strong> deadline pressure that gets paid for with unbilled overtime.</p>
+          <p><strong>The question:</strong> "What takes a week that you feel should take a day?"</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ===================== TOOL MAP ===================== -->
+  <section id="tools">
+    <h2>Pain to Tool Map (which tool comes out of the box)</h2>
+    <p style="color:var(--muted);margin:0 0 12px;font-size:.94rem">Look at the middle column. Most of it isn't AI. Saying that out loud is the whole differentiator, because everyone else in the market has one tool and it's always the answer.</p>
+
+    <div class="tblwrap">
+      <table>
+        <thead>
+          <tr><th>Pain</th><th>First tool out</th><th>What it actually is</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Admin eating the billable day</b></td>
+            <td><span class="pill p-auto">Automation</span> <span class="pill p-ai">AI fits</span></td>
+            <td>Take the repetitive intake and paperwork off the expensive person. Notes and first drafts are a fair AI job. The filing is not.</td>
+          </tr>
+          <tr>
+            <td><b>Work that gets dropped</b></td>
+            <td><span class="pill p-auto">Automation</span></td>
+            <td>Something that remembers and nags. No intelligence required. This is a tracker and a reminder, and it's boring on purpose.</td>
+          </tr>
+          <tr>
+            <td><b>The one-person dependency</b></td>
+            <td><span class="pill p-proc">Process</span> <span class="pill p-ai">AI helps</span></td>
+            <td>Write down what's in their head, then remove them from the path. AI is useful for turning a recording of them explaining it into the first draft of the doc.</td>
+          </tr>
+          <tr>
+            <td><b>Handoffs that leak</b></td>
+            <td><span class="pill p-proc">Process</span> <span class="pill p-auto">Automation</span></td>
+            <td>A checklist at the boundary, then automate the notification. Almost never a tool problem. Usually nobody owns the seam.</td>
+          </tr>
+          <tr>
+            <td><b>Quoting and estimating drag</b></td>
+            <td><span class="pill p-proc">Process</span> <span class="pill p-ai">AI fits</span></td>
+            <td>A reusable model beats a blank page. Once past quotes are in one place, AI can draft from them, but the template does most of the work.</td>
+          </tr>
+          <tr>
+            <td><b>Chasing and follow-up</b></td>
+            <td><span class="pill p-auto">Automation</span></td>
+            <td>Sequenced reminders that go out whether anyone remembers or not. Cheapest fix on this page and usually the fastest win. No AI anywhere near it.</td>
+          </tr>
+          <tr>
+            <td><b>Utilization blind spots</b></td>
+            <td><span class="pill p-meas">Measure first</span></td>
+            <td>You can't fix what you can't see. Get the hours visible before touching anything else. This is a reporting job, and pretending it's an AI job is how people waste money.</td>
+          </tr>
+          <tr>
+            <td><b>Work that takes too long</b></td>
+            <td><span class="pill p-proc">Process</span></td>
+            <td>Usually one approval nobody needs. Deleting a step beats automating it. The best tool here is the one I don't use.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flag" style="margin-top:14px">
+      <b>Read the column again before the call.</b> Most of these lead with automation or process. A couple make room for AI. One says measure first and don't build anything yet. That ratio is the position. If I walk in and everything looks like an AI job, I've stopped diagnosing and started selling.
+    </div>
+  </section>
+
+  <!-- ===================== REUSE ===================== -->
+  <section id="reuse">
+    <h2>Same Sheet, Other Rooms</h2>
+    <p style="color:var(--muted);margin:0 0 12px;font-size:.94rem">The questions don't change. Only the example changes. Same pain, different costume.</p>
+
+    <div class="tblwrap">
+      <table>
+        <thead>
+          <tr><th>Pain</th><th>Architect</th><th>Recruiter</th><th>CPA</th><th>Insurance agency</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><b>Admin eats the day</b></td><td>Fee proposals, RFI filing</td><td>Resume formatting, scheduling</td><td>Document chasing at close</td><td>Multi-carrier data entry</td></tr>
+          <tr><td><b>Work gets dropped</b></td><td>Unlogged RFI</td><td>Candidate goes cold</td><td>Missed filing deadline</td><td>Renewal nobody called</td></tr>
+          <tr><td><b>One-person dependency</b></td><td>Only they know the standards</td><td>Only they own the client</td><td>Only they know that return</td><td>Only they know the carrier</td></tr>
+          <tr><td><b>Handoffs leak</b></td><td>Design to production</td><td>Sourcer to recruiter</td><td>Preparer to reviewer</td><td>Quote to bind</td></tr>
+          <tr><td><b>Quoting drag</b></td><td>Fee proposal from scratch</td><td>Slow candidate submittal</td><td>Scoping a new engagement</td><td>Slow quote turnaround</td></tr>
+          <tr><td><b>Chasing</b></td><td>Consultants, sign-off</td><td>Candidates, hiring managers</td><td>Clients for documents</td><td>Clients for renewal info</td></tr>
+          <tr><td><b>Utilization blind</b></td><td>Hours vs fixed fee</td><td>Time-to-fill</td><td>Realization per return</td><td>Book profitability</td></tr>
+          <tr><td><b>Takes too long</b></td><td>Revision loops</td><td>Time-to-submit</td><td>Turnaround time</td><td>Time to issue</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="say" style="margin-top:14px">
+      <span class="lbl">Why this works</span>
+      Billable hours, utilization, and deadline-driven project work are the same operational shape in an architecture firm, a consulting firm, and a recruiting firm. That's not a coincidence, and it's why I don't have to relearn my job every time I change rooms.
+    </div>
+  </section>
+
+  <!-- ===================== ARCH ===================== -->
+  <section id="arch">
+    <h2>Architecture Flavor (for this specific room)</h2>
+    <div class="card">
+      <details open>
+        <summary><span>What I know before I walk in</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p><strong>The buyer:</strong> Principal or Director of Operations. Not a price-shopper, a peer.</p>
+          <p><strong>The shape of the business:</strong> deadline-driven, project-based, billable hours against a fee. Utilization is the number that decides whether the year worked.</p>
+          <p><strong>The wedge:</strong> "where are your hours leaking." It lands on this buyer because it's the same question they're already asking themselves and answering too late.</p>
+          <p><strong>Where it sits for me:</strong> a solid fit. Not the strongest one I have, since my HR and Fortune 100 background doesn't carry the same weight here that it does with a recruiter. The operator angle is what earns the room. Worth the meeting, and worth building this sheet once and reusing it everywhere else.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span>Vocabulary that shows I've been in the room</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p>Use sparingly, and only where it's true. Enough to show I know the shape of the work. Not so much that I'm pretending to be an architect.</p>
+          <ul class="clean">
+            <li><strong>RFI</strong>, request for information, and the chasing that comes with it</li>
+            <li><strong>Redlines and markups</strong>, the revision loop</li>
+            <li><strong>Spec compliance</strong>, checked late instead of along the way</li>
+            <li><strong>Drafting standards</strong>, the thing living in one person's head</li>
+            <li><strong>Consultant coordination</strong>, structural, mechanical, electrical, and who's late</li>
+            <li><strong>Utilization</strong> and <strong>realization</strong>, hours against the fee</li>
+            <li><strong>Phases</strong>, schematic through construction administration, and which one eats the budget</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary><span>What I'm not doing here</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p>I'm not walking in with an AI-for-architects pitch. This is operational, and it stays operational until they tell me otherwise. If they want to talk about where AI fits in the firm, I let them raise it, and then I'm honest about the parts where it doesn't.</p>
+          <p>I'm also not solving it in the room. I'm finding out what hurts and which one costs the most. That's the whole job on this call.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ===================== LANDMINES ===================== -->
+  <section id="mines">
+    <h2>Landmines</h2>
+    <div class="card" style="padding:14px 18px">
+      <div class="mine"><span class="x">&times;</span><p><b>Leading with AI.</b> They hear it, they picture something huge and expensive, and they're gone before I get to the value. Lead with the pain. Let AI show up later, if it earns the spot.</p></div>
+      <div class="mine"><span class="x">&times;</span><p><b>Running the list.</b> Eight questions is a menu, not a script. Two good ones and real listening beats a survey. If I'm working through a list, I've stopped listening.</p></div>
+      <div class="mine"><span class="x">&times;</span><p><b>Solving in the room.</b> The moment I start prescribing, I've stopped diagnosing, and I've given away the thing they'd pay for. Find the pain. Rank it with them. Stop.</p></div>
+      <div class="mine"><span class="x">&times;</span><p><b>Picking the pain for them.</b> The loudest pain is rarely the most expensive one. I ask which one costs them the most and I take their answer, even when I disagree.</p></div>
+      <div class="mine"><span class="x">&times;</span><p><b>Pretending to know their trade.</b> I know operations. I don't know how to design a building. The credibility is in the questions, not in the jargon, and they can tell the difference immediately.</p></div>
+      <div class="mine"><span class="x">&times;</span><p><b>Making everything look like an AI job.</b> If every pain maps to AI, I'm the guy with the hammer. Half of what's on this page is a better process or a reminder that fires on its own.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== WHY ===================== -->
+  <section id="why">
+    <h2>Why This Is Reusable (the positioning underneath)</h2>
+    <div class="card">
+      <details open>
+        <summary><span>Narrow on the problem, wide open on who has it</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p>I had a real tension for a long time. I was worried about missing clients by being too narrow. I also knew that when I'm narrow I'm sharper and I deliver better. Both are true, which is why it never resolved.</p>
+          <p>It never resolved because I was arguing about the wrong thing. I was asking how narrow my <strong>industry</strong> should be. On that question there's no answer that doesn't cost me something.</p>
+          <p>Pain is industry agnostic. That moves the question. It was never narrow versus broad. It's narrow on <strong>what</strong>, wide open on <strong>who</strong>. I go deep on the problem, which is the part that makes me better every time I see it again, and I stay open on the industry, which is the part that keeps the room big. An architect has all eight of these. So does a recruiter, a CPA, an insurance agency. Same pain, different costume.</p>
+          <p>So the sheet is specific and reusable at the same time. That's what happens when the niching lands on the right axis.</p>
+        </div>
+      </details>
+      <details>
+        <summary><span>The question is the tool that picks the tool</span><span class="chev">&rsaquo;</span></summary>
+        <div class="det-body">
+          <p>That hammer is my competition. An AI consultant with one tool finds AI-shaped problems in every room he walks into, because that's what he has to sell.</p>
+          <p>But the toolbox still isn't the point. The question is. I don't pick the tool by industry, and I don't pick it by what I'd like to sell. I ask, I listen for which pain lights up, and the tool comes after the answer. Diagnosis before prescription, in a market that sells prescriptions to people who were never examined.</p>
+          <p>Which is why the thing I keep is this question set and not a deck. A deck is locked to one industry and stale on arrival. A good question travels to every room I'll ever walk into, including the ones that don't exist yet.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <div class="foot">
+    Built 2026-07-16. The bones are industry agnostic and reusable as-is. The examples under each pain are the only part that changes when the room changes. Opener stays the same: where are your hours leaking.
+  </div>
+
+</div>
+</body>
+</html>
+
