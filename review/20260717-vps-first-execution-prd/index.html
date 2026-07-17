@@ -84,10 +84,33 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
 .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;margin-right:6px;letter-spacing:.03em}
 .p-parity{background:rgba(91,157,255,.18);color:var(--accent)}
 .p-plumb{background:rgba(154,164,178,.18);color:var(--muted)}
+.kp-note{display:block;margin-top:4px;font-size:12px;line-height:1.5}
+.kp-note.resolved{color:var(--good)}
+.kp-note.gate{color:var(--warn)}
+.choice-group{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.choice-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;
+  width:100%;background:var(--chip);border:1px solid var(--line);color:var(--ink);
+  border-radius:9px;padding:10px 14px;font-size:13.5px;cursor:pointer;font-family:inherit}
+.choice-btn:hover{border-color:var(--accent)}
+.choice-btn.selected{border-color:var(--accent);background:rgba(91,157,255,.14)}
+.choice-btn .rec-badge{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--good);
+  background:rgba(63,185,132,.16);border-radius:999px;padding:2px 8px;white-space:nowrap;flex:none}
+.toggle-group{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.toggle-btn{flex:1;min-width:180px;border-radius:9px;padding:10px 14px;font-size:13.5px;cursor:pointer;
+  border:1px solid var(--line);background:var(--chip);color:var(--ink);font-family:inherit}
+.toggle-btn.accept.active{border-color:var(--good);background:rgba(63,185,132,.16);color:var(--good);font-weight:700}
+.toggle-btn.reject.active{border-color:var(--bad);background:rgba(229,98,74,.16);color:var(--bad);font-weight:700}
+.note{width:100%;min-height:52px;margin-top:8px;background:var(--panel2);border:1px solid var(--line);
+  color:var(--ink);border-radius:8px;padding:8px 10px;font:13px/1.5 inherit;resize:vertical}
+.note::placeholder{color:var(--muted)}
+#copyBar{position:fixed;bottom:18px;right:18px;z-index:60}
+#copyAllBtn{background:var(--accent);color:#fff;border:none;border-radius:999px;padding:12px 20px;
+  font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+#copyAllBtn:active{transform:translateY(1px)}
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v5 · 2026-07-17-14:10:12 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v6 · 2026-07-17-16:20:00 MT</div><!-- DEPLOY_STAMP_END -->
 
 <nav class="navbar">
   <div class="inner">
@@ -348,15 +371,15 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
     <div class="callout"><strong>Final pass after Round 3 &mdash; CONVERGED:</strong> <strong>P2 Simplicity: PASS</strong> &mdash; the build-vs-assemble split holds the custom surface to three load-bearing parts (sandbox wrapper, write-ahead turn, Gate-refuses-worker); the queue is Postgres <code>SKIP LOCKED</code>, the CLIs are off-the-shelf. <strong>P4 Goal-driven: PASS</strong> &mdash; the verify conditions are now machine-checkable and cover the real failure modes (per-channel dedup on resume, poison-turn dead-letter, no-duplicate-Telegram-or-fact-write). <strong>P6 Verification</strong> is the one to hold: the exactly-once / write-ahead turn MUST get a reproducing crash-between-side-effects test at build time &mdash; that is now explicitly flagged as the #1 build priority. <strong>P10: convergence is honest, not premature</strong> &mdash; three rounds each found a different failure class and R3's were refinements; no principle is being softened to force a ship. <strong>Final call: SHIP the PRD.</strong> Build-time gating order: (1) substrate go/no-go; (2) a reproducing test for the write-ahead idempotent turn before anything depends on resume. Baseline per-principle below stands.</div>
     <p class="small">Audited as a design/PRD, not shipped code. Implementation-time principles are WARN with the guardrail the build must honor.</p>
     <div class="kp"><span class="st">P1 Think before coding</span><span><span class="tag t-good">PASS</span> Intent stated; the hidden assumption (headless subscription auth) was verified against fetched docs and cross-checked by a practitioner agent before any design.</span></div>
-    <div class="kp"><span class="st">P2 Simplicity first</span><span><span class="tag t-warn">WARN</span> Full 3-tool pool + router + memory + concurrency is more than day one needs. <em>Action:</em> one vertical slice (one tool, one job type, memory + isolation) before breadth. Reuse existing lease/bus/pgvector instead of new infra.</span></div>
+    <div class="kp"><span class="st">P2 Simplicity first</span><span><span class="tag t-warn">WARN</span> Full 3-tool pool + router + memory + concurrency is more than day one needs. <em>Action:</em> one vertical slice (one tool, one job type, memory + isolation) before breadth. Reuse existing lease/bus/pgvector instead of new infra.<span class="kp-note resolved">&rarr; RESOLVED R3: the build-vs-assemble split holds the custom surface to 3 load-bearing parts (sandbox wrapper, write-ahead turn, Gate-refuses-worker); everything else is assembled off-the-shelf.</span></span></div>
     <div class="kp"><span class="st">P3 Surgical changes</span><span><span class="tag t-good">PASS</span> Additive &mdash; Gate, scheduler, bus, coordination table, and the metered-gateway rule are untouched. The worker pushes branches like any existing agent.</span></div>
-    <div class="kp"><span class="st">P4 Goal-driven execution</span><span><span class="tag t-warn">WARN</span> Each dispatched job needs a machine-checkable done-condition, or the unattended worker cannot know it succeeded. <em>Action:</em> every job row carries an explicit done-condition before the worker starts.</span></div>
+    <div class="kp"><span class="st">P4 Goal-driven execution</span><span><span class="tag t-warn">WARN</span> Each dispatched job needs a machine-checkable done-condition, or the unattended worker cannot know it succeeded. <em>Action:</em> every job row carries an explicit done-condition before the worker starts.<span class="kp-note resolved">&rarr; RESOLVED R3: verify conditions are now machine-checkable and cover the real failure modes &mdash; per-channel dedup on resume, poison-turn dead-letter, no-duplicate-Telegram-or-fact-write.</span></span></div>
     <div class="kp"><span class="st">P5 Complexity hotspots</span><span><span class="tag t-good">PASS</span> (report-only) No hot loops. Keep the router's classification rules-first before reaching for a model call.</span></div>
-    <div class="kp"><span class="st">P6 Verification</span><span><span class="tag t-warn">WARN</span> The Claude 401 must be <em>reproduced</em> on the VPS and covered by a watchdog test before Claude runs any job &gt;10 min. Concurrency isolation needs a test that fires overlapping turns on one key and asserts no interleave. <em>Action:</em> both tests gate their phases.</span></div>
+    <div class="kp"><span class="st">P6 Verification</span><span><span class="tag t-warn">WARN</span> The Claude 401 must be <em>reproduced</em> on the VPS and covered by a watchdog test before Claude runs any job &gt;10 min. Concurrency isolation needs a test that fires overlapping turns on one key and asserts no interleave. <em>Action:</em> both tests gate their phases.<span class="kp-note gate">&rarr; BUILD-TIME GATE: a reproducing crash-between-side-effects test for the write-ahead idempotent turn is required before anything depends on resume &mdash; this cannot be verified until code exists.</span></span></div>
     <div class="kp"><span class="st">P7 Debugging protocol</span><span><span class="tag t-good">PASS</span> The known failures were read to root (non-interactive refresh; pooled rate limits) from the actual issues, and the design changes one variable (Codex-first) rather than condemning the whole approach.</span></div>
     <div class="kp"><span class="st">P8 Dependencies</span><span><span class="tag t-warn">WARN</span> One new library (mem0) is proposed. It fits the existing Postgres and the orchestrator already supports it, but its license was not confirmed this run. <em>Action:</em> confirm license + pin the version before adopting; stdlib/existing-memory checked first (native memory exists but is too weak for concurrency).</span></div>
     <div class="kp"><span class="st">P9 Communication</span><span><span class="tag t-good">PASS</span> Uncertainty labeled, not smoothed: Claude headless = viable-with-watchdog, agy sources conflict (stated), mem0 license = unverified, concurrency ToS = open. Criterion 1 explicitly marked partial/long-pole.</span></div>
-    <div class="kp"><span class="st">P10 Failure modes</span><span><span class="tag t-warn">WARN</span> Two lurking: <em>Optimistic Path</em> (assuming Claude runs to completion &mdash; it 401s) and <em>Kitchen Sink</em> (building all lanes + interactive loop before one slice proves out). <em>Action:</em> the spine-first phasing holds both at bay.</span></div>
+    <div class="kp"><span class="st">P10 Failure modes</span><span><span class="tag t-warn">WARN</span> Two lurking: <em>Optimistic Path</em> (assuming Claude runs to completion &mdash; it 401s) and <em>Kitchen Sink</em> (building all lanes + interactive loop before one slice proves out). <em>Action:</em> the spine-first phasing holds both at bay.<span class="kp-note gate">&rarr; BUILD-TIME GATE: spine-first phasing (one vertical slice before breadth) is the named mitigation, provable only once the slice is actually built and run.</span></span></div>
     <div class="verdict"><strong>FINAL CALL: SHIP the PRD, HOLD the full build.</strong> No core principle FAILs &mdash; honest and additive. Four WARNs (P2, P4, P6, P8/P10) point at one discipline: <em>prove one conversation spine before breadth.</em> Gating actions: (1) a Codex vertical slice proving memory + isolation + Gate; (2) machine-checkable done-conditions per job; (3) Claude phase-gated behind a reproduced-and-tested token watchdog, concurrency behind an isolation test; (4) confirm + pin mem0 (license) before adopting; (5) a human answer on the single-subscription concurrency + ToS question before any fan-out.</p></div>
   </div>
 </section>
@@ -419,15 +442,57 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
 
 <!-- 10 OPEN QUESTIONS -->
 <section id="open">
-  <div class="head"><span class="n">10</span><h2>Open questions for Boubacar (decisions only you can make)</h2><span class="chev">▾</span></div>
+  <div class="head"><span class="n">10</span><h2>Open questions for Boubacar &mdash; 4 decisions (collapsed from 7)</h2><span class="chev">▾</span></div>
   <div class="body">
-    <div class="q"><span class="lbl">Q1 &mdash; the big one: substrate vs concurrency (R1 sharpened)</span><p><strong>The subscription-CLI substrate and the concurrency requirement are in direct conflict, and only you can resolve it.</strong> You explicitly want to use the subscriptions you already pay for, not metered API calls. But the evidence says a single subscription running 5&ndash;6 concurrent unattended instances hits pooled-account rate-limiting that's &ldquo;effectively non-viable for sustained use,&rdquo; and one account is a single point of ban. The R1 reviewer's position: put the concurrent/autonomous tier on the metered API/Agent-SDK (designed for headless, buyable limits, ToS-clean, you own the transcript store) and reserve subscription CLIs for the single human-paced interactive channel where cadence keeps you under limits. That partially uses metered &mdash; against your stated preference. <strong>Your call:</strong> (a) hybrid (subscription for interactive + metered API for concurrent), (b) subscription-only and accept serialize-one-heavy-job-at-a-time, (c) seek a business/team plan, or (d) subscription-only and accept the ceiling. <strong>Both reviews recommend:</strong> subscription &rArr; serial (the v1 spine, meets the realistic 1&ndash;2 load); true 3&ndash;5 concurrency &rArr; metered API as a separate decision. This now gates Phase 1, not just Phase 5. Also weigh the blast radius: if the token is your personal Claude/GPT subscription, a ToS enforcement action would take down your personal tooling too, not just this system.</p></div>
-    <div class="q"><span class="lbl">Q2 &mdash; scope of criterion 1</span><p><strong>Is true interactive back-and-forth (Phase 4) in scope now, or explicitly deferred to its own follow-on?</strong> The recommendation is to deliver the spine (memory + isolation + execution) first and treat the interactive loop as the horizon. Confirm you're OK landing criteria 2&ndash;4 first, with criterion 1 as a named next phase.</p></div>
-    <div class="q"><span class="lbl">Q3</span><p><strong>Which job types move, and which stay interactive on the laptop?</strong> Recommendation: move fully-specified, machine-checkable jobs; keep &ldquo;thinking out loud with a model&rdquo; interactive until Phase 4 lands. Agree, or push for everything movable at higher babysitting cost?</p></div>
-    <div class="q"><span class="lbl">Q4</span><p><strong>Codex-first for the spike &mdash; acceptable?</strong> It self-refreshes tokens and has no 401 bug, but it is not your primary model. Fine to prove the spine on Codex, or spike on Claude despite the watchdog work it adds?</p></div>
-    <div class="q"><span class="lbl">Q5 &mdash; updated in R1</span><p><strong>Confirm dropping mem0 from v1?</strong> R1 review argued mem0 solves the wrong 10% (facts, not execution state), adds a metered LLM call per turn, and its autonomous fact-rewrite is a contamination risk. v1 now = explicit fact-writes + the checkpoint table; mem0 only later if fuzzy semantic recall is proven necessary. OK to proceed without mem0 in v1?</p></div>
-    <div class="q"><span class="lbl">Q6</span><p><strong>Who re-mints the subscription logins when they expire?</strong> Tokens are held by the credential store / sandbox (not the worker). Claude needs periodic re-mint; the device/OTP logins need you at a browser once. OK to be the once-per-expiry human for the login step?</p></div>
-    <div class="q"><span class="lbl">Q7 &mdash; added in R2</span><p><strong>Who is allowed to trigger work, and from where?</strong> R2 flagged that a group-chat id is not an auth boundary &mdash; anyone in a shared Telegram group could otherwise drive pushes to your repo. The plan authorizes by <em>user</em> allowlist. Confirm the allowed users, and whether this is DM-only or specific groups.</p></div>
+    <p class="small">Originally 7 items. Q2&ndash;Q5 all carry a clear recommendation and no real disagreement between them, so they collapse into one bundled accept/reject card. Q6 has only one honest answer (you're inherently the only option) so it's a light pre-defaulted confirm. Q1 and Q7 stay standalone &mdash; both are real decisions only you can make. Tap a card to choose; notes are optional; nothing is sent anywhere until you copy it out.</p>
+
+    <div class="q" data-card="q1">
+      <span class="lbl">Q1 &mdash; the big one: substrate vs concurrency</span>
+      <p>The subscription-CLI substrate and the concurrency requirement are in direct conflict, and only you can resolve it. You explicitly want to use the subscriptions you already pay for, not metered API calls. But the evidence says a single subscription running 5&ndash;6 concurrent unattended instances hits pooled-account rate-limiting that's &ldquo;effectively non-viable for sustained use,&rdquo; and one account is a single point of ban. Also weigh the blast radius: if the token is your personal Claude/GPT subscription, a ToS enforcement action would take down your personal tooling too, not just this system. <strong>Both reviews recommend:</strong> subscription &rArr; serial for v1 (meets the realistic 1&ndash;2 load); metered API only as a separate, later, explicitly-paid decision if true 3&ndash;5 concurrency is ever needed (Phase 5). This gates Phase 1, not just Phase 5.</p>
+      <div class="choice-group" data-card="q1">
+        <button class="choice-btn" data-value="a">(a) Hybrid &mdash; subscription for interactive + metered API for concurrent</button>
+        <button class="choice-btn" data-value="b">(b) Subscription-only &mdash; serialize one heavy job at a time <span class="rec-badge">RECOMMENDED</span></button>
+        <button class="choice-btn" data-value="c">(c) Seek a business/team plan</button>
+        <button class="choice-btn" data-value="d">(d) Subscription-only &mdash; accept the ceiling, no metered fallback ever</button>
+      </div>
+      <textarea class="note" data-card="q1" placeholder="Optional note..."></textarea>
+    </div>
+
+    <div class="q" data-card="q7">
+      <span class="lbl">Q7 &mdash; who is allowed to trigger work, and from where</span>
+      <p>R2 flagged that a group-chat id is not an auth boundary &mdash; anyone in a shared Telegram group could otherwise drive pushes to your repo. The plan authorizes by <em>user</em> allowlist, not by chat. <strong>No recommendation possible here</strong> &mdash; only you know who should be on that list.</p>
+      <div class="choice-group" data-card="q7">
+        <button class="choice-btn" data-value="dm">DM-only &mdash; just me</button>
+        <button class="choice-btn" data-value="allowlist">A named allowlist of specific users (name them in the note)</button>
+        <button class="choice-btn" data-value="groups">DM + specific named groups (name them in the note)</button>
+      </div>
+      <textarea class="note" data-card="q7" placeholder="Name the allowed users / groups..."></textarea>
+    </div>
+
+    <div class="q" data-card="q6">
+      <span class="lbl">Q6 &mdash; re-minting subscription logins (light confirm)</span>
+      <p>Tokens are held by the credential store / sandbox, never the worker. Claude needs a periodic re-mint; the device/OTP logins need you at a browser once per expiry. You're inherently the only option here &mdash; pre-defaulted to yes below.</p>
+      <div class="toggle-group" data-card="q6">
+        <button class="toggle-btn accept" data-value="accept">Accept &mdash; yes, I'm the once-per-expiry human</button>
+        <button class="toggle-btn reject" data-value="reject">Reject &mdash; something else (explain in note)</button>
+      </div>
+      <textarea class="note" data-card="q6" placeholder="Optional note..."></textarea>
+    </div>
+
+    <div class="q" data-card="bundle">
+      <span class="lbl">Recommended build sequencing &mdash; Q2&ndash;Q5, bundled</span>
+      <ul>
+        <li><strong>Q2, scope of criterion 1:</strong> deliver the spine (memory + isolation + execution, criteria 2&ndash;4) first; treat full interactive back-and-forth (Phase 4) as a named next phase, not this scope.</li>
+        <li><strong>Q3, which jobs move:</strong> move fully-specified, machine-checkable jobs now; keep &ldquo;thinking out loud with a model&rdquo; interactive on the laptop until Phase 4 lands.</li>
+        <li><strong>Q4, Codex-first for the spike:</strong> prove the spine on Codex (self-refreshing tokens, no 401 bug) even though it isn't the primary model.</li>
+        <li><strong>Q5, drop mem0 from v1:</strong> v1 = explicit fact-writes + the checkpoint table; mem0 solves the wrong problem at a per-turn LLM cost and adds a contamination risk &mdash; add it later only if fuzzy semantic recall is proven necessary.</li>
+      </ul>
+      <div class="toggle-group" data-card="bundle">
+        <button class="toggle-btn accept" data-value="accept">Accept all 4</button>
+        <button class="toggle-btn reject" data-value="reject">Reject &mdash; override one or more (name which below)</button>
+      </div>
+      <textarea class="note" data-card="bundle" placeholder="If rejecting, which of Q2-Q5 to override and how..."></textarea>
+    </div>
   </div>
 </section>
 
@@ -453,6 +518,8 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
 <p class="small">Sources fetched this session (auth + tools): Claude Code headless docs; Claude Code issues #28827, #50743, #53063, #38813, #12447, #21765, #29748, #62426 (OAuth headless refresh, session persistence, pooled rate-limit); Codex auth + non-interactive docs, issues #3820, #9253, #17041; Antigravity issue #78, gemini-cli issue #1696, agy install/SSH-OTP writeup, Gemini CLI auth docs; Claude Max limits roundups. Prior-art (fetched this session): Letta repo; mem0 docs (overview + pgvector); OpenHands conversation-persistence docs; CrewAI memory docs; LangGraph persistence docs; Salesforce multi-tenant-agent engineering post; an idempotency-key implementation writeup; Claude Agent SDK sessions docs; three shipped Telegram-agent repos. Current-state read from the live VPS (timers, cron, containers, scheduler) and the local repo, read-only. Uncertainties labeled inline: agy headless (sources conflict), mem0 license (unconfirmed), no account-ban evidence found.</p>
 </div>
 
+<div id="copyBar"><button id="copyAllBtn" type="button">Copy All Decisions</button></div>
+
 <script>
 document.getElementById('hamb').addEventListener('click',function(){
   document.getElementById('links').classList.toggle('open');
@@ -463,6 +530,138 @@ document.querySelectorAll('.navbar .links a').forEach(function(a){
 document.querySelectorAll('section > .head').forEach(function(h){
   h.addEventListener('click',function(){h.parentElement.classList.toggle('collapsed');});
 });
+
+(function(){
+  var STORE_PREFIX = 'vps-first-execution-prd:decisions:v1:';
+  function load(card){
+    try{ return JSON.parse(localStorage.getItem(STORE_PREFIX+card) || 'null'); }catch(e){ return null; }
+  }
+  function save(card,data){
+    try{ localStorage.setItem(STORE_PREFIX+card, JSON.stringify(data)); }catch(e){}
+  }
+
+  // Choice groups (Q1, Q7) -- nothing pre-selected unless previously chosen
+  document.querySelectorAll('.choice-group').forEach(function(group){
+    var card = group.getAttribute('data-card');
+    var stored = load(card) || {};
+    var buttons = group.querySelectorAll('.choice-btn');
+    function applySelection(value){
+      buttons.forEach(function(b){ b.classList.toggle('selected', b.getAttribute('data-value')===value); });
+    }
+    if(stored.choice) applySelection(stored.choice);
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var value = btn.getAttribute('data-value');
+        var current = load(card) || {};
+        current.choice = value;
+        save(card, current);
+        applySelection(value);
+      });
+    });
+  });
+
+  // Toggle groups (Q6, Q2-Q5 bundle) -- default accept unless previously rejected
+  document.querySelectorAll('.toggle-group').forEach(function(group){
+    var card = group.getAttribute('data-card');
+    var stored = load(card) || {};
+    var buttons = group.querySelectorAll('.toggle-btn');
+    function applyToggle(value){
+      buttons.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-value')===value); });
+    }
+    var initial = stored.toggle || 'accept';
+    applyToggle(initial);
+    if(!stored.toggle){ var c = load(card) || {}; c.toggle = 'accept'; save(card, c); }
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var value = btn.getAttribute('data-value');
+        var current = load(card) || {};
+        current.toggle = value;
+        save(card, current);
+        applyToggle(value);
+      });
+    });
+  });
+
+  // Notes on all 4 cards
+  document.querySelectorAll('.note').forEach(function(ta){
+    var card = ta.getAttribute('data-card');
+    var stored = load(card) || {};
+    if(stored.note) ta.value = stored.note;
+    ta.addEventListener('input', function(){
+      var current = load(card) || {};
+      current.note = ta.value;
+      save(card, current);
+    });
+  });
+
+  var CHOICE_LABELS = {
+    q1: {
+      a:'(a) Hybrid -- subscription for interactive + metered API for concurrent',
+      b:'(b) Subscription-only -- serialize one heavy job at a time [RECOMMENDED]',
+      c:'(c) Seek a business/team plan',
+      d:'(d) Subscription-only -- accept the ceiling, no metered fallback ever'
+    },
+    q7: {
+      dm:'DM-only -- just me',
+      allowlist:'A named allowlist of specific users',
+      groups:'DM + specific named groups'
+    }
+  };
+  var CARD_TITLES = {
+    q1:'Q1 -- Substrate vs concurrency',
+    q7:'Q7 -- Who is allowed to trigger work',
+    q6:'Q6 -- Re-minting subscription logins',
+    bundle:'Q2-Q5 bundled -- recommended build sequencing'
+  };
+
+  function summarize(){
+    var lines = [];
+    lines.push('VPS-First Execution PRD -- open-question decisions');
+    lines.push('');
+    ['q1','q7','q6','bundle'].forEach(function(card){
+      var d = load(card) || {};
+      lines.push(CARD_TITLES[card] + ':');
+      if(card === 'q1' || card === 'q7'){
+        var label = d.choice ? (CHOICE_LABELS[card][d.choice] || d.choice) : '(no selection made)';
+        lines.push('  Choice: ' + label);
+      } else {
+        lines.push('  Decision: ' + (d.toggle === 'reject' ? 'REJECTED / override requested' : 'ACCEPTED (default)'));
+      }
+      if(d.note) lines.push('  Note: ' + d.note);
+      lines.push('');
+    });
+    return lines.join('\n');
+  }
+
+  function fallbackCopy(text, done){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta);
+    done();
+  }
+
+  var copyBtn = document.getElementById('copyAllBtn');
+  if(copyBtn){
+    copyBtn.addEventListener('click', function(){
+      var text = summarize();
+      function done(){
+        var orig = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        setTimeout(function(){ copyBtn.textContent = orig; }, 1800);
+      }
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text, done); });
+      } else {
+        fallbackCopy(text, done);
+      }
+    });
+  }
+})();
 </script>
 </body>
 </html>
