@@ -117,7 +117,7 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-07-17-19:59:25 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-07-17-20:06:26 MT</div><!-- DEPLOY_STAMP_END -->
 
 <header class="nav">
   <div class="nav-inner">
@@ -153,7 +153,7 @@
   <div class="scoreboard">
     <div class="stat indigo"><div class="n">126</div><div class="l">Alerts triaged</div></div>
     <div class="stat green"><div class="n">114</div><div class="l">Auto-resolved, confirmed safe</div></div>
-    <div class="stat red"><div class="n">2</div><div class="l">Actually need your action</div></div>
+    <div class="stat red"><div class="n">1</div><div class="l">Actually need your action</div></div>
     <div class="stat amber"><div class="n">12d</div><div class="l">VPS deploy-halt streak</div></div>
   </div>
 
@@ -163,7 +163,7 @@
   </div>
 
   <div class="drift-note">
-    <b>Live-DB note:</b> the earlier report counted 12 items. Pulling the table fresh just now shows <b>13</b> &mdash; alert <code>#1512</code> (a gate bypass-pattern hold) landed at 18:40 today, after that report was compiled. It's included below.
+    <b>Live-DB note:</b> the earlier report counted 12 items. Pulling the table fresh just now showed <b>13</b> &mdash; alert <code>#1512</code> (a gate bypass-pattern hold) landed at 18:40 today, after that report was compiled. It's since been independently verified as a false positive (see below) &mdash; it doesn't need your judgment call the way it first looked.
   </div>
 
   <!-- NEEDS YOU NOW -->
@@ -179,12 +179,12 @@
           <div class="meta">Alert IDs <code>#1018</code>, <code>#1047</code>, <code>#1406</code>, <code>#1474</code> &middot; source: safe-pull &middot; class: vps-deploy-halt &middot; <span class="state state-human">NEEDS YOUR DECISION</span></div>
         </div>
       </details>
-      <details open>
-        <summary><span class="st"><span class="pill p-new">NEW · TONIGHT</span> Gate caught a bypass pattern, branch held</span><span class="chev">&#9656;</span></summary>
+      <details>
+        <summary><span class="st"><span class="pill p-flow">VERIFIED FALSE POSITIVE</span> Gate bypass-pattern hold &mdash; not a real bypass</span><span class="chev">&#9656;</span></summary>
         <div class="det-body">
-          <p>The Gate's own bypass scanner flagged branch <code>chore/memory-curator-2026-07-17</code>: the diff contains code or an env-var that looks like it disables, skips, or bypasses gate logic. The Gate held the branch rather than merging it &mdash; the guardrail working as designed, but it needs a human read of the actual diff to know whether the flagged code is a legitimate config change or something that needs to be stripped.</p>
-          <div class="rec"><b>Recommendation:</b> pull the diff on <code>chore/memory-curator-2026-07-17</code> and decide &mdash; if the "bypass" is intentional and safe, clear it and let the branch re-merge; if not, strip it and re-push, or run <code>/gate-reject</code> to drop the branch entirely.</div>
-          <div class="meta">Alert ID <code>#1512</code> (2026-07-17 18:40 UTC) &middot; source: gate_agent &middot; class: gate-notify-urgent &middot; <span class="state state-human">NEEDS YOUR DECISION</span></div>
+          <p>The Gate's bypass scanner flagged branch <code>chore/memory-curator-2026-07-17</code> for containing BYPASS/SKIP/DISABLE-looking text. Pulled the actual diff and checked it directly: <b>zero <code>.py</code> files touched</b> &mdash; every match is inside <code>memory/*.md</code> prose (discussing past bypass incidents, like the 7/13 Downloads-path gate-bypass memory entry, and a <code>DISABLED</code> flag filename mentioned in a kill-switch list). This is documentation text, not code disabling a real check.</p>
+          <div class="rec"><b>Recommendation:</b> release the hold &mdash; it's a memory-only branch (the standing always-[READY] exception applies). Separately: Gate's bypass-pattern regex should exclude <code>memory/*.md</code> and <code>docs/*.md</code> from the BYPASS/SKIP/DISABLE scan, since it's currently matching prose about the topic, not the topic itself. That's a real but LOW-urgency classifier fix in <code>gate_agent.py</code>'s bypass-checker &mdash; a different, unrelated code path from the alert-classification fix below, not the same fix.</div>
+          <div class="meta">Alert ID <code>#1512</code> (2026-07-17 18:40 UTC) &middot; source: gate_agent &middot; class: gate-notify-urgent &middot; <span class="state state-resolved">VERIFIED FALSE POSITIVE &mdash; RECOMMEND RELEASE</span></div>
         </div>
       </details>
     </div>
@@ -277,7 +277,7 @@
     <div class="card"><div style="padding:16px 18px;color:var(--muted)">
       <p><b>1. Pulled the full backlog twice, independently.</b> All 126 rows marked <code>needs_human</code> were read directly from the live alerts table (not summarized from memory), then re-verified a second time against the actual column schema (<code>id/ts/source/class_key/severity/alert_text</code>) after an initial pass assumed wrong column names.</p>
       <p><b>2. Council-reviewed each cluster.</b> 114 turned out to be over-conservative triggers or exact duplicates of an already-resolved condition &mdash; closed with a recorded resolution note, never silently dropped.</p>
-      <p><b>3. Drift caught before publish.</b> The count moved 12 &rarr; 13 between the first triage pass and publish &mdash; alert <code>#1512</code> (gate-bypass hold) arrived in between.</p>
+      <p><b>3. Drift caught before publish, then re-verified.</b> The count moved 12 &rarr; 13 between the first triage pass and publish &mdash; alert <code>#1512</code> (gate-bypass hold) arrived in between. Independently pulled the actual branch diff for <code>#1512</code> and confirmed it's a false positive (memory-only content, zero code touched) &mdash; corrected on this page rather than left as an urgent security decision.</p>
       <p><b>4. Historical pattern check.</b> Grepped memory for prior handling of each alert class before recommending anything &mdash; found the Capital One overdraft was already flagged once before as "resolved, don't re-flag," and confirmed <code>studio-balance-low</code> had a deliberate 2026-07-08 design decision (never auto-resolve) that this session's direct instruction from you explicitly reverses.</p>
       <p><b>5. Found and corrected a wrong file reference before writing any code.</b> The requested fix location (<code>scripts/auto_healer.py</code>, a <code>RESOLVED-INFO-REPORT</code> pattern) doesn't exist in this repo. Read the real classifier end-to-end (<code>orchestrator/alert_triage.py</code>, <code>scripts/gmail_error_scan.py</code>) before editing anything.</p>
       <p><b>6. Every code change is tested and gated, not just claimed.</b> 60 tests passing (6 new, added specifically to prove the new behavior after finding the first version shipped with zero verification of its own new code paths). Karpathy audit: SHIP, ~97%. Council: converged at 60% even after fixing its top concern &mdash; below the 95% bar, so the fix is <code>[WIP]</code>, not merged, pending your call or Gate's Tier-C review.</p>
