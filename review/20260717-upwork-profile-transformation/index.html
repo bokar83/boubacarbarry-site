@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Upwork Profile Transformation, one-pass review</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<style>
+:root{
+  --bg:#0e1116; --panel:#161b22; --panel2:#1b222c; --ink:#ece2d2; --muted:#a59783;
+  --line:rgba(236,226,210,0.12); --accent:#fbbf24; --cyan:#2ad4df; --chip:#232c38;
+  --green:#4ec98a; --blue:#5aa9f0; --red:#e56b6b;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;-webkit-font-smoothing:antialiased;font-size:16px}
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:940px;margin:0 auto;padding:0 18px 90px}
+
+header.page{padding:80px 18px 16px;max-width:940px;margin:0 auto}
+.eyebrow{color:var(--accent);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 8px}
+h1{font-size:clamp(26px,4.5vw,38px);line-height:1.12;margin:0 0 12px;font-weight:800}
+.lede{color:var(--muted);font-size:16px;max-width:680px;margin:0}
+
+.navbar{position:sticky;top:0;z-index:900;background:rgba(14,17,22,.92);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.navbar-inner{max-width:940px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:12px;justify-content:space-between}
+.navbar .label{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.navlinks{display:flex;gap:8px;flex-wrap:wrap}
+.navlinks a{font-size:13px;color:var(--ink);background:var(--chip);border:1px solid var(--line);
+  padding:6px 11px;border-radius:999px}
+.navlinks a:hover{border-color:var(--accent);text-decoration:none}
+.hamburger{display:none;background:var(--chip);border:1px solid var(--line);color:var(--ink);
+  width:42px;height:38px;border-radius:10px;font-size:18px;cursor:pointer;line-height:1}
+@media(max-width:760px){
+  .hamburger{display:inline-flex;align-items:center;justify-content:center}
+  .navlinks{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;
+    background:var(--panel);border-bottom:1px solid var(--line);padding:10px 18px;gap:6px}
+  .navlinks.open{display:flex}
+  .navlinks a{width:100%;text-align:left}
+}
+
+section{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  margin:22px 0;box-shadow:0 6px 24px rgba(0,0,0,.22);scroll-margin-top:70px;overflow:hidden}
+details>summary{list-style:none;cursor:pointer;padding:18px 22px;display:flex;align-items:center;gap:12px}
+details>summary::-webkit-details-marker{display:none}
+summary .snum{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;
+  border-radius:8px;background:var(--accent);color:#10131b;font-weight:800;font-size:13px}
+summary h2{font-size:20px;line-height:1.2;margin:0;font-weight:750;flex:1}
+summary .chev{color:var(--muted);font-size:13px}
+details[open]>summary .chev{transform:rotate(90deg)}
+.sbody{padding:0 22px 22px}
+
+/* decision block */
+.decision{border:1px solid rgba(251,191,36,.5);box-shadow:0 0 0 1px rgba(251,191,36,.18),0 8px 28px rgba(0,0,0,.3)}
+.decision .dhead{padding:18px 22px 6px}
+.decision .dhead h2{margin:0;font-size:22px;font-weight:800;color:var(--accent)}
+.decision .dhead p{margin:6px 0 0;color:var(--muted);font-size:14px}
+.drow{border-top:1px solid var(--line);padding:15px 22px;display:grid;grid-template-columns:120px 1fr;gap:6px 16px}
+.drow:first-of-type{border-top:1px solid var(--line)}
+.dkey{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding-top:2px}
+.dval{font-size:15px}
+.dval .rec{color:var(--green);font-weight:700}
+.dval .from{color:var(--muted)}
+.arrow{color:var(--accent);font-weight:700;margin:0 4px}
+.tag{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;vertical-align:middle;margin-left:6px}
+.tag.rec{background:rgba(78,201,138,.16);color:var(--green);border:1px solid rgba(78,201,138,.4)}
+.tag.pend{background:rgba(90,169,240,.16);color:var(--blue);border:1px solid rgba(90,169,240,.4)}
+.tag.conf{background:rgba(251,191,36,.14);color:var(--accent);border:1px solid rgba(251,191,36,.4)}
+@media(max-width:600px){.drow{grid-template-columns:1fr;gap:4px}}
+
+.field{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+.field .lab{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;gap:10px}
+.bio p{margin:0 0 12px;font-size:16px}
+.bio p:last-child{margin-bottom:0}
+.note{font-size:13.5px;color:var(--muted);margin:12px 0 0}
+.note.warn{color:var(--accent)}
+.verbatim{border-left:3px solid var(--green);background:rgba(78,201,138,.06);border-radius:0 10px 10px 0}
+.reframe-old{border-left:3px solid var(--muted);background:rgba(165,151,131,.06);border-radius:0 10px 10px 0;padding:12px 16px;margin:8px 0;font-size:14px;color:var(--muted)}
+.reframe-new{border-left:3px solid var(--accent);background:rgba(251,191,36,.07);border-radius:0 10px 10px 0;padding:14px 16px;margin:8px 0}
+ul.keep{list-style:none;padding:0;margin:8px 0 0}
+ul.keep li{padding:9px 0 9px 28px;position:relative;border-bottom:1px solid var(--line);font-size:15px}
+ul.keep li:before{content:"\2713";position:absolute;left:2px;color:var(--green);font-weight:800}
+ul.keep li:last-child{border-bottom:0}
+
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+@media(max-width:640px){.cards{grid-template-columns:1fr}}
+.pcard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.pcard figure{margin:0;background:#0c0f14;text-align:center;padding:10px;border-bottom:1px solid var(--line)}
+.pcard img{max-width:100%;height:auto;border-radius:8px;display:block;margin:0 auto}
+.pcard .pc-body{padding:12px 15px 15px}
+.pcard .pc-t{font-weight:750;font-size:14.5px;color:var(--accent);margin:0 0 4px}
+.pcard .pc-d{font-size:13px;color:var(--muted);margin:0}
+
+.ladder{margin-top:6px}
+.rung{display:grid;grid-template-columns:74px 1fr;border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
+.rung .ph{background:var(--panel2);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 6px;border-right:1px solid var(--line)}
+.rung .ph .n{font-size:26px;font-weight:800;color:var(--accent);line-height:1}
+.rung .ph .r{font-size:10.5px;color:var(--muted);margin-top:5px;text-align:center;line-height:1.25}
+.rung .rb{padding:12px 15px}
+.rung .trig{font-size:12.5px;color:var(--blue);font-weight:700;margin-bottom:5px}
+.rung .chg{font-size:14px}
+.rung.now{border-color:var(--green);box-shadow:0 0 0 1px rgba(78,201,138,.3)}
+.rung.dest{border-color:var(--accent);box-shadow:0 0 0 1px rgba(251,191,36,.3)}
+.callout{background:rgba(90,169,240,.08);border:1px solid rgba(90,169,240,.35);border-radius:12px;padding:14px 18px;margin:8px 0 0;font-size:14.5px}
+.rec-line{color:var(--green);font-weight:700}
+.foot{text-align:center;color:var(--muted);font-size:13px;margin:34px 0 0}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-17-15:19:12 MT</div><!-- DEPLOY_STAMP_END -->
+
+<div class="navbar">
+  <div class="navbar-inner">
+    <span class="label">Upwork Profile Review</span>
+    <button class="hamburger" aria-label="menu" onclick="document.getElementById('nl').classList.toggle('open')">&#9776;</button>
+    <nav class="navlinks" id="nl">
+      <a href="#decisions">Decisions</a>
+      <a href="#bio">Bio</a>
+      <a href="#ge">GE proof</a>
+      <a href="#keep">Keep</a>
+      <a href="#cards">Cards</a>
+      <a href="#ladder">Ladder</a>
+      <a href="#niche">Niche</a>
+    </nav>
+  </div>
+</div>
+
+<header class="page">
+  <p class="eyebrow">One-pass decision doc &middot; nothing goes live on Upwork without your go</p>
+  <h1>Your Upwork profile, rebuilt for the automation niche</h1>
+  <p class="lede">Every choice you need to make is in the decision block at the top, in one glance. Mark each one, and the rest of the page is the reasoning and the assets behind it. Your live profile today: South Jordan UT, $95/hr, boost off, verified veteran, video intro, MBA. Below is what changes and why.</p>
+</header>
+
+<div class="wrap">
+
+  <!-- ===================== DECISION BLOCK ===================== -->
+  <section class="decision" id="decisions">
+    <div class="dhead">
+      <h2>Decisions to mark</h2>
+      <p>Five calls. Recommendation is in green on each.</p>
+    </div>
+
+    <div class="drow">
+      <div class="dkey">Title</div>
+      <div class="dval">
+        <span class="tag rec">Pick A (rec)</span>
+        <div class="field" style="margin:6px 0 0;background:rgba(78,201,138,.06);border-color:rgba(78,201,138,.35)">
+          <div class="lab"><span>A &middot; recommended</span><span class="mono" style="color:var(--accent)">65 chars</span></div>
+          <div style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14.5px">AI Automation Consultant | AI Agents, Chatbots, n8n, Claude &amp; CRM</div>
+        </div>
+        <div class="field" style="margin:8px 0 0">
+          <div class="lab"><span>B &middot; same search, tools grouped at end (cleaner scan)</span><span class="mono" style="color:var(--muted)">65 chars</span></div>
+          <div style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14.5px">AI Automation Consultant | AI Agents, Chatbots, CRM, n8n &amp; Claude</div>
+        </div>
+        <div class="note">Both fix the doubled "automation" (now appears once), keep the high-volume exact phrase "AI Automation", and cover 8 buyer search families (ai, automation, consultant, ai agents, chatbot, n8n, claude, crm). All truthful, no Make / Zapier / GoHighLevel / HubSpot expertise claimed. "Consultant" is the hire-noun your non-technical buyers actually search. Both are 65 chars, under the 70 cap. A and B rank for the same terms; B just reads cleaner. Recommendation: A.</div>
+      </div>
+    </div>
+
+    <div class="drow">
+      <div class="dkey">Rate</div>
+      <div class="dval">
+        <span class="from">$95/hr</span><span class="arrow">&rarr;</span><span class="rec">$38.92/hr</span>
+        <span class="tag conf">Confirm</span>
+        <div class="note">Non-round on purpose, reads considered not plucked. A perception signal for search and skims at phase 0 (zero reviews); real pricing is fixed-price after the call. It climbs the ladder as proof stacks up.</div>
+      </div>
+    </div>
+
+    <div class="drow">
+      <div class="dkey">Boost</div>
+      <div class="dval">
+        <span class="from">Off</span><span class="arrow">&rarr;</span><span class="rec">On</span>
+        <span class="tag rec">Rec</span>
+        <div class="note">Needed to reach the top of search results while you have no history to rank on. Use it inside the connect-spend budget on jobs worth winning, not blanket.</div>
+      </div>
+    </div>
+
+    <div class="drow">
+      <div class="dkey">Skills</div>
+      <div class="dval">
+        <span class="rec">Cut off-niche, add automation keywords</span>
+        <span class="tag conf">Confirm</span>
+        <div class="note"><strong>Cut:</strong> Leadership Coaching, Business Strategy, Business Consulting (they pull you off the automation niche and confuse the algorithm about who to show you to). <strong>Add:</strong> Make.com and Zapier (truthfully framed as tools you work alongside, not expertise you claim), API, Automated Workflow (already present). Keeps every skill slot pointed at automation buyers.</div>
+      </div>
+    </div>
+
+    <div class="drow">
+      <div class="dkey">"New to Upwork"</div>
+      <div class="dval">
+        <span class="rec">Move to the proposal opener</span>
+        <span class="tag rec">Rec</span>
+        <div class="note">"New to Upwork, not new to the work" is a strong newcomer line, but it belongs in the first line of each proposal, not in the bio. The bio should lead with the client's pain, not your platform tenure. (The new bio below has no newcomer flag in it, by design.)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== BIO ===================== -->
+  <section id="bio">
+    <details open>
+      <summary><span class="snum">1</span><h2>New above-fold bio</h2><span class="chev">&#9656;</span></summary>
+      <div class="sbody">
+        <p class="note">This is the preview a client reads before "see more". Voice score 92. Paste-ready and locked, do not water it down. It leads with the pain (a team exists, but everything routes through you), proves it with a real build and a real number, and never claims a client dollar figure you have not earned.</p>
+        <div class="field verbatim bio">
+          <div class="lab"><span>Above-fold overview &middot; verbatim, paste as-is</span></div>
+          <p>You've got good people, but everything still routes through you. I find the work that eats your team's week and fix it, usually with plain automation, not some giant AI build.</p>
+          <p>I run my own business on a multi-agent system I built myself. One agent in it does an hour or two of research in five to ten minutes and hands me back a scored page I can use on the spot. That is the kind of time I go find in your business and give back to your team.</p>
+          <p>We start with one workflow, fixed scope, built live in your own account, so you walk away able to run it without me. Not a vendor you stay dependent on.</p>
+          <p>If your team stays busy but everything waits on you, let's talk.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== GE REFRAME ===================== -->
+  <section id="ge">
+    <details open>
+      <summary><span class="snum">2</span><h2>The GE Vernova automation reframe</h2><span class="chev">&#9656;</span></summary>
+      <div class="sbody">
+        <p class="note">Your employment history stays factually accurate: your role at GE Vernova was HR Business Partner, and it stays labeled that way. Nothing here claims you ran HR, ran operations, or held an executive role. What we surface is the one automation fact buried in that bullet, and we lead with it, because it is your single piece of "delivered inside a Fortune 100" proof.</p>
+
+        <div class="reframe-old">
+          <strong>Current bullet, as written on your profile:</strong><br>
+          "Applied LLM tools to enhance internal HR operations... explored automation to reduce repetitive manual tasks."
+        </div>
+
+        <div class="reframe-new">
+          <strong>Reframed, automation-led (suggested):</strong>
+          <p style="margin:8px 0 0">Inside a Fortune 100 (GE Vernova), I put LLM tools to work on internal HR processes and worked on automation to cut repetitive manual tasks. My role there was HR Business Partner, so this was automation applied where the stakes and the scrutiny were real, not a side project on a laptop. That instinct, find the busywork and take it out, is exactly what I do for clients now.</p>
+        </div>
+
+        <p class="note warn"><strong>Confirm the verb.</strong> Your current bullet says "explored automation." If you actually shipped a working automation there, we can say "built" or "delivered" (stronger, more credible). If it was exploratory, we keep "worked on / explored." Truth-only, your call, this is the one word that changes how hard we can lean.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== KEEP LIST ===================== -->
+  <section id="keep">
+    <details open>
+      <summary><span class="snum">3</span><h2>Keep list, what is already working</h2><span class="chev">&#9656;</span></summary>
+      <div class="sbody">
+        <p class="note">These are already right on your live profile. Do not touch them, they carry weight.</p>
+        <ul class="keep">
+          <li><strong>The operator-not-vendor delivery mechanic.</strong> "You keep it, built in your own account, run it without me." This is your differentiator, keep it front and center.</li>
+          <li><strong>"Start with one workflow."</strong> Fixed scope, low-risk entry point. It is the reason a cold buyer says yes. Keep it.</li>
+          <li><strong>The free 20-minute call CTA.</strong> Low-friction first step. Keep it as the close.</li>
+          <li><strong>The $497 project catalog</strong> ("a Claude assistant in a week"). A concrete productized offer, keep it live.</li>
+          <li><strong>Verifications + veteran badge.</strong> ID, phone, veteran, all verified. Trust signals you already earned, keep them on.</li>
+          <li><strong>The video intro.</strong> You already have one present, most profiles do not. Keep it.</li>
+          <li><strong>The AI Governance Playbook portfolio card.</strong> Real asset, keep it in the portfolio.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== PORTFOLIO CARDS ===================== -->
+  <section id="cards">
+    <details open>
+      <summary><span class="snum">4</span><h2>The 5 portfolio cards</h2><span class="chev">&#9656;</span></summary>
+      <div class="sbody">
+        <p class="note">Design-audit scored these 18/20. They are previewed here so you can approve the set. <strong>On your approval, these same image files drop into the Upwork profile's portfolio.</strong> Real builds only, no invented metrics.</p>
+        <div class="cards">
+          <div class="pcard">
+            <figure><img src="img/01-system-map.png" alt="System map, the multi-agent operating system that runs the business" loading="lazy"></figure>
+            <div class="pc-body"><p class="pc-t">The multi-agent system that runs my business</p><p class="pc-d">The operator proof, most people who pitch AI have never built one.</p></div>
+          </div>
+          <div class="pcard">
+            <figure><img src="img/02-governance-playbook.png" alt="AI Governance Playbook, how it works" loading="lazy"></figure>
+            <div class="pc-body"><p class="pc-t">AI Governance Playbook</p><p class="pc-d">Your keeper card, already on the live profile.</p></div>
+          </div>
+          <div class="pcard">
+            <figure><img src="img/03-workshop.png" alt="What happens in the workshop room" loading="lazy"></figure>
+            <div class="pc-body"><p class="pc-t">The workshop</p><p class="pc-d">Structure of the room, what attendees walk out with.</p></div>
+          </div>
+          <div class="pcard">
+            <figure><img src="img/04-practice-app.png" alt="Live practice app screenshot" loading="lazy"></figure>
+            <div class="pc-body"><p class="pc-t">Live practice app</p><p class="pc-d">A real, shipped, working build people can touch.</p></div>
+          </div>
+          <div class="pcard">
+            <figure><img src="img/05-leadgen-automation.png" alt="Lead-research and first-message automation flow" loading="lazy"></figure>
+            <div class="pc-body"><p class="pc-t">Lead-research automation</p><p class="pc-d">Finds, enriches, and follows up on prospects on its own.</p></div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== LADDER ===================== -->
+  <section id="ladder">
+    <details open>
+      <summary><span class="snum">5</span><h2>The 0 to 10 profile maturity ladder</h2><span class="chev">&#9656;</span></summary>
+      <div class="sbody">
+        <p class="note">Each rung is the concrete trigger that unlocks it, plus exactly what to add or change once you have earned it. You always know your next move. Truth-only holds at every rung: a line goes up only once it is actually true. Phase 0 is where you are today; phase 10 is the fully-optimized destination profile.</p>
+        <div class="ladder">
+
+          <div class="rung now">
+            <div class="ph"><span class="n">0</span><span class="r">now<br>$38.92</span></div>
+            <div class="rb"><div class="trig">Trigger: brand new, zero jobs.</div><div class="chg">Put up the honest-newcomer profile. Do a handful of Upwork micro-tasks (5 to 10 minute jobs) purely to get the completed-job count off zero, and bid LOW on simple 1 to 2 day automation jobs. Treat the first job as an investment in the profile, not income. Short Loom on every proposal. Paid consult off.</div></div>
+          </div>
+
+          <div class="rung">
+            <div class="ph"><span class="n">1</span><span class="r">~$38-45</span></div>
+            <div class="rb"><div class="trig">Trigger: first 1 to 2 jobs done, first 5-star review visible.</div><div class="chg">Job count is no longer zero, that alone changes the skim. Add your first real Upwork review quote above the fold. Nudge rate toward $45.</div></div>
+          </div>
+
+          <div class="rung">
+            <div class="ph"><span class="n">2</span><span class="r">~$50</span></div>
+            <div class="rb"><div class="trig">Trigger: 3 to 5 five-star reviews, JSS starts to populate.</div><div class="chg">Raise to ~$50. Add your first true Upwork outcome line (whatever actually happened). Swap one off-platform portfolio card for an anonymized Upwork client build.</div></div>
+          </div>
+
+          <div class="rung">
+            <div class="ph"><span class="n">3</span><span class="r">~$60-65</span></div>
+            <div class="rb"><div class="trig">Trigger: first real automation close (a proper build, not a micro-task).</div><div class="chg">Raise to ~$60-65. Add a hard outcome line ONLY if a real number exists and the client confirms it. Portfolio starts swapping toward Upwork client work.</div></div>
+          </div>
+
+          <div class="rung">
+            <div class="ph"><span class="n">4</span><span class="r">~$70</span></div>
+            <div class="rb"><div class="trig">Trigger: 3+ substantive builds, JSS ~90%+, roughly $1-2k earned.</div><div class="chg">Raise to ~$70. Two real client outcome one-liners above the fold (true numbers only). Turn a low-priced paid consult ON to build earnings history. Use Available Now / boost with confidence.</div></div>
+          </div>
+
+          <div class="rung">
+            <div class="ph"><span class="n">5</span><span class="r">~$75</span></div>
+            <div class="rb"><div class="trig">Trigger: rising JSS, first repeat client, ~$5k earned.</div><div class="chg">Raise to ~$75. Three real client outcome lines taking shape. Portfolio now majority Upwork client work. Start converting the best clients into a larger consulting or retainer relationship, off the hourly treadmill.</div></div>
+          </div>
+
+          <div class="rung">
+            <div class="ph"><span class="n">6</span><span class="r">~$79</span></div>
+            <div class="rb"><div class="trig">Trigger: Top Rated eligibility approaching (JSS 90%+, $1k+ trailing 12 mo).</div><div class="chg">Raise to ~$79. Tighten the title toward the pain that converts best for you. Add a clean signature-offer framing to the overview. You now compete on competence, not price.</div></div>
+          </div>
+
+          <div class="rung">
+            <div class="ph"><span class="n">7</span><span class="r">$79-85</span></div>
+            <div class="rb"><div class="trig">Trigger: Top Rated badge earned.</div><div class="chg">Above the fold becomes three hard-dollar client one-liners (all true). Add a modestly-priced paid discovery or audit offer to test appetite.</div></div>
+          </div>
+
+          <div class="rung">
+            <div class="ph"><span class="n">8</span><span class="r">$85-95</span></div>
+            <div class="rb"><div class="trig">Trigger: Top Rated Plus / large-contract history, $10k+ earned.</div><div class="chg">Raise to $85-95. Raise the paid audit price. Open a premium bid band for higher-stakes work.</div></div>
+          </div>
+
+          <div class="rung">
+            <div class="ph"><span class="n">9</span><span class="r">$95+</span></div>
+            <div class="rb"><div class="trig">Trigger: strong sustained JSS, repeat higher-tier clients, real testimonials.</div><div class="chg">Rate $95+. Full premium consult offer ($200-500 discovery). Get selective, bid on door-quality jobs (decision-maker contact, expandable scope), not just anything in-keyword.</div></div>
+          </div>
+
+          <div class="rung dest">
+            <div class="ph"><span class="n">10</span><span class="r">dest.<br>$79-99+</span></div>
+            <div class="rb"><div class="trig">Trigger: 12+ projects at 100%, fully optimized (the destination profile).</div><div class="chg">Three hard-dollar client case-study one-liners above the fold, Top Rated, $79-99+ rate, a $500 paid consult/audit offer, portfolio all client work. Upwork now runs primarily as a lead funnel into the bigger consulting relationship, not an hourly income source.</div></div>
+          </div>
+
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== NICHE ===================== -->
+  <section id="niche">
+    <details open>
+      <summary><span class="snum">6</span><h2>Niche-tighten recommendation</h2><span class="chev">&#9656;</span></summary>
+      <div class="sbody">
+        <p>Right now your live profile straddles two lanes: AI-automation on one side, HR and leadership advisory on the other. On Upwork that split works against you, the algorithm cannot decide who to show you to, and buyers cannot tell in three seconds what you are for.</p>
+        <div class="callout">
+          <p class="rec-line" style="margin:0 0 6px">Recommendation: tighten everything to the automation niche.</p>
+          <p style="margin:0">Title, skills, overview, portfolio, all pointed at one thing: finding the busywork that eats a team's week and taking it out with automation. The HR background stays as truthful context (it is why adoption sticks), but it stops being a second service you advertise. One niche, or you rank for nothing.</p>
+        </div>
+        <p class="note">This is a clear recommendation, not a done deal. It is your call. But every other change on this page assumes the automation niche, so if you want to keep the HR/leadership lane visible too, tell me and we rebalance the whole set.</p>
+      </div>
+    </details>
+  </section>
+
+  <p class="foot">Internal review deliverable. Everything here is outward-facing prep for your profile, but nothing goes live on Upwork until you say go.</p>
+
+</div>
+
+<script>
+  document.querySelectorAll('.navlinks a').forEach(function(a){
+    a.addEventListener('click',function(){document.getElementById('nl').classList.remove('open');});
+  });
+</script>
+</body>
+</html>
+
