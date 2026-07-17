@@ -114,14 +114,61 @@
   .foot{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);
     color:var(--muted);font-size:.85rem}
   .foot b{color:var(--ink)}
+
+  .copy-all-btn{background:var(--indigo);color:#fff;border:none;padding:8px 14px;
+    border-radius:999px;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap;
+    display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+  .copy-all-btn:hover{background:var(--indigo2)}
+  .copy-all-btn:active{transform:translateY(1px)}
+  #decision-progress{font-weight:600;opacity:.85}
+  .copy-toast{position:fixed;top:64px;right:14px;z-index:9999;background:var(--green);
+    color:#08130d;font-weight:700;font-size:.82rem;padding:9px 16px;border-radius:10px;
+    box-shadow:0 6px 20px rgba(0,0,0,.35);opacity:0;pointer-events:none;
+    transition:opacity .18s ease,transform .18s ease;transform:translateY(-6px)}
+  .copy-toast.show{opacity:1;transform:translateY(0)}
+
+  .decision{margin-top:12px;padding:14px 14px 12px;background:var(--panel2);
+    border:1px solid var(--line);border-radius:10px}
+  .decision .dq{font-size:.7rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--muted);margin-bottom:10px}
+  .decision .opts{display:flex;flex-direction:column;gap:7px}
+  .decision label.opt{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;
+    border:1px solid var(--line);border-radius:9px;cursor:pointer;font-size:.86rem;
+    color:var(--muted);background:var(--panel);transition:border-color .12s,background .12s}
+  .decision label.opt:hover{border-color:var(--indigo)}
+  .decision label.opt.checked{border-color:var(--indigo);background:rgba(109,124,255,.1);color:var(--ink)}
+  .decision input[type=radio]{margin-top:3px;accent-color:var(--indigo);flex:none}
+  .decision .star{color:var(--amber);font-weight:800;margin-left:2px;font-size:.68rem;
+    letter-spacing:.3px;white-space:nowrap}
+  .decision textarea{width:100%;margin-top:10px;background:var(--chip);
+    border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:inherit;
+    font-size:.85rem;padding:9px 10px;resize:vertical;min-height:50px}
+  .decision textarea::placeholder{color:var(--muted);opacity:.65}
+  .decision textarea:focus{outline:none;border-color:var(--indigo)}
+  .decision .saved-badge{font-size:.68rem;color:var(--green);margin-top:7px;
+    display:flex;align-items:center;gap:5px;opacity:0;transition:opacity .5s}
+  .decision .saved-badge.show{opacity:1}
+  .informational-tag{display:inline-flex;align-items:center;gap:6px;font-size:.7rem;
+    font-weight:700;color:var(--muted);margin-top:12px;letter-spacing:.3px;opacity:.8}
+
+  .copy-fallback{display:none;margin:14px 0 0;padding:14px;border:1px solid rgba(255,122,138,.35);
+    border-radius:12px;background:rgba(255,122,138,.06)}
+  .copy-fallback.show{display:block}
+  .copy-fallback p{margin:0 0 8px;color:var(--muted);font-size:.85rem}
+  .copy-fallback textarea{width:100%;min-height:180px;background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:.78rem;padding:10px;resize:vertical}
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v4 · 2026-07-17-20:10:17 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v5 · 2026-07-17-21:23:35 MT</div><!-- DEPLOY_STAMP_END -->
 
 <header class="nav">
   <div class="nav-inner">
     <div class="brand"><span class="dotpair"><span></span><span></span></span> Needs-Human Digest</div>
+    <button class="copy-all-btn" id="copy-all-btn" onclick="copyAllDecisions()" aria-label="Copy all decisions">
+      &#128203; Copy All Decisions <span id="decision-progress">(0/4)</span>
+    </button>
     <nav class="navlinks">
       <a href="#now">Needs You Now</a>
       <a href="#money">Money</a>
@@ -133,6 +180,7 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
   </div>
+  <div class="copy-toast" id="copy-toast">Copied!</div>
   <nav class="mobile-menu" id="mm">
     <a href="#now" onclick="document.getElementById('mm').classList.remove('open')">Needs You Now</a>
     <a href="#money" onclick="document.getElementById('mm').classList.remove('open')">Money</a>
@@ -143,6 +191,11 @@
 </header>
 
 <div class="wrap">
+
+  <div class="copy-fallback" id="copy-fallback">
+    <p>Clipboard access was blocked by the browser &mdash; here's the text, select it and copy manually (Ctrl/Cmd+C):</p>
+    <textarea id="copy-fallback-text" readonly onclick="this.select()"></textarea>
+  </div>
 
   <div class="hero">
     <span class="kicker">Internal &middot; alerts backlog, cleared to the real decisions</span>
@@ -176,6 +229,16 @@
           <p>Four halts, same server (<code>srv1040886</code>), two different error signatures: <b>"cannot change to '/root/agentsHQ': No such file or directory"</b> (July 5, July 7 &mdash; ids <code>#1018</code>/<code>#1047</code>) and <b>"Unable to create '/app/.git/index.lock': Read-only file system"</b> (July 16, July 17 today &mdash; ids <code>#1406</code>/<code>#1474</code>).</p>
           <p><b>This class is already on the auto-fix allowlist</b> (<code>vps-deploy-halt</code> has had a real auto-fixer since it was added &mdash; it runs <code>git checkout main + pull --ff-only</code> and verifies HEAD matches origin before calling it fixed). Reading that fixer's code found why it keeps failing anyway: it resolves its own repo path via <code>repo_paths.repo_root()</code>, which always points at wherever the fixer's own process is running &mdash; <code>/app</code> inside the container. The <b>second signature is structural, not transient</b>: if <code>/app</code> is mounted read-only inside the container (by design, so the running code can't self-modify), the fixer's own <code>git checkout</code> can never succeed there &mdash; every future occurrence of this specific signature will keep failing the same way. The first signature (directory briefly missing) looks more like a one-off host-side hiccup, not the same bug.</p>
           <div class="rec"><b>Recommendation:</b> this is a scope decision, not a code fix I can safely make solo &mdash; either (a) the fixer should stop attempting this class of fix entirely and just log-and-notify (since it can't win against a read-only mount), or (b) the mount policy needs a narrow, explicit exception for this one write path. Both are infra/deploy-path changes gated Tier-C in this repo (human review required regardless of confidence score) &mdash; recommend you pick the direction, then it's a same-day fix once decided.</div>
+          <div class="decision" data-item-id="vps-deploy-halt" data-item-title="VPS deploy blocked, 12 days running (#1018/#1047/#1406/#1474)">
+            <div class="dq">Your call &mdash; no single recommendation, pick a direction</div>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="d-vps-deploy-halt" value="Option A -- fixer stops attempting this class, logs and notifies only"> Option A &mdash; fixer stops attempting this class, logs &amp; notifies only</label>
+              <label class="opt"><input type="radio" name="d-vps-deploy-halt" value="Option B -- add a narrow mount exception for this one write path"> Option B &mdash; add a narrow mount exception for this one write path</label>
+              <label class="opt"><input type="radio" name="d-vps-deploy-halt" value="Other -- see note"> Other &mdash; see note</label>
+            </div>
+            <textarea data-note-for="vps-deploy-halt" placeholder="Optional note..."></textarea>
+            <div class="saved-badge">&#10003; saved</div>
+          </div>
           <div class="meta">Alert IDs <code>#1018</code>, <code>#1047</code>, <code>#1406</code>, <code>#1474</code> &middot; source: safe-pull &middot; class: vps-deploy-halt &middot; <span class="state state-human">NEEDS YOUR DECISION</span></div>
         </div>
       </details>
@@ -184,6 +247,7 @@
         <div class="det-body">
           <p>The Gate's bypass scanner flagged branch <code>chore/memory-curator-2026-07-17</code> for containing BYPASS/SKIP/DISABLE-looking text. Pulled the actual diff and checked it directly: <b>zero <code>.py</code> files touched</b> &mdash; every match is inside <code>memory/*.md</code> prose (discussing past bypass incidents, like the 7/13 Downloads-path gate-bypass memory entry, and a <code>DISABLED</code> flag filename mentioned in a kill-switch list). This is documentation text, not code disabling a real check.</p>
           <div class="rec"><b>Recommendation:</b> release the hold &mdash; it's a memory-only branch (the standing always-[READY] exception applies). Separately: Gate's bypass-pattern regex should exclude <code>memory/*.md</code> and <code>docs/*.md</code> from the BYPASS/SKIP/DISABLE scan, since it's currently matching prose about the topic, not the topic itself. That's a real but LOW-urgency classifier fix in <code>gate_agent.py</code>'s bypass-checker &mdash; a different, unrelated code path from the alert-classification fix below, not the same fix.</div>
+          <div class="informational-tag">&#8505; Informational &mdash; already verified, no decision needed from you</div>
           <div class="meta">Alert ID <code>#1512</code> (2026-07-17 18:40 UTC) &middot; source: gate_agent &middot; class: gate-notify-urgent &middot; <span class="state state-resolved">VERIFIED FALSE POSITIVE &mdash; RECOMMEND RELEASE</span></div>
         </div>
       </details>
@@ -199,6 +263,7 @@
         <summary><span class="st"><span class="pill p-hold">FYI</span> Chase account ending 6606 &mdash; overdrawn</span><span class="chev">&#9656;</span></summary>
         <div class="det-body">
           <p>Chase overdraft alert on the account ending in <b>6606</b>, dated July 12.</p>
+          <div class="informational-tag">&#8505; Informational &mdash; you handle this yourself, no decision here</div>
           <div class="meta">Alert ID <code>#1183</code> (2026-07-12) &middot; source: gmail-error-scan &middot; class: gmail-error:bank-negative-balance &middot; <span class="state state-fyi">FYI ONLY &mdash; NO ACTION</span></div>
         </div>
       </details>
@@ -206,6 +271,7 @@
         <summary><span class="st"><span class="pill p-hold">FYI · 2x SAME DAY</span> Capital One account ending 5071 &mdash; overdrawn</span><span class="chev">&#9656;</span></summary>
         <div class="det-body">
           <p>Two notices for the <b>same Capital One account (…5071)</b>, July 15 (13:52 and 19:54). Likely one ongoing overdraft, not two separate events &mdash; flagging the duplicate for your awareness only, not merging the rows.</p>
+          <div class="informational-tag">&#8505; Informational &mdash; you handle this yourself, no decision here</div>
           <div class="meta">Alert IDs <code>#1362</code>, <code>#1401</code> (both 2026-07-15) &middot; source: gmail-error-scan &middot; class: gmail-error:bank-negative-balance &middot; <span class="state state-fyi">FYI ONLY &mdash; NO ACTION</span></div>
         </div>
       </details>
@@ -213,6 +279,7 @@
         <summary><span class="st"><span class="pill p-hold">FYI</span> Studio media-gen (Kie.ai) balance low</span><span class="chev">&#9656;</span></summary>
         <div class="det-body">
           <p>Kie.ai balance <b>130.5</b>, under the <b>200</b> threshold. Studio paused itself cleanly &mdash; <b>30 candidates parked</b>, not lost, resumes automatically once you top up.</p>
+          <div class="informational-tag">&#8505; Informational &mdash; you handle this yourself, no decision here</div>
           <div class="meta">Alert ID <code>#1506</code> (2026-07-17 17:39 UTC) &middot; source: notifier &middot; class: studio-balance-low &middot; <span class="state state-fyi">FYI ONLY &mdash; NO ACTION</span></div>
         </div>
       </details>
@@ -222,6 +289,17 @@
           <p>You said it plainly: these three "shouldn't even become a queue item." <code>scripts/auto_healer.py</code> is real (verified on the VPS, its <code>RESOLVED-INFO-REPORT</code> path exists) but only fires for <code>source == "notifier"</code> rows &mdash; bank/OpenRouter alerts come in as <code>source="gmail-error-scan:*"</code>, so that path structurally can't reach them regardless. Fixed at the actual point these rows are created instead: <code>orchestrator/alert_triage.py</code> (studio-balance-low, source=notifier) + <code>scripts/gmail_error_scan.py::record_alert()</code> (bank/OpenRouter, source=gmail-error-scan). Bank-overdraft and Kie/OpenRouter-low-balance alerts now land already <code>auto_resolved</code> with a logged note, never <code>needs_human</code>, going forward.</p>
           <p><b>Built in a fraud fail-safe:</b> Council's first pass on this fix flagged a real gap &mdash; an email that says "overdrawn" AND mentions fraud/unauthorized activity would otherwise auto-resolve silently. Added a guard so any fraud/security wording still forces <code>needs_human</code> regardless of category. Tested (60 passing tests, 6 new ones specifically proving both paths).</p>
           <p><b>Honest status:</b> Karpathy audit says ship (~97% confidence). Council converged at only 60% even after the fraud-guard fix &mdash; its remaining ask is a dated ticket for a daily anomaly monitor on auto-resolve rates, not more code right now. Per the 95%-agreement bar, this is <b>not self-merged</b> &mdash; pushed as <code>[WIP]</code> for your or Gate's call. Also: this branch touches <code>orchestrator/alert_triage.py</code>, which Gate's own scanner marks Tier-C (human review required regardless of score).</p>
+          <div class="decision" data-item-id="fyi-reclass-branch" data-item-title="FYI-reclassification code branch (worktree-fix-fyi-alert-classes)">
+            <div class="dq">Your call &mdash; Karpathy says ship, Council didn't converge (60% &lt; 95% bar)</div>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="d-fyi-reclass-branch" value="Approve -- merge branch to main"> Approve &mdash; merge branch to main</label>
+              <label class="opt"><input type="radio" name="d-fyi-reclass-branch" value="Hold -- needs more review first"> Hold &mdash; needs more review first</label>
+              <label class="opt"><input type="radio" name="d-fyi-reclass-branch" value="Reject -- send back, do not ship this approach"> Reject &mdash; send back, don't ship this approach</label>
+              <label class="opt"><input type="radio" name="d-fyi-reclass-branch" value="Other -- see note"> Other &mdash; see note</label>
+            </div>
+            <textarea data-note-for="fyi-reclass-branch" placeholder="Optional note..."></textarea>
+            <div class="saved-badge">&#10003; saved</div>
+          </div>
           <div class="meta">Branch <code>worktree-fix-fyi-alert-classes</code> &middot; <span class="state state-gate">PREPARED &middot; PENDING YOUR/GATE REVIEW</span></div>
         </div>
       </details>
@@ -238,6 +316,16 @@
           <p>34 total content-board items are past-due and stuck (alert lists the oldest 21). They span every stage (Idea, Draft, In Review, Ready) and never advanced to Queued. The fix mechanism is real and concrete: a Notion API write via <code>skills/forge_cli/notion_client.py</code> against the Content DB, flipping the <code>Status</code> field.</p>
           <p><b>Why I didn't just execute it:</b> this isn't one mechanical bug with one right answer &mdash; it's 34 individual content calls spanning May 26 to today, several genuinely stale (47&ndash;55 days). A blanket "flip everyone to Queued" would auto-publish outdated content; a blanket "archive everything old" would kill posts you might still want. That's a content judgment, not a code fix, so it doesn't clear the bar for agent auto-execution here.</p>
           <div class="rec"><b>Recommendation:</b> a fast pass, not per-card review &mdash; auto-archive anything past ~30&ndash;40 days unless you flag it Keep, queue the rest that are still fresh. Say the word and the content lane can run that split in one batch.</div>
+          <div class="decision" data-item-id="content-board-1498" data-item-title="Content-board stuck posts (#1498, 21 items shown / 34 total)">
+            <div class="dq">Your call</div>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="d-content-board-1498" value="Approve -- run the fast pass (auto-archive 30-40+ day items unless flagged Keep, queue the rest)"> Approve &mdash; run the fast pass (auto-archive 30&ndash;40+ day items unless flagged Keep, queue the rest) <span class="star">&#9733; RECOMMENDED</span></label>
+              <label class="opt"><input type="radio" name="d-content-board-1498" value="Reject -- do nothing for now"> Reject &mdash; do nothing for now</label>
+              <label class="opt"><input type="radio" name="d-content-board-1498" value="Other -- see note"> Other &mdash; see note</label>
+            </div>
+            <textarea data-note-for="content-board-1498" placeholder="Optional note..."></textarea>
+            <div class="saved-badge">&#10003; saved</div>
+          </div>
           <div class="meta">Alert ID <code>#1498</code> (2026-07-17 16:48 UTC) &middot; source: notifier &middot; class: unclassified (content-board-stuck) &middot; <span class="state state-mech">MECHANISM FOUND &middot; RECOMMEND REVIEW, NOT AUTO-EXEC</span></div>
         </div>
       </details>
@@ -246,6 +334,17 @@
         <div class="det-body">
           <p>This post orphaned in Publishing for over 24 hours; its slot is explicitly blocked until acted on. Same post also listed inside <code>#1498</code> above &mdash; one real problem, not two. No auto-retry/requeue mechanism exists in the codebase for a <code>PublishFailed</code> slot (checked <code>reconciliation_poller.py</code> &mdash; it observes status, never writes it) &mdash; clearing it is the same Notion-write mechanism as above, just for this one post.</p>
           <div class="rec"><b>Recommendation:</b> lowest-risk single item in this whole list to just decide on directly &mdash; retry the publish or clear the slot for the next queued item to take it. Clears the duplicate line in <code>#1498</code> too.</div>
+          <div class="decision" data-item-id="publish-failed-1365" data-item-title="Publish-failed post, X (#1365)">
+            <div class="dq">Your call</div>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="d-publish-failed-1365" value="Approve -- retry the publish"> Approve &mdash; retry the publish <span class="star">&#9733; RECOMMENDED</span></label>
+              <label class="opt"><input type="radio" name="d-publish-failed-1365" value="Approve -- clear the slot for next queued item instead"> Approve &mdash; clear the slot for next queued item instead</label>
+              <label class="opt"><input type="radio" name="d-publish-failed-1365" value="Reject -- do nothing for now"> Reject &mdash; do nothing for now</label>
+              <label class="opt"><input type="radio" name="d-publish-failed-1365" value="Other -- see note"> Other &mdash; see note</label>
+            </div>
+            <textarea data-note-for="publish-failed-1365" placeholder="Optional note..."></textarea>
+            <div class="saved-badge">&#10003; saved</div>
+          </div>
           <div class="meta">Alert ID <code>#1365</code> (2026-07-15 17:50 UTC) &middot; source: notifier &middot; class: unclassified (publish-failed) &middot; <span class="state state-mech">MECHANISM FOUND &middot; RECOMMEND REVIEW, NOT AUTO-EXEC</span></div>
         </div>
       </details>
@@ -265,6 +364,7 @@
             <li><b>"Enterprise AI's adoption gap"</b> &mdash; angle: owner-operator accountability gaps vs. enterprise CISO-scale governance. (<code>#1227</code>, 2026-07-13)</li>
           </ul>
           <p>No recommendation needed &mdash; these are exactly where they're supposed to be, waiting on your normal Approve/Reject click whenever you get to them.</p>
+          <div class="informational-tag">&#8505; Informational &mdash; already routed to your normal workflow, no decision here</div>
           <div class="meta">Alert IDs <code>#1030</code> (2026-07-06), <code>#1227</code> (2026-07-13) &middot; source: notifier:button-card &middot; <span class="state state-human">AWAITING YOUR ROUTINE CLICK</span></div>
         </div>
       </details>
@@ -291,5 +391,125 @@
   </div>
 
 </div>
+
+<script>
+(function(){
+  var STORE_PREFIX = 'digest-20260717-';
+  var blocks = Array.prototype.slice.call(document.querySelectorAll('.decision'));
+
+  function storeKeyDecision(id){ return STORE_PREFIX + 'decision-' + id; }
+  function storeKeyNote(id){ return STORE_PREFIX + 'note-' + id; }
+
+  function updateProgress(){
+    var decided = 0;
+    blocks.forEach(function(b){
+      if (b.querySelector('input[type=radio]:checked')) decided++;
+    });
+    var el = document.getElementById('decision-progress');
+    if (el) el.textContent = '(' + decided + '/' + blocks.length + ')';
+  }
+
+  function showSaved(block){
+    var badge = block.querySelector('.saved-badge');
+    if (!badge) return;
+    badge.classList.add('show');
+    clearTimeout(badge._t);
+    badge._t = setTimeout(function(){ badge.classList.remove('show'); }, 1400);
+  }
+
+  blocks.forEach(function(block){
+    var id = block.getAttribute('data-item-id');
+    var radios = Array.prototype.slice.call(block.querySelectorAll('input[type=radio]'));
+    var textarea = block.querySelector('textarea');
+
+    // restore
+    try {
+      var savedValue = localStorage.getItem(storeKeyDecision(id));
+      if (savedValue){
+        radios.forEach(function(r){
+          if (r.value === savedValue){
+            r.checked = true;
+            r.closest('label.opt').classList.add('checked');
+          }
+        });
+      }
+      var savedNote = localStorage.getItem(storeKeyNote(id));
+      if (savedNote && textarea) textarea.value = savedNote;
+    } catch(e){ /* localStorage unavailable -- silently skip persistence */ }
+
+    radios.forEach(function(r){
+      r.addEventListener('change', function(){
+        radios.forEach(function(rr){ rr.closest('label.opt').classList.remove('checked'); });
+        r.closest('label.opt').classList.add('checked');
+        try { localStorage.setItem(storeKeyDecision(id), r.value); } catch(e){}
+        showSaved(block);
+        updateProgress();
+      });
+    });
+
+    if (textarea){
+      var noteTimer;
+      textarea.addEventListener('input', function(){
+        clearTimeout(noteTimer);
+        noteTimer = setTimeout(function(){
+          try { localStorage.setItem(storeKeyNote(id), textarea.value); } catch(e){}
+          showSaved(block);
+        }, 400);
+      });
+    }
+  });
+
+  updateProgress();
+
+  window.copyAllDecisions = function(){
+    var lines = [];
+    lines.push('NEEDS-HUMAN DIGEST -- DECISIONS (July 17, 2026)');
+    lines.push('Copied: ' + new Date().toString());
+    lines.push('');
+
+    blocks.forEach(function(block, i){
+      var title = block.getAttribute('data-item-title') || block.getAttribute('data-item-id');
+      var checked = block.querySelector('input[type=radio]:checked');
+      var textarea = block.querySelector('textarea');
+      var note = textarea && textarea.value.trim() ? textarea.value.trim() : '(none)';
+      lines.push((i + 1) + '. ' + title);
+      lines.push('   -> ' + (checked ? checked.value : '⚠ NOT YET DECIDED'));
+      lines.push('   Note: ' + note);
+      lines.push('');
+    });
+
+    var text = lines.join('\n');
+
+    function onCopySuccess(){
+      var toast = document.getElementById('copy-toast');
+      if (toast){
+        toast.classList.add('show');
+        setTimeout(function(){ toast.classList.remove('show'); }, 2200);
+      }
+      var fb = document.getElementById('copy-fallback');
+      if (fb) fb.classList.remove('show');
+    }
+
+    function onCopyFailure(){
+      var fb = document.getElementById('copy-fallback');
+      var fbText = document.getElementById('copy-fallback-text');
+      if (fb && fbText){
+        fbText.value = text;
+        fb.classList.add('show');
+        fb.scrollIntoView({behavior:'smooth', block:'center'});
+        fbText.focus();
+        fbText.select();
+      }
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(onCopySuccess).catch(onCopyFailure);
+    } else {
+      onCopyFailure();
+    }
+  };
+})();
+</script>
+
 </body>
 </html>
