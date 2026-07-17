@@ -87,7 +87,7 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-07-17-13:01:06 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-07-17-13:48:42 MT</div><!-- DEPLOY_STAMP_END -->
 
 <nav class="navbar">
   <div class="inner">
@@ -126,7 +126,8 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
     <div class="callout">
       <strong>One-line verdict:</strong> Reachable, and most of the hard parts have existing parts to reuse rather than invent. Concurrency-safety reuses infrastructure you already run; persistent memory has a drop-in library that fits your exact database; the human sign-off stays exactly as it is. The genuinely hard, further-out piece is true interactive back-and-forth mid-task &mdash; that is the north-star's long pole, named plainly in the plan, not quietly scoped away.
     </div>
-    <p class="small">This is the second, expanded version of this PRD. It adds the North-Star bar (&sect;2), a prior-art reuse map from three parallel research agents (&sect;5), and a plan that tags every step as parity-prerequisite versus execution-offload plumbing (&sect;9).</p>
+    <p class="small">This is the third version of this PRD. It adds the North-Star bar (&sect;2), a prior-art reuse map from three parallel research agents (&sect;5), a plan that tags every step parity-vs-plumbing (&sect;9), and now Round-1 cross-lane review changes.</p>
+    <div class="callout warn"><strong>Round 1 adversarial review &mdash; what changed (independent red-team; cross-model lanes queued):</strong> An independent reviewer attacked the design; the cross-model lanes (codex, antigravity) had not yet polled their inboxes, so their input is still queued. Seven changes incorporated: <strong>(1)</strong> dropped mem0 from v1 &mdash; the checkpoint table + explicit fact-writes is the right primitive; mem0's per-turn LLM cost and autonomous fact-rewrite are themselves a contamination risk. <strong>(2)</strong> the per-conversation lease now needs a fencing token + heartbeat (a bare TTL double-executes if a turn outlives it). <strong>(3)</strong> added rapid-message coalescing + strict per-key ordering + an out-of-band cancel path. <strong>(4)</strong> session-resume transcript decoupled from the worktree onto a mounted volume + host-pin (teardown was silently pruning it). <strong>(5)</strong> a Claude-auth 8-hour spike pulled into Phase 0 (don't defer the hardest question). <strong>(6)</strong> a thin interactive round-trip pulled forward as the foundation's acceptance test. <strong>(7)</strong> security downgraded to PARTIAL + a credential broker / egress allowlist / separate push identity added. Two findings surfaced as your-call tradeoffs, not silent flips: the reviewer argued the metered API/Agent-SDK is the correct substrate for concurrency (it collides with your &ldquo;use the subscriptions I pay for&rdquo; requirement) &mdash; now the &sect;10 Q1 substrate decision + a Phase-0 go/no-go gate.</div>
   </div>
 </section>
 
@@ -155,7 +156,7 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
       <tr>
         <td><strong>4. Security preserved</strong></td>
         <td>Cloud-native must NOT loosen the human-checkpoint model (the merge gate; explicit approval for high-risk changes).</td>
-        <td><span class="tag t-good">PRESERVED</span> Session parity is about conversation + memory, not merge authority. The worker only ever pushes a branch; the Gate stays the sole merger; high-risk paths still need your explicit approval. Reconciled explicitly in &sect;6.</td>
+        <td><span class="tag t-warn">PARTIAL &mdash; sharpened in R1</span> Merge-integrity is preserved (worker only pushes a branch; Gate stays sole merger; high-risk needs explicit approval). But R1 review caught that this protects <em>main</em>, not <em>runtime</em>: a worker runs model-driven code with <code>.env</code> tokens in reach and an exfil path (push/network/Telegram), so an injected job could leak secrets without ever merging. Needs a credential broker + egress allowlist + separate push identity (see &sect;6, &sect;9 Phase 3).</td>
       </tr>
     </table></div>
     <div class="callout warn"><strong>Honest overall:</strong> the plan reaches execution-offload, concurrency-safety, and persistent-memory using mostly-existing parts. It does <strong>not</strong> fully reach criterion 1 (true interactive back-and-forth mid-task) in this scope &mdash; that is the north-star's long pole and is called out as such in the plan (Phase 4) and the open questions (&sect;10). Criteria 2&ndash;4 are the near-term wins; criterion 1 is the horizon.</p></div>
@@ -224,7 +225,7 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
     <h3>Memory + resumable-state frameworks</h3>
     <div class="tblwrap"><table>
       <tr><th>Option</th><th>What it gives</th><th>Verdict for this stack</th></tr>
-      <tr><td><strong>mem0</strong></td><td>Drop-in memory layer (not a runtime). Runs on the Postgres/pgvector already deployed. First-class per-user / per-run scoping. The orchestrator framework natively supports it as an external-memory provider.</td><td><span class="tag t-good">Adopt wholesale</span> Lowest-friction fit for persistent facts + per-conversation isolation. (License not confirmed this run &mdash; verify before adopting.)</td></tr>
+      <tr><td><strong>mem0</strong></td><td>Drop-in memory layer (not a runtime). Runs on the Postgres/pgvector already deployed. Per-user/run scoping. Orchestrator supports it as an external-memory provider.</td><td><span class="tag t-warn">DEFER &mdash; changed in R1</span> Initially picked as v1; R1 review downgraded it. It stores <em>facts</em>, not execution state (the checkpoint table does the load-bearing 90%); it adds a metered LLM call per add/search; and its autonomous fact-rewrite is itself a cross-contamination vector. v1 = explicit fact-writes + checkpoint table; add mem0 only if fuzzy semantic recall is later proven necessary, with scoping provably partitioned by conversation-key.</td></tr>
       <tr><td><strong>LangGraph checkpointer</strong></td><td>Thread-keyed state saved as checkpoints in Postgres; multiple workers safely handle different turns of the same thread; resume by loading the latest checkpoint.</td><td><span class="tag t-good">Springboard (port the pattern)</span> The reference design for resumable per-thread run state. A prior internal absorb already extracted this as a checkpoint pattern.</td></tr>
       <tr><td><strong>OpenHands event-sourcing</strong></td><td>State = a replayable log of typed events keyed by a conversation ID; pause/resume/fork/replay for free.</td><td><span class="tag t-good">Springboard</span> Cleanest resumability model; port onto Postgres rather than adopt the whole agent runtime.</td></tr>
       <tr><td><strong>Letta (MemGPT)</strong></td><td>Self-editing hierarchical memory, Postgres+pgvector, REST API. But it is a whole agent runtime.</td><td><span class="tag t-warn">Sidecar or springboard only</span> Too heavy to fork into the existing orchestrator; could run as a memory service.</td></tr>
@@ -264,18 +265,20 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
      - key = channel:chat_id:thread   (the isolation primitive)
      - pick tool: Codex/agy for long runs, Claude for short bounded
         v
-  [ PER-CONVERSATION LEASE ]  claim('conversation:<key>', worker, ttl)  <- reuse existing table
-     - held? -> enqueue on message bus (serialize same-conversation turns)
+  [ PER-CONVERSATION LEASE ]  claim + fencing token + heartbeat  <- reuse table, R1-hardened
+     - held? -> coalesce/queue on message bus (per-key FIFO); out-of-band cancel channel
         v
-  [ CLI WORKER POOL ]  (new systemd unit / sidecar container)
-     - claude -p  (short runs + external token watchdog for the 401 bug)
-     - codex exec (device-auth, self-refreshing)
+  [ CREDENTIAL BROKER ]  (local socket) -- worker requests actions, never holds raw tokens
+        v
+  [ CLI WORKER POOL ]  (new systemd unit / sidecar; egress allowlist: model API/GitHub/Telegram only)
+     - codex exec (device-auth, self-refreshing)   <- Phase 0 spine
+     - claude -p  (token-refresh watchdog; Claude 8h auth spike proven in P0)
      - agy        (one-time SSH-OTP, then auto-renews)
-     - runs INSIDE a git worktree off origin/main; commits [WIP] early + often
-     - session_id stored on the conversation row (= server-side lane marker)
+     - runs INSIDE a git worktree off origin/main; commits [WIP]; emits diff to trusted pusher
         v
-  [ MEMORY ]  mem0 on existing Postgres/pgvector (facts, per-key scoped)
-              + thread-keyed checkpoint rows (resumable run state)
+  [ MEMORY ]  thread-keyed checkpoint rows (resumable state) + explicit fact-writes
+              transcript store on MOUNTED VOLUME, host-pinned (survives teardown/restart)
+              (mem0 deferred -- see R1 review)
         v
   [ RESULT ] -> message bus + Telegram notifier  (existing)
         |
@@ -288,13 +291,13 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
 
   Orchestrator's own crews -> the metered gateway  (UNCHANGED hard rule)
   Subscription-CLI path is NEW and additive; metered = fallback only.</code></pre>
-    <p><strong>Load-bearing decisions:</strong></p>
+    <p><strong>Load-bearing decisions (revised after R1 review):</strong></p>
     <ul>
-      <li><strong>Tokens live in the environment file</strong> (never committed, never printed), mounted to the worker.</li>
+      <li><strong>The worker never holds raw tokens.</strong> A credential broker (over a local socket) fronts the subscription tokens and cluster creds; the worker requests an action, not the secret. Plus an <strong>egress allowlist</strong> (model API + GitHub + Telegram only, deny all other outbound) and a <strong>separate trusted push identity</strong> that secret-scans a worker's diff before it reaches any shared remote. This closes the exfil path R1 flagged (worker runs untrusted-input-driven code; Gate protects <em>main</em>, not runtime secrets).</li>
       <li><strong>The worker writes only inside a worktree off the main line</strong> &mdash; never the live server tree directly. Work reaches production only through the Gate.</li>
-      <li><strong>The Gate stays the one human checkpoint.</strong> The worker can only push a branch, exactly like a spawned coding agent today. This is how criterion 4 (security) is preserved without weakening anything.</li>
-      <li><strong>Concurrency-safety = composite key + existing lease + idempotency table</strong> (criterion 3), reusing infrastructure already running.</li>
-      <li><strong>Memory = mem0 + a thread-keyed checkpoint table</strong> (criterion 2), the server-side equivalent of the laptop's marker file.</li>
+      <li><strong>The Gate stays the one human checkpoint.</strong> The worker can only emit a diff for the trusted pusher; it never merges or deploys. Merge-integrity (criterion 4) preserved; runtime-secret-safety added above.</li>
+      <li><strong>Concurrency-safety = composite key + a lease with a fencing token + heartbeat + idempotency</strong> (criterion 3). R1 fix: a bare TTL lease double-executes if a turn outlives it, so the lease heartbeat-extends while the worker is alive and a monotonic fencing token is checked at every write boundary (push / memory / Telegram) so a worker that lost its lease is rejected. Plus a coalesce window for rapid same-user messages, strict per-key ordering (verified, not assumed), and an out-of-band cancel/interrupt channel.</li>
+      <li><strong>Memory = a thread-keyed checkpoint table + explicit fact-writes</strong> (criterion 2), the server-side equivalent of the laptop's marker file. R1 fix: mem0 deferred (it solves facts, not execution state, at a per-turn LLM cost). The transcript store is <strong>decoupled from the worktree</strong> onto a mounted volume with the conversation pinned to its host, so worktree teardown and container restarts do not prune the resume state.</li>
     </ul>
     <div class="callout"><strong>Relationship to the planned self-healing agent:</strong> this worker is the general-purpose sibling of the already-planned, write-boundary-locked self-healing agent. It should inherit the <em>same</em> allowlist/forbidden-path model (no writes to the SOP files, environment file, gate, or core orchestrator source without Gate review) rather than invent a second, looser boundary. Recommend one shared write-boundary enforcement layer, two callers.</div>
   </div>
@@ -304,6 +307,7 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
 <section id="council">
   <div class="head"><span class="n">7</span><h2>Council: 5-angle stress test</h2><span class="chev">▾</span></div>
   <div class="body">
+    <div class="callout"><strong>Fresh pass after Round 1 revision:</strong> Re-run against the revised design, the five voices largely converge that R1 resolved the prior structural weaknesses &mdash; the concurrency lease is now correct (fenced + heartbeat), the security exfil path is addressed (broker + egress), the memory primitive is right (checkpoint over mem0), and resume is durable. The remaining live tensions: <strong>(1)</strong> complexity grew (broker, egress, fencing, coalesce, cancel) &mdash; the Contrarian notes the &ldquo;spine&rdquo; is now heavier, so P0&ndash;P2 must stay disciplined; every addition traces to a specific named failure the reviewer found, none speculative, so it holds &mdash; but watch scope. <strong>(2)</strong> The First-Principles voice affirms the reframe: the whole concurrent tier is now honestly gated on the unresolved substrate decision (Q1), which is correctly surfaced as a Phase-0 go/no-go rather than assumed. <strong>Revised chairman verdict: BUILD the spine, gated on the substrate answer</strong> &mdash; the design is materially stronger and more honest than v2; the original 5 voices below still stand as the baseline critique that drove these fixes.</div>
     <div class="voice"><span class="lens">1 &middot; The Contrarian</span>
       <h4>The premise leans hardest on the one tool that is broken for this exact use.</h4>
       <p>The whole pitch is unattended-on-the-server, and the primary tool drops a 401 within ~10&ndash;15 minutes headless and dies every ~8h on cron &mdash; confirmed across six separate bug reports, not one flaky anecdote. A real build or fix is rarely a 10-minute job. So on the marquee tool, the naive version fails a third of the way through, silently, and the branch never appears. You are moving work from a place where it completes to a place where it dies mid-run unless you build the watchdog first.</p>
@@ -335,6 +339,7 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
 <section id="karpathy">
   <div class="head"><span class="n">8</span><h2>Karpathy: 10-principle audit</h2><span class="chev">▾</span></div>
   <div class="body">
+    <div class="callout"><strong>Fresh pass after Round 1 revision:</strong> The revisions move several principles the right way. <strong>P8 Dependencies</strong> improved (mem0 removed = one fewer new dependency; v1 is now stdlib + existing Postgres + existing CLIs). <strong>P4 Goal-driven</strong> improved &mdash; the new verify conditions are machine-checkable (8h no-touch auth run; a double-execution test on an over-TTL turn; resume-after-restart; secret-not-readable-from-worker-env; non-allowlisted-host-blocked). <strong>P2 Simplicity</strong> stays WARN and is the one to watch: R1 added real surface (broker, egress, fencing, coalesce, cancel), but each item traces to a specific failure the reviewer found (not speculative), so it is justified correctness/security, not a Kitchen Sink &mdash; the guardrail is that P0&ndash;P2 must not grow further without a named failure behind it. <strong>P10</strong>: the unresolved substrate decision is NOT an Optimistic Path risk because it is explicitly a Phase-0 go/no-go gate, not an assumption. <strong>Revised final call: SHIP the PRD, HOLD the full build</strong> &mdash; now with the substrate go/no-go as the first gating action. The per-principle baseline below still holds.</div>
     <p class="small">Audited as a design/PRD, not shipped code. Implementation-time principles are WARN with the guardrail the build must honor.</p>
     <div class="kp"><span class="st">P1 Think before coding</span><span><span class="tag t-good">PASS</span> Intent stated; the hidden assumption (headless subscription auth) was verified against fetched docs and cross-checked by a practitioner agent before any design.</span></div>
     <div class="kp"><span class="st">P2 Simplicity first</span><span><span class="tag t-warn">WARN</span> Full 3-tool pool + router + memory + concurrency is more than day one needs. <em>Action:</em> one vertical slice (one tool, one job type, memory + isolation) before breadth. Reuse existing lease/bus/pgvector instead of new infra.</span></div>
@@ -356,45 +361,51 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
   <div class="body">
     <p class="small">Each step names what gets built, where, how it is verified, and an effort tier (S=&lt;half day, M=1&ndash;2 days, L=3&ndash;5 days). Tags: <span class="pill p-parity">PARITY</span> moves toward the north-star (conversation / memory / concurrency); <span class="pill p-plumb">PLUMBING</span> is execution-offload only. Nothing here is authorized to build yet.</p>
 
-    <h3>Phase 0 &mdash; One worker, one job (de-risk execution)</h3>
+    <h3>Phase 0 &mdash; Prove the hard questions first (de-risk, R1-reordered)</h3>
+    <p class="small">R1 fix: P0 no longer validates only cheap plumbing. It fronts the two questions most likely to kill the project &mdash; can the substrate legally/technically do concurrency, and can Claude run headless for sustained long turns &mdash; before anything is built on top.</p>
     <ol>
-      <li><span class="pill p-plumb">PLUMBING</span> <strong>[S] Mint + store the Codex subscription token on the VPS.</strong> <code>codex login --device-auth</code> over SSH; token in the environment file. <em>Verify:</em> <code>codex exec "print hello"</code> returns from the VPS with the laptop closed.</li>
-      <li><span class="pill p-plumb">PLUMBING</span> <strong>[M] Single-job worker script.</strong> Gate-reviewed (it is orchestrator code). Takes a job spec, creates a worktree off the main line, runs <code>codex exec</code>, commits <code>[WIP]</code> early + often, pushes. <em>Verify:</em> a hand-fed spec produces a pushed branch the Gate then processes.</li>
+      <li><span class="pill p-parity">PARITY&middot;gate</span> <strong>[S] Substrate go/no-go gate.</strong> Answer &sect;10 Q1 with Boubacar: subscription-CLI for everything, or a hybrid (subscription CLI for the human-paced interactive channel + metered API/Agent-SDK for the concurrent autonomous tier). No fan-out work proceeds until this is decided. <em>Verify:</em> a written substrate decision in the PRD.</li>
+      <li><span class="pill p-plumb">PLUMBING</span> <strong>[S] Codex spine token.</strong> <code>codex login --device-auth</code> over SSH; token behind the broker (not raw in the worker). <em>Verify:</em> <code>codex exec "print hello"</code> returns from the VPS, laptop closed.</li>
+      <li><span class="pill p-parity">PARITY&middot;auth</span> <strong>[M] Claude-auth 8-hour spike (in isolation).</strong> Reproduce the 401; prove the token-refresh watchdog + sub-15-min chunking can sustain a &gt;12-min Claude build across 8+ hours unattended. <em>Verify:</em> a Claude job runs 8h with zero manual token touches, or the watchdog approach is falsified before we build on it.</li>
+      <li><span class="pill p-plumb">PLUMBING</span> <strong>[M] Single-job worker script.</strong> Gate-reviewed. Job spec &rarr; worktree off the main line &rarr; <code>codex exec</code> &rarr; <code>[WIP]</code> commits &rarr; diff to the trusted pusher. <em>Verify:</em> a hand-fed spec produces a pushed branch the Gate then processes.</li>
       <li><span class="pill p-plumb">PLUMBING</span> <strong>[S] One Telegram command &rarr; one job</strong> via the existing inbound module. <em>Verify:</em> a phone message with the laptop off yields a branch + a Telegram reply.</li>
       <li><span class="pill p-plumb">PLUMBING</span> <strong>[S] Measure the token wall.</strong> Run 5 real builds; record proximity to the 5-hour-window and weekly caps. <em>Verify:</em> a short data note for the tier decision (&sect;11).</li>
     </ol>
 
-    <h3>Phase 1 &mdash; Concurrency-safety foundation (criterion 3)</h3>
-    <ol start="5">
+    <h3>Phase 1 &mdash; Concurrency-safety foundation (criterion 3, R1-hardened)</h3>
+    <ol start="7">
       <li><span class="pill p-parity">PARITY&middot;concurrency</span> <strong>[S] Idempotency table.</strong> <code>idempotency_keys</code> in Postgres, <code>INSERT ON CONFLICT</code> on provider message-id at ingress. <em>Verify:</em> a duplicated inbound event spawns exactly one run.</li>
-      <li><span class="pill p-parity">PARITY&middot;concurrency</span> <strong>[M] Composite conversation key + per-turn lease.</strong> Resolve inbound to <code>channel:chat_id:thread</code>; <code>claim('conversation:&lt;key&gt;', worker, ttl)</code> via the existing coordination table before a turn; contended turns queue on the bus. <em>Verify:</em> two overlapping turns on one key never interleave; different keys run in parallel untouched.</li>
+      <li><span class="pill p-parity">PARITY&middot;concurrency</span> <strong>[M] Composite key + lease with fencing token + heartbeat.</strong> Resolve inbound to <code>channel:chat_id:thread</code>; claim via the existing coordination table, but heartbeat-extend the lease while the worker is alive and check a monotonic fencing token at every write boundary (push / memory / Telegram) so a worker that lost its lease is rejected. <em>Verify:</em> a turn that outlives its base TTL never lets a second worker double-execute; a crashed worker's lease frees without blocking the conversation.</li>
+      <li><span class="pill p-parity">PARITY&middot;concurrency</span> <strong>[M] Rapid-message handling + cancel.</strong> A coalesce/debounce window folds 3 fast messages into one turn's context; strict per-key FIFO on the bus (verified under real contention, not assumed); an out-of-band cancel/interrupt channel so an urgent &ldquo;stop&rdquo; preempts a running turn. <em>Verify:</em> 3 rapid messages from one user produce one correctly-ordered turn; a cancel interrupts a live build.</li>
       <li><span class="pill p-plumb">PLUMBING</span> <strong>[M] Router + machine-checkable done-conditions.</strong> Rules-first job classification &rarr; tool choice; every job row carries an explicit success test. <em>Verify:</em> 20 sample requests route as expected; a job with no done-condition is refused.</li>
     </ol>
 
-    <h3>Phase 2 &mdash; Persistent memory (criterion 2)</h3>
-    <ol start="8">
-      <li><span class="pill p-parity">PARITY&middot;memory</span> <strong>[M] Adopt mem0 on the existing Postgres/pgvector</strong> as the orchestrator's external-memory provider, scoped per conversation key. <em>Verify:</em> the second message in a thread recalls a fact from the first, with the laptop off; a different key cannot read it. (License confirmed + version pinned first.)</li>
-      <li><span class="pill p-parity">PARITY&middot;memory</span> <strong>[M] Thread-keyed checkpoint table</strong> (<code>cli_jobs</code>: job/session id, tool, worktree, status, done-condition), the server-side marker-file equivalent. <em>Verify:</em> a job killed mid-run resumes its exact CLI session from the stored id.</li>
+    <h3>Phase 2 &mdash; Persistent memory + resume (criterion 2, R1-revised)</h3>
+    <ol start="11">
+      <li><span class="pill p-parity">PARITY&middot;memory</span> <strong>[M] Thread-keyed checkpoint table + explicit fact-writes</strong> (<code>cli_jobs</code>: job/session id, tool, status, done-condition, resume metadata per tool). The agent decides what durable facts to persist; the checkpoint holds execution state. R1 fix: this replaces mem0 as the v1 memory primitive. <em>Verify:</em> a job killed mid-run resumes its exact session; the next message in a thread has the prior turn's facts; a different key cannot read them.</li>
+      <li><span class="pill p-parity">PARITY&middot;memory</span> <strong>[M] Durable transcript store, decoupled from the worktree.</strong> Pin each conversation's CLI transcript to a mounted volume at a stable path (not the per-job worktree the SDK keys by cwd), and pin the conversation to the host holding it. <em>Verify:</em> resume still works after worktree teardown AND after a container restart.</li>
+      <li><span class="pill p-parity">PARITY&middot;conversation</span> <strong>[M] Thin interactive round-trip (pulled forward from P4 as the acceptance test).</strong> One clarifying-question round: worker pauses, asks in-channel, holds the lease correctly, resumes on reply. R1 fix: this is the real acceptance test for the concurrency + resume foundation &mdash; without it, P0&ndash;P1 is only a fire-and-forget job runner, not parity. <em>Verify:</em> a job asks one question, waits, and resumes correctly after a reply, laptop off, with the lease held safely across the wait.</li>
     </ol>
 
-    <h3>Phase 3 &mdash; Add tools + preserve the gate (criterion 4)</h3>
-    <ol start="10">
-      <li><span class="pill p-plumb">PLUMBING</span> <strong>[S] Add the agy worker</strong> (one-time SSH-OTP, then auto-renews) as a second backend behind the router. <em>Verify:</em> a content job routes to agy and completes, laptop off.</li>
-      <li><span class="pill p-plumb">PLUMBING</span> <strong>[M] Claude worker behind a token-refresh watchdog.</strong> Reproduce the 401 on the VPS first; watchdog re-mints the token on a cron and resumes; cap Claude runs to sub-15-min chunks. <em>Verify:</em> a &gt;30-min Claude job completes across two token cycles with no manual touch.</li>
-      <li><span class="pill p-parity">PARITY&middot;security</span> <strong>[S] Share one write-boundary layer with the planned self-healing agent.</strong> Worker inherits the existing allowlist/forbidden-path model; Gate stays sole merger; high-risk needs explicit approval. <em>Verify:</em> a job that tries to write a forbidden path is blocked pre-commit; a high-risk branch is never auto-merged.</li>
-    </ol>
-
-    <h3>Phase 4 &mdash; Conversational continuity (criterion 1, the long pole)</h3>
-    <ol start="13">
-      <li><span class="pill p-parity">PARITY&middot;conversation</span> <strong>[L] Interactive back-and-forth loop.</strong> Let a worker pause mid-job, post a clarifying question back to the channel, await a reply, and resume the same session with full context (built on the Agent SDK's resume + the checkpoint table + the conversation lease). <em>Verify:</em> a job that hits an ambiguity asks you a question in Telegram, waits, and continues correctly after your reply, laptop off. <em>This is the north-star's hardest piece; expect it to need its own PRD + iteration beyond this plan.</em></li>
-    </ol>
-
-    <h3>Phase 5 &mdash; Concurrency fan-out + hardening (only after a ToS answer)</h3>
+    <h3>Phase 3 &mdash; Runtime security + more tools (criterion 4, R1-expanded)</h3>
     <ol start="14">
-      <li><span class="pill p-parity">PARITY&middot;concurrency</span> <strong>[M] Controlled fan-out.</strong> Allow N concurrent workers only after &sect;10 Q1 is answered. Router load-balances across the three subscriptions to stay under each cap; metered fallback when a subscription is saturated. <em>Verify:</em> concurrent jobs stay under caps and fall back cleanly, logged per-source.</li>
-      <li><span class="pill p-plumb">PLUMBING</span> <strong>[S] Account-suspension blast-radius guard.</strong> Detect an auth suspension on any subscription and alert + fail over. <em>Verify:</em> a simulated auth failure triggers alert + fallback, not a silent stall.</li>
+      <li><span class="pill p-parity">PARITY&middot;security</span> <strong>[M] Credential broker + egress allowlist + separate push identity.</strong> R1-critical: the worker requests actions from a broker instead of holding raw <code>.env</code> tokens; outbound is allowlisted to model API/GitHub/Telegram only; a separate trusted process secret-scans the worker's diff before it reaches any remote. <em>Verify:</em> a worker process cannot read a raw token from its own env; an attempt to reach a non-allowlisted host is blocked; a diff containing a secret is caught before push.</li>
+      <li><span class="pill p-parity">PARITY&middot;security</span> <strong>[S] Share one write-boundary layer with the planned self-healing agent.</strong> Worker inherits the existing allowlist/forbidden-path model; Gate stays sole merger; high-risk needs explicit approval. <em>Verify:</em> a forbidden-path write is blocked pre-commit; a high-risk branch is never auto-merged.</li>
+      <li><span class="pill p-plumb">PLUMBING</span> <strong>[S] Add the agy worker</strong> (one-time SSH-OTP, then auto-renews) behind the router. <em>Verify:</em> a content job routes to agy and completes, laptop off.</li>
+      <li><span class="pill p-plumb">PLUMBING</span> <strong>[M] Productionize the Claude worker</strong> behind the token-refresh watchdog proven in Phase 0; cap runs to sub-15-min chunks. <em>Verify:</em> a &gt;30-min Claude job completes across two token cycles with no manual touch.</li>
     </ol>
-    <div class="callout"><strong>Read of the ordering:</strong> Phase 0 is pure plumbing (prove execution). Phases 1&ndash;2 are the parity core (isolation + memory) and reuse existing infra. Phase 3 adds tools and locks in the security criterion. Phase 4 is the long pole. Phase 5 is gated on your ToS decision. The spine (Phases 0&ndash;2) is where the real value lands early.</div>
+
+    <h3>Phase 4 &mdash; Full conversational continuity (criterion 1, the long pole)</h3>
+    <ol start="18">
+      <li><span class="pill p-parity">PARITY&middot;conversation</span> <strong>[L] Full multi-turn interactive loop.</strong> Generalize the thin single-question round-trip (proven in Phase 2) into arbitrary multi-turn back-and-forth: multiple clarifications, mid-task correction, resume across long waits &mdash; on the Agent SDK resume + checkpoint + fenced lease. <em>Verify:</em> a multi-step ambiguous job holds a real conversation across several turns and days, laptop off. <em>Still the north-star's hardest piece; expect its own PRD + iteration.</em></li>
+    </ol>
+
+    <h3>Phase 5 &mdash; Concurrency fan-out + hardening (only after the Phase-0 substrate answer)</h3>
+    <ol start="19">
+      <li><span class="pill p-parity">PARITY&middot;concurrency</span> <strong>[M] Controlled fan-out.</strong> Allow N concurrent workers only after the &sect;10 Q1 / Phase-0 substrate decision. Whichever substrate wins, the router load-balances and falls back cleanly when saturated. <em>Verify:</em> concurrent jobs stay under caps and fall back cleanly, logged per-source.</li>
+      <li><span class="pill p-plumb">PLUMBING</span> <strong>[S] Account-suspension blast-radius guard.</strong> Detect an auth suspension on any subscription and alert + fail over &mdash; one flagged account must not silently zero the whole system. <em>Verify:</em> a simulated auth failure triggers alert + fallback, not a silent stall.</li>
+    </ol>
+    <div class="callout"><strong>Read of the ordering (R1-reordered):</strong> Phase 0 now fronts the two potentially-fatal questions (substrate go/no-go + Claude 8-hour auth spike) before building on them. Phase 1 is concurrency-safety done correctly (fenced lease, coalescing, cancel). Phase 2 is memory + resume + a thin interactive round-trip that acts as the foundation's real acceptance test. Phase 3 hardens runtime security (broker + egress + push identity) and adds tools. Phase 4 is the full interactive long pole. Phase 5 fan-out stays gated on the Phase-0 substrate answer. The change from v2: the hardest questions moved to the front, and &ldquo;parity&rdquo; is no longer claimed until a real round-trip is proven.</div>
   </div>
 </section>
 
@@ -402,11 +413,11 @@ hr{border:none;border-top:1px solid var(--line);margin:18px 0}
 <section id="open">
   <div class="head"><span class="n">10</span><h2>Open questions for Boubacar (decisions only you can make)</h2><span class="chev">▾</span></div>
   <div class="body">
-    <div class="q"><span class="lbl">Q1 &mdash; the big one, now evidence-backed</span><p><strong>How many concurrent unattended workers off a single subscription, given a measured wall?</strong> A real report shows 5&ndash;6 concurrent instances on the top paid tier hitting infrastructure rate-limiting that makes sustained multi-instance use &ldquo;effectively non-viable&rdquo; &mdash; limits pool across the account. No bans found, but throttling alone breaks free fan-out. Decision: serialize (one heavy job at a time per subscription), spread load across the three subscriptions, seek a business/team plan, or accept the throttle ceiling?</p></div>
+    <div class="q"><span class="lbl">Q1 &mdash; the big one: substrate vs concurrency (R1 sharpened)</span><p><strong>The subscription-CLI substrate and the concurrency requirement are in direct conflict, and only you can resolve it.</strong> You explicitly want to use the subscriptions you already pay for, not metered API calls. But the evidence says a single subscription running 5&ndash;6 concurrent unattended instances hits pooled-account rate-limiting that's &ldquo;effectively non-viable for sustained use,&rdquo; and one account is a single point of ban. The R1 reviewer's position: put the concurrent/autonomous tier on the metered API/Agent-SDK (designed for headless, buyable limits, ToS-clean, you own the transcript store) and reserve subscription CLIs for the single human-paced interactive channel where cadence keeps you under limits. That partially uses metered &mdash; against your stated preference. <strong>Your call:</strong> (a) hybrid (subscription for interactive + metered API for concurrent), (b) subscription-only and accept serialize-one-heavy-job-at-a-time, (c) seek a business/team plan, or (d) subscription-only and accept the ceiling. This is the Phase-0 go/no-go gate; nothing fans out until it's answered.</p></div>
     <div class="q"><span class="lbl">Q2 &mdash; scope of criterion 1</span><p><strong>Is true interactive back-and-forth (Phase 4) in scope now, or explicitly deferred to its own follow-on?</strong> The recommendation is to deliver the spine (memory + isolation + execution) first and treat the interactive loop as the horizon. Confirm you're OK landing criteria 2&ndash;4 first, with criterion 1 as a named next phase.</p></div>
     <div class="q"><span class="lbl">Q3</span><p><strong>Which job types move, and which stay interactive on the laptop?</strong> Recommendation: move fully-specified, machine-checkable jobs; keep &ldquo;thinking out loud with a model&rdquo; interactive until Phase 4 lands. Agree, or push for everything movable at higher babysitting cost?</p></div>
     <div class="q"><span class="lbl">Q4</span><p><strong>Codex-first for the spike &mdash; acceptable?</strong> It self-refreshes tokens and has no 401 bug, but it is not your primary model. Fine to prove the spine on Codex, or spike on Claude despite the watchdog work it adds?</p></div>
-    <div class="q"><span class="lbl">Q5</span><p><strong>Adopt mem0?</strong> It is the cleanest fit (drop-in, runs on the Postgres you have, the orchestrator supports it), but its license was not confirmed this run and it is one new dependency. OK to adopt pending a license check + version pin, or prefer to build a thinner memory layer in-house?</p></div>
+    <div class="q"><span class="lbl">Q5 &mdash; updated in R1</span><p><strong>Confirm dropping mem0 from v1?</strong> R1 review argued mem0 solves the wrong 10% (facts, not execution state), adds a metered LLM call per turn, and its autonomous fact-rewrite is a contamination risk. v1 now = explicit fact-writes + the checkpoint table; mem0 only later if fuzzy semantic recall is proven necessary. OK to proceed without mem0 in v1?</p></div>
     <div class="q"><span class="lbl">Q6</span><p><strong>Who re-mints the subscription logins when they expire, and where do the tokens live?</strong> They live in the environment file. Claude needs periodic re-mint; the device/OTP logins need you at a browser once. OK to be the once-per-expiry human for the login step?</p></div>
   </div>
 </section>
