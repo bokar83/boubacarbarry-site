@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VPS-First Execution — PRD + Plan</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1d222b; --ink:#e8ebf0; --muted:#9aa4b2;
+  --line:#2a303c; --accent:#5b9dff; --good:#3fb984; --warn:#e8b13a; --bad:#e5624a;
+  --chip:#232a35;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f6f7f9; --panel:#ffffff; --panel2:#f0f2f5; --ink:#1a1d23; --muted:#5a6472;
+         --line:#e2e6ec; --accent:#2563eb; --chip:#eef1f5; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%}
+a{color:var(--accent)}
+.wrap{max-width:960px;margin:0 auto;padding:0 18px 120px}
+header.hero{padding:40px 0 22px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.kicker{color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
+h1{font-size:30px;line-height:1.2;margin:8px 0 6px}
+.sub{color:var(--muted);font-size:15px;margin:0}
+.meta{color:var(--muted);font-size:13px;margin-top:14px}
+
+/* sticky nav */
+.navbar{position:sticky;top:0;z-index:50;background:var(--panel);border-bottom:1px solid var(--line);
+  backdrop-filter:saturate(1.2) blur(6px)}
+.navbar .inner{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 18px}
+.navbar .brand{font-weight:700;font-size:14px;white-space:nowrap}
+.navbar .links{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
+.navbar .links a{font-size:12.5px;color:var(--muted);text-decoration:none;padding:5px 9px;border-radius:7px}
+.navbar .links a:hover{background:var(--chip);color:var(--ink)}
+.hamb{margin-left:auto;display:none;background:var(--chip);color:var(--ink);border:1px solid var(--line);
+  border-radius:8px;padding:7px 11px;font-size:14px;cursor:pointer}
+@media(max-width:720px){
+  .navbar .links{display:none;flex-direction:column;width:100%;margin:0;padding:6px 0}
+  .navbar .links.open{display:flex}
+  .navbar .inner{flex-wrap:wrap}
+  .hamb{display:block}
+  .navbar .links a{padding:9px 8px;border-radius:6px}
+}
+
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin:16px 0;overflow:hidden}
+section>.head{display:flex;align-items:center;gap:10px;cursor:pointer;padding:16px 18px;user-select:none}
+section>.head h2{font-size:18px;margin:0}
+section>.head .n{color:var(--accent);font-weight:700;font-size:13px;min-width:22px}
+section>.head .chev{margin-left:auto;color:var(--muted);transition:transform .2s}
+section.collapsed>.head .chev{transform:rotate(-90deg)}
+section>.body{padding:2px 18px 18px;border-top:1px solid var(--line)}
+section.collapsed>.body{display:none}
+h3{font-size:15px;margin:20px 0 8px}
+p{margin:10px 0}
+ul,ol{padding-left:20px;margin:10px 0}
+li{margin:5px 0}
+code{background:var(--chip);padding:1.5px 6px;border-radius:5px;font-size:13px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+pre{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font-size:12.5px;line-height:1.5}
+pre code{background:none;padding:0}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--panel2);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+tr:last-child td{border-bottom:none}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.t-good{background:rgba(63,185,132,.16);color:var(--good)}
+.t-warn{background:rgba(232,177,58,.16);color:var(--warn)}
+.t-bad{background:rgba(229,98,74,.16);color:var(--bad)}
+.callout{border-left:3px solid var(--accent);background:var(--panel2);padding:12px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.callout.warn{border-color:var(--warn)}
+.callout.bad{border-color:var(--bad)}
+.voice{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:12px 0;background:var(--panel2)}
+.voice h4{margin:0 0 6px;font-size:14px}
+.voice .lens{color:var(--accent);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.kp{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13.5px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.kp:last-child{border-bottom:none}
+.kp .st{font-weight:700}
+.q{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:11px 0}
+.q .lbl{font-size:11.5px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.05em}
+.verdict{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--accent);
+  border-radius:12px;padding:16px 18px;margin:16px 0}
+.small{font-size:12.5px;color:var(--muted)}
+hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-17-12:40:19 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="navbar">
+  <div class="inner">
+    <span class="brand">VPS-First Execution</span>
+    <button class="hamb" id="hamb" aria-label="Menu">☰ Sections</button>
+    <div class="links" id="links">
+      <a href="#summary">Summary</a>
+      <a href="#current">Current State</a>
+      <a href="#tools">Tool Viability</a>
+      <a href="#arch">Architecture</a>
+      <a href="#council">Council</a>
+      <a href="#karpathy">Karpathy</a>
+      <a href="#plan">Execution Plan</a>
+      <a href="#open">Open Questions</a>
+      <a href="#tier">$200 vs $100</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">Product Requirements + Execution Plan</div>
+  <h1>Move the work to the machine that never sleeps</h1>
+  <p class="sub">Shift the majority of agentic work off the laptop CLI tabs and onto the always-on server, triggered by a text message, using the subscriptions already paid for.</p>
+  <p class="meta">Prepared 2026-07-17 &middot; Research + PRD only, no build this run &middot; Read-only VPS inspection + this-session web citations &middot; Tap any section header to collapse.</p>
+</header>
+
+<!-- 1 SUMMARY -->
+<section id="summary">
+  <div class="head"><span class="n">1</span><h2>The end-state, in plain terms</h2><span class="chev">▾</span></div>
+  <div class="body">
+    <p>Today, the open-ended agentic work &mdash; building websites, writing content, fixing agentsHQ itself &mdash; only happens while the laptop is on and a terminal tab is open per model lane. Close the lid, work stops.</p>
+    <p><strong>The goal:</strong> the laptop becomes a thin remote control, not the engine. A text message to the bot on the server kicks off the same range of work &mdash; and the right model picks it up, runs it on the server, and reports back &mdash; whether the laptop is open, closed, or in another country. Crucially, that work should run on the <strong>subscriptions already paid for</strong> (the Claude, Gemini, and ChatGPT/Codex plans), not on per-call metered billing. Metered calls stay as a fallback only, for the narrow cases where a subscription path will not work.</p>
+    <p>What must not change: the server's own internal crews keep making metered calls through the existing gateway (that hard rule is untouched), and nothing gets merged into the live system or deployed without the existing approval gate &mdash; a human still signs off on anything high-risk.</p>
+    <div class="callout">
+      <strong>One-line verdict:</strong> The destination is reachable and mostly worth it. Two of the three model tools have a clean, documented way to log in and run unattended on a server today. The third (the primary one) has a known unattended-login bug that caps how long a single job can run before it needs a fresh token. So the plan ships in phases, with that bug treated as a first-class constraint, not a footnote.
+    </div>
+  </div>
+</section>
+
+<!-- 2 CURRENT STATE -->
+<section id="current">
+  <div class="head"><span class="n">2</span><h2>Current-state map: what runs where</h2><span class="chev">▾</span></div>
+  <div class="body">
+    <p>The dividing line is sharp. Deterministic, cron-shaped Python work already runs unattended on the server. Open-ended, model-driven work only exists while a human holds a terminal open.</p>
+
+    <h3>A. Already unattended on the server (survives laptop-off)</h3>
+    <div class="tblwrap"><table>
+      <tr><th>Layer</th><th>What runs</th><th>Trigger</th></tr>
+      <tr><td>systemd timers</td><td>gate-agent (merge/deploy), vps-branch-guard, vps-drift-quarantine, drift-quarantine-triage, send-scheduler, chat-healthcheck (full + reach), signal-works-morning, gate-stale-branch-guard</td><td>OS timers, every 5&nbsp;min to daily</td></tr>
+      <tr><td>cron.d</td><td>gate-merge-watchdog, gate-timer-watchdog, geolisted outreach batches, gmail-error-scan, others</td><td>cron</td></tr>
+      <tr><td>In-container ticks (orc-crewai scheduler)</td><td>quote rotation, KPI refresh, social analytics, GMB decay, supabase sync, pending-email jobs, email-reply poll, 07:30 morning digest, newsletter ticks (harvest crew disabled)</td><td>scheduler loop inside the container</td></tr>
+      <tr><td>Containers (10 up)</td><td>orc-crewai, orc-postgres, orc-qdrant, dashboard-backend, voice-server, thepopebot-chat-ui / event-handler / litellm, root-n8n-1, root-traefik-1</td><td>docker restart:unless-stopped</td></tr>
+    </table></div>
+    <p class="small">The Gate (orchestrator/gate_agent.py) already fires as gate-agent.timer / gate-agent.service every ~5 min &mdash; the merge-and-deploy backbone is server-side and unattended today.</p>
+
+    <h3>B. Laptop-only (dies when the lid closes) &mdash; the migration target</h3>
+    <p>Under <code>scripts/multi-model-tabs/</code>: one PowerShell launcher per lane &mdash; <code>start-agentshq</code>, <code>start-builder</code>, <code>start-codex</code>, <code>start-driveorg</code>, <code>start-gate</code>, <code>start-gemini</code>, <code>start-lighthouse</code>, <code>start-research</code>. Each opens a terminal tab running a CLI (Claude Code, Codex, or Antigravity/Gemini) with a lane charter appended.</p>
+    <p>Session continuity is a per-lane <strong>marker file</strong> at <code>~/.claude/tab-charters/lane-markers/&lt;lane&gt;.session</code>, managed by <code>cc-lane-resume.ps1</code>. As of 2026-07-17 it no longer guesses by file mtime &mdash; it walks up the process tree to read the live <code>claude.exe --resume &lt;session-id&gt;</code> argument directly. This marker mechanism is exactly the piece that must be reproduced server-side.</p>
+    <div class="callout"><strong>The gap in one sentence:</strong> the server can already <em>schedule and merge</em> deterministic work unattended; what it cannot yet do is <em>run an open-ended model session</em> (build this site, write this post, fix this bug) without a human-held terminal.</div>
+  </div>
+</section>
+
+<!-- 3 TOOL VIABILITY -->
+<section id="tools">
+  <div class="head"><span class="n">3</span><h2>Per-tool viability: can it log in headless on a server, under subscription?</h2><span class="chev">▾</span></div>
+  <div class="body">
+    <p class="small">Every verdict below is backed by a source fetched during this research session. Where a documented path does not exist, the row says so rather than guessing.</p>
+    <div class="tblwrap"><table>
+      <tr><th>Tool</th><th>Headless / non-interactive?</th><th>Subscription login on a server?</th><th>Verdict</th><th>ToS / risk</th></tr>
+      <tr>
+        <td><strong>Claude Code</strong></td>
+        <td><span class="tag t-good">Yes</span> <code>claude -p</code> print mode reads stdin, pipes out; Agent SDK exposes the same loop.</td>
+        <td><span class="tag t-warn">Partial</span> <code>claude setup-token</code> mints a ~1-year <code>CLAUDE_CODE_OAUTH_TOKEN</code> tied to the Pro/Max plan (counts against plan, not API invoice). But OAuth refresh <strong>fails</strong> in non-interactive mode &mdash; 401 after ~10&ndash;15 min (open issue #28827).</td>
+        <td><span class="tag t-warn">Viable, with caveat</span></td>
+        <td><code>setup-token</code> is a documented pipeline path, but Anthropic explicitly recommends API keys for programmatic/product use. Long unattended runs are blocked by the refresh bug until fixed.</td>
+      </tr>
+      <tr>
+        <td><strong>Codex CLI</strong></td>
+        <td><span class="tag t-good">Yes</span> <code>codex exec</code> runs from scripts/CI with no TUI.</td>
+        <td><span class="tag t-good">Yes</span> <code>codex login --device-auth</code> device-code flow (15-min code) works over SSH on a ChatGPT plan; enterprise workspaces can pipe a Codex access token via <code>codex login --with-access-token</code> for schedulers.</td>
+        <td><span class="tag t-good">Viable</span></td>
+        <td>Cleanest headless-subscription story of the three. Caveat: on <em>enterprise</em> workspaces an admin may need to enable device-code (issue #9253); individual plans are fine. OpenAI recommends API keys for CI (metered), but the ChatGPT-plan device path is documented.</td>
+      </tr>
+      <tr>
+        <td><strong>Gemini / Antigravity (agy)</strong></td>
+        <td><span class="tag t-good">Yes</span> non-interactive prompt mode; on 2026-06-18 Google moved Gemini CLI consumer tiers to the Antigravity CLI (<code>agy</code>).</td>
+        <td><span class="tag t-good">Yes</span> <code>agy</code> detects the SSH session and prints an auth URL + 6-digit OTP; token stored encrypted at <code>~/.gemini/antigravity-cli/credentials.enc</code> and <strong>renews transparently</strong> &mdash; described as the mode of choice for cloud CI runners.</td>
+        <td><span class="tag t-good">Viable</span></td>
+        <td>Transparent token renewal is an advantage over Claude's refresh bug. But API-key headless auth is <strong>not</strong> supported in Antigravity CLI (issue #78, open) &mdash; the OAuth SSH-OTP path is the only subscription route.</td>
+      </tr>
+    </table></div>
+    <div class="callout warn"><strong>The load-bearing caveat:</strong> the primary tool (Claude Code) is the one with the weakest unattended-login story. Any design that assumes a single Claude headless session can run for hours untouched is building on the 401 bug. The plan below routes around it (short bounded runs + token-refresh watchdog + re-mint on failure) rather than pretending it is solved.</div>
+  </div>
+</section>
+
+<!-- 4 ARCHITECTURE -->
+<section id="arch">
+  <div class="head"><span class="n">4</span><h2>Proposed architecture</h2><span class="chev">▾</span></div>
+  <div class="body">
+    <p>Additive, not a rewrite. The existing Gate + scheduler + agent bus stay exactly as they are. One new component (a CLI worker + a router in front of it) is bolted on, and it produces feature branches that flow through the same Gate every other lane already uses.</p>
+<pre><code>  Boubacar's phone
+        |  "build a landing page for X" / "fix the gate bug" / "draft 3 posts"
+        v
+  [ Telegram bot @CCagentsHQ_bot ]
+        |  webhook -> existing orchestrator app.py
+        v
+  [ DISPATCHER / ROUTER ]  (new, thin)
+     - classify job: website-build | content | self-fix | research
+     - pick tool+model: Codex/agy for long runs, Claude for short bounded
+     - create git worktree off origin/main, write a job row in postgres
+        v
+  [ CLI WORKER POOL ]  (new systemd unit or sidecar container on VPS)
+     - claude -p   (CLAUDE_CODE_OAUTH_TOKEN, short runs + refresh watchdog)
+     - codex exec  (device-auth token)
+     - agy         (SSH-OTP token, auto-renew)
+     - runs INSIDE the worktree, commits [WIP] early + often
+     - job-id <-> session-id map in postgres  (= server-side lane marker)
+        v
+  [ RESULT ] -> agent_comms bus + Telegram notifier  (existing)
+        |
+        v
+  [ GATE (gate_agent.py) ]  UNCHANGED, still the SOLE merger
+     - [READY] branches auto-merge; [WIP] skipped
+     - Tier-C / HIGH_RISK  -> Boubacar's explicit approval, never auto-merged
+        v
+  [ safe_pull.sh on VPS ] -> live
+
+  Orchestrator's own crews -> OpenRouter gateway  (UNCHANGED hard rule)
+  Subscription-CLI path is NEW and additive; OpenRouter = fallback only.</code></pre>
+    <p><strong>Five load-bearing decisions baked in:</strong></p>
+    <ul>
+      <li><strong>Tokens live in <code>.env</code></strong> (git-ignored, never printed), mounted to the worker. Named, never valued, in any output.</li>
+      <li><strong>The worker writes only inside a worktree off origin/main</strong> &mdash; never the canonical VPS tree, never <code>/root/agentsHQ</code> directly. This respects the read-only-VPS-tree rule; work reaches live only through Gate + <code>safe_pull.sh</code>.</li>
+      <li><strong>Gate stays the one human checkpoint.</strong> The worker cannot merge or deploy. It can only push a branch, exactly like a spawned coding agent today.</li>
+      <li><strong>Session persistence = a postgres job-id&rarr;session-id row</strong>, the direct server-side equivalent of the <code>cc-lane-resume</code> marker file, so a long job resumes its exact CLI session (<code>claude --resume</code> / <code>codex resume</code> / <code>agy</code> resume).</li>
+      <li><strong>Reuse the bus.</strong> Results go back over the existing agent_comms + Telegram notifier &mdash; no parallel reporting system invented.</li>
+    </ul>
+    <div class="callout"><strong>Relationship to the planned self-healing agent (Hermes):</strong> this worker is the general-purpose sibling of that already-planned, write-boundary-locked agent. It should inherit the <em>same</em> allowlist/forbidden-path model (no writes to CLAUDE.md, AGENTS.md, .env, gate_agent.py, orchestrator/*.py without Gate review) rather than invent a second, looser boundary. Recommend: one shared write-boundary enforcement layer, two callers.</div>
+  </div>
+</section>
+
+<!-- 5 COUNCIL -->
+<section id="council">
+  <div class="head"><span class="n">5</span><h2>Council: 5-angle stress test</h2><span class="chev">▾</span></div>
+  <div class="body">
+    <div class="voice"><span class="lens">1 &middot; The Contrarian</span>
+      <h4>The premise leans hardest on the one tool that is broken for this exact use.</h4>
+      <p>The whole pitch is "run it unattended on the server." Claude Code &mdash; the primary, most-used tool &mdash; drops a 401 after 10&ndash;15 minutes in non-interactive mode because it will not refresh its own OAuth token (issue #28827, still open). A website build or a real self-fix is rarely a 10-minute job. So for the marquee use case, on the marquee tool, the naive version of this plan simply fails a third of the way through, silently, and the branch never appears. A skeptic says: you are moving work from a place where it completes to a place where it dies mid-run unless you build a babysitter first.</p>
+    </div>
+    <div class="voice"><span class="lens">2 &middot; The First-Principles Thinker</span>
+      <h4>The real question is not "can a CLI run on a server" &mdash; it is "what is the unit of work being moved."</h4>
+      <p>Strip it down. The deterministic, cron-shaped work is already on the server. What is laptop-bound is <em>open-ended model sessions</em>. The right frame is not "port 8 terminal tabs to the cloud." It is: "which jobs are actually long-running-autonomous, and which are just Boubacar thinking out loud with a model?" The second kind should stay interactive (they need him in the loop anyway). Only the first kind &mdash; a fully-specified build or fix with a machine-checkable done-condition &mdash; belongs on the unattended worker. Move the PRD-shaped jobs, not the conversations. That reframing shrinks the build and sidesteps most of the Claude-401 problem, because well-specified jobs can be chunked into sub-15-minute runs.</p>
+    </div>
+    <div class="voice"><span class="lens">3 &middot; The Expansionist</span>
+      <h4>The dispatcher is worth more than the worker.</h4>
+      <p>The undersold asset here is the router. Once a text message can be classified and routed to "the right model for this job," you have a model-arbitrage layer: cheap long jobs to the auto-renewing Gemini/Codex tokens, high-taste jobs to Claude, metered fallback only when a subscription is saturated. That same router can later dry-run cost estimates, load-balance across the three subscriptions to dodge each one's rate cap, and become the front door for <em>every</em> agentic request, not just CLI jobs. Build the router as a first-class, reusable service, not a glue script buried in app.py.</p>
+    </div>
+    <div class="voice"><span class="lens">4 &middot; The Outsider</span>
+      <h4>A stranger cannot tell this apart from a botnet running one login eight ways.</h4>
+      <p>Cold read: someone is taking a single consumer subscription and fanning it into 8 concurrent unattended headless workers on a rented server. Every provider's ToS is written for one human at a keyboard. Nobody has confirmed that 8-way concurrent server-side automation off one Max seat is inside the intended-use line &mdash; the plan just assumes it. The outsider also notices there is no answer to "what happens when a provider flags the account and suspends it" &mdash; that would take down not one lane but the entire moved workload at once. Concentration risk that an insider waves away because "it works today on the laptop."</p>
+    </div>
+    <div class="voice"><span class="lens">5 &middot; The Executor</span>
+      <h4>Do not build the pool first. Build one worker, one tool, one job type, and measure the token wall.</h4>
+      <p>The exact next move: stand up a single Codex <code>codex exec</code> worker on the VPS (the tool with the cleanest headless-subscription path and no refresh bug), wired to accept exactly one job type (a fully-specified website build) via one Telegram command, producing a <code>[WIP]</code> branch through the existing Gate. Ship that end-to-end before touching Claude or Gemini or concurrency. If it does not clear a real build inside one week, the multi-tool pool is premature. Timing: this is a phased de-risking spike, not a platform launch &mdash; if Phase 0 is skipped and the full pool is built first, the Claude-401 and ToS-concentration risks land all at once in production.</p>
+    </div>
+    <div class="verdict">
+      <strong>Chairman synthesis &mdash; forced verdict:</strong> BUILD, but phased and re-scoped. The genuine tension the council surfaced: the Contrarian and Outsider want to <em>slow down</em> (broken primary tool + unproven ToS posture), while the Expansionist wants to <em>go bigger</em> (the router is the real prize). Both are right, and the First-Principles reframe resolves it: <em>move only PRD-shaped autonomous jobs, start with the one tool that actually works headless (Codex), build the router as a real service, and treat the Claude-401 bug and the single-subscription concurrency question as gating unknowns, not details.</em> The sharpest truth: the value is not "CLI in the cloud," it is "a model-router that survives the laptop being off" &mdash; and the fastest way to kill this project is to build the 8-way pool before proving one worker clears one real job.
+    </div>
+    <p class="small"><strong>Note:</strong> Voices split on pace &mdash; Contrarian/Outsider (de-risk first) vs Expansionist (build the bigger router now). That tension is real and is resolved in the plan by phasing: Phase 0 proves one worker; the router graduates to a service only after.</p>
+  </div>
+</section>
+
+<!-- 6 KARPATHY -->
+<section id="karpathy">
+  <div class="head"><span class="n">6</span><h2>Karpathy: 10-principle audit</h2><span class="chev">▾</span></div>
+  <div class="body">
+    <p class="small">Audited as a design/PRD, not shipped code. Principles that can only be judged at implementation time are marked WARN with the guardrail the build must honor.</p>
+    <div class="kp"><span class="st">P1 Think before coding</span><span><span class="tag t-good">PASS</span> Intent stated, hidden assumption (headless subscription auth) was verified against fetched docs before any design, not assumed.</span></div>
+    <div class="kp"><span class="st">P2 Simplicity first</span><span><span class="tag t-warn">WARN</span> The full 3-tool pool + router + session-store is more than the problem needs on day one. <em>Action:</em> Phase 0 = one tool, one job type, no pool. Do not build the abstraction for 3 tools until 1 works.</span></div>
+    <div class="kp"><span class="st">P3 Surgical changes</span><span><span class="tag t-good">PASS</span> Additive by design &mdash; Gate, scheduler, bus, and the OpenRouter rule are untouched. The worker is a new unit that pushes branches like any existing agent.</span></div>
+    <div class="kp"><span class="st">P4 Goal-driven execution</span><span><span class="tag t-warn">WARN</span> "Done" per dispatched job must be machine-checkable or the unattended worker cannot know it succeeded. <em>Action:</em> every job row carries an explicit done-condition (build passes / branch pushed / test green) before the worker starts.</span></div>
+    <div class="kp"><span class="st">P5 Complexity hotspots</span><span><span class="tag t-good">PASS</span> (report-only) No hot loops. Watch the router classifier for per-request LLM calls &mdash; keep classification cheap/rules-first before reaching for a model.</span></div>
+    <div class="kp"><span class="st">P6 Verification</span><span><span class="tag t-warn">WARN</span> The Claude-401 failure must be <em>reproduced</em> on the VPS and covered by a watchdog test before Claude is trusted for any job &gt;10 min. <em>Action:</em> Phase-gate Claude behind a token-refresh watchdog with a passing re-mint test.</span></div>
+    <div class="kp"><span class="st">P7 Debugging protocol</span><span><span class="tag t-good">PASS</span> The known failure was read to its root (non-interactive refresh, not "auth is flaky") from the actual issue, and the design changes one variable (Codex-first) rather than blaming the whole approach.</span></div>
+    <div class="kp"><span class="st">P8 Dependencies</span><span><span class="tag t-good">PASS</span> No new packages &mdash; reuses git, postgres, systemd/docker, the existing bus + notifier, and the three CLIs already installed. New surface is config + one service, not a dependency tree.</span></div>
+    <div class="kp"><span class="st">P9 Communication</span><span><span class="tag t-good">PASS</span> Uncertainty is labeled, not smoothed: Claude headless = "viable with caveat," the single-subscription concurrency ToS question = flagged as an open unknown, not asserted safe.</span></div>
+    <div class="kp"><span class="st">P10 Failure modes</span><span><span class="tag t-warn">WARN</span> Two lurking patterns: <em>Optimistic Path</em> (assuming Claude runs to completion &mdash; it will 401) and <em>Kitchen Sink</em> (building the 8-way pool before one worker proves out). <em>Action:</em> the phased plan below exists specifically to hold both at bay.</span></div>
+    <div class="verdict"><strong>FINAL CALL: SHIP the PRD, HOLD the full build.</strong> No core principle FAILs &mdash; the design is honest and additive. But four WARNs (P2, P4, P6, P10) all point at the same discipline: <em>do not build the pool first.</em> The gating actions before any multi-tool build: (1) Phase 0 proves one Codex worker end-to-end; (2) every job carries a machine-checkable done-condition; (3) Claude is phase-gated behind a reproduced-and-tested token-refresh watchdog; (4) the single-subscription concurrency + ToS question gets a human answer before fan-out.</p></div>
+  </div>
+</section>
+
+<!-- 7 PLAN -->
+<section id="plan">
+  <div class="head"><span class="n">7</span><h2>Execution plan (ordered, buildable steps)</h2><span class="chev">▾</span></div>
+  <div class="body">
+    <p class="small">Each step names what gets built, where it lives, how it is verified, and an effort tier (S = &lt;half day, M = 1&ndash;2 days, L = 3&ndash;5 days). A coding agent can pick these up one at a time. Nothing here is authorized to build yet &mdash; this is the plan Boubacar reviews first.</p>
+
+    <h3>Phase 0 &mdash; One worker, one job, prove the loop (de-risk)</h3>
+    <ol>
+      <li><strong>[S] Mint + store the Codex subscription token on the VPS.</strong> Run <code>codex login --device-auth</code> in an SSH session, complete the device code on the laptop browser. Store the resulting token in <code>.env</code> (never committed). <em>Verify:</em> <code>codex exec "print hello"</code> returns from the VPS with the laptop closed.</li>
+      <li><strong>[M] Build a single-job worker script.</strong> Lives at <code>orchestrator/cli_worker.py</code> (Gate-reviewed, since it is orchestrator code). Takes a job spec, creates a worktree off origin/main under <code>agentsHQ-worktrees/</code>, runs <code>codex exec</code> inside it, commits <code>[WIP]</code> early + often, pushes the branch. <em>Verify:</em> a hand-fed job spec produces a pushed branch the Gate then processes.</li>
+      <li><strong>[S] One Telegram command &rarr; one job.</strong> Extend the existing bot handler in <code>app.py</code> so a single command (e.g. <code>/build &lt;spec&gt;</code>) writes a job row and invokes the worker. <em>Verify:</em> a phone message with the laptop off yields a branch + a Telegram result reply.</li>
+      <li><strong>[S] Measure the token wall.</strong> Run 5 real builds; record how close the account gets to its 5-hour-window and weekly caps. <em>Verify:</em> a short data note Boubacar can read to decide the tier question (see &sect;9).</li>
+    </ol>
+    <div class="callout"><strong>Phase 0 gate:</strong> if one Codex worker cannot clear a real website build end-to-end in a week, stop &mdash; the pool is premature. Only proceed past here on a clean Phase-0 pass.</div>
+
+    <h3>Phase 1 &mdash; The router as a real service</h3>
+    <ol start="5">
+      <li><strong>[M] Job-classification + model-routing service.</strong> A small module <code>orchestrator/dispatcher.py</code>: rules-first classification (website-build / content / self-fix / research) &rarr; tool+model choice. Cheap heuristics before any LLM call. <em>Verify:</em> a fixture set of 20 sample requests routes to the expected tool with a logged rationale.</li>
+      <li><strong>[M] Postgres session-persistence table.</strong> <code>cli_jobs(job_id, tool, session_id, worktree, status, done_condition, created_at)</code> &mdash; the server-side equivalent of the lane-marker file. <em>Verify:</em> a job killed mid-run resumes its exact CLI session via the stored session-id.</li>
+      <li><strong>[S] Machine-checkable done-conditions.</strong> Every job row must carry an explicit success test (build passes / tests green / branch pushed) set at dispatch. <em>Verify:</em> the worker refuses a job with no done-condition.</li>
+    </ol>
+
+    <h3>Phase 2 &mdash; Add Gemini/agy (auto-renew tool), then Claude (gated)</h3>
+    <ol start="8">
+      <li><strong>[S] Add the agy worker.</strong> <code>agy</code> SSH-OTP login on the VPS; token auto-renews. Wire as a second worker backend behind the router. <em>Verify:</em> a content job routes to agy and completes with the laptop off.</li>
+      <li><strong>[M] Claude worker behind a token-refresh watchdog.</strong> Reproduce the 401 on the VPS first (P6). Build a watchdog that detects the 401, re-mints/re-injects <code>CLAUDE_CODE_OAUTH_TOKEN</code>, and resumes the session; cap individual Claude runs to sub-15-minute chunks. <em>Verify:</em> a &gt;30-minute Claude job completes across at least two token cycles without manual touch.</li>
+      <li><strong>[S] Reuse one write-boundary layer with the planned self-healing agent.</strong> The worker inherits the existing locked allowlist/forbidden-path model (no CLAUDE.md/AGENTS.md/.env/gate_agent.py/orchestrator writes without Gate review). <em>Verify:</em> a job that tries to write a forbidden path is blocked pre-commit.</li>
+    </ol>
+
+    <h3>Phase 3 &mdash; Concurrency + hardening (only after ToS answer)</h3>
+    <ol start="11">
+      <li><strong>[M] Controlled fan-out.</strong> Allow N concurrent workers only after the single-subscription concurrency/ToS question (&sect;8) has a human answer. Router load-balances across the three subscriptions to stay under each rate cap; metered OpenRouter is the documented fallback when a subscription is saturated. <em>Verify:</em> concurrent jobs stay under caps and fall back cleanly, logged per-source.</li>
+      <li><strong>[S] Account-suspension blast-radius guard.</strong> Detect an auth-suspension on any subscription and alert + fail over, so one flagged account does not silently take down the whole moved workload. <em>Verify:</em> a simulated auth failure triggers alert + fallback, not a silent stall.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- 8 OPEN QUESTIONS -->
+<section id="open">
+  <div class="head"><span class="n">8</span><h2>Open questions for Boubacar (decisions only he can make)</h2><span class="chev">▾</span></div>
+  <div class="body">
+    <div class="q"><span class="lbl">Q1 &mdash; the big one</span><p><strong>Is running ~8 concurrent unattended workers off a single consumer subscription within each provider's terms of use?</strong> No provider doc I fetched confirms multi-instance server-side automation off one seat is inside intended-use. This is a judgment + risk-appetite call. If any account gets flagged, the whole moved workload drops at once. Do we proceed on one-worker-at-a-time, seek a business/team plan, or accept the concentration risk?</p></div>
+    <div class="q"><span class="lbl">Q2</span><p><strong>Which job types actually move, and which stay interactive?</strong> The First-Principles reframe says move only fully-specified, machine-checkable jobs; keep the "thinking out loud with a model" work on the laptop. Do you agree with that split, or do you want <em>everything</em> movable even at higher babysitting cost?</p></div>
+    <div class="q"><span class="lbl">Q3</span><p><strong>Codex-first for Phase 0 &mdash; acceptable?</strong> It has the cleanest headless path and no refresh bug, but it is not your primary model. Fine to prove the loop on Codex, or do you want the spike on Claude despite the 401 work it adds?</p></div>
+    <div class="q"><span class="lbl">Q4</span><p><strong>Should the worker share the planned self-healing agent's write-boundary layer, or run under its own?</strong> Recommend shared (one enforcement surface). Confirm.</p></div>
+    <div class="q"><span class="lbl">Q5</span><p><strong>Where does the VPS keep the three subscription tokens, and who re-mints them when they expire?</strong> They live in <code>.env</code>. Claude's needs periodic re-mint; device/OTP logins need you at a browser once. Are you OK being the once-per-expiry human for the login step?</p></div>
+  </div>
+</section>
+
+<!-- 9 TIER -->
+<section id="tier">
+  <div class="head"><span class="n">9</span><h2>Claude Max: $200 (20x) vs $100 (5x)</h2><span class="chev">▾</span></div>
+  <div class="body">
+    <p><strong>Recommendation: insufficient data to downgrade &mdash; hold at $200 (20x) through Phase 0, then decide from measured usage.</strong> I will not fabricate a token/dollar figure I cannot observe.</p>
+    <p>What the public limits say (2026): Max 20x ($200/mo) &asymp; 900 messages per rolling 5-hour window and ~240&ndash;480 Claude Code hours/week; Max 5x ($100/mo) &asymp; 225 messages per 5-hour window and ~140&ndash;280 hours/week; both plans additionally throttle after ~50 sessions/month, and a weekly cap sits behind the 5-hour cap.</p>
+    <p>What I can observe: Boubacar runs roughly 8 concurrent lanes today. Consolidating that &mdash; plus <em>more</em> moved work &mdash; onto one account pushes usage <em>up</em>, toward the 20x envelope, not away from it. That is an argument against downgrading right now.</p>
+    <div class="callout warn"><strong>What only Boubacar can check (his billing dashboard, not visible to me):</strong>
+      <ul>
+        <li>Settings &rarr; Usage: how often he currently hits the <strong>5-hour-window</strong> cap and how close he runs to the <strong>weekly</strong> cap on the existing 8-lane load.</li>
+        <li>Whether he is near the <strong>~50 sessions/month</strong> throttle already.</li>
+      </ul>
+      If he is routinely under ~50% of the 5-hour and weekly caps today, $100 (5x) may be safe <em>after</em> the reframe moves long jobs onto the auto-renewing Codex/Gemini tokens (which offload Claude). If he is already brushing the caps, moving more work onto the account means <strong>stay at $200</strong>.
+    </div>
+    <p class="small">Phase-0 step 4 ("measure the token wall") produces exactly the data to settle this &mdash; decide the tier from that, not from a guess.</p>
+  </div>
+</section>
+
+<hr>
+<p class="small">Sources fetched this session: Claude Code headless docs (code.claude.com/docs/en/headless); Claude Code issue #28827 (OAuth refresh in non-interactive mode); Codex auth docs (developers.openai.com/codex/auth) + non-interactive mode docs; Codex issue #3820 (headless/device auth); Antigravity CLI API-key issue #78; Antigravity <code>agy</code> install/SSH-OTP writeup; Gemini CLI auth docs; Claude Max limits roundups (2026). Current-state read from live VPS (systemd timers, cron.d, docker ps, scheduler.py) and the local repo, read-only.</p>
+</div>
+
+<script>
+document.getElementById('hamb').addEventListener('click',function(){
+  document.getElementById('links').classList.toggle('open');
+});
+document.querySelectorAll('.navbar .links a').forEach(function(a){
+  a.addEventListener('click',function(){document.getElementById('links').classList.remove('open');});
+});
+document.querySelectorAll('section > .head').forEach(function(h){
+  h.addEventListener('click',function(){h.parentElement.classList.toggle('collapsed');});
+});
+</script>
+</body>
+</html>
+
