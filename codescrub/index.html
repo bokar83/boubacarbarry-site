@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="alternate icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CodeScrub: clean up corrupted code</title>
+  <meta name="description" content="Paste code, get straight quotes, clean whitespace, and a formatted result back, plus a plain list of what changed. A character sanitizer and formatter, not a bug finder.">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800;900&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#07060b; --bg-2:#0c0b13; --panel:#0e0d16; --panel-2:#121120;
+      --ink:#f5f2ea; --ink-dim:rgba(245,242,234,.66); --ink-faint:rgba(245,242,234,.42);
+      --gold:#F4C21A; --gold-soft:#FFE28A; --gold-dim:rgba(244,194,26,.16);
+      --teal:#12E6BE; --coral:#FF5C7A;
+      --line:rgba(245,242,234,.10); --line-strong:rgba(245,242,234,.20);
+      --ease:cubic-bezier(.16,1,.3,1);
+      --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+      --sans:'Public Sans',system-ui,sans-serif;
+      --display:'Unbounded',var(--sans);
+      --cut:14px; /* geometric corner-cut size, used on panels/buttons */
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-text-size-adjust:100%}
+    body{
+      background:
+        radial-gradient(90% 60% at 12% -8%, rgba(244,194,26,.10) 0%, transparent 55%),
+        radial-gradient(70% 50% at 100% 0%, rgba(18,230,190,.08) 0%, transparent 60%),
+        var(--bg);
+      color:var(--ink); font-family:var(--sans);
+      line-height:1.55; min-height:100vh;
+      font-variant-numeric:tabular-nums;
+      -webkit-font-smoothing:antialiased;
+    }
+    a{color:var(--gold)}
+    button, select{font-family:inherit}
+    .wrap{max-width:1280px;margin:0 auto;padding:clamp(20px,4vw,64px)}
+
+    /* ---------------------------------------------------------------
+       Afrofuturist-geometric backdrop: crisp angular chevron lattice,
+       gold on near-black, very low opacity. Texture, not noise.
+       --------------------------------------------------------------- */
+    .lattice{
+      position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+      background-image:
+        linear-gradient(135deg, rgba(244,194,26,.05) 1px, transparent 1px),
+        linear-gradient(45deg, rgba(18,230,190,.035) 1px, transparent 1px);
+      background-size:64px 64px, 64px 64px;
+      background-position:0 0, 32px 32px;
+      mask-image:radial-gradient(120% 70% at 50% 0%, #000 0%, transparent 72%);
+    }
+
+    .top-badge{
+      position:fixed;top:18px;left:18px;z-index:60;display:inline-flex;align-items:center;justify-content:center;
+      width:42px;height:42px;background:rgba(9,8,14,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+      clip-path:polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%);
+      border:1px solid var(--line-strong);text-decoration:none;line-height:0;
+    }
+
+    main.wrap{position:relative;z-index:1}
+
+    /* ---------------------------------------------------------------
+       Hero
+       --------------------------------------------------------------- */
+    .hero{padding-top:clamp(38px,7vw,72px);padding-bottom:clamp(28px,4vw,40px);position:relative}
+    .hero-motif{
+      position:absolute;top:-8%;right:-6%;width:min(52vw,620px);height:min(52vw,620px);
+      z-index:-1;opacity:.85;pointer-events:none;
+    }
+    @media (max-width:920px){ .hero-motif{ width:70vw;height:70vw;top:-4%;right:-14%;opacity:.55; } }
+    .eyebrow{
+      font-family:var(--mono);font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;
+      color:var(--gold);margin-bottom:1.3rem;display:flex;align-items:center;gap:.6rem;
+    }
+    .eyebrow::before{content:'';width:22px;height:2px;background:var(--gold);display:inline-block}
+    h1{
+      font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,1.5rem+4.6vw,5.4rem);
+      line-height:1.0;letter-spacing:-.015em;max-width:16ch;color:var(--ink);
+    }
+    h1 .pop{color:var(--gold);text-shadow:0 0 28px rgba(244,194,26,.55), 0 0 64px rgba(244,194,26,.25)}
+    .sub{margin-top:1.4rem;max-width:56ch;color:var(--ink-dim);font-size:1.14rem;font-weight:400}
+
+    .chevrons{display:block;width:100%;height:20px;margin:2.1rem 0 2.4rem;opacity:.9}
+    @media (prefers-reduced-motion: no-preference){
+      .chevrons path{animation:dash 5.5s linear infinite}
+    }
+    @keyframes dash{ to { stroke-dashoffset:-120; } }
+
+    /* ---------------------------------------------------------------
+       Honesty banner: no side-stripe (banned AI tell). A contained
+       badge plus hairline border instead.
+       --------------------------------------------------------------- */
+    .honesty{
+      display:flex;gap:1rem;align-items:flex-start;
+      background:var(--panel);border:1px solid var(--line-strong);
+      clip-path:polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
+      padding:1.15rem 1.3rem;margin-bottom:2.2rem;font-size:.9rem;color:var(--ink-dim);
+    }
+    .honesty .badge{
+      flex:none;width:34px;height:34px;border-radius:50%;background:var(--gold-dim);
+      display:flex;align-items:center;justify-content:center;
+    }
+    .honesty svg{width:17px;height:17px;stroke:var(--gold);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .honesty b{color:var(--ink)}
+
+    /* ---------------------------------------------------------------
+       Toolbar
+       --------------------------------------------------------------- */
+    .toolbar{display:flex;flex-wrap:wrap;gap:.85rem;align-items:flex-end;margin-bottom:1.4rem}
+    label.field{display:flex;flex-direction:column;gap:.4rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+    select, button{
+      font-size:.86rem;border:1px solid var(--line-strong);
+      padding:.7rem 1rem;background:var(--panel);color:var(--ink);cursor:pointer;
+      transition:border-color .2s var(--ease),background .2s var(--ease),transform .15s var(--ease),box-shadow .2s var(--ease);
+      clip-path:polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+    }
+    select:hover, button:hover{border-color:var(--gold)}
+    select:focus-visible, button:focus-visible, textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+    .btn-primary{
+      background:var(--gold);color:#0c0900;border:none;font-weight:700;
+      padding:.72rem 1.35rem;
+      box-shadow:0 0 0 1px rgba(244,194,26,.45), 0 0 24px rgba(244,194,26,.35), 0 12px 32px -12px rgba(244,194,26,.75);
+      animation:pulse-glow 3.4s ease-in-out infinite;
+    }
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 0 0 1px rgba(244,194,26,.6), 0 0 34px rgba(244,194,26,.55), 0 16px 36px -10px rgba(244,194,26,.85)}
+    .btn-primary:active{transform:translateY(0)}
+    @media (prefers-reduced-motion: no-preference){
+      @keyframes pulse-glow{
+        0%,100%{ box-shadow:0 0 0 1px rgba(244,194,26,.45), 0 0 24px rgba(244,194,26,.35), 0 12px 32px -12px rgba(244,194,26,.75); }
+        50%{ box-shadow:0 0 0 1px rgba(244,194,26,.6), 0 0 38px rgba(244,194,26,.55), 0 12px 32px -12px rgba(244,194,26,.75); }
+      }
+    }
+    .btn-ghost{background:transparent}
+    .detected{font-family:var(--mono);font-size:.78rem;color:var(--ink-faint);display:flex;align-items:center;gap:.4rem;padding-bottom:.7rem}
+    .detected b{color:var(--gold)}
+
+    /* ---------------------------------------------------------------
+       Dual pane
+       --------------------------------------------------------------- */
+    .grid{display:grid;grid-template-columns:1fr;gap:clamp(18px,2.2vw,26px)}
+    @media(min-width:920px){.grid{grid-template-columns:1fr 1fr;align-items:start}}
+
+    .panel{
+      background:linear-gradient(180deg,var(--panel-2),var(--panel));
+      border:1px solid var(--line);
+      clip-path:polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
+      padding:0;overflow:hidden;
+    }
+    .panel-bar{
+      display:flex;align-items:center;justify-content:space-between;gap:.6rem;
+      padding:.75rem 1.1rem;border-bottom:1px solid var(--line);background:rgba(0,0,0,.18);
+    }
+    .panel-bar .dots{display:flex;gap:6px}
+    .panel-bar .dots i{width:8px;height:8px;border-radius:50%;display:block}
+    .panel-bar .dots i:nth-child(1){background:var(--coral)}
+    .panel-bar .dots i:nth-child(2){background:var(--gold)}
+    .panel-bar .dots i:nth-child(3){background:var(--teal)}
+    .panel-bar .filename{font-family:var(--mono);font-size:.76rem;letter-spacing:.04em;color:var(--ink-faint)}
+    .panel-body{padding:clamp(14px,2vw,22px)}
+
+    textarea{
+      width:100%;min-height:340px;resize:vertical;background:transparent;border:none;
+      color:var(--ink);font-family:var(--mono);font-size:.92rem;line-height:1.65;padding:0;
+      tab-size:2;
+    }
+    textarea::placeholder{color:var(--ink-faint);font-family:var(--sans)}
+
+    .outbox{position:relative}
+    pre.codebox{
+      width:100%;min-height:340px;max-height:620px;overflow:auto;background:transparent;
+      border:none;padding:0;
+      font-family:var(--mono);font-size:.88rem;line-height:1.65;white-space:pre-wrap;word-break:break-word;color:var(--ink);
+    }
+    pre.codebox.empty{color:var(--ink-faint);font-family:var(--sans);font-style:italic}
+    .copy-btn{position:absolute;top:.7rem;right:.7rem;display:flex;align-items:center;gap:.4rem;padding:.5rem .85rem;font-size:.78rem}
+    .copy-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .copy-btn.copied{border-color:var(--teal);color:var(--teal)}
+
+    .status-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.1rem}
+    .pill{font-family:var(--mono);font-size:.72rem;font-weight:600;letter-spacing:.03em;padding:.4rem .8rem;display:inline-flex;align-items:center;gap:.4rem;
+      clip-path:polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);}
+    .pill.ok{background:rgba(18,230,190,.12);color:var(--teal)}
+    .pill.warn{background:rgba(255,92,122,.12);color:var(--coral)}
+    .pill.info{background:var(--gold-dim);color:var(--gold)}
+    .pill.neutral{background:rgba(245,242,234,.06);color:var(--ink-faint)}
+
+    .changelog{margin-top:1.7rem}
+    .cl-section{margin-top:1.3rem}
+    .cl-head{font-family:var(--mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:.7rem;display:flex;align-items:center;gap:.5rem}
+    .cl-head.fixed{color:var(--teal)}
+    .cl-head.flagged{color:var(--coral)}
+    .cl-item{padding:.75rem 0;border-top:1px solid var(--line)}
+    .cl-item:first-child{border-top:none}
+    .cl-row{display:flex;justify-content:space-between;align-items:baseline;gap:1rem}
+    .cl-label{font-size:.92rem;font-weight:600;color:var(--ink)}
+    .cl-count{font-family:var(--mono);font-size:.78rem;color:var(--ink-faint)}
+    .cl-detail{font-size:.8rem;color:var(--ink-dim);margin-top:.3rem}
+    .cl-why{font-size:.8rem;color:var(--ink-dim);margin-top:.4rem;display:flex;gap:.5rem;align-items:flex-start}
+    .cl-why::before{content:'';flex:none;width:6px;height:6px;margin-top:.4rem;background:var(--gold);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+    .cl-why b{color:var(--gold-soft)}
+    .cl-empty{font-size:.86rem;color:var(--ink-faint);padding:.6rem 0}
+
+    footer.foot{margin-top:clamp(2.8rem,5vw,4rem);padding:1.6rem 0 .5rem;border-top:1px solid var(--line);font-family:var(--mono);font-size:.72rem;letter-spacing:.05em;color:var(--ink-faint);text-align:center}
+    footer.foot a{color:var(--gold);text-decoration:none}
+
+    @media (prefers-reduced-motion: reduce){
+      *{transition:none !important;animation:none !important}
+    }
+  </style>
+  <!-- Privacy-friendly analytics by Plausible (page view only) -->
+  <script async src="https://plausible.io/js/pa-qHouHjbduluIk5vNgeIOx.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+</head>
+<body>
+<div class="lattice" aria-hidden="true"></div>
+<a class="top-badge" href="https://boubacarbarry.com/" aria-label="Boubacar home"><svg width="22" height="22" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="bbGlow" cx="50%" cy="42%" r="42%"><stop offset="0%" stop-color="#F4C21A" stop-opacity="0.6"/><stop offset="55%" stop-color="#F4C21A" stop-opacity="0.12"/><stop offset="100%" stop-color="#F4C21A" stop-opacity="0"/></radialGradient></defs><circle cx="32" cy="28" r="26" fill="url(#bbGlow)"/><polygon points="32,10 50,44 14,44" fill="none" stroke="#F4C21A" stroke-width="2.4"/><polygon points="32,24 41,42 23,42" fill="#12E6BE" fill-opacity="0.85"/></svg></a>
+
+<main class="wrap">
+  <section class="hero">
+    <svg class="hero-motif" viewBox="0 0 400 400" aria-hidden="true">
+      <defs>
+        <filter id="motifGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="7" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <g filter="url(#motifGlow)" fill="none" stroke-linejoin="round">
+        <polygon points="200,26 340,200 200,374 60,200" stroke="#F4C21A" stroke-width="2" opacity=".55"/>
+        <polygon points="200,80 296,200 200,320 104,200" stroke="#F4C21A" stroke-width="1.6" opacity=".4"/>
+        <polygon points="200,132 252,200 200,268 148,200" stroke="#12E6BE" stroke-width="1.6" opacity=".65"/>
+        <circle cx="200" cy="200" r="10" fill="#12E6BE" opacity=".8"/>
+        <line x1="200" y1="26" x2="200" y2="6" stroke="#F4C21A" stroke-width="2" opacity=".5"/>
+        <line x1="200" y1="374" x2="200" y2="394" stroke="#F4C21A" stroke-width="2" opacity=".5"/>
+        <line x1="26" y1="200" x2="6" y2="200" stroke="#F4C21A" stroke-width="2" opacity=".5"/>
+        <line x1="374" y1="200" x2="394" y2="200" stroke="#F4C21A" stroke-width="2" opacity=".5"/>
+      </g>
+    </svg>
+    <p class="eyebrow">Code cleanup, runs in your browser</p>
+    <h1>Paste corrupted code. Get <span class="pop">clean</span> code back.</h1>
+    <p class="sub">Fixes copy-paste damage like smart quotes, invisible characters, and mixed line endings, then runs a real formatter and tells you exactly what changed, and why.</p>
+
+    <svg class="chevrons" viewBox="0 0 1200 20" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,10 L20,2 L40,10 L60,2 L80,10 L100,2 L120,10 L140,2 L160,10 L180,2 L200,10 L220,2 L240,10 L260,2 L280,10 L300,2 L320,10 L340,2 L360,10 L380,2 L400,10 L420,2 L440,10 L460,2 L480,10 L500,2 L520,10 L540,2 L560,10 L580,2 L600,10 L620,2 L640,10 L660,2 L680,10 L700,2 L720,10 L740,2 L760,10 L780,2 L800,10 L820,2 L840,10 L860,2 L880,10 L900,2 L920,10 L940,2 L960,10 L980,2 L1000,10 L1020,2 L1040,10 L1060,2 L1080,10 L1100,2 L1120,10 L1140,2 L1160,10 L1180,2 L1200,10"
+        stroke="#F4C21A" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 8"/>
+    </svg>
+  </section>
+
+  <div class="honesty" role="note">
+    <span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg></span>
+    <div><b>What this is:</b> a character sanitizer, formatter, and syntax check. It fixes corrupted characters and structural formatting, and it surfaces real syntax errors when the formatter cannot parse your code. <b>What it is not:</b> a bug finder or a test runner. A clean result means no corruption and no syntax error were found. It does not mean the logic is correct, and it is not a substitute for testing.</div>
+  </div>
+
+  <div class="toolbar">
+    <label class="field">Language
+      <select id="langSelect">
+        <option value="auto">Auto-detect</option>
+        <option value="javascript">JavaScript</option>
+        <option value="jsx">JSX</option>
+        <option value="typescript">TypeScript</option>
+        <option value="tsx">TSX</option>
+        <option value="css">CSS</option>
+        <option value="scss">SCSS</option>
+        <option value="less">LESS</option>
+        <option value="html">HTML</option>
+        <option value="json">JSON</option>
+        <option value="markdown">Markdown</option>
+        <option value="yaml">YAML</option>
+        <option value="graphql">GraphQL</option>
+        <option value="other">Other / not listed</option>
+      </select>
+    </label>
+    <button id="cleanBtn" class="btn-primary" type="button">Clean &amp; format</button>
+    <button id="clearBtn" class="btn-ghost" type="button">Clear</button>
+    <span class="detected" id="detectedBadge">Detected: <b>not yet</b></span>
+  </div>
+
+  <div class="grid">
+    <section>
+      <div class="panel">
+        <div class="panel-bar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="filename">input.raw</span>
+        </div>
+        <div class="panel-body">
+          <textarea id="input" placeholder="Paste code here. Character fixes (quotes, spacing, line endings) show as you type. Click Clean & format to run the full formatter." spellcheck="false"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="panel outbox">
+        <div class="panel-bar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="filename">output.clean</span>
+        </div>
+        <div class="panel-body">
+          <pre class="codebox empty" id="output">Paste code on the left to see the cleaned result here.</pre>
+          <button class="copy-btn btn-ghost" id="copyBtn" type="button" aria-label="Copy cleaned code">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span id="copyLabel">Copy</span>
+          </button>
+
+          <div class="status-row" id="statusRow"></div>
+
+          <div class="changelog" id="changelog">
+            <p class="cl-empty">Paste code to see what was fixed and flagged.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="foot" id="siteFooter">CodeScrub &middot; Boubacar Barry / Catalyst Works &copy; 2026</footer>
+</main>
+
+<script type="module">
+/*
+  CodeScrub: client-side code cleanup tool.
+  Scope (locked, see PRD): character sanitizer (all languages, always) + Prettier-based
+  structural formatter for JS/TS/JSX/TSX/CSS/SCSS/LESS/HTML/JSON/Markdown/YAML/GraphQL.
+  No semantic bug detection. No server. Nothing persists after the tab closes.
+*/
+
+// --- internal build fingerprint (support/debugging only, never shown in the UI) ---
+const APP_BUILD = { app: 'codescrub', canary: 'fe16fb86ed62f0750c8c94bd41e045a994e59dbc15632b7763c6134213a897fa' };
+console.debug('[codescrub build]', APP_BUILD.app);
+
+const PRETTIER_CDN = 'https://cdn.jsdelivr.net/npm/prettier@3.3.3';
+
+const LANG_LABELS = {
+  javascript:'JavaScript', jsx:'JSX', typescript:'TypeScript', tsx:'TSX',
+  css:'CSS', scss:'SCSS', less:'LESS', html:'HTML', json:'JSON',
+  markdown:'Markdown', yaml:'YAML', graphql:'GraphQL', other:'Other (character cleanup only)'
+};
+
+const LANG_CONFIG = {
+  javascript: { parser:'babel', plugins:['babel','estree'] },
+  jsx:         { parser:'babel', plugins:['babel','estree'] },
+  typescript:  { parser:'typescript', plugins:['typescript','estree'] },
+  tsx:         { parser:'typescript', plugins:['typescript','estree'] },
+  css:         { parser:'css', plugins:['postcss'] },
+  scss:        { parser:'scss', plugins:['postcss'] },
+  less:        { parser:'less', plugins:['postcss'] },
+  html:        { parser:'html', plugins:['html','postcss','babel','estree'] },
+  json:        { parser:'json', plugins:['babel','estree'] },
+  markdown:    { parser:'markdown', plugins:['markdown'] },
+  yaml:        { parser:'yaml', plugins:['yaml'] },
+  graphql:     { parser:'graphql', plugins:['graphql'] },
+};
+
+// ---------------------------------------------------------------------------
+// Lazy-load Prettier core + only the parser plugin(s) needed for the detected
+// language. Deliberate: avoids pulling ~1-2MB of parsers nobody asked for on
+// every page load.
+// ---------------------------------------------------------------------------
+let prettierCorePromise = null;
+function loadCore(){
+  if (!prettierCorePromise) prettierCorePromise = import(`${PRETTIER_CDN}/standalone.mjs`);
+  return prettierCorePromise;
+}
+const pluginCache = {};
+function loadPlugin(name){
+  if (!pluginCache[name]) {
+    pluginCache[name] = import(`${PRETTIER_CDN}/plugins/${name}.mjs`).then(mod => {
+      // Some plugins (estree) export only a default; others export named
+      // members directly on the module namespace. Normalize to whichever
+      // shape actually carries parsers/printers/languages.
+      return (mod.parsers || mod.printers || mod.languages) ? mod : (mod.default || mod);
+    });
+  }
+  return pluginCache[name];
+}
+
+let prettierUnavailable = false;
+
+// ---------------------------------------------------------------------------
+// Language auto-detect: best-guess heuristic, never blocks. Manual dropdown
+// override always wins.
+// ---------------------------------------------------------------------------
+function detectLanguage(text){
+  const t = text.trim();
+  if (!t) return null;
+
+  if (/^</.test(t) && (/<!doctype/i.test(t) || /<html[\s>]/i.test(t) || /<\/[a-z]+>/i.test(t))) return 'html';
+
+  if ((/^\{/.test(t) || /^\[/.test(t))) {
+    try { JSON.parse(t); return 'json'; } catch (e) { /* not valid JSON, keep looking */ }
+  }
+
+  if (/^---\s*$/m.test(t.split('\n')[0] || '') || (/^[a-zA-Z0-9_-]+:\s/m.test(t) && !/[{};]/.test(t) && /\n\s+-\s/.test(t))) return 'yaml';
+
+  if (/\btype\s+(Query|Mutation|Subscription)\b/.test(t) || /^\s*(schema|input|scalar)\s+\w*\s*\{/m.test(t)) return 'graphql';
+
+  if (/^#{1,6}\s/m.test(t) || /```/.test(t) || /^\s*[-*]\s+\S/m.test(t) && !/[{};]/.test(t)) return 'markdown';
+
+  const hasJSX = /<[A-Z][\w.]*[\s/>]/.test(t) || /<[a-z]+ [^>]*className=/.test(t);
+  const hasTSTypes = /:\s*(string|number|boolean|any|void|unknown)\b/.test(t) || /\binterface\s+\w+/.test(t) || /<\w+>\(/.test(t);
+  if (hasTSTypes) return hasJSX ? 'tsx' : 'typescript';
+
+  if (/\bfunction\b|\bconst\s+\w+\s*=|=>|\bimport\s+.+from\b|\brequire\(/.test(t)) return hasJSX ? 'jsx' : 'javascript';
+
+  if (/@mixin|@include|&:/.test(t)) return 'scss';
+  if (/^\s*\.[\w-]+\s*\{|^\s*#[\w-]+\s*\{|^\s*[a-z-]+:\s*[^;]+;/im.test(t) && !/\bfunction\b/.test(t)) return 'css';
+
+  return 'other';
+}
+
+// ---------------------------------------------------------------------------
+// Character-cleanup pass: runs on ALL languages, always, before Prettier.
+// Curated confusables list for v1 (deliberately not the full ~4,000 entry
+// Unicode table, just the handful that actually show up in copy-pasted
+// identifiers).
+// ---------------------------------------------------------------------------
+const CONFUSABLES = {
+  'а':'a','е':'e','о':'o','р':'p','с':'c','х':'x',
+  'А':'A','Е':'E','О':'O','Р':'P','С':'C','Х':'X',
+  'ο':'o (Greek omicron)','α':'a (Greek alpha)','ρ':'p (Greek rho)',
+};
+
+function cleanupChars(raw){
+  let text = raw;
+  const autoFixed = [];
+  const flagged = [];
+
+  const crlf = text.match(/\r\n|\r/g);
+  if (crlf && crlf.length) {
+    text = text.replace(/\r\n|\r/g, '\n');
+    autoFixed.push({
+      label:'Line endings normalized (CRLF/CR to LF)', count: crlf.length,
+      why:'Windows editors write CRLF (\\r\\n); Unix and Mac tools expect LF (\\n) only. Mixed endings can make git report every line as changed, and can break a shebang line or a parser that chokes on the stray \\r.'
+    });
+  }
+
+  let quoteCount = 0;
+  const curlyD = text.match(/[“”]/g);
+  const curlyS = text.match(/[‘’]/g);
+  if (curlyD) { quoteCount += curlyD.length; text = text.replace(/[“”]/g, '"'); }
+  if (curlyS) { quoteCount += curlyS.length; text = text.replace(/[‘’]/g, "'"); }
+  if (quoteCount) autoFixed.push({
+    label:'Smart quotes to straight quotes', count: quoteCount,
+    why:'Word processors and some note apps auto-insert curly quotes for readability. A parser looks for a literal " or \' character to open or close a string, and a curly quote is a different character entirely, so it breaks the string or throws a syntax error.'
+  });
+
+  const nbsp = text.match(/ /g);
+  if (nbsp) { text = text.replace(/ /g, ' '); autoFixed.push({
+    label:'Non-breaking spaces to regular spaces', count: nbsp.length,
+    why:'A non-breaking space (common when pasting out of Word, Slack, or a web page) looks identical to a normal space but is a different character code. It can silently break indentation-sensitive code and confuse parsers even where the whitespace looks fine to the eye.'
+  }); }
+
+  const zwRe = /[​‌‍﻿]/g;
+  const zwAll = text.match(zwRe);
+  if (zwAll && zwAll.length) {
+    const positions = [];
+    let m; zwRe.lastIndex = 0;
+    while ((m = zwRe.exec(text)) && positions.length < 5) positions.push(m.index);
+    text = text.replace(zwRe, '');
+    autoFixed.push({
+      label:'Zero-width / invisible characters removed', count: zwAll.length,
+      detail: `First seen at position${positions.length>1?'s':''} ${positions.join(', ')}${zwAll.length>positions.length?' (plus more)':''}.`,
+      why:'Zero-width characters are completely invisible but still count as real characters to a parser. They sneak in from copy-pasting out of a PDF, a web page, or some messaging apps, and can silently break a variable name or a string comparison that looks identical on screen.'
+    });
+  }
+
+  const homoglyphHits = [];
+  for (let i=0;i<text.length;i++){
+    const ch = text[i];
+    if (CONFUSABLES[ch]) homoglyphHits.push({ ch, looksLike: CONFUSABLES[ch], pos:i });
+  }
+  if (homoglyphHits.length) {
+    flagged.push({
+      label:'Possible look-alike characters in identifiers (not auto-changed)', count: homoglyphHits.length,
+      detail: homoglyphHits.slice(0,5).map(h=>`"${h.ch}" looks like "${h.looksLike}" at position ${h.pos}`).join('; ') + (homoglyphHits.length>5?' (plus more)':''),
+      why:'A homoglyph is a character from a different alphabet (Cyrillic, Greek) that renders almost identically to a Latin letter. If one lands in an identifier, two variables that look the same to your eyes are different to the parser: a hard-to-spot bug class. Not auto-fixed, because renaming a real identifier is a decision only you should make.'
+    });
+  }
+
+  const dashes = text.match(/[—–]/g);
+  if (dashes && dashes.length) {
+    flagged.push({
+      label:'Em-dash / en-dash found in the code', count: dashes.length,
+      detail:'Detected as plain text, not scoped to strings or comments specifically (that would need full parsing per language).',
+      why:'An em-dash or en-dash is a typography character, not a hyphen. It usually arrives by accident from pasting out of a document, and is usually meant to be a plain hyphen. Since it could also be intentional text, it is flagged rather than auto-changed.'
+    });
+  }
+
+  const namingHits = findCrypticNames(text);
+  if (namingHits.length) {
+    flagged.push({
+      label:'Cryptic 1-2 letter variable name(s)', count: namingHits.length,
+      detail: namingHits.slice(0,6).map(n=>`"${n}"`).join(', ') + (namingHits.length>6?' (plus more)':''),
+      why:'A short name like `a` or `x2` costs nothing to write now and costs real time later, yours or a client’s, when the name no longer hints at what the value holds. Not auto-renamed, because renaming is a real decision (every reference has to move together) that should stay in your hands.'
+    });
+  }
+
+  const dupBlock = findDuplicateBlock(text);
+  if (dupBlock) {
+    flagged.push({
+      label:'Possible duplicated code block', count: dupBlock.count,
+      detail: `A ${dupBlock.lines}-line block appears ${dupBlock.count} times, first around line ${dupBlock.firstLine}.`,
+      why:'The same block appearing more than once usually means a shared function is waiting to happen: one change to make instead of several to keep in sync by hand. Not auto-extracted, because turning a block into a function is a structural call that deserves your judgment, not an automatic rewrite.'
+    });
+  }
+
+  return { text, autoFixed, flagged };
+}
+
+// ---------------------------------------------------------------------------
+// Coding-standard advisory nudges (flag-only, never auto-applied).
+// Deliberately simple heuristics, bounded by input length.
+// ---------------------------------------------------------------------------
+const NAME_ALLOWLIST = new Set(['i','j','k','x','y','z','e','_','ok','id','ex','fn','cb','ev','el','ta','db']);
+function findCrypticNames(text){
+  const hits = new Set();
+  const re = /\b(?:let|const|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]?)\b(?!\s*[a-zA-Z0-9_$])/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const name = m[1];
+    if (name.length <= 2 && !NAME_ALLOWLIST.has(name.toLowerCase())) hits.add(name);
+  }
+  return Array.from(hits);
+}
+
+function findDuplicateBlock(text){
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+  const WINDOW = 3;
+  if (lines.length < WINDOW * 2) return null;
+  const seen = new Map();
+  for (let i = 0; i <= lines.length - WINDOW; i++) {
+    const chunk = lines.slice(i, i + WINDOW).join('\n');
+    if (chunk.length < 20) continue; // too short to be a meaningful duplicate signal
+    if (!seen.has(chunk)) seen.set(chunk, { count: 0, firstIndex: i });
+    seen.get(chunk).count += 1;
+  }
+  let best = null;
+  for (const [, info] of seen) {
+    if (info.count >= 2 && (!best || info.count > best.count)) best = info;
+  }
+  if (!best) return null;
+  return { lines: WINDOW, count: best.count, firstLine: best.firstIndex + 1 };
+}
+
+// ---------------------------------------------------------------------------
+// State + DOM wiring
+// ---------------------------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+const inputEl = $('input'), outputEl = $('output'), langSelect = $('langSelect');
+const detectedBadge = $('detectedBadge'), statusRow = $('statusRow'), changelogEl = $('changelog');
+const copyBtn = $('copyBtn'), copyLabel = $('copyLabel');
+
+let debounceTimer = null;
+let lastCleanResult = null; // { text, autoFixed, flagged, lang }
+
+function currentLang(){
+  const sel = langSelect.value;
+  if (sel !== 'auto') return sel;
+  return detectLanguage(inputEl.value) || 'other';
+}
+
+function renderDetected(){
+  const sel = langSelect.value;
+  const lang = currentLang();
+  const label = lang ? (LANG_LABELS[lang] || lang) : 'not yet';
+  detectedBadge.innerHTML = sel === 'auto'
+    ? `Detected: <b>${inputEl.value.trim() ? label : 'not yet'}</b>`
+    : `Manual: <b>${label}</b>`;
+}
+
+function renderStatus(pills){
+  statusRow.innerHTML = pills.map(p => `<span class="pill ${p.kind}">${p.icon || ''}${p.text}</span>`).join('');
+}
+
+function renderChangelog({ autoFixed, flagged, structural }){
+  if (!autoFixed.length && !flagged.length && !structural) {
+    changelogEl.innerHTML = '<p class="cl-empty">Nothing to report yet. Paste code above.</p>';
+    return;
+  }
+  const section = (title, items, cls) => {
+    if (!items.length) return '';
+    return `<div class="cl-section"><div class="cl-head ${cls}">${title}</div>` +
+      items.map(it => `<div class="cl-item"><div class="cl-row"><span class="cl-label">${it.label}</span>${typeof it.count==='number' ? `<span class="cl-count">${it.count}&times;</span>` : ''}</div>${it.detail ? `<div class="cl-detail">${it.detail}</div>` : ''}${it.why ? `<div class="cl-why"><span><b>Why:</b> ${it.why}</span></div>` : ''}</div>`).join('') +
+      '</div>';
+  };
+  let html = '';
+  html += section('Character fixes', autoFixed, 'fixed');
+  if (structural) {
+    html += `<div class="cl-section"><div class="cl-head">Structural formatting</div><div class="cl-item"><div class="cl-row"><span class="cl-label">${structural.note}</span></div>${structural.why ? `<div class="cl-why"><span><b>Why:</b> ${structural.why}</span></div>` : ''}</div></div>`;
+  }
+  html += section('Flagged for your review', flagged, 'flagged');
+  if (!autoFixed.length && !flagged.length) html += '<p class="cl-empty">No character issues found.</p>';
+  changelogEl.innerHTML = html;
+}
+
+function runLiveCleanupPreview(){
+  const raw = inputEl.value;
+  renderDetected();
+  if (!raw.trim()) {
+    outputEl.textContent = 'Paste code on the left to see the cleaned result here.';
+    outputEl.classList.add('empty');
+    renderStatus([]);
+    renderChangelog({ autoFixed: [], flagged: [], structural: null });
+    lastCleanResult = null;
+    return;
+  }
+  const { text, autoFixed, flagged } = cleanupChars(raw);
+  outputEl.textContent = text;
+  outputEl.classList.remove('empty');
+  lastCleanResult = { text, autoFixed, flagged, lang: currentLang() };
+  const pills = [];
+  if (autoFixed.length) pills.push({ kind:'ok', text:`${autoFixed.reduce((n,i)=>n+(i.count||0),0)} character fix(es) applied` });
+  if (flagged.length) pills.push({ kind:'warn', text:`${flagged.length} item(s) flagged for review` });
+  if (!autoFixed.length && !flagged.length) pills.push({ kind:'neutral', text:'No character issues found' });
+  pills.push({ kind:'info', text:'Click Clean & format to run the structural formatter' });
+  renderStatus(pills);
+  renderChangelog({ autoFixed, flagged, structural: null });
+}
+
+async function runFullFormat(){
+  const raw = inputEl.value;
+  if (!raw.trim()) return;
+  const lang = currentLang();
+  const { text: cleanedText, autoFixed, flagged } = cleanupChars(raw);
+  const config = LANG_CONFIG[lang];
+
+  if (!config) {
+    outputEl.textContent = cleanedText;
+    outputEl.classList.remove('empty');
+    renderStatus([
+      { kind:'ok', text:'Character cleanup applied' },
+      { kind:'neutral', text:`No structural formatter for "${LANG_LABELS[lang] || lang}"` }
+    ]);
+    renderChangelog({ autoFixed, flagged, structural: {
+      note: `Not available for ${LANG_LABELS[lang] || lang}. Structural reformatting is supported for JS, TS, JSX, TSX, CSS, SCSS, LESS, HTML, JSON, Markdown, YAML, and GraphQL only. This code only had the character-cleanup pass applied.`,
+      why: 'Formatting a language without a real parser for it means guessing at indentation and structure. Guessing wrong would silently corrupt working code, which is worse than not touching it at all. Character cleanup alone is always safe regardless of language.'
+    }});
+    return;
+  }
+
+  renderStatus([{ kind:'info', text:'Loading formatter…' }]);
+
+  try {
+    if (prettierUnavailable) throw new Error('formatter unavailable this session');
+    const core = await loadCore();
+    const plugins = await Promise.all(config.plugins.map(loadPlugin));
+    const formatted = await core.format(cleanedText, { parser: config.parser, plugins });
+
+    outputEl.textContent = formatted;
+    outputEl.classList.remove('empty');
+    const noChangeNeeded = formatted.trim() === cleanedText.trim();
+    const structuralNote = {
+      note: noChangeNeeded
+        ? 'Applied. No structural changes were needed beyond the character fixes above.'
+        : "Applied. Prettier's own style rules (indentation, quote style, spacing, trailing commas, and so on) were applied on top of the character fixes above. This is a style reformat, not a bug fix.",
+      why: noChangeNeeded
+        ? 'The formatter parsed the code successfully and found nothing to restyle. That is a real signal the syntax is valid, on top of whatever character fixes ran above.'
+        : 'Prettier applies one consistent style regardless of how the original code was formatted. This is a style pass, separate from the character fixes above. It does not mean anything was "wrong", just restyled to one consistent standard.'
+    };
+    renderChangelog({ autoFixed, flagged, structural: structuralNote });
+    renderStatus([
+      { kind:'ok', text:'No syntax errors found' },
+      { kind:'ok', text:`Formatted as ${LANG_LABELS[lang] || lang}` },
+      flagged.length ? { kind:'warn', text:`${flagged.length} item(s) flagged for review` } : { kind:'neutral', text:'Nothing flagged' },
+    ]);
+  } catch (err) {
+    outputEl.textContent = cleanedText;
+    outputEl.classList.remove('empty');
+    const isNetworkish = /fetch|network|import|module/i.test(String(err && err.message || err));
+    if (isNetworkish) prettierUnavailable = true;
+    const message = String(err && err.message ? err.message.split('\n')[0] : err);
+    flagged.push({
+      label: isNetworkish ? 'Formatting engine unavailable' : `${LANG_LABELS[lang] || lang} syntax error`,
+      detail: isNetworkish
+        ? 'Could not load the formatter for this session (network or CDN issue). Showing character-cleanup only.'
+        : `${message} If you pasted a partial snippet rather than a full file, this may be a false flag. Prettier expects complete, valid syntax.`,
+      why: isNetworkish
+        ? 'The formatting engine loads from a CDN on demand. If that request fails (offline, network hiccup, CDN outage), formatting cannot run this session, but the character-level fixes above still work since they do not depend on any external service.'
+        : 'The formatter needs syntactically complete, valid code to parse it at all. One unmatched bracket, a missing quote, or a stray keyword is enough to stop it cold. This is the same class of error your compiler or interpreter would eventually hit.'
+    });
+    renderChangelog({ autoFixed, flagged, structural: null });
+    renderStatus([
+      { kind:'ok', text:'Character cleanup applied' },
+      { kind:'warn', text: isNetworkish ? 'Formatter unavailable this session' : 'Syntax issue found, see below' },
+    ]);
+  }
+}
+
+inputEl.addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(runLiveCleanupPreview, 220);
+});
+langSelect.addEventListener('change', runLiveCleanupPreview);
+
+$('cleanBtn').addEventListener('click', runFullFormat);
+$('clearBtn').addEventListener('click', () => {
+  inputEl.value = '';
+  runLiveCleanupPreview();
+  inputEl.focus();
+});
+
+copyBtn.addEventListener('click', async () => {
+  const text = outputEl.textContent || '';
+  if (!text || outputEl.classList.contains('empty')) return;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    // Fallback for non-secure contexts / older browsers: select via a hidden textarea.
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e2) { /* give up quietly, button just will not confirm */ }
+    document.body.removeChild(ta);
+  }
+  copyBtn.classList.add('copied');
+  copyLabel.textContent = 'Copied';
+  setTimeout(() => { copyBtn.classList.remove('copied'); copyLabel.textContent = 'Copy'; }, 1600);
+});
+
+// ---------------------------------------------------------------------------
+// Fouta Mark, layer 3 (invisible): a zero-width payload appended to THIS
+// PAGE'S OWN footer text, never to the user's returned code (that would
+// either get stripped by the cleanup pass above or contaminate their real
+// code with an invisible payload they never asked for).
+// ---------------------------------------------------------------------------
+(function appendInvisibleMark(){
+  const ZW_MARK = '‍​‌​​​​‌​​‌​​​​‌​​​‌​‌‌​‌​‌​​​‌‌​​‌​​‌‌‌‌​‌​‌​‌​‌​‌​‌​‌​​​‌​​​​​‌‍';
+  const footer = document.getElementById('siteFooter');
+  if (footer) footer.appendChild(document.createTextNode(ZW_MARK));
+})();
+
+renderDetected();
+</script>
+</body>
+</html>
