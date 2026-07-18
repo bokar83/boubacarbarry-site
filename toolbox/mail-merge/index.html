@@ -1,0 +1,359 @@
+<!-- build: 24f49d94195247e81fc768db316fa64e22d3b4225b4e4e2ef2ffe5d102b6ce8e -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Favicon: The Lamp (v2 cache-bust) -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=4" />
+  <link rel="alternate icon" href="/favicon.ico?v=4" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=4" />
+  <link rel="manifest" href="/site.webmanifest" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gmail Mail Merge: Free Google Sheets Script | Boubacar Barry</title>
+<meta name="description" content="Send personalized bulk email straight from a Google Sheet using your own Gmail quota. No monthly fee, no external service. Paste one Apps Script into your own Sheet and go.">
+<link rel="canonical" href="https://boubacarbarry.com/toolbox/mail-merge/">
+<meta property="og:title" content="Gmail Mail Merge: Free Google Sheets Script">
+<meta property="og:description" content="Personalized bulk email from a Google Sheet, on your own Gmail quota. No monthly fee. Copy one script, paste it into your own Sheet.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://boubacarbarry.com/toolbox/mail-merge/">
+<meta property="og:image" content="https://boubacarbarry.com/Boubacar.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Gmail Mail Merge: Free Google Sheets Script">
+<meta name="twitter:description" content="Personalized bulk email from a Google Sheet, on your own Gmail quota. No monthly fee.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Gmail Mail Merge (Google Sheets Script)",
+  "description": "Free Google Apps Script that sends personalized bulk email from a Google Sheet using Gmail's own sending quota. No monthly fee, no external service, runs entirely inside your own Google account.",
+  "url": "https://boubacarbarry.com/toolbox/mail-merge/",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Boubacar Barry", "url": "https://boubacarbarry.com" },
+  "breadcrumb": {
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://boubacarbarry.com" },
+      { "@type": "ListItem", "position": 2, "name": "Toolbox", "item": "https://boubacarbarry.com/toolbox/" },
+      { "@type": "ListItem", "position": 3, "name": "Gmail Mail Merge", "item": "https://boubacarbarry.com/toolbox/mail-merge/" }
+    ]
+  }
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#071A2E; --navy-2:#0c2742; --clay:#B47C57; --clay-soft:#d8b89e;
+    --action:#00B7C2; --paper:#f4efe8; --ink:#0d1b29;
+    --line:rgba(244,239,232,.14);
+    --good:#3fb27f; --bad:#d99a3c;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 88% -10%, #103252 0%, transparent 55%),
+      var(--navy);
+    color:var(--paper); font-family:'Public Sans',system-ui,sans-serif;
+    line-height:1.5; min-height:100vh; padding:clamp(18px,4vw,52px);
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:.5rem}
+  h1{font-family:'Spectral',serif;font-weight:700;font-size:clamp(2rem,1.3rem+3.2vw,3.4rem);line-height:1.04;letter-spacing:-.01em;max-width:18ch}
+  h1 em{font-style:italic;color:var(--clay-soft)}
+  .sub{margin-top:.85rem;max-width:58ch;color:rgba(244,239,232,.74);font-size:1.02rem}
+  .rule{width:100%;height:14px;margin:1.6rem 0 2.1rem;display:block;opacity:.8}
+  .grid{display:grid;grid-template-columns:1fr;gap:clamp(20px,2.5vw,34px)}
+  @media(min-width:960px){.grid{grid-template-columns:.9fr 1.1fr;align-items:start}}
+
+  .panel{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border:1px solid var(--line);border-radius:18px;padding:clamp(18px,2.4vw,30px)}
+  .panel + .panel{margin-top:22px}
+  .ptitle{display:flex;align-items:center;gap:.55rem;font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--clay-soft);margin-bottom:1.1rem}
+  .ptitle svg{width:16px;height:16px;stroke:var(--clay);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .lead{font-size:1rem;color:rgba(244,239,232,.86);line-height:1.65}
+  .lead b{color:var(--clay-soft);font-weight:600}
+
+  .steps{margin-top:.4rem;counter-reset:step}
+  .step{display:flex;gap:.9rem;padding:.85rem 0;border-bottom:1px solid var(--line)}
+  .step:last-child{border-bottom:none}
+  .step-n{flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:rgba(0,183,194,.14);color:var(--action);font-family:var(--mono);font-weight:700;font-size:.86rem;display:flex;align-items:center;justify-content:center}
+  .step-body b{color:var(--paper);font-weight:600}
+  .step-body .hint{display:block;margin-top:.2rem;color:rgba(244,239,232,.6);font-size:.88rem}
+  .step-body code{font-family:var(--mono);font-size:.86rem;background:rgba(7,17,28,.5);border:1px solid var(--line);border-radius:5px;padding:.1rem .38rem;color:var(--clay-soft)}
+
+  .codewrap{position:relative}
+  .codebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem;gap:.6rem;flex-wrap:wrap}
+  .codebar .fname{font-family:var(--mono);font-size:.82rem;color:rgba(244,239,232,.6)}
+  .btnrow{display:flex;gap:.55rem}
+  .btn{font-family:var(--mono);font-size:.78rem;font-weight:600;letter-spacing:.02em;border:1px solid var(--line);background:rgba(7,17,28,.5);color:var(--paper);border-radius:9px;padding:.5rem .85rem;cursor:pointer;transition:background .18s var(--ease),border-color .18s var(--ease),color .18s var(--ease);text-decoration:none;display:inline-flex;align-items:center;gap:.4rem}
+  .btn:hover{background:rgba(0,183,194,.16);border-color:var(--action)}
+  .btn.copied{background:rgba(63,178,127,.18);border-color:var(--good);color:var(--good)}
+  pre{margin:0;max-height:520px;overflow:auto;background:rgba(7,17,28,.62);border:1px solid var(--line);border-radius:13px;padding:1.1rem 1.2rem}
+  code{font-family:var(--mono);font-size:.82rem;line-height:1.62;color:rgba(244,239,232,.92);white-space:pre}
+  .note{margin-top:1.4rem;font-size:.86rem;color:rgba(244,239,232,.6);line-height:1.6}
+  .note b{color:var(--clay-soft);font-weight:600}
+  .safer{margin-top:.3rem}
+  .safer li{margin:.5rem 0 .5rem 1.2rem;font-size:.92rem;color:rgba(244,239,232,.78);line-height:1.55}
+  .safer li b{color:var(--paper)}
+  .foot{margin-top:2.4rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;color:rgba(244,239,232,.4)}
+  .foot a{color:var(--action);text-decoration:none}
+  .notice{margin-top:.5rem;font-size:.72rem;color:rgba(244,239,232,.32)}
+</style>
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://plausible.io/js/pa-qHouHjbduluIk5vNgeIOx.js"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+</head>
+<body>
+<!-- bb-logo: Boubacar visible logo (standing rule) -->
+<a href="https://boubacarbarry.com/" aria-label="Boubacar home" style="position:fixed;top:14px;left:14px;z-index:2147483000;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;background:rgba(16,19,27,0.55);border-radius:12px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,0.35);text-decoration:none;line-height:0;"><svg width="34" height="34" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="bbLampGlow" cx="50%" cy="42%" r="42%"><stop offset="0%" stop-color="#fbbf24" stop-opacity="0.55"/><stop offset="55%" stop-color="#fbbf24" stop-opacity="0.12"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/></radialGradient><linearGradient id="bbLampFlame" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fde68a"/><stop offset="60%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d9a07e"/></linearGradient></defs><circle cx="32" cy="28" r="26" fill="url(#bbLampGlow)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#2ad4df" stroke-width="2.4" stroke-opacity="0.9"/><path d="M32 16 C 37 23, 40 27, 40 33 a 8 8 0 0 1 -16 0 c 0 -4, 2.4 -7, 4.3 -10 c 0.6 2.6, 2.2 3.8, 3.4 5.1 c 1.1 -2.6, 0.7 -5.2, 0.3 -7.1 Z" fill="url(#bbLampFlame)"/><path d="M32 26 c 2.6 2.6, 3.4 4.6, 3.4 7 a 3.4 3.4 0 0 1 -6.8 0 c 0 -2.3, 1.6 -4.4, 3.4 -7 Z" fill="#10131b" fill-opacity="0.85"/><rect x="22" y="46" width="20" height="3" rx="1.5" fill="#d9a07e"/></svg></a>
+
+<main class="wrap">
+  <p class="eyebrow">Google Sheets · Gmail · Apps Script</p>
+  <h1>Personalized bulk email, <em>no monthly fee</em></h1>
+  <p class="sub">Sends from a Google Sheet using your own Gmail sending quota. No external service, no subscription, nothing to sign up for. You paste one script into your own Sheet and it runs entirely inside your own Google account.</p>
+
+  <svg class="rule" viewBox="0 0 1080 14" preserveAspectRatio="none" aria-hidden="true"><path d="M2,8 C140,3 260,11 380,7 C520,2.5 640,12 760,6.5 C880,2 1000,10 1078,5" stroke="#B47C57" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+
+  <div class="grid">
+    <!-- ============ LEFT: WHAT + SETUP ============ -->
+    <section>
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg> What this does</div>
+        <p class="lead">A Google Apps Script, bound to a Google Sheet, that sends a personalized email to every row: name, company, or any column you add. It uses <b>your own Gmail account's sending quota</b> (roughly 100/day on a free account, 1,500/day on Workspace) instead of a paid mail-merge SaaS. There is no server to run and no account to create beyond the Google account you already have. The script lives inside your Sheet; you're the only one who ever has it.</p>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Setup, about 5 minutes</div>
+        <div class="steps">
+          <div class="step"><div class="step-n">1</div><div class="step-body">Make a copy of a blank Google Sheet <span class="hint">any new blank Sheet works, this doesn't need a template</span></div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-body">Open <code>Extensions → Apps Script</code> <span class="hint">this opens a code editor bound to that Sheet</span></div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-body">Delete the placeholder code and paste the script below <span class="hint">copy button is in the code panel on the right</span></div></div>
+          <div class="step"><div class="step-n">4</div><div class="step-body">Save (<code>Ctrl/Cmd + S</code>), then close the tab and refresh the Sheet <span class="hint">a new "Mail Merge" menu appears next to Help</span></div></div>
+          <div class="step"><div class="step-n">5</div><div class="step-body">Fill column <code>A</code> = Name, <code>B</code> = Email, <code>C</code> = Status (leave blank) <span class="hint">add any further columns you want, e.g. <code>D</code> = Company</span></div></div>
+          <div class="step"><div class="step-n">6</div><div class="step-body">Fill the config cells: Subject <code>E5</code>, Body <code>E9</code>, Your Name <code>E11</code> <span class="hint">use <code>{{ColumnHeader}}</code> in the body for any column, including <code>{{Name}}</code> or <code>{{Company}}</code></span></div></div>
+          <div class="step"><div class="step-n">7</div><div class="step-body">Menu: <code>Mail Merge → Step 2: Start Mail Merge</code> <span class="hint">first run asks you to authorize the script, that's normal, it's talking to your own Gmail</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RIGHT: CODE ============ -->
+    <section>
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg> The script</div>
+        <div class="codewrap">
+          <div class="codebar">
+            <span class="fname">mail-merge.gs</span>
+            <div class="btnrow">
+              <button class="btn" id="copy-btn" type="button">Copy code</button>
+              <a class="btn" href="mail-merge.gs" download>Download .gs</a>
+            </div>
+          </div>
+          <pre><code id="gs-code">/**
+ * Google Sheets Mail Merge -- hardened version
+ * Base pattern: labnol.org's open-source Gmail mail-merge script.
+ *
+ * Sheet layout: row 1 = headers. Column A = Name, B = Email, C = Status
+ * (fixed). Any column D onward = additional merge fields -- whatever you
+ * title the header, that becomes a {{HeaderName}} placeholder usable in
+ * the email body (cell E9), same as {{Name}} already worked.
+ */
+
+function labnolQuota() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  sheet.getRange("E3").setValue(
+      "Daily email quota remaining: " + MailApp.getRemainingDailyQuota()
+  );
+}
+
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu("Mail Merge")
+    .addItem("Step 1: Reset Canvas", "labnolReset")
+    .addItem("Step 2: Start Mail Merge", "labnolSendEmail")
+    .addToUi();
+  labnolQuota();
+}
+
+function labnolReset() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var ranges = ["E5", "E7", "E9", "E11", "E13", "E15", "E17"];
+  ranges.forEach(r =&gt; sheet.getRange(r).clearContent());
+  sheet.getRange(2, 1, sheet.getMaxRows() - 1, sheet.getMaxColumns()).clearContent();
+  labnolQuota();
+}
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&amp;/g, '&amp;amp;')
+    .replace(/&lt;/g, '&amp;lt;')
+    .replace(/&gt;/g, '&amp;gt;')
+    .replace(/"/g, '&amp;quot;')
+    .replace(/'/g, '&amp;#39;');
+}
+
+function buildPlaceholderMap(headers, row) {
+  var map = {};
+  for (var i = 0; i &lt; headers.length; i++) {
+    var header = headers[i];
+    if (header) {
+      map[header] = escapeHtml(row[i]);
+    }
+  }
+  return map;
+}
+
+function applyPlaceholders(template, placeholderMap) {
+  var result = template;
+  for (var key in placeholderMap) {
+    var pattern = new RegExp("{{" + key + "}}", "g");
+    result = result.replace(pattern, placeholderMap[key]);
+  }
+  return result;
+}
+
+function labnolSendEmail() {
+  var ui = SpreadsheetApp.getUi();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+  var required = ["E5", "E9", "E11"];
+  for (var i = 0; i &lt; required.length; i++) {
+    if (sheet.getRange(required[i]).getValue() === "") {
+      ui.alert("Error", "Please fill Subject, Body, and Your Name fields!", ui.ButtonSet.OK);
+      return;
+    }
+  }
+
+  var emailSubject  = sheet.getRange("E5").getValue();
+  var emailBody     = sheet.getRange("E9").getValue();
+  var emailYourName = sheet.getRange("E11").getValue();
+  var replyToAddr   = sheet.getRange("E13").getValue();
+  var fileId        = sheet.getRange("E15").getValue();
+  var emailBCC      = sheet.getRange("E17").getValue();
+  var emailYourAddr = Session.getActiveUser().getEmail();
+
+  var attachments = [];
+  if (fileId) {
+    try {
+      attachments.push(DriveApp.getFileById(fileId).getBlob());
+    } catch (err) {
+      ui.alert("Error", "Invalid attachment File ID: " + err.message, ui.ButtonSet.OK);
+      return;
+    }
+  }
+
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+
+  var startTime = new Date().getTime();
+  var maxRuntimeMs = 5 * 60 * 1000;
+  var stoppedEarly = false;
+
+  for (var j = 1; j &lt; data.length; j++) {
+    if (new Date().getTime() - startTime &gt; maxRuntimeMs) {
+      stoppedEarly = true;
+      break;
+    }
+
+    var row = data[j];
+    var recipientName = row[0];
+    var recipientEmail = row[1];
+    var status = row[2];
+
+    if (recipientName &amp;&amp; recipientEmail &amp;&amp; status !== "OK") {
+      var placeholderMap = buildPlaceholderMap(headers, row);
+      var personalizedBody = applyPlaceholders(emailBody, placeholderMap)
+        .replace(/\n/g, "&lt;br /&gt;");
+
+      var options = {
+        htmlBody: personalizedBody,
+        name: emailYourName,
+        replyTo: replyToAddr || emailYourAddr
+      };
+
+      if (attachments.length &gt; 0) options.attachments = attachments;
+      if (emailBCC === "YES") options.bcc = emailYourAddr;
+
+      try {
+        GmailApp.sendEmail(recipientEmail, emailSubject, "", options);
+        sheet.getRange(j + 1, 3).setValue("OK");
+      } catch (e) {
+        sheet.getRange(j + 1, 3).setValue("ERROR: " + e.message);
+      }
+
+      Utilities.sleep(150);
+    }
+  }
+
+  labnolQuota();
+  SpreadsheetApp.flush();
+
+  if (stoppedEarly) {
+    ui.alert("Partial run", "Stopped after 5 minutes to avoid a script timeout. Progress is saved in the Status column -- click Start Mail Merge again to send the rest.", ui.ButtonSet.OK);
+  }
+}
+</code></pre>
+        </div>
+        <p class="note"><b>Do not modify this before pasting.</b> It's already hardened. If you want a second sender identity, add a column, don't rewrite the send loop.</p>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle"><svg viewBox="0 0 24 24"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z"/></svg> Why this is safer than the basic version</div>
+        <ul class="safer">
+          <li><b>Any column, not just Name.</b> Add <code>Company</code>, <code>City</code>, whatever your list has, and reference it as <code>{{Company}}</code> in the body. The basic labnol script only handles the Name column.</li>
+          <li><b>Values are HTML-escaped.</b> If your list ever comes from an external form or import, a stray <code>&lt;</code> or <code>&amp;</code> in someone's name can't break the rendered email or inject markup.</li>
+          <li><b>Throttled sends.</b> A short pause between each send avoids tripping Gmail's short-burst rate limiting on longer lists.</li>
+          <li><b>5-minute execution guard.</b> Apps Script kills any script running past 6 minutes. This one checks the clock and stops cleanly at 5, so a large list doesn't fail silently mid-run: it saves progress in the Status column and picks up where it left off on the next click.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <p class="notice">© 2026 Boubacar Barry / Catalyst Works‍​‌​​​​‌​​‌​​​​‌​​​‌​‌‌​‌​‌​​​‌‌​​‌​​‌‌‌‌​‌​‌​‌​‌​‌​‌​‌​​​‌​​​​​‌‍. Free to use. Do not resell as your own product.</p>
+  <p class="foot">Gmail mail merge · Google Sheets + Apps Script, your own Gmail quota · <a href="https://catalystworks.consulting">catalystworks.consulting</a></p>
+</main>
+
+<script>
+(function(){
+  var btn = document.getElementById('copy-btn');
+  var code = document.getElementById('gs-code');
+  if(!btn || !code) return;
+
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); } catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  btn.addEventListener('click', function(){
+    var text = code.textContent;
+    var done = function(){
+      var original = 'Copy code';
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(function(){ btn.textContent = original; btn.classList.remove('copied'); }, 1800);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text); done(); });
+    } else {
+      fallbackCopy(text); done();
+    }
+  });
+})();
+</script>
+</body>
+</html>
