@@ -7,6 +7,17 @@
   const copyBtn = document.getElementById('copy-btn');
   const downloadBtn = document.getElementById('download-btn');
 
+  // Apps Script Web App /exec URL. If Boubacar edits the EXISTING deployed
+  // project (Deploy > Manage deployments > new version), this URL stays the
+  // same as today's live one and does NOT need to change. If a brand-new
+  // "New deployment" is created instead, replace this with that new URL.
+  const TRANSCRIPT_API_URL = 'https://script.google.com/macros/s/AKfycbxRBXudksuoosJ2ZdVi7eq_4uESmticUnNoD1yhbAgXMNXREL1DuOsYn9yCY_kqRGyL/exec';
+
+  // Only required once Boubacar sets a Script Property named API_SECRET on
+  // the Apps Script project (see youtube-transcript-api.gs header comment).
+  // Until then the script ignores this value (auth is opt-in server-side).
+  const API_SECRET = 'REPLACE_WITH_API_SECRET';
+
   function setStatus(message, variant = 'idle') {
     statusEl.textContent = message;
     statusEl.classList.remove('error', 'success');
@@ -24,6 +35,14 @@
     return null;
   }
 
+  /**
+   * POSTs to the Apps Script Web App. Uses `text/plain` as the Content-Type
+   * so the browser treats this as a CORS "simple request" (no preflight
+   * OPTIONS) -- Apps Script Web Apps do not implement an OPTIONS handler,
+   * so a real preflight (triggered by Content-Type: application/json) would
+   * fail. Apps Script still reads the raw body via e.postData.contents and
+   * JSON.parses it there, so the payload itself is unaffected.
+   */
   async function fetchTranscript() {
     const url = (urlInput.value || '').trim();
     if (!url) {
@@ -40,46 +59,19 @@
 
     setStatus('Loading transcript…');
     transcriptEl.textContent = '';
-    /**
-     * Fetches JSONP data asynchronously by wrapping the script injection in a Promise.
-     * @param {string} baseUrl - The Google Apps Script URL
-     * @param {string} targetUrl - The YouTube video URL
-     * @returns {Promise<Object>} The transcript payload
-     */
-    const fetchJsonp = (baseUrl, targetUrl) => {
-      return new Promise((resolve, reject) => {
-        const callbackName = 'jsonpCallback_' + Math.round(100000 * Math.random());
-        const endpoint = new URL(baseUrl);
-        endpoint.searchParams.append('url', targetUrl);
-        endpoint.searchParams.append('callback', callbackName);
-
-        const script = document.createElement('script');
-        script.src = endpoint.toString();
-        
-        window[callbackName] = (payload) => {
-          cleanup();
-          resolve(payload);
-        };
-
-        script.onerror = () => {
-          cleanup();
-          reject(new Error('Network error: Failed to reach transcript server.'));
-        };
-
-        const cleanup = () => {
-          delete window[callbackName];
-          if (script.parentNode) script.parentNode.removeChild(script);
-        };
-
-        document.body.appendChild(script);
-      });
-    };
 
     try {
-      const payload = await fetchJsonp(
-        'https://script.google.com/macros/s/AKfycbxRBXudksuoosJ2ZdVi7eq_4uESmticUnNoD1yhbAgXMNXREL1DuOsYn9yCY_kqRGyL/exec',
-        url
-      );
+      const response = await fetch(TRANSCRIPT_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ url, secret: API_SECRET })
+      });
+
+      if (!response.ok) {
+        throw new Error('Network error: Failed to reach transcript server.');
+      }
+
+      const payload = await response.json();
 
       if (payload.error) {
         throw new Error(payload.error);
