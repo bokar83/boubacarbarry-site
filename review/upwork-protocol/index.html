@@ -55,6 +55,7 @@ details{border:1px solid var(--bd);border-radius:8px;margin:10px 0;background:#1
 </style>
 </head>
 <body>
+<div id="write-error-banner" style="display:none;position:sticky;top:0;z-index:2147483001;background:#f87171;color:#1a0707;font-weight:800;font-size:13px;padding:10px 16px;text-align:center"></div>
 <!-- bb-logo: Boubacar visible logo (standing rule) -->
 <a href="https://boubacarbarry.com/" aria-label="Boubacar home" style="position:fixed;top:14px;left:14px;z-index:2147483000;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;background:rgba(16,19,27,0.55);border-radius:12px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,0.35);text-decoration:none;line-height:0;"><svg width="34" height="34" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="bbLampGlow" cx="50%" cy="42%" r="42%"><stop offset="0%" stop-color="#fbbf24" stop-opacity="0.55"/><stop offset="55%" stop-color="#fbbf24" stop-opacity="0.12"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/></radialGradient><linearGradient id="bbLampFlame" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fde68a"/><stop offset="60%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d9a07e"/></linearGradient></defs><circle cx="32" cy="28" r="26" fill="url(#bbLampGlow)"/><circle cx="32" cy="32" r="22" fill="none" stroke="#2ad4df" stroke-width="2.4" stroke-opacity="0.9"/><path d="M32 16 C 37 23, 40 27, 40 33 a 8 8 0 0 1 -16 0 c 0 -4, 2.4 -7, 4.3 -10 c 0.6 2.6, 2.2 3.8, 3.4 5.1 c 1.1 -2.6, 0.7 -5.2, 0.3 -7.1 Z" fill="url(#bbLampFlame)"/><path d="M32 26 c 2.6 2.6, 3.4 4.6, 3.4 7 a 3.4 3.4 0 0 1 -6.8 0 c 0 -2.3, 1.6 -4.4, 3.4 -7 Z" fill="#10131b" fill-opacity="0.85"/><rect x="22" y="46" width="20" height="3" rx="1.5" fill="#d9a07e"/></svg></a>
 
@@ -160,7 +161,7 @@ details{border:1px solid var(--bd);border-radius:8px;margin:10px 0;background:#1
 
   <h2 class="section-title">Not applied - prioritized</h2>
   <main id="queue-list">
-<article class="job-card" data-job-id="022079270214014899918" data-connects="21" data-rank="0" data-status="suggested">
+<article class="job-card" data-job-id="022079270214014899918" data-connects="21" data-rank="0" data-status="suggested" data-notes="[{&quot;text&quot;:&quot;Gate 4/5, APPLY / no boost. Fails only posted-within-2h (4h old, lower priority not a skip). Rate note: do not use the $55/hr AI System Architect figure here, recommend $110-$125/hr off this client's own $111.36 avg bid and the $205/hr fractional-exec hire they already made.&quot;,&quot;ts&quot;:&quot;2026-07-20T16:30:00-06:00&quot;}]">
   <div class="card-top">
     <span class="rank">1</span>
     <div class="card-title">
@@ -3687,14 +3688,132 @@ function setStatus(card, s){
   if (cur === s) localStorage.removeItem(sk(card.dataset.jobId));
   else localStorage.setItem(sk(card.dataset.jobId), s);
   place(card); recompute();
+  postJobStatus(card, s === cur ? (card.dataset.status || 'suggested') : s);
+}
+// Write-through to Postgres (2026-07-20 standing rule: decision pages need a
+// real database from v1, not localStorage -- see
+// memory/feedback_decision_pages_need_real_database_2026_07_20.md). A failed
+// write is shown, never swallowed -- localStorage above still updates first
+// so the click always feels instant, but a DB failure surfaces immediately.
+const UPWORK_BOARD_API = 'https://agentshq.boubacarbarry.com/api/orc/upwork-board';
+function jobMeta(card){
+  const strong = card.querySelector('.card-title strong');
+  const link = card.querySelector('.job-link');
+  return {
+    job_id: card.dataset.jobId,
+    status: st(card),
+    job_url: link ? link.href : '',
+    title: strong ? strong.textContent.trim() : '',
+    connects_cost: parseInt(card.dataset.connects || '0', 10) || null,
+  };
+}
+async function postJobStatus(card, statusOverride){
+  const meta = jobMeta(card);
+  if (statusOverride) meta.status = statusOverride;
+  try {
+    const res = await fetch(UPWORK_BOARD_API + '/status', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(meta),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.ok === false) throw new Error(body.error || ('HTTP ' + res.status));
+    hideWriteError();
+  } catch (err) {
+    showWriteError('Status change for "' + meta.title + '" did NOT save to the database (' + err.message + '). It is only in this browser right now.');
+  }
+}
+function showWriteError(msg){
+  const b = document.getElementById('write-error-banner');
+  if (!b) return;
+  b.textContent = 'SAVE FAILED: ' + msg;
+  b.style.display = 'block';
+}
+function hideWriteError(){
+  const b = document.getElementById('write-error-banner');
+  if (b) b.style.display = 'none';
+}
+// Notes: append-only, timestamped, available regardless of status (incl.
+// skipped jobs) -- see the standing rule above. The existing single-line
+// .note-input becomes the entry field; "Save note" appends it as a new
+// timestamped, database-backed entry and clears the field for the next one.
+function initNotesUI(card){
+  const inp = card.querySelector('.note-input');
+  if (!inp || card.querySelector('.save-note-btn')) return;
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'save-note-btn sc-btn'; btn.textContent = 'Save note';
+  btn.style.marginLeft = '6px';
+  const list = document.createElement('div');
+  list.className = 'notes-history';
+  list.style.cssText = 'padding:4px 16px 10px;font-size:12px;color:var(--dim)';
+  let seed = [];
+  try { seed = JSON.parse(card.dataset.notes || '[]'); } catch (e) { seed = []; }
+  const renderNotes = () => {
+    list.innerHTML = seed.map(n =>
+      '<div style="margin:3px 0"><strong style="color:var(--muted)">' +
+      new Date(n.ts).toLocaleString() + ':</strong> ' +
+      String(n.text).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) + '</div>'
+    ).join('');
+  };
+  renderNotes();
+  inp.insertAdjacentElement('afterend', list);
+  inp.insertAdjacentElement('afterend', btn);
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const text = inp.value.trim();
+    if (!text) return;
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+      const res = await fetch(UPWORK_BOARD_API + '/note', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ job_id: card.dataset.jobId, note_text: text }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || body.ok === false) throw new Error(body.error || ('HTTP ' + res.status));
+      seed.push({ text, ts: new Date().toISOString() });
+      renderNotes();
+      inp.value = '';
+      localStorage.removeItem('upwork-note-' + inp.dataset.noteKey);
+      hideWriteError();
+    } catch (err) {
+      showWriteError('Note for "' + (card.querySelector('.card-title strong')||{}).textContent + '" did NOT save to the database (' + err.message + '). Your text is still in the box, try again.');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save note';
+    }
+  });
+}
+// One-time sweep: adopt any pre-existing browser-only marks (status clicks or
+// note text from before this rewrite) into Postgres, so opening this page in
+// the same browser recovers them with zero action needed. Runs once per
+// browser via a completion flag; safe to leave in permanently.
+async function migrateLocalStateOnce(){
+  if (localStorage.getItem('upwork-board-migrated-v1')) return;
+  const cards = document.querySelectorAll('.job-card');
+  for (const card of cards){
+    const localStatus = localStorage.getItem(sk(card.dataset.jobId));
+    if (localStatus && localStatus !== (card.dataset.status || 'suggested')) {
+      await postJobStatus(card, localStatus);
+    }
+    const inp = card.querySelector('.note-input');
+    if (inp && inp.value.trim()) {
+      try {
+        await fetch(UPWORK_BOARD_API + '/note', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ job_id: card.dataset.jobId, note_text: '[migrated from browser] ' + inp.value.trim() }),
+        });
+      } catch (e) { /* best-effort during migration sweep; status sweep above already shows a banner on real failures */ }
+    }
+  }
+  localStorage.setItem('upwork-board-migrated-v1', '1');
 }
 document.querySelectorAll('.job-card').forEach(card => {
   card.querySelectorAll('.status-row .sc-btn').forEach(b => {
     b.addEventListener('click', () => setStatus(card, b.dataset.st === 'withdraw' ? 'withdrawn' : b.dataset.st));
   });
   place(card);
+  initNotesUI(card);
 });
 recompute();
+migrateLocalStateOnce();
 function toggleCard(card){
   card.classList.toggle('open');
   const b = card.querySelector('.expand'); if (b) b.textContent = card.classList.contains('open') ? 'Hide' : 'Details';
