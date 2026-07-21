@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bridge Computer — GMKtec K8 Plus | July 2026</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a; --text: #e2e8f0; --muted: #94a3b8;
+      --accent: #3b82f6; --accent-dim: #1e3a5f; --warn: #f59e0b; --warn-dim: #3d2e00;
+      --danger: #ef4444; --danger-dim: #3b0f0f; --green: #22c55e; --green-dim: #0f2d1a;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0; --text: #1e293b; --muted: #64748b;
+        --accent: #2563eb; --accent-dim: #dbeafe; --warn: #d97706; --warn-dim: #fef3c7;
+        --danger: #dc2626; --danger-dim: #fee2e2; --green: #16a34a; --green-dim: #dcfce7;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; font-size: 16px; }
+    .container { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+    .header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 24px; }
+    .label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+    h1 { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 12px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 14px; }
+    .meta span { display: flex; align-items: center; gap: 5px; }
+    h2 { font-size: 18px; font-weight: 700; margin: 0 0 16px; color: var(--text); }
+    h3 { font-size: 15px; font-weight: 600; margin: 0 0 8px; color: var(--text); }
+    .section { margin-bottom: 36px; }
+    .nav-bar { display: flex; flex-wrap: wrap; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 24px; position: sticky; top: 8px; z-index: 5; }
+    .nav-bar a { font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; padding: 5px 10px; border-radius: 6px; background: var(--accent-dim); }
+    .context-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 4px; }
+    .ctx-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .ctx-card .val { font-size: 16px; font-weight: 700; color: var(--accent); line-height: 1.25; }
+    .ctx-card .key { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .cost-banner { background: var(--green-dim); border: 1px solid var(--green); border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; }
+    .cost-banner .range { font-size: 18px; font-weight: 700; color: var(--green); }
+    .cost-banner .note { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .warn-card { background: var(--warn-dim); border: 1px solid var(--warn); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+    .warn-card h3 { color: var(--warn); font-size: 14px; margin-bottom: 4px; }
+    .warn-card p { font-size: 14px; color: var(--text); }
+    .danger-card { background: var(--danger-dim); border: 1px solid var(--danger); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+    .danger-card h3 { color: var(--danger); font-size: 14px; margin-bottom: 4px; }
+    .danger-card p { font-size: 14px; color: var(--text); }
+    .table-scroll { overflow-x: auto; margin-bottom: 8px; }
+    table.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 640px; }
+    table.data-table th, table.data-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    table.data-table th { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; background: var(--surface); position: sticky; top: 0; }
+    table.data-table td a { color: var(--accent); text-decoration: none; }
+    table.data-table td a:hover { text-decoration: underline; }
+    .pass { color: var(--green); font-weight: 700; }
+    .fail { color: var(--warn); font-weight: 700; }
+    .na { color: var(--muted); font-weight: 600; }
+    .confirmed { color: var(--green); font-weight: 700; }
+    .fin-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; }
+    .fin-card.pick { border-color: var(--green); }
+    .fin-card h3 { font-size: 16px; margin-bottom: 10px; }
+    .fin-card.pick h3 { color: var(--green); }
+    .fin-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 14px; flex-wrap: wrap; }
+    .fin-row .fin-key { color: var(--muted); min-width: 110px; flex-shrink: 0; }
+    .rejected-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; opacity: 0.92; }
+    .rejected-card h3 { color: var(--danger); font-size: 15px; margin-bottom: 10px; }
+    .source-list { list-style: none; }
+    .source-list li { font-size: 13px; color: var(--muted); padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .source-list li:last-child { border-bottom: none; }
+    .source-list a { color: var(--accent); text-decoration: none; word-break: break-all; }
+    .source-list a:hover { text-decoration: underline; }
+    .date-tag { display: inline-block; font-size: 11px; font-weight: 600; color: var(--muted); background: var(--border); border-radius: 4px; padding: 1px 6px; margin-left: 6px; white-space: nowrap; }
+    .deferred-list li, .plain-list li { margin-left: 18px; margin-bottom: 8px; font-size: 14px; }
+    .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+    .footer code { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 11.5px; }
+    @media (max-width: 560px) {
+      h1 { font-size: 22px; }
+      .context-grid { grid-template-columns: repeat(2, 1fr); }
+      .cost-banner .range { font-size: 16px; }
+      .nav-bar { flex-direction: column; align-items: stretch; }
+      .nav-bar a { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-21-12:37:31 MT</div><!-- DEPLOY_STAMP_END -->
+<div class="container">
+
+  <div class="header">
+    <div class="label">Purchase Verification · Personal Reference</div>
+    <h1>Bridge Computer — GMKtec K8 Plus</h1>
+    <div class="meta">
+      <span>📅 Verified July 21, 2026</span>
+      <span>🖥️ Replaces Huawei NBLB-WAX9N (i5-10210U, 8GB RAM) — income-producing tool, not a discretionary upgrade</span>
+      <span>💰 ~18 months runway, no current income, cash preservation matters</span>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <a href="#verdict">Verdict</a>
+    <a href="#price-table">Price / Spec Table</a>
+    <a href="#ram-pick">RAM Pick</a>
+    <a href="#what-changed">What Changed</a>
+    <a href="#rejected">Rejected</a>
+    <a href="#deferred">Deferred</a>
+    <a href="#sources">Sources</a>
+  </div>
+
+  <div class="section" id="context">
+    <div class="context-grid">
+      <div class="ctx-card"><div class="val">Buy now</div><div class="key">Verdict</div></div>
+      <div class="ctx-card"><div class="val">~$739</div><div class="key">Confirmed price (32GB/1TB)</div></div>
+      <div class="ctx-card"><div class="val">+$39</div><div class="key">Over the "~$700" ceiling</div></div>
+      <div class="ctx-card"><div class="val">ASIN B0DHNTW3H6</div><div class="key">Exact Amazon listing</div></div>
+      <div class="ctx-card"><div class="val">$599.99–$629.99</div><div class="key">Crucial 64GB RAM kit</div></div>
+      <div class="ctx-card"><div class="val">$819–$1,069</div><div class="key">Minisforum UM890 Pro (rejected)</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="verdict">
+    <h2>1. Verdict</h2>
+    <div class="cost-banner">
+      <div class="label" style="color:var(--green); margin-bottom:4px;">Buy now, do not wait</div>
+      <div class="range">GMKtec K8 Plus, ASIN B0DHNTW3H6 (32GB/1TB) — confirmed ~$739</div>
+      <div class="note">
+        ~$39 over the stated "~$700" ceiling, but still the cheapest in-stock viable option among the
+        three candidates checked (K8 Plus ~$739 vs Minisforum UM890 Pro $819.99–$975 vs DIY build
+        $750–950). The machine is blocking income-producing work today, and there is no way to predict
+        when — or whether — the next sub-$700 lightning deal fires. Historical drops recur roughly
+        every 2–4 months but are not scheduled. $39 over an approximate ceiling is not worth losing
+        weeks of productive-machine time waiting on a maybe.
+      </div>
+    </div>
+    <div class="warn-card">
+      <h3>If cash preservation outweighs urgency</h3>
+      <p>Watch camelcamelcamel / Keepa directly (both blocked automated fetch this session — manual
+      check recommended) for a dip back under $700; it has happened at least 3 times in the last 12
+      months, all dated 2025 (see §4, What Changed).</p>
+    </div>
+    <div class="fin-card">
+      <h3>Spec summary — what's being bought</h3>
+      <div class="fin-row"><span class="fin-key">CPU</span><span>AMD Ryzen 7 8845HS, 8C/16T, base 3.8GHz, boost 5.1GHz, TSMC 4nm, dedicated NPU</span></div>
+      <div class="fin-row"><span class="fin-key">RAM (stock)</span><span>32GB DDR5-5600, 2× SO-DIMM (16GB+16GB) — upgraded to 64GB day one, see §3</span></div>
+      <div class="fin-row"><span class="fin-key">Storage</span><span>1TB NVMe</span></div>
+      <div class="fin-row"><span class="fin-key">GPU</span><span>Radeon 780M iGPU, 12 CUs, up to 2800MHz — drives 4 displays natively</span></div>
+      <div class="fin-row"><span class="fin-key">Networking</span><span>Dual Intel i226V 2.5GbE</span></div>
+      <div class="fin-row"><span class="fin-key">Expansion</span><span>OCuLink (PCIe 4.0 x4) — headroom for a future external GPU</span></div>
+      <div class="fin-row"><span class="fin-key">Seller</span><span>Sold by GMKtec-US, fulfilled by Amazon (FBA — not first-party "sold by Amazon.com," but meets the buy rule's literal "Amazon-fulfilled" bar; standard FBA return policy applies)</span></div>
+    </div>
+  </div>
+
+  <div class="section" id="price-table">
+    <h2>2. Verified Price Table</h2>
+    <p style="font-size:14px; color:var(--muted); margin-bottom:14px;">
+      Amazon, Keepa, and camelcamelcamel all blocked automated page-content fetch this pass (client-side
+      JS pricing / HTTP 403). Every price below is sourced from either a direct successful fetch of a
+      non-blocking retailer page, or a dated secondary source (deal-tracker post, review article) found
+      via search, cited with its own URL and check-date. Nothing here is invented; anything not directly
+      confirmable is labeled UNVERIFIED.
+    </p>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr><th>Item</th><th>Price</th><th>Source</th><th>Checked</th><th>vs ≤$700 rule</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>GMKtec K8 Plus</strong><br>ASIN B0DHNTW3H6 (32GB/1TB), Amazon</td>
+            <td><strong>~$739</strong><br>list $749.99, no active discount</td>
+            <td><a href="https://slickdeals.net/f/19765416-prime-688-99-gmktec-gaming-mini-pc-k8-plus-amd-ryzen-7-8845hs-32gb-ddr5-ram-512gb-ssd-at-amazon" target="_blank" rel="noopener">Slickdeals thread</a> (secondary; 1TB SKU price referenced alongside a same-week 512GB deal)</td>
+            <td>2026-07-03 <span class="date-tag">secondary</span></td>
+            <td><span class="fail">FAIL</span> by ~$39 (borderline; rule stated "~$700")</td>
+          </tr>
+          <tr>
+            <td>Same ASIN — seller/fulfillment</td>
+            <td>Sold by <strong>GMKtec-US</strong>, fulfilled by <strong>Amazon</strong> (FBA)</td>
+            <td><a href="https://www.amazon.com/GMKtec-gaming-mini-pc-ryzen-8845hs/dp/B0DHNTW3H6" target="_blank" rel="noopener">Amazon product listing</a></td>
+            <td>2026-07-21</td>
+            <td><span class="pass">PASS</span> on literal "Amazon-fulfilled" — FBA, not first-party. Standard FBA return protection applies.</td>
+          </tr>
+          <tr>
+            <td>Same config, GMKtec direct (US site)</td>
+            <td><strong>Sold out / unavailable</strong> (32GB/1TB variant)</td>
+            <td><a href="https://www.gmktec.com/products/gmktec-nucbox-k8-plus-mini-pc-amd-ryzen%E2%84%A2-7-8845hs" target="_blank" rel="noopener">gmktec.com product page</a> (via search index; direct fetch connection-reset twice)</td>
+            <td>2026-07-21</td>
+            <td><span class="na">N/A</span> — not purchasable direct right now</td>
+          </tr>
+          <tr>
+            <td>Same config, Newegg</td>
+            <td><span class="na">UNVERIFIED</span> — page exists, price did not render</td>
+            <td><a href="https://www.newegg.com/p/3C6-01CF-002V8" target="_blank" rel="noopener">newegg.com/p/3C6-01CF-002V8</a></td>
+            <td>2026-07-21</td>
+            <td><span class="na">Not used in the price-sweep comparison</span></td>
+          </tr>
+          <tr>
+            <td>K8 Plus 512GB variant<br>ASIN B0C33Q16BP <em>(reference only — NOT the buy target)</em></td>
+            <td>$688.99</td>
+            <td><a href="https://slickdeals.net/f/19765416-prime-688-99-gmktec-gaming-mini-pc-k8-plus-amd-ryzen-7-8845hs-32gb-ddr5-ram-512gb-ssd-at-amazon" target="_blank" rel="noopener">Slickdeals</a>, also <a href="https://www.notebookcheck.net/This-mini-PC-with-32-GB-RAM-and-8-core-Ryzen-7-APU-is-now-23-cheaper-but-not-for-long.1346672.0.html" target="_blank" rel="noopener">Notebookcheck, "23% cheaper"</a></td>
+            <td>2026-07-15 / 2026-07-19<br>(updated 2026-07-21)</td>
+            <td><span class="na">Do not buy this SKU</span> — 512GB not 1TB, shown only to prove the 1TB target isn't the cheap one</td>
+          </tr>
+          <tr>
+            <td>Minisforum UM890 Pro, 32GB/1TB<br>official Minisforum store</td>
+            <td><strong>$975.00</strong> (20% off, regularly $1,219.00)</td>
+            <td><a href="https://store.minisforum.com/products/minisforum-um890pro-mini-pc" target="_blank" rel="noopener">store.minisforum.com</a> (direct fetch)</td>
+            <td>2026-07-21</td>
+            <td><span class="fail">Confirms rejection</span> — nowhere near $700</td>
+          </tr>
+          <tr>
+            <td>Minisforum UM890 Pro, 32GB/1TB<br>Best Buy</td>
+            <td><strong>$819.99</strong></td>
+            <td><a href="https://www.bestbuy.com/product/minisforum-um890-pro-mini-pc-amd-ryzen-9-8945hs-32gb-ram-1tb-ssd-oculink-support-black/CGCLRV3GL7" target="_blank" rel="noopener">Best Buy listing</a> (via search; direct fetch connection-reset)</td>
+            <td>2026-07-21</td>
+            <td><span class="fail">Confirms rejection</span></td>
+          </tr>
+          <tr>
+            <td>Minisforum UM890 Pro, 32GB/1TB<br>B&amp;H</td>
+            <td><strong>$1,069.00</strong></td>
+            <td>B&amp;H listing (via search snippet)</td>
+            <td>2026-07-21</td>
+            <td><span class="fail">Confirms rejection</span></td>
+          </tr>
+          <tr>
+            <td>Crucial 64GB (2×32GB) DDR5-5600 SO-DIMM kit<br>CT2K32G56C46S5</td>
+            <td><strong>$629.99</strong> (Best Buy) / <strong>$599.99</strong> (Walmart)</td>
+            <td><a href="https://www.bestbuy.com/product/crucial-64gb-kit-2x32gb-ddr5-5600mhz-c46-sodimm-laptop-memory-black/JX8PSKJ67C" target="_blank" rel="noopener">Best Buy</a>, <a href="https://www.walmart.com/ip/2755600963" target="_blank" rel="noopener">Walmart</a> (search snippets; direct crucial.com fetch WAF-blocked)</td>
+            <td>2026-07-21</td>
+            <td><span class="fail">Higher than the $100–130 baseline estimate</span> — see §3</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="warn-card">
+      <h3>Discarded aggregation error</h3>
+      <p>One WebSearch-synthesized answer claimed the UM890 Pro 32GB/1TB was "$650 at the official
+      Minisforum store." A direct fetch of the actual store.minisforum.com product page contradicts
+      this — the real listed price is $975.00 (20% off $1,219.00). The $650 figure is discarded, not
+      used anywhere in this record.</p>
+    </div>
+
+    <h3 style="margin-top:24px;">Spec confirmation</h3>
+    <p style="font-size:14px; color:var(--muted); margin-bottom:12px;">
+      Sourced from the Amazon listing title/spec block (direct fetch, partial) cross-checked against an
+      aggregated review-site search pass (gmktec.com, vividrepairs.co.uk, minipc-review.com,
+      electroreview.info — individual direct fetches to these review sites returned connection errors
+      this session; specs below are corroborated by matching across all of them in the search index plus
+      the Amazon listing's own title, which independently confirms dual NIC 2.5G, HDMI 2.1, and USB4).
+    </p>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Spec</th><th>Confirmed value</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>OCuLink</td><td>Present (PCIe 4.0 x4 OCuLink)</td><td><span class="confirmed">CONFIRMED</span> — matches baseline</td></tr>
+          <tr><td>Simultaneous displays</td><td>4 (HDMI 2.1 8K@60Hz, DisplayPort 2.1 8K@60Hz, 2× USB4 with DP1.4)</td><td><span class="confirmed">CONFIRMED</span> — matches baseline</td></tr>
+          <tr><td>Ethernet</td><td>Dual Intel i226V 2.5GbE</td><td><span class="confirmed">CONFIRMED</span> — matches baseline</td></tr>
+          <tr><td>SO-DIMM slots</td><td>2 (dual-channel, 16GB+16GB stock config)</td><td><span class="confirmed">CONFIRMED</span> — matches baseline</td></tr>
+          <tr><td>Max supported RAM</td><td>128GB (2× 64GB)</td><td><span class="confirmed">CONFIRMED</span> — 64GB upgrade target well within max</td></tr>
+          <tr><td>DDR5 speed</td><td>Up to DDR5-5600</td><td><span class="confirmed">CONFIRMED</span> — matches baseline + the Crucial kit's rated speed</td></tr>
+          <tr><td>GPU</td><td>Radeon 780M, 12 CUs, up to 2800MHz</td><td>Not previously specified in baseline; consistent with the 8845HS's known iGPU</td></tr>
+          <tr><td>CPU</td><td>Ryzen 7 8845HS, 8C/16T, base 3.8GHz, boost 5.1GHz, TSMC 4nm, dedicated NPU</td><td><span class="confirmed">CONFIRMED</span> — matches baseline</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13px; color:var(--muted); margin-top:8px;">No spec failed confirmation. Confidence: MEDIUM-HIGH — corroborated across multiple sources, but review-site pages themselves could not be individually fetched this session.</p>
+  </div>
+
+  <div class="section" id="ram-pick">
+    <h2>3. RAM Pick</h2>
+    <div class="fin-card pick">
+      <h3>Crucial 64GB (2×32GB) DDR5-5600 SO-DIMM kit — CT2K32G56C46S5</h3>
+      <div class="fin-row"><span class="fin-key">Product page</span><span><a href="https://www.crucial.com/memory/ddr5/ct2k32g56c46s5" target="_blank" rel="noopener">crucial.com/memory/ddr5/ct2k32g56c46s5</a> (direct fetch blocked by a WAF this session — price sourced from retailer listings)</span></div>
+      <div class="fin-row"><span class="fin-key">Buy link</span><span><a href="https://www.bestbuy.com/product/crucial-64gb-kit-2x32gb-ddr5-5600mhz-c46-sodimm-laptop-memory-black/JX8PSKJ67C" target="_blank" rel="noopener">Best Buy — $629.99</a> (checked 2026-07-21), or <a href="https://www.walmart.com/ip/2755600963" target="_blank" rel="noopener">Walmart — $599.99</a> (checked 2026-07-21, via search snippet)</span></div>
+      <div class="fin-row"><span class="fin-key">Spec</span><span>2×32GB, DDR5-5600 (PC5-44800), CL46, 262-pin SO-DIMM, 1.1V, unbuffered non-ECC — exact match to the K8 Plus's confirmed DDR5-5600 rated speed and 262-pin SO-DIMM slot</span></div>
+      <div class="fin-row"><span class="fin-key">Compatibility</span><span>Standard laptop/mini-PC SO-DIMM form factor, correct speed class, well under the K8 Plus's 128GB max — should be a drop-in fit for both slots (ships with 2×16GB; both replaced with 2×32GB)</span></div>
+    </div>
+    <div class="danger-card">
+      <h3>Material gap vs the original planning figure</h3>
+      <p>Current retail on this kit runs $600–630 — roughly <strong>4.5–6× the original $100–130 planning
+      estimate</strong>. Worth a second look at whether 64GB is still the right call at this price, or
+      whether 32GB stock (already meeting the "usable today" bar) plus a later RAM buy when prices soften
+      is the better sequencing. Not re-decided here per scope — flagged for Boubacar's call.</p>
+    </div>
+  </div>
+
+  <div class="section" id="what-changed">
+    <h2>4. What Changed vs the Original Baseline</h2>
+    <ul class="plain-list">
+      <li><strong>Sub-$550 deals are gone.</strong> Every sub-$700 sighting found this session is dated
+      2025 (Feb 2025 $522.49, May 2025 $522.48, Oct 2025 $519 record-low per a Kotaku article that is
+      itself nine months stale). No 2026 sighting of the 1TB config under $700 was found. The closest
+      2026 data point under $700 is the different, cheaper 512GB variant at $688.99 (2026-07-15) — not
+      the 1TB target.</li>
+      <li><strong>RAM costs 4.5–6× more than estimated.</strong> $599.99–$629.99 today vs the original
+      $100–130 planning figure. See §3.</li>
+      <li><strong>UM890 Pro rejection reconfirmed stronger.</strong> The baseline's "~$999 now, not near
+      $700" correction is validated — if anything the official-store price ($975) is even higher than the
+      Best Buy figure the baseline originally cited. OCuLink confirmed present on the UM890 Pro too,
+      matching the baseline's correction that OCuLink is not a UM890-exclusive.</li>
+      <li><strong>Lowest legitimate current option found: Amazon at ~$739</strong> — fails the strict
+      ≤$700 cutoff by about $39 but is the only one of the three channels checked (Amazon, GMKtec direct,
+      Newegg) confirmed both in-stock and priced.</li>
+    </ul>
+  </div>
+
+  <div class="section" id="rejected">
+    <h2>5. Rejected — Minisforum UM890 Pro</h2>
+    <div class="rejected-card">
+      <h3>Rejection holds, more strongly than the baseline stated</h3>
+      <p style="font-size:14px;">Confirmed current prices: $975.00 at the official Minisforum store (20%
+      off $1,219.00), $819.99 at Best Buy, $1,069.00 at B&amp;H — all checked 2026-07-21. None are within
+      striking distance of $700. OCuLink is confirmed present on the UM890 Pro too (per the official
+      store page), matching the baseline's correction that OCuLink is not a UM890-exclusive.</p>
+    </div>
+    <div class="fin-card">
+      <h3>Runner-up (not activated)</h3>
+      <div class="fin-row"><span class="fin-key">Option</span><span>DIY compact Ryzen 7 7700 micro-ATX build (~$750–950)</span></div>
+      <div class="fin-row"><span class="fin-key">Trigger</span><span>Only if the K8 Plus stays &gt;$800 with no promo. As of 2026-07-21 the K8 Plus (~$739) still undercuts this, so the runner-up is not activated.</span></div>
+    </div>
+  </div>
+
+  <div class="section" id="deferred">
+    <h2>6. Deferred Items (recorded, not actioned)</h2>
+    <ul class="deferred-list">
+      <li><strong>UGREEN NAS</strong> — separate future build, not evaluated this pass.</li>
+      <li><strong>A serious NVIDIA AI GPU</strong> — re-evaluate in 12–18 months once local-AI needs and
+      revenue justify it. Not evaluated this pass.</li>
+    </ul>
+    <h3 style="margin-top:20px;">Revisit if</h3>
+    <ul class="plain-list">
+      <li>The 32GB/1TB Amazon listing (B0DHNTW3H6) drops back under $700 before purchase — buy
+      immediately at that price, no further review needed.</li>
+      <li>The Crucial 64GB kit price does not soften — worth deciding whether to buy 32GB stock now and
+      defer the RAM upgrade to a later cheaper window, since the RAM alone now costs nearly as much as the
+      machine.</li>
+      <li>UM890 Pro price ever approaches $700 — would reopen the comparison (not the case as of this
+      check; it sits $819–$1,069).</li>
+      <li>GMKtec K8 Plus goes out of production or the ASIN is delisted — re-source from GMKtec direct or
+      Newegg (Newegg price unverified this pass, worth a manual check before that scenario arises).</li>
+    </ul>
+  </div>
+
+  <div class="section" id="sources">
+    <h2>7. Sources Index</h2>
+    <ul class="source-list">
+      <li><a href="https://www.amazon.com/dp/B0DHNTW3H6" target="_blank" rel="noopener">amazon.com/dp/B0DHNTW3H6</a><span class="date-tag">2026-07-21</span> — direct fetch, partial (title/spec block only, no price)</li>
+      <li><a href="https://camelcamelcamel.com/product/B0DHNTW3H6" target="_blank" rel="noopener">camelcamelcamel.com/product/B0DHNTW3H6</a><span class="date-tag">2026-07-21</span> — blocked, HTTP 403</li>
+      <li><a href="https://keepa.com/#!product/1-B0DHNTW3H6" target="_blank" rel="noopener">keepa.com/#!product/1-B0DHNTW3H6</a><span class="date-tag">2026-07-21</span> — blocked, HTTP 403</li>
+      <li><a href="https://slickdeals.net/f/19765416-prime-688-99-gmktec-gaming-mini-pc-k8-plus-amd-ryzen-7-8845hs-32gb-ddr5-ram-512gb-ssd-at-amazon" target="_blank" rel="noopener">slickdeals.net — GMKtec K8 Plus thread</a><span class="date-tag">2026-07-21</span> — references both the 1TB $739 and 512GB $688.99 data points, posted 2026-07-15</li>
+      <li><a href="https://www.notebookcheck.net/This-mini-PC-with-32-GB-RAM-and-8-core-Ryzen-7-APU-is-now-23-cheaper-but-not-for-long.1346672.0.html" target="_blank" rel="noopener">notebookcheck.net — "23% cheaper but not for long"</a><span class="date-tag">2026-07-21</span> — published 2026-07-19, updated 2026-07-21</li>
+      <li><a href="https://www.gmktec.com/products/gmktec-nucbox-k8-plus-mini-pc-amd-ryzen%E2%84%A2-7-8845hs" target="_blank" rel="noopener">gmktec.com — K8 Plus product page</a><span class="date-tag">2026-07-21</span> — via search index; direct fetch failed</li>
+      <li><a href="https://www.newegg.com/p/3C6-01CF-002V8" target="_blank" rel="noopener">newegg.com/p/3C6-01CF-002V8</a><span class="date-tag">2026-07-21</span> — page exists, price unverified</li>
+      <li><a href="https://store.minisforum.com/products/minisforum-um890pro-mini-pc" target="_blank" rel="noopener">store.minisforum.com — UM890 Pro</a><span class="date-tag">2026-07-21</span> — direct fetch</li>
+      <li><a href="https://www.bestbuy.com/product/minisforum-um890-pro-mini-pc-amd-ryzen-9-8945hs-32gb-ram-1tb-ssd-oculink-support-black/CGCLRV3GL7" target="_blank" rel="noopener">bestbuy.com — UM890 Pro</a><span class="date-tag">2026-07-21</span> — via search</li>
+      <li><a href="https://www.bestbuy.com/product/crucial-64gb-kit-2x32gb-ddr5-5600mhz-c46-sodimm-laptop-memory-black/JX8PSKJ67C" target="_blank" rel="noopener">bestbuy.com — Crucial 64GB kit</a><span class="date-tag">2026-07-21</span> — via search</li>
+      <li><a href="https://www.crucial.com/memory/ddr5/ct2k32g56c46s5" target="_blank" rel="noopener">crucial.com/memory/ddr5/ct2k32g56c46s5</a><span class="date-tag">2026-07-21</span> — blocked by WAF</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Verification compiled July 21, 2026 · Internal reference only · Decided (buy, do not build) — this
+    page is a procurement-verification pass on that decision, not a re-decision. Durable repo record:
+    <code>docs/research/2026-07-21-bridge-computer-gmktec-k8-plus-verification.md</code> and
+    <code>docs/decisions/2026-07-21-bridge-computer-buy-gmktec-k8-plus.md</code> (agentsHQ repo, origin/main)
+    — this HTML page is a presentation layer on top of those, not a replacement. Live listings and prices
+    turn over fast — re-check before purchase if any time has passed since the check-dates above.
+  </div>
+
+</div>
+</body>
+</html>
+
