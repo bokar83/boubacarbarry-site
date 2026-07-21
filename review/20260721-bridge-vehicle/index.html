@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bridge Vehicle — Salt Lake City, UT | July 2026</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a; --text: #e2e8f0; --muted: #94a3b8;
+      --accent: #3b82f6; --accent-dim: #1e3a5f; --warn: #f59e0b; --warn-dim: #3d2e00;
+      --danger: #ef4444; --danger-dim: #3b0f0f; --green: #22c55e; --green-dim: #0f2d1a; --rank1: #f59e0b;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0; --text: #1e293b; --muted: #64748b;
+        --accent: #2563eb; --accent-dim: #dbeafe; --warn: #d97706; --warn-dim: #fef3c7;
+        --danger: #dc2626; --danger-dim: #fee2e2; --green: #16a34a; --green-dim: #dcfce7; --rank1: #d97706;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; font-size: 16px; }
+    .container { max-width: 780px; margin: 0 auto; padding: 32px 20px 80px; }
+    .header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 24px; }
+    .label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+    h1 { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 12px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 14px; }
+    .meta span { display: flex; align-items: center; gap: 5px; }
+    h2 { font-size: 18px; font-weight: 700; margin: 0 0 16px; color: var(--text); }
+    h3 { font-size: 15px; font-weight: 600; margin: 0 0 8px; color: var(--text); }
+    .section { margin-bottom: 36px; }
+    .nav-bar { display: flex; flex-wrap: wrap; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 24px; position: sticky; top: 8px; z-index: 5; }
+    .nav-bar a { font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; padding: 5px 10px; border-radius: 6px; background: var(--accent-dim); }
+    .hamburger { display: none; }
+    .progress-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin-bottom: 28px; }
+    .progress-text { font-size: 14px; font-weight: 600; color: var(--text); }
+    .progress-text span { color: var(--accent); }
+    .progress-track { flex: 1; height: 8px; background: var(--border); border-radius: 999px; margin: 0 16px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 0%; background: var(--green); border-radius: 999px; transition: width 0.25s ease-out; }
+    .reset-btn { font-size: 12px; font-weight: 600; color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+    .reset-btn:hover { color: var(--danger); border-color: var(--danger); }
+    .context-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 4px; }
+    .ctx-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+    .ctx-card .val { font-size: 16px; font-weight: 700; color: var(--accent); line-height: 1.25; }
+    .ctx-card .key { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .cost-banner { background: var(--green-dim); border: 1px solid var(--green); border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; }
+    .cost-banner .range { font-size: 18px; font-weight: 700; color: var(--green); }
+    .cost-banner .note { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .company-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 14px; position: relative; transition: opacity 0.2s ease-out; }
+    .company-card.top { border-color: var(--rank1); }
+    .company-card.contacted { opacity: 0.55; }
+    .rank-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 13px; font-weight: 700; background: var(--border); color: var(--muted); margin-right: 10px; flex-shrink: 0; }
+    .rank-badge.top { background: var(--rank1); color: #000; }
+    .company-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .company-header-left { display: flex; align-items: center; }
+    .company-name { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .contacted-badge { display: none; font-size: 11px; font-weight: 700; color: var(--green); background: var(--green-dim); border-radius: 4px; padding: 2px 7px; }
+    .company-card.contacted .contacted-badge { display: inline-block; }
+    .phone-pill { display: inline-block; background: var(--accent-dim); color: var(--accent); border-radius: 20px; padding: 3px 12px; font-size: 13px; font-weight: 600; margin-top: 4px; text-decoration: none; }
+    .phone-pill:hover { opacity: 0.85; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .pill-row .phone-pill { margin-top: 0; }
+    .site-pill { display: inline-block; background: var(--border); color: var(--text); border-radius: 20px; padding: 3px 12px; font-size: 13px; font-weight: 600; text-decoration: none; }
+    .site-pill:hover { opacity: 0.85; }
+    .site-pill.book { background: var(--green-dim); color: var(--green); }
+    .site-pill.dealer { background: var(--warn-dim); color: var(--warn); }
+    .site-pill.private { background: var(--green-dim); color: var(--green); }
+    .site-pill.unknown { background: var(--border); color: var(--muted); }
+    .company-details { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+    .detail-tag { font-size: 13px; padding: 3px 10px; border-radius: 4px; background: var(--border); color: var(--muted); }
+    .detail-tag.rate { background: var(--green-dim); color: var(--green); font-weight: 600; }
+    .detail-tag.score { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+    .detail-tag.warn { background: var(--warn-dim); color: var(--warn); }
+    .why { font-size: 14px; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 12px; margin-top: 10px; }
+    .top .why { border-color: var(--rank1); }
+    .contact-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .contact-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--green); }
+    .contact-row label { font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; }
+    .notes-block { margin-top: 10px; }
+    .notes-block summary { font-size: 13px; font-weight: 600; color: var(--accent); cursor: pointer; list-style: none; }
+    .notes-block summary::-webkit-details-marker { display: none; }
+    .notes-block summary::before { content: "▸ "; }
+    .notes-block[open] summary::before { content: "▾ "; }
+    .notes-textarea { width: 100%; min-height: 70px; margin-top: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; color: var(--text); font-family: inherit; font-size: 13px; resize: vertical; }
+    .notes-textarea:focus { outline: none; border-color: var(--accent); }
+    .warn-card { background: var(--warn-dim); border: 1px solid var(--warn); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+    .warn-card h3 { color: var(--warn); font-size: 14px; margin-bottom: 4px; }
+    .warn-card p { font-size: 14px; color: var(--text); }
+    .danger-card { background: var(--danger-dim); border: 1px solid var(--danger); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+    .danger-card h3 { color: var(--danger); font-size: 14px; margin-bottom: 4px; }
+    .danger-card p { font-size: 14px; color: var(--text); }
+    .subhead-group { margin-bottom: 18px; }
+    .subhead-group .grp-label { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 22px 0 10px; }
+    .make-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 8px; }
+    .make-table th, .make-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .make-table th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .avoid-list li, .buy-list li { margin-left: 18px; margin-bottom: 6px; font-size: 14px; }
+    .fin-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; }
+    .fin-card.pick { border-color: var(--green); }
+    .fin-card h3 { font-size: 16px; margin-bottom: 10px; }
+    .fin-card.pick h3 { color: var(--green); }
+    .fin-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 14px; }
+    .fin-row .fin-key { color: var(--muted); min-width: 90px; flex-shrink: 0; }
+    .table-scroll { overflow-x: auto; }
+    .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); text-align: center; }
+    @media (max-width: 560px) {
+      h1 { font-size: 22px; }
+      .context-grid { grid-template-columns: repeat(2, 1fr); }
+      .cost-banner .range { font-size: 16px; }
+      .progress-row { flex-wrap: wrap; }
+      .progress-track { order: 3; width: 100%; margin: 8px 0 0; }
+      .company-header { flex-direction: column; }
+      .nav-bar { flex-direction: column; align-items: stretch; }
+      .nav-bar a { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="label">Purchase Research · Personal Reference</div>
+    <h1>Bridge Vehicle — Salt Lake City, UT</h1>
+    <div class="meta">
+      <span>📅 July 21, 2026</span>
+      <span>📍 Salt Lake City / Utah, assumed zip 84101 (no exact zip given — flagged)</span>
+      <span>🚗 Under $5,000 · Clean title · 2010+ preferred · Bridge/second car, not a keeper</span>
+    </div>
+  </div>
+
+  <div class="nav-bar" id="navBar">
+    <a href="#recommendation">Recommendation</a>
+    <a href="#ksl-confirmed">KSL — Confirmed</a>
+    <a href="#other-sources">Other Sources</a>
+    <a href="#make-shortlist">Reliable Makes</a>
+    <a href="#diy-search">Search It Yourself</a>
+    <a href="#financing">Financing</a>
+  </div>
+
+  <div class="progress-row">
+    <div class="progress-text"><span id="progressCount">0</span> of 5 checked out</div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <button class="reset-btn" id="resetBtn" type="button">Reset all</button>
+  </div>
+
+  <div class="section" id="context">
+    <h2>Search Parameters</h2>
+    <div class="context-grid">
+      <div class="ctx-card"><div class="val">&lt; $5,000</div><div class="key">Budget ceiling</div></div>
+      <div class="ctx-card"><div class="val">Clean only</div><div class="key">Title type</div></div>
+      <div class="ctx-card"><div class="val">2010+</div><div class="key">Model year (preferred)</div></div>
+      <div class="ctx-card"><div class="val">Salt Lake City</div><div class="key">Location (assumed)</div></div>
+      <div class="ctx-card"><div class="val">KSL, private-party</div><div class="key">Priority source</div></div>
+      <div class="ctx-card"><div class="val">Bridge / 2nd car</div><div class="key">Use case</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="recommendation">
+    <div class="cost-banner">
+      <div class="label" style="color:var(--green); margin-bottom:4px;">Recommendation</div>
+      <div class="range">Don't buy off this snapshot — set a live alert and pay cash when a Toyota/Honda-class car under $5K hits private-party.</div>
+      <div class="note">Sub-$5K classifieds turn over daily. The strongest move isn't picking from today's pull, it's watching continuously and buying fast when a Corolla/Civic/Camry/Accord-class car shows up private-party. Two real dealer listings below are the fallback if nothing reliable-class turns up private-party within a week or two. Either way: pay cash, not financed — see Financing section.</div>
+    </div>
+    <div class="warn-card">
+      <h3>Honest gap</h3>
+      <p>KSL Cars blocks automated tools after roughly 15 rapid requests (CAPTCHA wall) — hit mid-research today. That capped how many individual listings could be opened to confirm seller type (private party vs. dealer), which KSL only shows on the individual listing page, not the search-results card. Two candidates below are individually confirmed as dealer listings. One (2013 Ford Escape) has a confirmed price/mileage but unconfirmed seller type. A promising 2008 Honda Civic was spotted but got CAPTCHA-blocked before price/mileage could be confirmed — its real listing link is included below so it's a one-click check, not a re-search. KSL's own "For Sale By Owner" filter (link in the Search It Yourself section) is the fastest way to see live, fully-confirmed private-party results — faster than anything an automated pull can re-verify right now.</p>
+    </div>
+  </div>
+
+  <div class="section" id="ksl-confirmed">
+    <h2>KSL Cars — Individually Confirmed (Utah)</h2>
+    <p style="font-size:14px; color:var(--muted); margin-bottom:14px;">Each of these was opened on its own KSL listing page and its facts (price, mileage, seller, city) come directly from that page — not guessed from the search-results list.</p>
+
+    <div class="company-card top" data-vendor="ford-explorer-2013">
+      <div class="company-header">
+        <div class="company-header-left">
+          <div class="rank-badge top">1</div>
+          <div>
+            <div class="company-name">2013 Ford Explorer Limited <span class="contacted-badge">✓ Checked out</span></div>
+            <div class="pill-row">
+              <a class="site-pill dealer" href="https://cars.ksl.com/listing/10685987" target="_blank" rel="noopener">🌐 KSL Listing #10685987</a>
+              <span class="site-pill dealer">Dealer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="company-details">
+        <span class="detail-tag rate">$3,900</span>
+        <span class="detail-tag">151,850 mi</span>
+        <span class="detail-tag">Salt Lake City, UT</span>
+        <span class="detail-tag">Low Book Sales Salt Lake — Trusted Dealer</span>
+        <span class="detail-tag warn">Sold as-is, dealer states not financing-eligible</span>
+        <span class="detail-tag score">Score 6.0/10</span>
+      </div>
+      <div class="why">Confirmed real price + mileage, in-city, dealer-inspected enough to badge "Trusted Dealer." Docked for being an SUV (higher fuel/upkeep than a sedan for a pure bridge car) and this generation Explorer's documented transmission and coolant-intrusion issues — worth a pre-purchase inspection before paying.</div>
+      <div class="contact-row">
+        <input type="checkbox" id="chk-ford-explorer-2013">
+        <label for="chk-ford-explorer-2013">Checked out</label>
+      </div>
+      <details class="notes-block">
+        <summary>My notes</summary>
+        <textarea class="notes-textarea" placeholder="Inspection notes, negotiated price, decision..."></textarea>
+      </details>
+    </div>
+
+    <div class="company-card" data-vendor="dodge-caravan-2007">
+      <div class="company-header">
+        <div class="company-header-left">
+          <div class="rank-badge">2</div>
+          <div>
+            <div class="company-name">2007 Dodge Grand Caravan SXT <span class="contacted-badge">✓ Checked out</span></div>
+            <div class="pill-row">
+              <a class="site-pill dealer" href="https://cars.ksl.com/listing/10569363" target="_blank" rel="noopener">🌐 KSL Listing #10569363</a>
+              <span class="site-pill dealer">Dealer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="company-details">
+        <span class="detail-tag rate">$2,258</span>
+        <span class="detail-tag">199,458 mi</span>
+        <span class="detail-tag">Brigham City, UT (~55 mi from SLC)</span>
+        <span class="detail-tag">Young Ford — Brigham City</span>
+        <span class="detail-tag score">Score 4.5/10</span>
+      </div>
+      <div class="why">Cheapest confirmed real listing found, but nearly 200K miles on a 2007 minivan with Chrysler's 4-speed automatic is exactly the profile that fails expensively and without warning — the opposite of what a "bridge, not a keeper" vehicle needs. Also the farthest drive of the confirmed set.</div>
+      <div class="contact-row">
+        <input type="checkbox" id="chk-dodge-caravan-2007">
+        <label for="chk-dodge-caravan-2007">Checked out</label>
+      </div>
+      <details class="notes-block">
+        <summary>My notes</summary>
+        <textarea class="notes-textarea" placeholder="Inspection notes, negotiated price, decision..."></textarea>
+      </details>
+    </div>
+
+    <div class="company-card" data-vendor="ford-escape-2013">
+      <div class="company-header">
+        <div class="company-header-left">
+          <div class="rank-badge">3</div>
+          <div>
+            <div class="company-name">2013 Ford Escape S <span class="contacted-badge">✓ Checked out</span></div>
+            <div class="pill-row">
+              <a class="site-pill unknown" href="https://cars.ksl.com/listing/10650450" target="_blank" rel="noopener">🌐 KSL Listing #10650450</a>
+              <span class="site-pill unknown">Seller type not confirmed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="company-details">
+        <span class="detail-tag rate">$2,800</span>
+        <span class="detail-tag">185,000 mi</span>
+        <span class="detail-tag warn">No city listed on the page</span>
+        <span class="detail-tag warn">Engine trim (1.6L EcoBoost vs. 2.5L) not confirmed</span>
+        <span class="detail-tag score">Score 4.0/10 (capped — unconfirmed seller type + engine)</span>
+      </div>
+      <div class="why">Real, confirmed price and mileage, but the listing had no city/location and got rate-limited before seller type or engine could be confirmed. If this is the 1.6L EcoBoost trim, note that generation had a documented engine-fire recall — worth confirming the engine before any contact.</div>
+      <div class="contact-row">
+        <input type="checkbox" id="chk-ford-escape-2013">
+        <label for="chk-ford-escape-2013">Checked out</label>
+      </div>
+      <details class="notes-block">
+        <summary>My notes</summary>
+        <textarea class="notes-textarea" placeholder="Inspection notes, negotiated price, decision..."></textarea>
+      </details>
+    </div>
+
+    <div class="company-card" data-vendor="honda-civic-2008">
+      <div class="company-header">
+        <div class="company-header-left">
+          <div class="rank-badge">?</div>
+          <div>
+            <div class="company-name">2008 Honda Civic LX <span class="contacted-badge">✓ Checked out</span></div>
+            <div class="pill-row">
+              <a class="site-pill unknown" href="https://cars.ksl.com/listing/10608586" target="_blank" rel="noopener">🌐 KSL Listing #10608586</a>
+              <span class="site-pill unknown">Price/mileage unconfirmed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="company-details">
+        <span class="detail-tag">Salt Lake City, UT</span>
+        <span class="detail-tag warn">Pre-2010 — exception candidate</span>
+        <span class="detail-tag warn">Price/mileage not confirmed — CAPTCHA hit mid-fetch</span>
+      </div>
+      <div class="why">Not scored — real price and mileage weren't captured before KSL's bot-block kicked in. Flagged anyway because the make/model is exactly the reliability profile this search wants (Honda Civic, 8th-gen, one of the most bulletproof small cars ever built) and it's in-city. Worth opening the link directly — it may already be gone, or it may be the best thing on this whole list.</div>
+      <div class="contact-row">
+        <input type="checkbox" id="chk-honda-civic-2008">
+        <label for="chk-honda-civic-2008">Checked out</label>
+      </div>
+      <details class="notes-block">
+        <summary>My notes</summary>
+        <textarea class="notes-textarea" placeholder="Inspection notes, negotiated price, decision..."></textarea>
+      </details>
+    </div>
+  </div>
+
+  <div class="section" id="other-sources">
+    <h2>Cross-Check — Other Sources (Dealer-Heavy)</h2>
+    <p style="font-size:14px; color:var(--muted); margin-bottom:14px;">CarGurus and Cars.com both surfaced almost entirely dealer inventory for Salt Lake City under $5,000 — consistent with why KSL was the right priority call: real private-party sellers in Utah default to KSL, not these national aggregator sites. Facebook Marketplace, the other private-party-heavy channel, is login-walled and could not be pulled directly this session.</p>
+
+    <div class="company-card" data-vendor="toyota-prius-2008">
+      <div class="company-header">
+        <div class="company-header-left">
+          <div class="rank-badge">A</div>
+          <div>
+            <div class="company-name">2008 Toyota Prius <span class="contacted-badge">✓ Checked out</span></div>
+            <div class="pill-row"><span class="site-pill dealer">Dealer — Daddys Auto Sales, Salt Lake City</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="company-details">
+        <span class="detail-tag rate">$2,500</span>
+        <span class="detail-tag">189,562 mi</span>
+        <span class="detail-tag warn">Hybrid battery age risk at this mileage</span>
+        <span class="detail-tag score">Score 5.5/10</span>
+      </div>
+      <div class="why">Toyota reliability + cheap to fuel, but a 2008 Prius at nearly 190K miles is squarely in hybrid-battery-replacement territory ($1,500-$2,500 if it fails) — get a battery health check before buying, not after.</div>
+      <div class="contact-row"><input type="checkbox" id="chk-toyota-prius-2008"><label for="chk-toyota-prius-2008">Checked out</label></div>
+      <details class="notes-block"><summary>My notes</summary><textarea class="notes-textarea" placeholder="Inspection notes..."></textarea></details>
+    </div>
+
+    <div class="company-card" data-vendor="kia-forte-2013">
+      <div class="company-header">
+        <div class="company-header-left">
+          <div class="rank-badge">B</div>
+          <div>
+            <div class="company-name">2013 Kia Forte EX <span class="contacted-badge">✓ Checked out</span></div>
+            <div class="pill-row"><span class="site-pill dealer">Dealer — Excel Motors, Salt Lake City area</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="company-details">
+        <span class="detail-tag rate">$2,500</span>
+        <span class="detail-tag">100,840 mi</span>
+        <span class="detail-tag score">Score 6.0/10</span>
+      </div>
+      <div class="why">Lowest mileage of anything found under $3K. Kia's 2011-2014 Theta II engine recall history was mostly the Sonata/Optima's 2.4L GDI, not the Forte's smaller engines — lower risk than it sounds, but still worth asking for service records before buying.</div>
+      <div class="contact-row"><input type="checkbox" id="chk-kia-forte-2013"><label for="chk-kia-forte-2013">Checked out</label></div>
+      <details class="notes-block"><summary>My notes</summary><textarea class="notes-textarea" placeholder="Inspection notes..."></textarea></details>
+    </div>
+  </div>
+
+  <div class="section" id="make-shortlist">
+    <h2>The Real Buying Guide: Makes/Models, Not Today's Listings</h2>
+    <p style="font-size:14px; color:var(--muted); margin-bottom:14px;">Nothing gold-standard-reliable (Corolla/Civic/Camry/Accord) showed up fully-confirmed and private-party in today's pull — that's a snapshot of one day, not the market. This is the durable part of the research: what to search for and buy fast when it appears.</p>
+
+    <div class="grp-label">Buy without hesitation if priced right</div>
+    <ul class="buy-list">
+      <li><strong>Toyota Corolla (2010-2015)</strong> — the reference point for cheap-and-reliable; parts and mechanics are everywhere.</li>
+      <li><strong>Toyota Camry (2010-2014)</strong> — same reliability tier, more room, still cheap to maintain.</li>
+      <li><strong>Honda Civic (2010-2015)</strong> — the Civic-class equivalent to the Corolla; the 2008 Civic flagged above fits this exact profile.</li>
+      <li><strong>Honda Accord (2010-2013)</strong> — same tier, one size up.</li>
+      <li><strong>Toyota Matrix / Pontiac Vibe</strong> — built on the Corolla platform, routinely underpriced because buyers don't recognize the name.</li>
+      <li><strong>Mazda3 (2010-2013)</strong> — a half-step below Toyota/Honda reliability but still a real contender at this price.</li>
+    </ul>
+
+    <div class="grp-label">Be cautious of at this mileage/price tier</div>
+    <ul class="avoid-list">
+      <li><strong>Nissan with CVT transmission (most Nissans 2007-2018)</strong> — CVT failure is a well-documented, expensive problem well before 150-200K miles.</li>
+      <li><strong>Volkswagen</strong> — electrical gremlins and DSG transmission repair costs run high relative to the car's resale value.</li>
+      <li><strong>Chrysler/Dodge minivans and sedans of this era</strong> — the 2007 Grand Caravan above is the exact pattern: cheap up front, expensive transmission risk later.</li>
+      <li><strong>2011-2014 Hyundai Sonata / Kia Optima (2.4L Theta II engine)</strong> — the well-known engine-failure recall generation; the Kia Forte above uses a different, lower-risk engine.</li>
+    </ul>
+  </div>
+
+  <div class="section" id="diy-search">
+    <h2>Search It Yourself — Live, Private-Party Only, Zero Bot-Wall</h2>
+    <div class="warn-card">
+      <h3>The fastest real path</h3>
+      <p>KSL has a built-in "For Sale By Owner" filter that isolates private-party listings instantly for a real logged-in visitor — no CAPTCHA, no rate limit, because it's not an automated request. This link goes straight to it:</p>
+    </div>
+    <p style="margin-bottom:10px;"><a href="https://cars.ksl.com/search/newUsed/Used/sellerType/For+Sale+By+Owner" target="_blank" rel="noopener" style="color:var(--accent); font-weight:600;">cars.ksl.com — Used, For Sale By Owner →</a></p>
+    <p style="font-size:14px; color:var(--muted);">On that page, set Price to $0-$5,000 and Year to 2010+, then hit "Save Search / Set Alert" so new private-party listings matching this exact spec get flagged automatically instead of relying on a one-time manual check. That beats any snapshot this research can freeze in place.</p>
+  </div>
+
+  <div class="section" id="financing">
+    <h2>Financing — Cash vs. Securities-Backed Loan vs. Auto Loan</h2>
+    <p style="font-size:14px; color:var(--muted); margin-bottom:16px;">This only matters if a dealer listing ends up being the real path (both confirmed dealer candidates above are $2,258-$3,900). Context: 18-month runway, no current income, cash preservation is the priority — same constraint used for the earlier bridge-computer research.</p>
+
+    <div class="fin-card pick">
+      <h3>✓ Recommended: Pay Cash</h3>
+      <div class="fin-row"><span class="fin-key">Cost</span><span>$2,258-$3,900 one-time, zero interest, zero risk</span></div>
+      <div class="fin-row"><span class="fin-key">Why</span><span>A bridge car is a guaranteed-depreciating asset at a low dollar amount relative to the portfolio. There's no leveraged-risk case for it — the "keep the stock invested" argument only pays off if the market outperforms the loan rate, and that upside isn't worth putting any part of an 18-month, no-income runway at risk for a car being replaced later anyway.</span></div>
+    </div>
+
+    <div class="fin-card">
+      <h3>Securities-Backed Line of Credit (SBLOC / margin-adjacent)</h3>
+      <div class="fin-row"><span class="fin-key">Rate</span><span>~6.7%-7.15% currently at major brokers (Schwab Pledged Asset Line ≈ SOFR + 2.4%; Fidelity's SBLOC is similarly SOFR-indexed), variable, resets monthly or daily depending on the broker</span></div>
+      <div class="fin-row"><span class="fin-key">Real risk</span><span>If the pledged portfolio drops in value, the broker can issue a maintenance/margin call demanding more collateral or forcing a stock sale — often exactly when the market (and the portfolio) is already down. That's the wrong moment to be forced to sell.</span></div>
+      <div class="fin-row"><span class="fin-key">Verdict</span><span>Available at most major brokerages (Schwab, Fidelity, IBKR, and others all offer some version), but wrong tool for this. Using it here means carrying open-ended market risk on the exact capital that funds an income-free runway, to finance an asset that's losing value every month. Not recommended for a purchase this small.</span></div>
+    </div>
+
+    <div class="fin-card">
+      <h3>Conventional Auto Loan</h3>
+      <div class="fin-row"><span class="fin-key">Reality</span><span>Most lenders won't originate an auto loan under roughly $5,000-$7,500 at all — confirmed in this research, not assumed. A sub-$5K car often isn't loan-eligible on its own; some lenders only get there if fees/add-ons push the financed amount up, which defeats the point of buying cheap.</span></div>
+      <div class="fin-row"><span class="fin-key">Verdict</span><span>Not a realistic path at this price point. If a lender is found, expect a subprime-tier rate and a required down payment — no real advantage over paying cash outright.</span></div>
+    </div>
+
+    <div class="danger-card">
+      <h3>The risk being flagged plainly</h3>
+      <p>Borrowing against a stock portfolio is not free money — it's leverage. If the market drops while the loan is open, the required minimum collateral value doesn't change, but the portfolio's actual value does, which can trigger a forced sale at a loss. That risk is real and worth taking seriously for a large purchase (a house, a business investment). For a $2,500-$4,000 bridge car, it's a mismatch: real downside risk taken on to finance an asset with no upside. Cash is the right call here.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    Research compiled July 21, 2026 · Salt Lake City, UT (assumed — no exact zip given) · Internal reference only · Live listings turn over fast — re-check before acting.
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    'use strict';
+    var STORAGE_PREFIX = 'bridgeVehicleTracker_';
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.company-card[data-vendor]'));
+
+    function keyContacted(vendor) { return STORAGE_PREFIX + vendor + '_contacted'; }
+    function keyNotes(vendor) { return STORAGE_PREFIX + vendor + '_notes'; }
+
+    function updateProgress() {
+      var total = cards.length;
+      var done = 0;
+      cards.forEach(function (card) {
+        var checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox && checkbox.checked) { done++; }
+      });
+      var countEl = document.getElementById('progressCount');
+      var fillEl = document.getElementById('progressFill');
+      if (countEl) { countEl.textContent = String(done); }
+      if (fillEl) { fillEl.style.width = (total ? (done / total * 100) : 0) + '%'; }
+    }
+
+    function applyContactedState(card, checkbox) {
+      if (checkbox.checked) { card.classList.add('contacted'); }
+      else { card.classList.remove('contacted'); }
+    }
+
+    function loadState() {
+      cards.forEach(function (card) {
+        var vendor = card.getAttribute('data-vendor');
+        var checkbox = card.querySelector('input[type="checkbox"]');
+        var textarea = card.querySelector('.notes-textarea');
+        try {
+          var contactedVal = localStorage.getItem(keyContacted(vendor));
+          if (checkbox) {
+            if (contactedVal === '1') { checkbox.checked = true; }
+            else if (contactedVal === '0') { checkbox.checked = false; }
+            applyContactedState(card, checkbox);
+          }
+          var notesVal = localStorage.getItem(keyNotes(vendor));
+          if (textarea && notesVal) { textarea.value = notesVal; }
+        } catch (e) { /* localStorage unavailable -- fail silent, tool still usable */ }
+      });
+      updateProgress();
+    }
+
+    function wireEvents() {
+      cards.forEach(function (card) {
+        var vendor = card.getAttribute('data-vendor');
+        var checkbox = card.querySelector('input[type="checkbox"]');
+        var textarea = card.querySelector('.notes-textarea');
+        if (checkbox) {
+          checkbox.addEventListener('change', function () {
+            applyContactedState(card, checkbox);
+            try { localStorage.setItem(keyContacted(vendor), checkbox.checked ? '1' : '0'); } catch (e) {}
+            updateProgress();
+          });
+        }
+        if (textarea) {
+          textarea.addEventListener('input', function () {
+            try { localStorage.setItem(keyNotes(vendor), textarea.value); } catch (e) {}
+          });
+        }
+      });
+
+      var resetBtn = document.getElementById('resetBtn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+          var ok = window.confirm('Reset all checked-out marks and notes? This cannot be undone.');
+          if (!ok) { return; }
+          cards.forEach(function (card) {
+            var vendor = card.getAttribute('data-vendor');
+            var checkbox = card.querySelector('input[type="checkbox"]');
+            var textarea = card.querySelector('.notes-textarea');
+            if (checkbox) { checkbox.checked = false; applyContactedState(card, checkbox); }
+            if (textarea) { textarea.value = ''; }
+            try { localStorage.removeItem(keyContacted(vendor)); localStorage.removeItem(keyNotes(vendor)); } catch (e) {}
+          });
+          updateProgress();
+        });
+      }
+    }
+
+    loadState();
+    wireEvents();
+  })();
+</script>
+</body>
+</html>
