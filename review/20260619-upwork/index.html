@@ -323,7 +323,8 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v18 · 2026-07-20-20:03:17 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v19 · 2026-07-20-20:13:17 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -741,7 +742,16 @@ async function migrateLocalStateOnce(){
   if (localStorage.getItem('upwork-board-migrated-v2')) return;
   for (const j of JOBS){
     const local = STATE[j.id];
-    if (local && local.status) {
+    // NEVER write-through a row that came only from seedAppliedHistory().
+    // The /status endpoint stamps changed_at = now, and the balance endpoint
+    // counts any spend recorded AFTER the last reported reading. Posting a
+    // June application today therefore subtracts June's Connects from a
+    // balance that already netted them out. Observed live 2026-07-20: the
+    // pill fell from 110 to 66, understated by exactly the June spend
+    // (9 + 19 + 16). Those rows are backfilled directly in Postgres with
+    // their real dates instead. Anything Boubacar touches himself clears
+    // the seeded flag below and posts normally.
+    if (local && local.status && !local.seeded) {
       await postJobStatus(j, local.status);
     }
   }
@@ -886,7 +896,7 @@ function renderAll(){renderSummary();renderList();}
 // events (delegated)
 document.getElementById("list").addEventListener("click",function(e){
   const b=e.target.closest(".sbtn");
-  if(b){const id=+b.getAttribute("data-id");const k=b.getAttribute("data-st");const s=st(id);s.status=k;
+  if(b){const id=+b.getAttribute("data-id");const k=b.getAttribute("data-st");const s=st(id);s.status=k;delete s.seeded;
     if(APPLIED_FAMILY.includes(k)&&!s.appliedDate)s.appliedDate=todayISO();
     persist();renderAll();
     const j=JOBS.find(x=>x.id===id); if(j) postJobStatus(j,k);
@@ -949,7 +959,7 @@ function seedAppliedHistory(){
     const seed = j.appliedSeed;
     if(!seed) return;
     const s = st(j.id);
-    if(!s.status){ s.status = "applied"; touched = true; }
+    if(!s.status){ s.status = "applied"; s.seeded = true; touched = true; }
     if(!s.appliedDate && seed.date){ s.appliedDate = seed.date; touched = true; }
     if(s.baseConnects == null && seed.base != null){ s.baseConnects = seed.base; touched = true; }
     if(s.boostConnects == null && seed.boost != null){ s.boostConnects = seed.boost; touched = true; }
@@ -964,6 +974,7 @@ migrateLocalStateOnce().then(()=>renderAll());
 </script>
 </body>
 </html>
+
 
 
 
