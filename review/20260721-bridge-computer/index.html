@@ -122,7 +122,8 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v4 · 2026-07-21-18:29:20 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v4 · 2026-07-21-18:37:05 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -614,6 +615,12 @@
     }).catch(function () { /* seed failure is non-fatal -- /state below still attempts a read */ });
 
     // 2) Load current state (cross-device: always trust the server, never a local cache).
+    // Race guard: if the user clicks a toggle or saves a note before this initial
+    // fetch resolves (slow network / cold VPS path), that write's own response is
+    // authoritative and must not be clobbered by this late, now-stale snapshot --
+    // USER_TOUCHED marks a card as "skip re-rendering from this initial load" the
+    // moment the user acts on it, regardless of which response lands first.
+    var USER_TOUCHED = {};
     fetch(API + '/state?run_slug=' + encodeURIComponent(RUN_SLUG))
       .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
       .then(function (r) {
@@ -622,6 +629,7 @@
         var vendorState = r.body.vendors || {};
         cards.forEach(function (card) {
           var slug = card.getAttribute('data-vendor');
+          if (USER_TOUCHED[slug]) return; // a write already landed for this card -- do not overwrite it
           var v = vendorState[slug];
           renderPicked(card, v ? !!v.contacted : false);
           renderNotes(card, v ? v.notes : []);
@@ -639,6 +647,7 @@
       var textarea = card.querySelector('.notes-input');
 
       toggleBtn.addEventListener('click', function () {
+        USER_TOUCHED[slug] = true;
         var nowPicked = !toggleBtn.classList.contains('is-picked');
         toggleBtn.disabled = true;
         fetch(API + '/contacted', {
@@ -658,6 +667,7 @@
       saveBtn.addEventListener('click', function () {
         var text = (textarea.value || '').trim();
         if (!text) return;
+        USER_TOUCHED[slug] = true;
         saveBtn.disabled = true;
         fetch(API + '/note', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -690,5 +700,6 @@
 </script>
 </body>
 </html>
+
 
 
