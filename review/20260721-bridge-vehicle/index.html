@@ -190,6 +190,20 @@
     .notes-textarea { width: 100%; min-height: 70px; margin-top: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; color: var(--text); font-family: inherit; font-size: 13px; resize: vertical; }
     .notes-textarea:focus { outline: none; border-color: var(--accent); }
 
+    /* Call script: a live phone-call checklist per active card. Boxes already answerable
+       from the listing are pre-checked with the answer inline; the rest are the real
+       must-ask-on-the-call gaps. Persists via localStorage like the notes textarea. */
+    .call-script { margin-top: 10px; }
+    .call-script > summary { color: var(--warn); }
+    .call-script .cs-intro { font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
+    .call-script .cs-list { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 10px; }
+    .call-script .cs-item { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--text); line-height: 1.45; }
+    .call-script .cs-item input[type="checkbox"] { width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; cursor: pointer; accent-color: var(--green); }
+    .call-script .cs-pre { display: block; color: var(--green); font-size: 12px; margin-top: 2px; }
+    .call-script .cs-ask { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .call-script .cs-notes-label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 6px 0 4px; }
+    .call-script .call-notes { min-height: 90px; }
+
     .subhead-group { margin-bottom: 18px; }
     .subhead-group .grp-label { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 22px 0 10px; }
     .grp-label { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 22px 0 10px; display: block; }
@@ -238,7 +252,8 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v8 · 2026-07-23-15:35:35 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v9 · 2026-07-23-15:54:06 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 <div class="container">
@@ -491,6 +506,31 @@
           <summary>My notes</summary>
           <textarea class="notes-textarea" placeholder="Inspection notes, negotiated price, decision..."></textarea>
         </details>
+            <details class="notes-block call-script">
+              <summary>Call script</summary>
+              <p class="cs-intro">Boxes already checked are answered from the listing itself. What is left unchecked is what only the call can get. Log answers below as you go.</p>
+              <div class="cs-list">
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q1"> <span>Still available right now?<em class="cs-ask">Dealers move inventory fast, confirm it is still on the lot.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q2" checked> <span>Mileage and VIN match the online listing?<em class="cs-pre">Listing: 149,569 mi, VIN 3FA6P0LU1FR161170. Confirm both match the actual car.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q3" checked> <span>Title status: clean, rebuilt, salvage, lemon, or flood? (ask directly, do not accept "it is fine")<em class="cs-pre">Listing: clean title, 0 accidents, no open recalls. Confirm clean title in hand.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q4"> <span>Number of previous owners?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q5"> <span>Reason for selling?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q6" checked> <span>Any accidents, even minor or repaired? Any frame damage?<em class="cs-pre">Listing/AutoCheck: 0 accidents reported. Confirm no frame damage on the call.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q7"> <span>Any current dashboard warning lights?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q8"> <span>Service records available? Timing belt or chain done? Any recent major repairs?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q9"> <span>Any known issues: transmission, engine noise, AC/heat, brakes?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q10"> <span>Tire condition and age, matching set?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q11"> <span>Any rust, or prior water/flood damage?<em class="cs-ask">Listing photos could not be re-fetched (cars.com/KSL bot-block), so ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q12"> <span>Out-the-door price including ALL fees (doc fee, dealer add-ons): exact number, not the sticker?<em class="cs-pre">Advertised $3,995 (dealer, Daddys Auto Sales).</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q13"> <span>Cash purchase OK, or financing required?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q14"> <span>Any warranty included or purchasable?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q15"> <span>Full VIN history report (Carfax/AutoCheck) available from you, or should I pull my own?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q16"> <span>Available for a test drive AND an independent mechanic inspection before I commit?<em class="cs-ask">A pre-purchase independent inspection is the single most important ask.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-hybrid-2015__q17"> <span>Best day and time to see it in person?</span></label>
+              </div>
+              <span class="cs-notes-label">Call notes</span>
+              <textarea class="notes-textarea call-notes" data-cs-notes="ford-fusion-hybrid-2015" placeholder="Log what the seller says, question by question, during the call..."></textarea>
+            </details>
       </div>
     </div>
   </div>
@@ -520,6 +560,31 @@
               <span class="contacted-badge">✓ Checked out</span>
             </div>
             <details class="notes-block"><summary>My notes</summary><textarea class="notes-textarea" placeholder="Inspection notes..."></textarea></details>
+            <details class="notes-block call-script">
+              <summary>Call script</summary>
+              <p class="cs-intro">Boxes already checked are answered from the listing itself. What is left unchecked is what only the call can get. Log answers below as you go.</p>
+              <div class="cs-list">
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q1"> <span>Still available right now?<em class="cs-ask">Dealers move inventory fast, confirm it is still on the lot.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q2" checked> <span>Mileage and VIN match the online listing?<em class="cs-pre">Listing: 100,840 mi, VIN KNAFU4A21D5739101. Confirm both match.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q3" checked> <span>Title status: clean, rebuilt, salvage, lemon, or flood? (ask directly, do not accept "it is fine")<em class="cs-pre">Listing: clean title, 0 accidents. Confirm clean title in hand.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q4"> <span>Number of previous owners?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q5"> <span>Reason for selling?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q6" checked> <span>Any accidents, even minor or repaired? Any frame damage?<em class="cs-pre">Listing/AutoCheck: 0 accidents reported (non-personal-use flagged). Confirm no frame damage.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q7"> <span>Any current dashboard warning lights?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q8"> <span>Service records available? Timing belt or chain done? Any recent major repairs?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q9"> <span>Any known issues: transmission, engine noise, AC/heat, brakes?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q10"> <span>Tire condition and age, matching set?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q11"> <span>Any rust, or prior water/flood damage?<em class="cs-ask">Listing photos could not be re-fetched (cars.com/KSL bot-block), so ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q12"> <span>Out-the-door price including ALL fees (doc fee, dealer add-ons): exact number, not the sticker?<em class="cs-pre">Advertised $2,500 (dealer, Excel Motors).</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q13"> <span>Cash purchase OK, or financing required?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q14"> <span>Any warranty included or purchasable?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q15"> <span>Full VIN history report (Carfax/AutoCheck) available from you, or should I pull my own?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q16"> <span>Available for a test drive AND an independent mechanic inspection before I commit?<em class="cs-ask">A pre-purchase independent inspection is the single most important ask.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="kia-forte-2013__q17"> <span>Best day and time to see it in person?</span></label>
+              </div>
+              <span class="cs-notes-label">Call notes</span>
+              <textarea class="notes-textarea call-notes" data-cs-notes="kia-forte-2013" placeholder="Log what the seller says, question by question, during the call..."></textarea>
+            </details>
           </div>
         </div>
       </details>
@@ -542,6 +607,31 @@
               <span class="contacted-badge">✓ Checked out</span>
             </div>
             <details class="notes-block"><summary>My notes</summary><textarea class="notes-textarea" placeholder="Inspection notes..."></textarea></details>
+            <details class="notes-block call-script">
+              <summary>Call script</summary>
+              <p class="cs-intro">Boxes already checked are answered from the listing itself. What is left unchecked is what only the call can get. Log answers below as you go.</p>
+              <div class="cs-list">
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q1"> <span>Still available right now?<em class="cs-ask">Dealers move inventory fast, confirm it is still on the lot.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q2" checked> <span>Mileage and VIN match the online listing?<em class="cs-pre">Listing: 99,365 mi, VIN 5NPDH4AE9DH292011. Confirm both match.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q3"> <span>Title status: clean, rebuilt, salvage, lemon, or flood? (ask directly, do not accept "it is fine")<em class="cs-ask">Listing does not state title status (only AutoCheck non-personal-use + open recalls). Ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q4"> <span>Number of previous owners?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q5"> <span>Reason for selling?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q6"> <span>Any accidents, even minor or repaired? Any frame damage?<em class="cs-ask">Not stated on listing. Ask about even minor/repaired damage and frame.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q7"> <span>Any current dashboard warning lights?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q8"> <span>Service records available? Timing belt or chain done? Any recent major repairs?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q9"> <span>Any known issues: transmission, engine noise, AC/heat, brakes?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q10"> <span>Tire condition and age, matching set?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q11"> <span>Any rust, or prior water/flood damage?<em class="cs-ask">Listing photos could not be re-fetched (cars.com/KSL bot-block), so ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q12"> <span>Out-the-door price including ALL fees (doc fee, dealer add-ons): exact number, not the sticker?<em class="cs-pre">Advertised $4,995. Dealer reviews flag ~$900 in mandatory fees (est ~$5,900 out-the-door). Confirm exact.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q13"> <span>Cash purchase OK, or financing required?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q14"> <span>Any warranty included or purchasable?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q15"> <span>Full VIN history report (Carfax/AutoCheck) available from you, or should I pull my own?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q16"> <span>Available for a test drive AND an independent mechanic inspection before I commit?<em class="cs-ask">A pre-purchase independent inspection is the single most important ask.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-elantra-2013__q17"> <span>Best day and time to see it in person?</span></label>
+              </div>
+              <span class="cs-notes-label">Call notes</span>
+              <textarea class="notes-textarea call-notes" data-cs-notes="hyundai-elantra-2013" placeholder="Log what the seller says, question by question, during the call..."></textarea>
+            </details>
           </div>
         </div>
       </details>
@@ -564,6 +654,31 @@
               <span class="contacted-badge">✓ Checked out</span>
             </div>
             <details class="notes-block"><summary>My notes</summary><textarea class="notes-textarea" placeholder="Inspection notes..."></textarea></details>
+            <details class="notes-block call-script">
+              <summary>Call script</summary>
+              <p class="cs-intro">Boxes already checked are answered from the listing itself. What is left unchecked is what only the call can get. Log answers below as you go.</p>
+              <div class="cs-list">
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q1"> <span>Still available right now?<em class="cs-ask">Dealers move inventory fast, confirm it is still on the lot.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q2" checked> <span>Mileage and VIN match the online listing?<em class="cs-pre">Listing: 134,307 mi. VIN not in our record (KSL bot-block): get it and confirm mileage on the call.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q3" checked> <span>Title status: clean, rebuilt, salvage, lemon, or flood? (ask directly, do not accept "it is fine")<em class="cs-pre">Listing: clean title, explicitly confirmed on the posting.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q4"> <span>Number of previous owners?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q5"> <span>Reason for selling?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q6"> <span>Any accidents, even minor or repaired? Any frame damage?<em class="cs-ask">Not stated on listing. Ask about even minor/repaired damage and frame.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q7"> <span>Any current dashboard warning lights?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q8"> <span>Service records available? Timing belt or chain done? Any recent major repairs?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q9"> <span>Any known issues: transmission, engine noise, AC/heat, brakes?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q10"> <span>Tire condition and age, matching set?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q11"> <span>Any rust, or prior water/flood damage?<em class="cs-ask">Listing photos could not be re-fetched (cars.com/KSL bot-block), so ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q12"> <span>Out-the-door price including ALL fees (doc fee, dealer add-ons): exact number, not the sticker?<em class="cs-pre">Advertised $3,878 (dealer, Atlas Motor). German out-of-warranty upkeep runs higher, factor it.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q13"> <span>Cash purchase OK, or financing required?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q14"> <span>Any warranty included or purchasable?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q15"> <span>Full VIN history report (Carfax/AutoCheck) available from you, or should I pull my own?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q16"> <span>Available for a test drive AND an independent mechanic inspection before I commit?<em class="cs-ask">A pre-purchase independent inspection is the single most important ask.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="audi-a4-2012__q17"> <span>Best day and time to see it in person?</span></label>
+              </div>
+              <span class="cs-notes-label">Call notes</span>
+              <textarea class="notes-textarea call-notes" data-cs-notes="audi-a4-2012" placeholder="Log what the seller says, question by question, during the call..."></textarea>
+            </details>
           </div>
         </div>
       </details>
@@ -586,6 +701,31 @@
               <span class="contacted-badge">✓ Checked out</span>
             </div>
             <details class="notes-block"><summary>My notes</summary><textarea class="notes-textarea" placeholder="Inspection notes..."></textarea></details>
+            <details class="notes-block call-script">
+              <summary>Call script</summary>
+              <p class="cs-intro">Boxes already checked are answered from the listing itself. What is left unchecked is what only the call can get. Log answers below as you go.</p>
+              <div class="cs-list">
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q1"> <span>Still available right now?<em class="cs-ask">Dealers move inventory fast, confirm it is still on the lot.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q2" checked> <span>Mileage and VIN match the online listing?<em class="cs-pre">Listing: 150,012 mi. VIN not in our record (cars.com bot-block): get it and confirm mileage.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q3"> <span>Title status: clean, rebuilt, salvage, lemon, or flood? (ask directly, do not accept "it is fine")<em class="cs-ask">Title status not captured from the listing. Ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q4"> <span>Number of previous owners?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q5"> <span>Reason for selling?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q6"> <span>Any accidents, even minor or repaired? Any frame damage?<em class="cs-ask">Not stated on listing. Ask about even minor/repaired damage and frame.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q7"> <span>Any current dashboard warning lights?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q8"> <span>Service records available? Timing belt or chain done? Any recent major repairs?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q9"> <span>Any known issues: transmission, engine noise, AC/heat, brakes?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q10"> <span>Tire condition and age, matching set?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q11"> <span>Any rust, or prior water/flood damage?<em class="cs-ask">Listing photos could not be re-fetched (cars.com/KSL bot-block), so ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q12"> <span>Out-the-door price including ALL fees (doc fee, dealer add-ons): exact number, not the sticker?<em class="cs-pre">Advertised $3,489 (dealer, Tim Dahle Mazda Murray).</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q13"> <span>Cash purchase OK, or financing required?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q14"> <span>Any warranty included or purchasable?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q15"> <span>Full VIN history report (Carfax/AutoCheck) available from you, or should I pull my own?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q16"> <span>Available for a test drive AND an independent mechanic inspection before I commit?<em class="cs-ask">A pre-purchase independent inspection is the single most important ask.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="mazda-cx9-2014__q17"> <span>Best day and time to see it in person?</span></label>
+              </div>
+              <span class="cs-notes-label">Call notes</span>
+              <textarea class="notes-textarea call-notes" data-cs-notes="mazda-cx9-2014" placeholder="Log what the seller says, question by question, during the call..."></textarea>
+            </details>
           </div>
         </div>
       </details>
@@ -607,6 +747,31 @@
               <span class="contacted-badge">✓ Checked out</span>
             </div>
             <details class="notes-block"><summary>My notes</summary><textarea class="notes-textarea" placeholder="Inspection notes..."></textarea></details>
+            <details class="notes-block call-script">
+              <summary>Call script</summary>
+              <p class="cs-intro">Boxes already checked are answered from the listing itself. What is left unchecked is what only the call can get. Log answers below as you go.</p>
+              <div class="cs-list">
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q1"> <span>Still available right now?<em class="cs-ask">Dealers move inventory fast, confirm it is still on the lot.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q2" checked> <span>Mileage and VIN match the online listing?<em class="cs-pre">Listing: 134,908 mi. VIN not in our record (cars.com bot-block): get it and confirm mileage.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q3"> <span>Title status: clean, rebuilt, salvage, lemon, or flood? (ask directly, do not accept "it is fine")<em class="cs-ask">Title status not captured from the listing. Ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q4"> <span>Number of previous owners?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q5"> <span>Reason for selling?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q6"> <span>Any accidents, even minor or repaired? Any frame damage?<em class="cs-ask">Not stated on listing. Ask about even minor/repaired damage and frame.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q7"> <span>Any current dashboard warning lights?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q8"> <span>Service records available? Timing belt or chain done? Any recent major repairs?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q9"> <span>Any known issues: transmission, engine noise, AC/heat, brakes?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q10"> <span>Tire condition and age, matching set?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q11"> <span>Any rust, or prior water/flood damage?<em class="cs-ask">Listing photos could not be re-fetched (cars.com/KSL bot-block), so ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q12"> <span>Out-the-door price including ALL fees (doc fee, dealer add-ons): exact number, not the sticker?<em class="cs-pre">Advertised $3,883 (dealer, Tim Dahle Mazda Southtowne). Price dropped $212 since first seen.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q13"> <span>Cash purchase OK, or financing required?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q14"> <span>Any warranty included or purchasable?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q15"> <span>Full VIN history report (Carfax/AutoCheck) available from you, or should I pull my own?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q16"> <span>Available for a test drive AND an independent mechanic inspection before I commit?<em class="cs-ask">A pre-purchase independent inspection is the single most important ask.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="hyundai-accent-2012__q17"> <span>Best day and time to see it in person?</span></label>
+              </div>
+              <span class="cs-notes-label">Call notes</span>
+              <textarea class="notes-textarea call-notes" data-cs-notes="hyundai-accent-2012" placeholder="Log what the seller says, question by question, during the call..."></textarea>
+            </details>
           </div>
         </div>
       </details>
@@ -628,6 +793,31 @@
               <span class="contacted-badge">✓ Checked out</span>
             </div>
             <details class="notes-block"><summary>My notes</summary><textarea class="notes-textarea" placeholder="Inspection notes..."></textarea></details>
+            <details class="notes-block call-script">
+              <summary>Call script</summary>
+              <p class="cs-intro">Boxes already checked are answered from the listing itself. What is left unchecked is what only the call can get. Log answers below as you go.</p>
+              <div class="cs-list">
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q1"> <span>Still available right now?<em class="cs-ask">Dealers move inventory fast, confirm it is still on the lot.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q2" checked> <span>Mileage and VIN match the online listing?<em class="cs-pre">Listing: 101,722 mi, VIN 2HGFA1F58BH524710. Confirm both match.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q3" checked> <span>Title status: clean, rebuilt, salvage, lemon, or flood? (ask directly, do not accept "it is fine")<em class="cs-pre">Listing shows no salvage flag (clean not stated in words). Confirm clean vs rebuilt directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q4"> <span>Number of previous owners?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q5"> <span>Reason for selling?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q6"> <span>Any accidents, even minor or repaired? Any frame damage?<em class="cs-ask">Not stated on listing. Ask about even minor/repaired damage and frame.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q7"> <span>Any current dashboard warning lights?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q8"> <span>Service records available? Timing belt or chain done? Any recent major repairs?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q9"> <span>Any known issues: transmission, engine noise, AC/heat, brakes?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q10"> <span>Tire condition and age, matching set?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q11"> <span>Any rust, or prior water/flood damage?<em class="cs-ask">Listing photos could not be re-fetched (cars.com/KSL bot-block), so ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q12"> <span>Out-the-door price including ALL fees (doc fee, dealer add-ons): exact number, not the sticker?<em class="cs-pre">Advertised $4,682 (dealer, Tim Dahle Mazda Southtowne).</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q13"> <span>Cash purchase OK, or financing required?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q14"> <span>Any warranty included or purchasable?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q15"> <span>Full VIN history report (Carfax/AutoCheck) available from you, or should I pull my own?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q16"> <span>Available for a test drive AND an independent mechanic inspection before I commit?<em class="cs-ask">A pre-purchase independent inspection is the single most important ask.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="honda-civic-2011__q17"> <span>Best day and time to see it in person?</span></label>
+              </div>
+              <span class="cs-notes-label">Call notes</span>
+              <textarea class="notes-textarea call-notes" data-cs-notes="honda-civic-2011" placeholder="Log what the seller says, question by question, during the call..."></textarea>
+            </details>
           </div>
         </div>
       </details>
@@ -649,6 +839,31 @@
               <span class="contacted-badge">✓ Checked out</span>
             </div>
             <details class="notes-block"><summary>My notes</summary><textarea class="notes-textarea" placeholder="Inspection notes..."></textarea></details>
+            <details class="notes-block call-script">
+              <summary>Call script</summary>
+              <p class="cs-intro">Boxes already checked are answered from the listing itself. What is left unchecked is what only the call can get. Log answers below as you go.</p>
+              <div class="cs-list">
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q1"> <span>Still available right now?<em class="cs-ask">Dealers move inventory fast, confirm it is still on the lot.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q2" checked> <span>Mileage and VIN match the online listing?<em class="cs-pre">Listing: 158,749 mi. VIN not in our record (cars.com bot-block): get it and confirm mileage.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q3"> <span>Title status: clean, rebuilt, salvage, lemon, or flood? (ask directly, do not accept "it is fine")<em class="cs-ask">Title status not captured from the listing. Ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q4"> <span>Number of previous owners?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q5"> <span>Reason for selling?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q6"> <span>Any accidents, even minor or repaired? Any frame damage?<em class="cs-ask">Not stated on listing. Ask about even minor/repaired damage and frame.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q7"> <span>Any current dashboard warning lights?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q8"> <span>Service records available? Timing belt or chain done? Any recent major repairs?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q9"> <span>Any known issues: transmission, engine noise, AC/heat, brakes?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q10"> <span>Tire condition and age, matching set?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q11"> <span>Any rust, or prior water/flood damage?<em class="cs-ask">Listing photos could not be re-fetched (cars.com/KSL bot-block), so ask directly.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q12"> <span>Out-the-door price including ALL fees (doc fee, dealer add-ons): exact number, not the sticker?<em class="cs-pre">Advertised $3,500 (dealer, Excel Motors). Not yet contacted, this is a first call.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q13"> <span>Cash purchase OK, or financing required?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q14"> <span>Any warranty included or purchasable?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q15"> <span>Full VIN history report (Carfax/AutoCheck) available from you, or should I pull my own?</span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q16"> <span>Available for a test drive AND an independent mechanic inspection before I commit?<em class="cs-ask">A pre-purchase independent inspection is the single most important ask.</em></span></label>
+            <label class="cs-item"><input type="checkbox" data-cs="ford-fusion-s-2013__q17"> <span>Best day and time to see it in person?</span></label>
+              </div>
+              <span class="cs-notes-label">Call notes</span>
+              <textarea class="notes-textarea call-notes" data-cs-notes="ford-fusion-s-2013" placeholder="Log what the seller says, question by question, during the call..."></textarea>
+            </details>
           </div>
         </div>
       </details>
@@ -1081,6 +1296,30 @@
     wireEvents();
   })();
 </script>
+<script>
+  (function () {
+    'use strict';
+    var P = 'bridgeVehicleCall_';
+    Array.prototype.slice.call(document.querySelectorAll('.call-script input[type="checkbox"]')).forEach(function (cb) {
+      var key = P + cb.getAttribute('data-cs');
+      try {
+        var v = localStorage.getItem(key);
+        if (v === '1') { cb.checked = true; } else if (v === '0') { cb.checked = false; }
+      } catch (e) {}
+      cb.addEventListener('change', function () {
+        try { localStorage.setItem(key, cb.checked ? '1' : '0'); } catch (e) {}
+      });
+    });
+    Array.prototype.slice.call(document.querySelectorAll('.call-script .call-notes')).forEach(function (ta) {
+      var key = P + 'notes_' + ta.getAttribute('data-cs-notes');
+      try { var v = localStorage.getItem(key); if (v) { ta.value = v; } } catch (e) {}
+      ta.addEventListener('input', function () {
+        try { localStorage.setItem(key, ta.value); } catch (e) {}
+      });
+    });
+  })();
+</script>
 </body>
 </html>
+
 
