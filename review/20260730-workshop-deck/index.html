@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>AI at Work Without Getting Burned - Signpost Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Public+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#071A2E;
+  --navy-2:#0C2742;
+  --navy-3:#103153;
+  --teal:#00B7C2;
+  --teal-soft:#2AD4DF;
+  --orange:#FF7A00;
+  --clay:#B47C57;
+  --clay-soft:#D0A283;
+  --paper:#F4EFE7;
+  --paper-2:#E8DFD0;
+  --ink-on-dark:#EAF2F6;
+  --muted:#8FA6B8;
+  --muted-2:#6E879B;
+  --display:'Spectral',Georgia,serif;
+  --body:'Public Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --ease:cubic-bezier(0.22,1,0.36,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:var(--body);
+  background:var(--navy);
+  color:var(--ink-on-dark);
+  -webkit-font-smoothing:antialiased;
+}
+/* grain over everything */
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:9000;opacity:.045;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- deck mechanics ---------- */
+.deck{position:fixed;inset:0;width:100vw;height:100vh}
+.slide{
+  position:absolute;top:0;left:0;width:100vw;height:100vh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:84px;
+  opacity:0;visibility:hidden;
+  transition:opacity .5s var(--ease),visibility .5s var(--ease);
+  z-index:1;
+}
+.slide.active{opacity:1;visibility:visible;z-index:2}
+.slide.active .rise{animation:rise .7s var(--ease) both}
+.slide.active .rise:nth-child(2){animation-delay:.07s}
+.slide.active .rise:nth-child(3){animation-delay:.14s}
+.slide.active .rise:nth-child(4){animation-delay:.21s}
+.slide.active .rise:nth-child(5){animation-delay:.28s}
+.slide.active .rise:nth-child(6){animation-delay:.35s}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){
+  .slide,.slide.active .rise{transition:none;animation:none}
+}
+
+/* fixed chrome */
+.mast{position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 52px;pointer-events:none}
+.mast .mk{font-family:var(--display);font-weight:700;font-size:1.3rem;letter-spacing:.02em;color:var(--paper)}
+.mast .mk .lamp{color:var(--orange)}
+.mast .spine{font-family:var(--mono);font-weight:500;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--teal-soft)}
+
+/* agenda rail */
+.rail{position:fixed;left:40px;top:50%;transform:translateY(-50%);
+  z-index:100;display:flex;flex-direction:column;gap:13px;pointer-events:none}
+.rail .dot{display:flex;align-items:center;gap:10px;opacity:.62;transition:opacity .4s var(--ease)}
+.rail .dot .bead{width:8px;height:8px;background:var(--muted);border-radius:0;transform:rotate(45deg);transition:all .4s var(--ease)}
+.rail .dot .lbl{font-family:var(--mono);font-weight:500;font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.rail .dot.on{opacity:1}
+.rail .dot.on .bead{background:var(--orange);transform:rotate(45deg) scale(1.5)}
+.rail .dot.on .lbl{color:var(--paper)}
+.rail .dot.done .bead{background:var(--teal)}
+
+/* progress + counter */
+.foot{position:fixed;bottom:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 52px;pointer-events:none}
+.foot .count{font-family:var(--mono);font-weight:500;font-size:.7rem;letter-spacing:.14em;color:var(--muted)}
+.foot .count b{color:var(--paper)}
+.foot .hint{font-family:var(--mono);font-weight:400;font-size:.62rem;letter-spacing:.1em;color:var(--muted-2);text-transform:uppercase}
+.pbar{position:fixed;bottom:0;left:0;height:3px;background:var(--orange);z-index:101;transition:width .5s var(--ease)}
+
+/* ---------- shared type ---------- */
+.kicker{font-family:var(--mono);font-weight:500;font-size:1rem;letter-spacing:.26em;text-transform:uppercase;color:var(--teal-soft)}
+.big{font-family:var(--display);font-weight:700;line-height:.94;letter-spacing:-.025em;color:var(--paper)}
+.serif-lead{font-family:var(--display);font-weight:400;font-style:italic;line-height:1.28;color:var(--clay-soft)}
+.content{max-width:1500px;margin-left:130px}
+
+/* organic underline ribbon */
+.ribbon{display:block;margin:14px 0 0;max-width:340px;height:14px}
+
+/* rough stamp (CTA/tag) */
+.stamp{position:relative;display:inline-flex;align-items:center;gap:12px;
+  font-family:var(--body);font-weight:700;font-size:1.35rem;letter-spacing:.01em;
+  color:var(--navy);padding:20px 38px;isolation:isolate}
+.stamp::before{content:"";position:absolute;inset:-2px -6px;z-index:-1;background:var(--orange);filter:url(#rough);transform:rotate(-.6deg)}
+.stamp.teal::before{background:var(--teal)}
+
+/* SLIDE 1 - title */
+#s1 .big{font-size:8.5rem}
+#s1 .burn{color:var(--orange);position:relative}
+#s1 .meta{display:flex;flex-wrap:wrap;gap:12px 34px;margin-top:42px;
+  font-family:var(--mono);font-weight:500;font-size:.95rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+#s1 .meta b{color:var(--ink-on-dark)}
+
+/* SLIDE 2 - where are we / agenda */
+.flow{display:grid;grid-template-columns:auto 1fr;gap:0 38px;margin-top:38px;max-width:1180px}
+.flow .t{font-family:var(--mono);font-weight:700;font-size:1.18rem;color:var(--teal-soft);padding:15px 0;letter-spacing:.04em;white-space:nowrap}
+.flow .m{font-family:var(--display);font-weight:600;font-size:2.1rem;color:var(--paper);padding:13px 0 13px 30px;line-height:1.1;position:relative}
+.flow .m::before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:4px;background:var(--clay);transform:skewX(-8deg)}
+.flow .m.floor::after{content:"MAIN EVENT";font-family:var(--mono);font-weight:700;font-size:.7rem;letter-spacing:.14em;color:var(--navy);background:var(--orange);padding:3px 8px;margin-left:12px;vertical-align:middle;transform:rotate(-2deg);display:inline-block}
+.flow .m small{display:block;font-family:var(--body);font-weight:400;font-size:1.02rem;color:var(--muted);letter-spacing:0;margin-top:5px}
+
+/* SLIDE 3 - the framework */
+.frame{display:flex;align-items:center;gap:72px;flex-wrap:wrap;margin-top:36px}
+.burnbox{position:relative;padding:38px 42px;max-width:420px}
+.burnbox::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--navy-2);filter:url(#roughpanel)}
+.burnbox .h{font-family:var(--mono);font-weight:700;font-size:.9rem;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);margin-bottom:10px}
+.burnbox .x{font-family:var(--display);font-weight:600;font-size:2rem;color:var(--paper);line-height:1.1}
+.arrowto{font-family:var(--display);font-size:3.4rem;color:var(--clay);transform:rotate(-3deg)}
+.stack{display:flex;flex-direction:column;gap:15px}
+.stack .row{display:flex;align-items:baseline;gap:16px}
+.stack .n{font-family:var(--display);font-weight:700;font-size:2rem;color:var(--teal);min-width:40px;line-height:1}
+.stack .txt{font-family:var(--body);font-weight:500;font-size:1.5rem;color:var(--ink-on-dark);line-height:1.25}
+.stack .txt b{color:var(--paper);font-weight:700}
+
+/* SLIDE 4 + 5 - demo / your turn callouts */
+.callout{position:relative;margin-top:34px;padding:48px;max-width:1180px}
+.callout::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--navy-2);filter:url(#roughpanel);transform:rotate(-.4deg)}
+.tag{position:absolute;top:-18px;left:34px;font-family:var(--mono);font-weight:700;font-size:.82rem;letter-spacing:.16em;text-transform:uppercase;color:var(--navy);padding:7px 16px;isolation:isolate;transform:rotate(-1.4deg)}
+.tag::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--teal);filter:url(#rough)}
+.tag.live::before{background:var(--orange)}
+.callout .pp{font-family:var(--mono);font-weight:400;font-size:1.25rem;line-height:1.7;color:var(--teal-soft);white-space:pre-wrap;
+  background:rgba(0,0,0,.28);padding:26px 28px;margin-top:8px;border-left:4px solid var(--clay)}
+.do-line{font-family:var(--display);font-weight:400;font-style:italic;font-size:2.4rem;color:var(--clay-soft);line-height:1.25;margin-bottom:8px}
+.demo-meta{display:flex;gap:14px 36px;flex-wrap:wrap;margin-top:24px;font-family:var(--mono);font-weight:500;font-size:.88rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.demo-meta b{color:var(--ink-on-dark)}
+
+/* SLIDE 6 - three tools */
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:32px;margin-top:44px;max-width:1400px}
+.tool{position:relative;padding:38px 34px}
+.tool::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--navy-2);filter:url(#roughpanel)}
+.tool:nth-child(2)::before{transform:rotate(.5deg)}
+.tool:nth-child(3)::before{transform:rotate(-.5deg)}
+.tool .num{font-family:var(--display);font-weight:800;font-size:4rem;color:var(--teal);line-height:.8}
+.tool h3{font-family:var(--display);font-weight:700;font-size:1.95rem;color:var(--paper);margin:16px 0 10px;line-height:1.02}
+.tool p{font-family:var(--body);font-weight:400;font-size:1.18rem;color:var(--muted);line-height:1.45}
+.tool .role{font-family:var(--mono);font-weight:500;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--clay-soft);margin-top:14px;display:block}
+
+/* SLIDE 7 - offer */
+#s7{background:radial-gradient(120% 90% at 80% 20%,var(--navy-3) 0%,var(--navy) 55%)}
+#s7 .big{font-size:7rem}
+#s7 .offerline{font-family:var(--display);font-weight:400;font-style:italic;font-size:2.7rem;color:var(--clay-soft);margin-top:24px;max-width:22ch;line-height:1.2}
+#s7 .actions{display:flex;align-items:center;gap:32px;flex-wrap:wrap;margin-top:48px}
+#s7 .qr-note{font-family:var(--mono);font-weight:500;font-size:.95rem;letter-spacing:.06em;color:var(--muted);max-width:24ch;line-height:1.55;text-transform:none}
+#s7 .windownote{font-family:var(--mono);font-weight:700;font-size:.88rem;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin-top:38px}
+#s7 .qr-block{display:flex;flex-direction:column;align-items:center;gap:11px;margin:0}
+#s7 .qr-block img{width:200px;height:200px;display:block;background:var(--paper);padding:14px;border-radius:12px;image-rendering:pixelated}
+#s7 .qr-block .qr-lbl{font-family:var(--mono);font-weight:700;font-size:.82rem;letter-spacing:.13em;text-transform:uppercase;color:var(--paper)}
+#s7 .qr-block .qr-url{font-family:var(--mono);font-weight:400;font-size:.64rem;letter-spacing:.01em;color:var(--muted);word-break:break-all;max-width:228px;text-align:center;line-height:1.4}
+
+.title-rule{margin-top:8px}
+@media (max-width:760px){
+  .rail{display:none}
+  .content{margin-left:0}
+  .flow{grid-template-columns:1fr}
+  .flow .t{padding-top:16px}
+  .flow .m{padding-left:0}
+  .flow .m::before{display:none}
+}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-27-17:06:49 MT</div><!-- DEPLOY_STAMP_END -->
+
+<!-- ===== organic SVG filters ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.018 0.04" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="6"/></filter>
+  <filter id="roughpanel"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="13" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="9"/></filter>
+</svg>
+
+<header class="mast">
+  <div class="mk">Catalyst Works <span class="lamp">&#9670;</span></div>
+  <div class="spine">Tools change. Principles don't.</div>
+</header>
+
+<!-- agenda rail -->
+<nav class="rail" id="rail" aria-label="Where we are">
+  <div class="dot" data-for="1"><span class="bead"></span><span class="lbl">Open</span></div>
+  <div class="dot" data-for="2"><span class="bead"></span><span class="lbl">Tonight's path</span></div>
+  <div class="dot" data-for="3"><span class="bead"></span><span class="lbl">How AI works</span></div>
+  <div class="dot" data-for="4"><span class="bead"></span><span class="lbl">Your base</span></div>
+  <div class="dot" data-for="5"><span class="bead"></span><span class="lbl">Build it live</span></div>
+  <div class="dot" data-for="6"><span class="bead"></span><span class="lbl">What you keep</span></div>
+  <div class="dot" data-for="7"><span class="bead"></span><span class="lbl">Next step</span></div>
+</nav>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1 -->
+  <section class="slide active" id="s1">
+    <div class="content">
+      <p class="kicker rise">Owner-operators &middot; Thu Jul 30 &middot; SLCC Miller, Bldg 2, Rm 105, Sandy</p>
+      <h1 class="big rise" style="margin-top:18px">AI at work,<br><span class="burn">without getting burned</span></h1>
+      <svg class="ribbon rise title-rule" viewBox="0 0 340 14" preserveAspectRatio="none" aria-hidden="true"><path d="M2 9 C60 4 110 12 168 7 C230 2 280 11 338 6" fill="none" stroke="#FF7A00" stroke-width="4" stroke-linecap="round"/></svg>
+      <p class="serif-lead rise" style="font-size:2.3rem;margin-top:26px;max-width:28ch">Walk out understanding how this actually works, so you can pick up any tool and put it to work without starting over.</p>
+      <div class="meta rise">
+        <span>90 minutes</span><span>You build &amp; keep <b>3 thinking tools</b></span><span>No technical background needed</span>
+      </div>
+      <p class="rise" style="font-family:var(--mono);font-weight:500;font-size:.82rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-top:20px">Bring a phone or laptop. We set up a free account together.</p>
+    </div>
+  </section>
+
+  <!-- SLIDE 2 -->
+  <section class="slide" id="s2">
+    <div class="content">
+      <p class="kicker rise">Where we're headed</p>
+      <h2 class="big rise" style="font-size:4.8rem;margin-top:14px">Tonight, in order</h2>
+      <div class="flow rise">
+        <div class="t">0&ndash;16</div><div class="m">What AI really is, in plain English. And the one trap that burns owners.<small>The trap is lock-in. Bet your business on one tool, and it changes under you.</small></div>
+        <div class="t">16&ndash;22</div><div class="m">You set up your portable base.<small>One paste, and the tool knows your business.</small></div>
+        <div class="t">22&ndash;50</div><div class="m floor">You build and run your Decision Council on a real call you face tonight.</div>
+        <div class="t">50&ndash;72</div><div class="m">See how ready your business is, then we sharpen the tool together, live.</div>
+        <div class="t">72&ndash;90</div><div class="m">You leave with three tools. Then: where to start in your shop.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3 - framework -->
+  <section class="slide" id="s3">
+    <div class="content">
+      <p class="kicker rise">The one idea everything hangs on</p>
+      <h2 class="big rise" style="font-size:4.4rem;margin-top:14px">Own the principles, not the product</h2>
+      <div class="frame">
+        <div class="burnbox rise">
+          <div class="h">The burn</div>
+          <div class="x">Betting your business on a tool that will change.</div>
+          <p style="font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:14px;line-height:1.5">ChatGPT &rarr; Gemini &rarr; Claude. The tool keeps moving.</p>
+        </div>
+        <div class="arrowto rise" aria-hidden="true">&rarr;</div>
+        <div class="stack rise">
+          <div class="row"><span class="n">1</span><span class="txt">AI predicts from what you give it. <b>Direction is the real skill.</b></span></div>
+          <div class="row"><span class="n">2</span><span class="txt">Give it your context once, then <b>reuse it.</b></span></div>
+          <div class="row"><span class="n">3</span><span class="txt">Turn what you repeat into a <b>saved recipe you own.</b></span></div>
+          <div class="row"><span class="n">4</span><span class="txt">Agentic means it <b>does the multi-step work,</b> not just answers.</span></div>
+          <div class="row"><span class="n">5</span><span class="txt"><b>Pressure-test and simplify</b> your thinking. These ride any tool.</span></div>
+          <div class="row"><span class="n">6</span><span class="txt"><b>Own it, move it.</b> Never get locked in.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4 - your base (demo) -->
+  <section class="slide" id="s4">
+    <div class="content">
+      <p class="kicker rise">Do this with me &middot; minute 16</p>
+      <h2 class="big rise" style="font-size:4.4rem;margin-top:14px">Set up your portable base</h2>
+      <div class="callout rise">
+        <span class="tag">The Business Brain</span>
+        <p class="do-line">Fill it in once. Paste it before any ask. Every answer comes back about <em>your</em> business.</p>
+        <div class="pp">My business is ___.  I sell ___ to ___.
+The problem I solve is ___.  My prices are ___.
+My tone is ___.  Things I say a lot / never say ___.
+Weekly repeating tasks ___.  Biggest goal right now ___.</div>
+        <div class="demo-meta">
+          <span><b>Open</b> a free Claude account</span><span>New <b>Project</b></span><span>Paste into custom instructions</span><span>Context once, <b>reused forever</b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5 - HERO build live -->
+  <section class="slide" id="s5">
+    <div class="content">
+      <p class="kicker rise">Your turn &middot; minute 22 &middot; the part you came for</p>
+      <h2 class="big rise" style="font-size:4.6rem;margin-top:14px">Build your Decision Council</h2>
+      <div class="callout rise">
+        <span class="tag live">Build live &middot; keep forever</span>
+        <p class="do-line">Paste a real decision you face tonight. Five advisors pressure-test it in thirty seconds, then force a verdict.</p>
+        <div class="pp">1. THE CONTRARIAN: argue hard against it.
+2. FIRST PRINCIPLES: which of my assumptions are shaky.
+3. THE EXPANSIONIST: the bolder, bigger version.
+4. THE OUTSIDER: a smart stranger hearing it cold.
+5. THE EXECUTOR: first step + the one thing most likely to kill it.
+Then VERDICT: proceed, change, or kill. Be direct. No flattery.</div>
+        <div class="demo-meta">
+          <span><b>Bonus:</b> "Assume this failed badly in six months. Walk it back."</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6 - what you keep -->
+  <section class="slide" id="s6">
+    <div class="content">
+      <p class="kicker rise">You don't leave with notes</p>
+      <h2 class="big rise" style="font-size:4.4rem;margin-top:14px">Three tools you built and keep</h2>
+      <div class="tools rise">
+        <div class="tool">
+          <div class="num">01</div>
+          <h3>The Decision Council</h3>
+          <p>Five advisors argue any real call from five angles, then hand you a verdict. Run it on your own decisions every week.</p>
+          <span class="role">The hero</span>
+        </div>
+        <div class="tool">
+          <div class="num">02</div>
+          <h3>The Simplicity Check</h3>
+          <p>Paste anything you're overthinking. It finds the simplest version that still works, and what to cut.</p>
+          <span class="role">The simplifier</span>
+        </div>
+        <div class="tool">
+          <div class="num">03</div>
+          <h3>The Business Brain</h3>
+          <p>Your context on one page. The foundation both tools sit on. Moves to any tool, so you're never locked in.</p>
+          <span class="role">The base</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 7 - offer -->
+  <section class="slide" id="s7">
+    <div class="content">
+      <p class="kicker rise">You saw the trailer</p>
+      <h2 class="big rise">Want the full movie?</h2>
+      <p class="offerline rise">Tonight was one task with me in the room. Your shop has thirty of these.</p>
+      <div class="actions rise">
+        <span class="stamp">Book your audit &nbsp;&#9670;</span>
+        <figure class="qr-block">
+          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAewAAAHsAQAAAAA4UaPNAAAD3ElEQVR4nO1d7Y7jMAicoP2fvsG+/9slT8AJf2DSXZ20uKe91DOq2jjxqI1NEAZMN8UETplhA6SnIXmqgfQ0JE81kJ6G5KmG1emb49GOcZaXafJ2xQmxM/6DHz8BmSGD9LuOPFQVu1ZgL8dHOQlYE7DmUbqWq7GzHhSbNCRPNZCexkf9MD2+F8ku6n0Dqp2v56M1zwfOTZ86gyOfhuSpBtJfNnR6NPVeLZzts6l6s2TK+X/67T+E/JRAesfKQ/fx1N52NVVf1fiuW9Xt9Smwq8dLv11Iz0LSTKxO/6gfrsG1WTJmv2g9v2u1bWKft7h3IX3JoUNbruKySv3bK3RWrmEXFRu5u57X0Dbdfm6m591dWc/3Y32fexfSl/ZVHs/L2IZjNJvrsh+Aen5dsZE3sG20+OSbeHc5t8vuje+d/elQO771vQvpSw4dnux5l3aXfw9LeXCKMan7z7ssTEeMw7YIbNDtQ/K7eRPDsko9v6jYyO3XsKc54Td3SxY/fAu2dkeNffSYrLs0ce97F9KXHDoMQ6Wr+pFj4+k3Ubdf7H/51R8vpGchC9MRl6i+bnWp9g7RmPfOSplfVGzkznS4GX9x3YQcy9HtKvygzK8rNvI+fpuKaM988eQMyk49v6zYyJ3puNgt0WjvifRu4USnJar9T9tmUbGR29P3puq3R5NtOzhgicQ15WDXsiuq9CnZxSh9/osfn4dMcEH6rfU8riHXofOflrTDjAf3SYGPzJ1l3vAk0u60iSZ9SKrUCto2ecgEF6TPQDtidlm7FIU/+C3HrtiDE5eG5KkG0vNQF+PajGLfBHto+xiQAv02UxDSf91vo09a3b03/aEY9RD67hLq+QnIDBmkv8K20ZBIP6JUnld/TaFvoG2Th0xwQfoM9Iu5Hg2b4dhx44f2fAOF9sZ+G4Ro7Eg2uMZhL6lljMP+/sQJ6WloLF/m9cqC377YMJcNUyHlUjAFIT0LSTOxOh3RafO8pO3SPnpWcD/sC0ZeSP/dugfa23W3iFV26ttDWsm+smGk1nrybSPgxOUhE1yQPjny26XUcFPyNeXG0CqbxTQbtGp+nLg8ZIIL0udzzCr8bK1OuX2Wk70odz2IVUHAictDJrgg/bV1ibW+9wLFDWWr7KjytNcHhBOXhuSpBtJfk1eJbx013+VVgn4bUOpuXPcgQs+HF0BAqctaqvk9bFVrhr2d8er04LznIRNckP7CusQVtV5lcOaoF+K291oJxMCJS0PyVAPpr6tLjBFyGkHY6KX3VLSdMakZyBQbpKex8b8ys5A0s4D0NCRPNZCehuSpBtLTmMw9+AOaOXYKLmdXNQAAAABJRU5ErkJggg==" alt="QR code to book your free AI-readiness audit">
+          <span class="qr-lbl">Book your free audit</span>
+          <span class="qr-url">calendly.com/boubacarbarry/free-ai-audit-owner-operators</span>
+        </figure>
+        <span class="qr-note">Free, face to face. Phones out, scan the code, pick a time. I'll wait.</span>
+      </div>
+      <p class="windownote rise">Three-minute booking window &middot; questions after</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="pbar" id="pbar"></div>
+<footer class="foot">
+  <div class="count">SLIDE <b id="cur">1</b> / <span id="tot">7</span></div>
+  <div class="hint">&larr; &rarr; or space to advance &middot; F for fullscreen</div>
+</footer>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.rail .dot'));
+  var total = slides.length;
+  var i = 0;
+  document.getElementById('tot').textContent = total;
+
+  function show(n){
+    n = Math.max(0, Math.min(total-1, n));
+    slides.forEach(function(s,idx){ s.classList.toggle('active', idx===n); });
+    dots.forEach(function(d,idx){
+      d.classList.toggle('on', idx===n);
+      d.classList.toggle('done', idx<n);
+    });
+    document.getElementById('cur').textContent = n+1;
+    document.getElementById('pbar').style.width = ((n+1)/total*100)+'%';
+    i = n;
+  }
+  function next(){ show(i+1); }
+  function prev(){ show(i-1); }
+
+  document.addEventListener('keydown', function(e){
+    if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '||e.key==='PageDown'){ e.preventDefault(); next(); }
+    else if(e.key==='ArrowLeft'||e.key==='ArrowUp'||e.key==='PageUp'){ e.preventDefault(); prev(); }
+    else if(e.key==='Home'){ e.preventDefault(); show(0); }
+    else if(e.key==='End'){ e.preventDefault(); show(total-1); }
+    else if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement){ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }
+      else { document.exitFullscreen && document.exitFullscreen(); }
+    }
+  });
+  // click to advance (ignore clicks on the booking stamp)
+  document.getElementById('deck').addEventListener('click', function(e){
+    if(e.target.closest('.stamp')) return;
+    next();
+  });
+  // deep-link for PNG export: ?s=N (1-based)
+  var qs = new URLSearchParams(location.search);
+  var start = parseInt(qs.get('s'),10);
+  show(isNaN(start) ? 0 : start-1);
+})();
+</script>
+</body>
+</html>
+
