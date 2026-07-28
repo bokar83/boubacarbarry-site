@@ -62,6 +62,7 @@ a:hover{color:#fff}
   white-space:nowrap;box-shadow:0 8px 26px rgba(0,0,0,0.5);pointer-events:none;
   opacity:0;transform:translateY(10px);transition:opacity .28s var(--ease),transform .28s var(--ease)}
 .mobilecount.on{opacity:1;transform:none}
+body.typing .mobilecount,body.typing .totop{opacity:0;pointer-events:none}
 @media (max-width:820px){
   .livechip{display:none}
   .mobilecount{display:block}
@@ -134,6 +135,10 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(0,183,194,0.11);
 .dec-title{font-size:16px;font-weight:800;line-height:1.32;letter-spacing:-0.01em}
 .dec-why{color:var(--ink-mute);font-size:13.5px;margin-top:5px;line-height:1.5}
 .dec-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.dec.settled{border-color:rgba(63,214,138,0.42);background:linear-gradient(180deg,rgba(63,214,138,0.11),rgba(63,214,138,0.015))}
+.dec.settled .dec-title{color:var(--green)}
+.dec .tick{flex:none;width:28px;height:28px;margin:9px 0 0;border-radius:9px;background:var(--green);color:#05121F;font-weight:900;font-size:15px;display:flex;align-items:center;justify-content:center}
+.dec.await{border-color:rgba(242,169,0,0.4);background:linear-gradient(180deg,rgba(242,169,0,0.09),rgba(242,169,0,0.015))}
 .dec.done{opacity:.42}
 .dec.done .dec-title{text-decoration:line-through;text-decoration-color:var(--ink-faint)}
 .tag{font-family:var(--f-mono);font-size:10.5px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3.5px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink-mute);background:rgba(255,255,255,0.03)}
@@ -187,8 +192,46 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(0,183,194,0.11);
 body.hide-done .item.is-done{display:none}
 body.hide-done .dec.done{display:none}
 
-.tools{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
-.tbtn{min-height:40px;display:inline-flex;align-items:center;gap:7px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink-mute);font-family:var(--f-body);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s var(--ease)}
+/* ---------- notes: one per row, saved on this device only ----------
+   A note that has to be tapped open to be read is a note he will not
+   read in an aisle. So a filled note renders as visible text in the
+   summary line and only the EDITOR hides behind the tap. */
+.note{margin-top:9px}
+.note > summary{list-style:none;cursor:pointer;display:flex;align-items:flex-start;gap:8px;min-height:44px;padding:6px 0;color:var(--ink-faint);font-size:11.5px;font-weight:800;letter-spacing:0.09em;text-transform:uppercase}
+.note > summary::-webkit-details-marker{display:none}
+.note > summary:hover{color:var(--cyan)}
+.note .pen{flex:none;font-size:13px;line-height:1.45}
+.note .note-txt{flex:1;min-width:0}
+/* An empty note sits on the same line as WHY and stays quiet. One hundred rows
+   of a loud full-width ADD A NOTE is a wall, and the eye stops reading walls.
+   A note with something IN it takes the whole row, because that one he reads. */
+.note:not(.has) > summary{color:rgba(108,139,163,0.8);font-size:11px;letter-spacing:0.08em}
+.row-acts{display:flex;flex-wrap:wrap;align-items:center;gap:2px 18px;margin-top:6px}
+.row-acts > .item-why{margin-top:0}
+.row-acts > .item-why[open]{flex:1 0 100%}
+.row-acts > .note{margin-top:0}
+.row-acts > .note.has,.row-acts > .note[open]{flex:1 0 100%;margin-top:5px}
+.note.has > summary{background:rgba(0,183,194,0.1);border-left:3px solid var(--cyan);border-radius:0 11px 11px 0;padding:11px 13px;color:#DCE9F2;font-size:14.4px;font-weight:500;letter-spacing:0;text-transform:none;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.note.has > summary .pen{color:var(--cyan)}
+/* While the editor is open the text lives in the textarea. Showing it in the
+   summary as well printed the same sentence twice, which reads as a bug. */
+.note.editing > summary{background:transparent;border-left:none;padding:6px 0;color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;white-space:normal}
+/* 16px is not a taste call: iOS Safari zooms the whole viewport on focus
+   for any field under 16px, which is exactly the pinch-zoom he must not hit. */
+.note textarea{display:block;width:100%;margin-top:9px;min-height:104px;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,0.045);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;resize:vertical;scroll-margin-top:96px;scroll-margin-bottom:140px}
+.note textarea::placeholder{color:var(--ink-faint)}
+.note textarea:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,183,194,0.2)}
+.note-act{display:flex;align-items:center;gap:11px;margin:9px 0 5px;flex-wrap:wrap}
+.note-clear{min-height:44px;padding:0 15px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink-faint);font-family:var(--f-body);font-size:12.5px;font-weight:700;cursor:pointer}
+.note-clear:hover{border-color:var(--orange);color:var(--orange)}
+.note-saved{font-family:var(--f-mono);font-size:11.5px;font-weight:700;color:var(--green);opacity:0;transition:opacity .22s var(--ease)}
+.note-saved.on{opacity:1}
+.shop-row .note{margin-bottom:2px}
+@media print{.note:not(.has){display:none!important}.note textarea,.note-act{display:none!important}.note.has>summary{color:#000;background:#f2f2f2}}
+
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;align-items:center}
+.tstat{font-family:var(--f-mono);font-size:12px;font-weight:700;color:var(--ink-faint);letter-spacing:0.02em;margin-left:2px}
+.tbtn{min-height:44px;display:inline-flex;align-items:center;gap:7px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink-mute);font-family:var(--f-body);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s var(--ease)}
 .tbtn:hover{border-color:var(--cyan);color:var(--cyan-hi)}
 .tbtn[aria-pressed="true"]{background:var(--cyan-dim);border-color:rgba(0,183,194,0.5);color:var(--cyan-hi)}
 
@@ -270,7 +313,8 @@ footer p{margin-bottom:7px}
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v5 · 2026-07-28-09:53:42 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v6 · 2026-07-28-10:36:06 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -300,7 +344,7 @@ footer p{margin-bottom:7px}
 <header class="hero" id="now">
   <p class="kicker">AI Without Getting Burned &nbsp;/&nbsp; D minus 2</p>
   <h1>Everything for Thursday,<br><span class="glow">on one page.</span></h1>
-  <p class="hero-sub">The week checklist, the bottle print file, the Costco run and all 33 slides. Tick things off as you go. It remembers, even if you close this tab in a parking lot.</p>
+  <p class="hero-sub">The week checklist, the bottle print file, the Costco run and all 33 slides. Tick things off as you go, and write a note on any row: what Alex said, what you actually bought, which door. It remembers both, even if you close this tab in a parking lot.</p>
 
   <div class="hero-grid">
     <div class="ring-wrap">
@@ -347,16 +391,16 @@ footer p{margin-bottom:7px}
 <!-- ================= DECISIONS ================= -->
 <section id="decisions">
   <div class="sec-head"><span class="sec-num">01</span><h2>What only you can decide</h2></div>
-  <p class="sec-sub">The first two are the only items on this whole page that a third party can cancel the room over. Everything else on this page assumes you have a room. Tap a card once it is handled.</p>
+  <p class="sec-sub">The room payment closed at 10:12 this morning, so the one thing a third party could have cancelled you over is gone. What is left is insurance, one email you are waiting on, and one flag. Tap a card once it is handled, and use the note line on any of them to write down what you find out.</p>
 
   <div class="dec-list" id="decList">
-    <article class="dec crit" data-id="d0">
+    <article class="dec settled" data-id="d0">
       <div class="dec-top">
-        <label class="hit"><input type="checkbox" class="check" data-dec="d0" aria-label="Mark the room payment confirmed"></label>
+        <span class="tick" aria-hidden="true">&#10003;</span>
         <div class="dec-body">
-          <div class="dec-title">Confirm the room payment for July 30 actually went through</div>
-          <div class="dec-why">This is the sharpest open risk on the whole event. Alex wrote on 6/30 that the space is not secured without a signed contract AND payment in full. The contract went to him 7/15. No payment receipt has ever been located, anywhere. Your own word on 7/16 was "I've already paid for it", and that may well be right, but nothing confirms it. One line in the logistics email settles it: ask him to confirm the room is paid and secured for 7/30. Do not walk into Thursday assuming.</div>
-          <div class="dec-tags"><span class="tag risk">Sharpest open risk</span><span class="tag you">You</span><span class="tag">Ask in the Alex email</span></div>
+          <div class="dec-title">Room payment: CONFIRMED, 7/28 at 10:12 MT</div>
+          <div class="dec-why">Closed. This sat at the top of this page all week as the sharpest open risk, because Alex wrote on 6/30 that the space is not secured without a signed contract and payment in full, the contract went 7/15, and no receipt had ever been located. It is now confirmed paid and the room is secured for 7/30. Nothing else on this page can take the room away from you.</div>
+          <div class="dec-tags"><span class="tag ok">Closed 10:12 MT</span><span class="tag ok">Room is yours</span></div>
         </div>
       </div>
     </article>
@@ -365,31 +409,31 @@ footer p{margin-bottom:7px}
       <div class="dec-top">
         <label class="hit"><input type="checkbox" class="check" data-dec="d1" aria-label="Mark insurance and certificate handled"></label>
         <div class="dec-body">
-          <div class="dec-title">Pay the insurance and get the certificate to Alex Dotter</div>
-          <div class="dec-why">Due today, end of day, hard. Alex told you on 6/30 the space is not secured without payment in full, and he is only in office Tuesday to Friday. Nothing else on this page can cancel the room. Send it with the logistics email so it is one send, not two.</div>
-          <div class="dec-tags"><span class="tag risk">Highest risk</span><span class="tag you">You</span><span class="tag">Tue EOD</span></div>
+          <div class="dec-title">Insurance: buying it now. Not done until the certificate reaches Alex</div>
+          <div class="dec-why">You are on TheEventHelper buying it as of this morning, renewing policy L4860114 from the June run. The purchase is the easy half. The half that matters is the certificate landing in Alex Dotter's inbox, because that is the piece he asked for. Buy it, download the certificate, forward it to <a href="mailto:alex.dotter@slcc.edu">alex.dotter@slcc.edu</a>, then tick this. Today, not Wednesday, because he is in office Tuesday to Friday only.</div>
+          <div class="dec-tags"><span class="tag risk">Only thing left with a deadline</span><span class="tag you">You</span><span class="tag">Policy L4860114</span></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="dec await" data-id="d5">
+      <div class="dec-top">
+        <label class="hit"><input type="checkbox" class="check" data-dec="d5" aria-label="Mark building question resolved"></label>
+        <div class="dec-body">
+          <div class="dec-title">Building 1 or Building 2? Asked. Waiting on Alex</div>
+          <div class="dec-why">The logistics email went to Alex at 10:00 this morning and it carries this question, along with bandwidth, cords, AV, after-hours access, parking and signage. Nothing to do until he answers. In June the instruction was Building 1 through the doors marked "Event Today" because of conference-center construction, and the 7/30 record says Building 2, Room 105. His answer goes straight onto the signage and into the day-before email. Miller Campus after dark is where people get lost. <strong>Write his answer in the note line below the moment it lands.</strong></div>
+          <div class="dec-tags"><span class="tag">Sent 10:00 MT</span><span class="tag none">Awaiting his reply</span><span class="tag">Needed before Wed</span></div>
         </div>
       </div>
     </article>
 
     <article class="dec" data-id="d2">
       <div class="dec-top">
-        <label class="hit"><input type="checkbox" class="check" data-dec="d2" aria-label="Mark recap email owner assigned"></label>
+        <label class="hit"><input type="checkbox" class="check" data-dec="d2" aria-label="Mark recap email flag armed"></label>
         <div class="dec-body">
-          <div class="dec-title">Give the recap email an owner, or it does not fire on 7/31</div>
-          <div class="dec-why">The enable flag is absent and the copy is still a draft. It has sat unowned since Monday. The recap is the motion that turns a room of attendees into audit calls, so it is the revenue item of the week. Wednesday is the last day this can slip.</div>
-          <div class="dec-tags"><span class="tag none">Nobody owns it</span><span class="tag">Wed 7/29</span></div>
-        </div>
-      </div>
-    </article>
-
-    <article class="dec" data-id="d5">
-      <div class="dec-top">
-        <label class="hit"><input type="checkbox" class="check" data-dec="d5" aria-label="Mark building question resolved"></label>
-        <div class="dec-body">
-          <div class="dec-title">Building 1 or Building 2? The records disagree</div>
-          <div class="dec-why">In June the instruction was to enter Building 1 through the doors marked "Event Today" because of conference-center construction. The 7/30 venue record says Building 2, Room 105. Ask Alex, then get the answer onto the signage and into the day-before email. Miller Campus after dark is where people get lost.</div>
-          <div class="dec-tags"><span class="tag risk">Contradiction</span><span class="tag you">Ask Alex</span><span class="tag">Before Wed</span></div>
+          <div class="dec-title">Arm the recap email flag, or it does not fire on 7/31</div>
+          <div class="dec-why">The copy is unblocked. What is left is the flag on the server, and until that exists the send does not happen. The recap is the motion that turns a room of attendees into audit calls, so it is the revenue item of the week. Wednesday is the last day this can slip.</div>
+          <div class="dec-tags"><span class="tag risk">Flag not armed yet</span><span class="tag">Wed 7/29</span></div>
         </div>
       </div>
     </article>
@@ -401,12 +445,14 @@ footer p{margin-bottom:7px}
 <!-- ================= CHECKLIST ================= -->
 <section id="checklist">
   <div class="sec-head"><span class="sec-num">02</span><h2>The week checklist</h2></div>
-  <p class="sec-sub">Monday through the Friday follow-up. Today's day opens by itself. Things already done are ticked and dimmed. Tap the plus on any row for the reason it is there.</p>
+  <p class="sec-sub">Monday through the Friday follow-up. Today's day opens by itself. Things already done are ticked and dimmed. Tap the plus on any row for the reason it is there, and tap the pencil to leave yourself a note on it. Tapping a tick a second time unticks it, so a mis-tap costs you nothing.</p>
 
   <div class="tools">
     <button class="tbtn" id="tglDone" aria-pressed="false">Hide everything done</button>
     <button class="tbtn" id="openAll" aria-pressed="false">Open every day</button>
     <button class="tbtn" id="resetAll">Reset my ticks</button>
+    <button class="tbtn" id="resetNotes">Erase every note</button>
+    <span class="tstat" id="tstat" aria-live="polite"></span>
   </div>
 
   <!-- MONDAY -->
@@ -420,19 +466,19 @@ footer p{margin-bottom:7px}
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="M1" checked aria-label="Re-pull the live registration count"></label><div class="item-main"><span class="item-t">Re-pull the live registration count and names</span><div class="item-meta"><span class="tag auto">Auto</span><span class="tag ok">Done, superseded</span></div><details class="item-why"><summary>Why</summary><p>Monday's pull said 15 at 13:00 MT. Superseded by the 07-28 08:02 MT pull: 17. Re-pull again before any print job.</p></details></div></div>
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="M2" checked aria-label="Venue booking confirmed"></label><div class="item-main"><span class="item-t">Venue booking confirmed: date, Room 105, access window, layout</span><div class="item-meta"><span class="tag you">You</span><span class="tag ok">Done</span></div><details class="item-why"><summary>Why</summary><p>Locked. Confirmed three separate times on 6/30, 7/15 and 7/16. Do not re-ask.</p></details></div></div>
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="M3" checked aria-label="Contract signed and returned"></label><div class="item-main"><span class="item-t">Contract signed and returned to SLCC</span><div class="item-meta"><span class="tag you">You</span><span class="tag ok">Done</span></div><details class="item-why"><summary>Why</summary><p>Signed PDF emailed to alex.dotter@slcc.edu on 2026-07-15.</p></details></div></div>
-      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="M4" aria-label="Room fee paid in full, confirmed"></label><div class="item-main"><span class="item-t">Room fee paid in full, and CONFIRMED by SLCC</span><div class="item-meta"><span class="tag risk">Sharpest open risk</span><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>Your own word on 7/16 was "I've already paid for it", and that may well be right. But no receipt has ever been located, and Alex wrote on 6/30 that the space is not secured without a signed contract and payment in full. The contract went 7/15. Payment is the half nothing confirms. One line in the logistics email settles it. See the first card at the top of this page.</p></details></div></div>
-      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="M5" aria-label="Insurance paid and certificate in hand"></label><div class="item-main"><span class="item-t">Insurance PAID and certificate in hand</span><div class="item-meta"><span class="tag risk">Can cancel the room</span><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>Your last word to Alex on 7/15 was "I will get you the insurance information later on." No later email in the thread.</p></details></div></div>
-      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="M6" aria-label="Certificate of insurance sent to Alex"></label><div class="item-main"><span class="item-t">Certificate of insurance sent to Alex</span><div class="item-meta"><span class="tag risk">Tue EOD, hard</span><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>Blocked by the item above. Alex on 6/30: "your event space is not secured without a signed contract and deposit or payment in full." Do not let this slide to Wednesday.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M7" aria-label="Send the consolidated confirmation email to Alex"></label><div class="item-main"><span class="item-t">Send the consolidated logistics email to Alex</span><div class="item-meta"><span class="tag you">You send</span><span class="tag ok">Draft ready</span></div><details class="item-why"><summary>Why</summary><p>The draft is written, voice-gated at 94, and merged. Nothing left to write. It covers IT, bandwidth, cords, AV, after-hours access, parking, outside food, signage, teardown and a night-of contact. Carry the insurance certificate in the same email. A morning send gets a same-day answer.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M8" aria-label="Confirm IT and bandwidth"></label><div class="item-main"><span class="item-t">Confirm IT and BANDWIDTH for 15 to 30 laptops at once</span><div class="item-meta"><span class="tag you">You</span><span class="tag">In the Alex email</span></div><details class="item-why"><summary>Why</summary><p>Ask for the guest network name, the password, and any device cap. Single highest-risk unknown for a laptops-open session.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M9" aria-label="Confirm who supplies extension cords"></label><div class="item-main"><span class="item-t">Confirm who supplies extension cords and power strips</span><div class="item-meta"><span class="tag you">You</span><span class="tag">In the Alex email</span></div><details class="item-why"><summary>Why</summary><p>Assume we supply them until SLCC says otherwise, and buy anyway. Cords were the number one gap flagged onsite after the June run.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M10" aria-label="Confirm AV cable and adapter"></label><div class="item-main"><span class="item-t">Confirm AV: projector, screen, cable type, adapters, audio, lighting</span><div class="item-meta"><span class="tag you">You</span><span class="tag">Not verified</span></div><details class="item-why"><summary>Why</summary><p>You ran the same room on 6/25 and said Room 105 has everything you need, so AV is likely fine. Confirm the CABLE and the ADAPTER specifically, because that is what fails.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M11" aria-label="Confirm parking and after-hours access"></label><div class="item-main"><span class="item-t">Confirm parking, entrance, and after-hours door access</span><div class="item-meta"><span class="tag you">You</span><span class="tag">Partial</span></div><details class="item-why"><summary>Why</summary><p>The venue record says parking on site. Which lot, which entrance after 6pm, and whether exterior doors lock at night are all unconfirmed. This is also where the Building 1 versus Building 2 question gets settled.</p></details></div></div>
+      <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="M4" checked aria-label="Room fee paid in full, confirmed"></label><div class="item-main"><span class="item-t">Room fee paid in full, and CONFIRMED by SLCC</span><div class="item-meta"><span class="tag ok">Confirmed 7/28 10:12 MT</span></div><details class="item-why"><summary>Why</summary><p>Closed this morning. This was the sharpest open risk on the page for a week: the contract went 7/15, but Alex wrote on 6/30 that the space is not secured without a signed contract AND payment in full, and no receipt had ever been located. Confirmed paid at 10:12 MT. The room is yours.</p></details></div></div>
+      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="M5" aria-label="Insurance paid and certificate in hand"></label><div class="item-main"><span class="item-t">Insurance PAID and certificate in hand</span><div class="item-meta"><span class="tag">Buying it now</span><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>TheEventHelper, renewing policy L4860114 from the June run. Tick this once the certificate PDF is actually downloaded and on your machine, not when the card is charged.</p></details></div></div>
+      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="M6" aria-label="Certificate of insurance sent to Alex"></label><div class="item-main"><span class="item-t">Certificate of insurance sent to Alex</span><div class="item-meta"><span class="tag risk">The only deadline left</span><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>The purchase is not the finish line, his inbox is. Today, not Wednesday: he is in office Tuesday to Friday only. The room payment is already confirmed, so this no longer risks the booking, but it is the piece he asked for and it is still owed.</p></details></div></div>
+      <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="M7" checked aria-label="Send the consolidated confirmation email to Alex"></label><div class="item-main"><span class="item-t">Send the consolidated logistics email to Alex</span><div class="item-meta"><span class="tag ok">Sent 7/28 10:00 MT</span></div><details class="item-why"><summary>Why</summary><p>Sent at 10:00 MT this morning. It covers IT and bandwidth, cords, AV, after-hours access, parking, outside food, signage, teardown, the Building 1 versus Building 2 question and a night-of contact. Now it is his move. Everything below tagged "awaiting his reply" is answered by that one email.</p></details></div></div>
+      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M8" aria-label="Confirm IT and bandwidth"></label><div class="item-main"><span class="item-t">Confirm IT and BANDWIDTH for 15 to 30 laptops at once</span><div class="item-meta"><span class="tag">Asked 10:00 MT</span><span class="tag none">Awaiting his reply</span></div><details class="item-why"><summary>Why</summary><p>Asked for the guest network name, the password, and any device cap. Single highest-risk unknown for a laptops-open session. Write the network name and password in the note line here the second he sends them, so you are not digging through email at 6:15 PM Thursday.</p></details></div></div>
+      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M9" aria-label="Confirm who supplies extension cords"></label><div class="item-main"><span class="item-t">Confirm who supplies extension cords and power strips</span><div class="item-meta"><span class="tag">Asked 10:00 MT</span><span class="tag none">Awaiting his reply</span></div><details class="item-why"><summary>Why</summary><p>Buy them anyway, whatever he says. Cheap, reusable at every future workshop, and cords were the number one gap flagged onsite after the June run.</p></details></div></div>
+      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M10" aria-label="Confirm AV cable and adapter"></label><div class="item-main"><span class="item-t">Confirm AV: projector, screen, cable type, adapters, audio, lighting</span><div class="item-meta"><span class="tag">Asked 10:00 MT</span><span class="tag none">Awaiting his reply</span></div><details class="item-why"><summary>Why</summary><p>You ran the same room on 6/25 and said Room 105 has everything you need, so AV is likely fine. The CABLE and the ADAPTER are the parts that fail, so those are the parts to confirm.</p></details></div></div>
+      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M11" aria-label="Confirm parking and after-hours access"></label><div class="item-main"><span class="item-t">Confirm parking, entrance, and after-hours door access</span><div class="item-meta"><span class="tag">Asked 10:00 MT</span><span class="tag none">Awaiting his reply</span></div><details class="item-why"><summary>Why</summary><p>Which lot, which entrance after 6pm, and whether exterior doors lock at night. This is also where Building 1 versus Building 2 gets settled. His answer goes onto the signage and into the day-before email, so note it here the moment it lands.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M12" aria-label="Decide food"></label><div class="item-main"><span class="item-t">Decide food: what, from where, how many, budget</span><div class="item-meta"><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>People come straight from work to a 7:00 PM session. Light food, set out at 6:30 doors. The Costco run below covers this if you go that route.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M13" aria-label="Ask about dietary and accessibility needs"></label><div class="item-main"><span class="item-t">Ask about dietary and accessibility needs</span><div class="item-meta"><span class="tag auto">Auto</span></div><details class="item-why"><summary>Why</summary><p>One line in the two-days-out email, which already fired 7/28 at 07:30 MT. If it did not carry, it rides the day-before touch.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M14" aria-label="Line up a helper"></label><div class="item-main"><span class="item-t">Line up a helper for check-in, photos and the door</span><div class="item-meta"><span class="tag risk">Top-five risk</span><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>You cannot set up, greet, check in, present and shoot photos at once. Even one person changes the night. Photos and two or three video testimonials are the next month of marketing, and they get captured in the room or not at all.</p></details></div></div>
+      <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="M14" checked aria-label="Line up a helper"></label><div class="item-main"><span class="item-t">Cover for check-in, the door, photos and video</span><div class="item-meta"><span class="tag ok">Settled 7/28</span></div><details class="item-why"><summary>Why</summary><p>Decided: you run check-in and the welcome yourself, and Luke Pierce, your mentor, has volunteered for photos and video. That covers the part that could not be recovered afterwards. Photos and two or three video testimonials are the next month of marketing and they get captured in the room or not at all, so having a second pair of hands on exactly that is the version of this that mattered.</p></details></div></div>
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="M15" checked aria-label="Verify the registrant email sequence is armed"></label><div class="item-main"><span class="item-t">Registrant email sequence armed and date-gated</span><div class="item-meta"><span class="tag auto">Auto</span><span class="tag ok">Verified live</span></div><details class="item-why"><summary>Why</summary><p>Verified on the server: the enable flag exists, the schedule is installed, and the log shows date-gate skips rather than flag-absent skips. Two days out fired 7/28, day before fires 7/29, day of fires 7/30.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M16" aria-label="Recap email"></label><div class="item-main"><span class="item-t">Recap email, the post-workshop touch</span><div class="item-meta"><span class="tag none">Unowned</span><span class="tag risk">At risk</span></div><details class="item-why"><summary>Why</summary><p>Flag absent, copy still a draft, unchanged since Monday. See decision 2 at the top of this page.</p></details></div></div>
+      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="M16" aria-label="Recap email"></label><div class="item-main"><span class="item-t">Recap email, the post-workshop touch</span><div class="item-meta"><span class="tag ok">Copy unblocked</span><span class="tag risk">Flag not armed</span></div><details class="item-why"><summary>Why</summary><p>The copy is no longer the blocker. The flag on the server is. Until it exists the 7/31 send does not happen. See the last card at the top of this page.</p></details></div></div>
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="M17" checked aria-label="Full registrant email sequence audit"></label><div class="item-main"><span class="item-t">Full registrant email sequence audit</span><div class="item-meta"><span class="tag auto">Owned elsewhere</span></div><details class="item-why"><summary>Why</summary><p>Listed for visibility only. Do not duplicate the work.</p></details></div></div>
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="M18" checked aria-label="Seat-fill push"></label><div class="item-main"><span class="item-t">Seat-fill push, ending 7/29</span><div class="item-meta"><span class="tag ok">Decided</span></div><details class="item-why"><summary>Why</summary><p>17 of about 30. Only the free ad set is running. The direct one has been paused since 7/25 with zero spend since. The free set carries a hard stop of 2026-07-29 at 10:04 AM MT, about 33 hours before doors. You decided 7/28 at 08:25 MT to let it stop. July spend on this push was $438.15.</p></details></div></div>
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="M19" checked aria-label="Workshop content plan"></label><div class="item-main"><span class="item-t">Content plan: what exists, what is missing</span><div class="item-meta"><span class="tag ok">Done, corrected</span></div><details class="item-why"><summary>Why</summary><p>The run of show, the principle stack, the three take-home skills, the handout pack and the bottle playbook all exist. And the slide deck exists: 33 rendered slides, in the Slides section below. Monday's note said no deck existed. That was wrong. The remaining gap is the refreshed run of show, not the deck.</p></details></div></div>
@@ -448,10 +494,10 @@ footer p{margin-bottom:7px}
       <span class="meter"><span class="c" data-count="tue">0 / 0</span><span class="bar"><i data-fill="tue"></i></span></span>
     </summary>
     <div class="day-body">
-      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="T1" aria-label="Certificate of insurance delivered to Alex"></label><div class="item-main"><span class="item-t">HARD: certificate of insurance delivered to Alex</span><div class="item-meta"><span class="tag risk">The one hard external deadline</span><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>The only external deadline of the week, and the only item another party can cancel the room over.</p></details></div></div>
-      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="T2" aria-label="Send the confirmation email to Alex"></label><div class="item-main"><span class="item-t">Send the logistics email to Alex, morning</span><div class="item-meta"><span class="tag you">You send</span><span class="tag ok">Draft merged</span></div><details class="item-why"><summary>Why</summary><p>A 10-minute send, not a drafting job. Alex is in office Tuesday to Friday 7 to 5, so a morning send gets a same-day answer. Attach the insurance certificate to the same email.</p></details></div></div>
+      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="T1" aria-label="Certificate of insurance delivered to Alex"></label><div class="item-main"><span class="item-t">HARD: certificate of insurance delivered to Alex</span><div class="item-meta"><span class="tag risk">The only deadline left this week</span><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>Buying it this morning on TheEventHelper, renewing policy L4860114 from June. With the room payment confirmed at 10:12 MT, this no longer risks the booking, but it is still the one thing another party is waiting on from you, and he is only in office Tuesday to Friday.</p></details></div></div>
+      <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="T2" checked aria-label="Send the confirmation email to Alex"></label><div class="item-main"><span class="item-t">Send the logistics email to Alex, morning</span><div class="item-meta"><span class="tag ok">Sent 10:00 MT</span><span class="tag none">Awaiting his reply</span></div><details class="item-why"><summary>Why</summary><p>Went out at 10:00 this morning. It carries bandwidth, cords, AV, after-hours access, parking, signage, teardown, the night-of contact and the Building 1 versus Building 2 question. His answers gate the building and the door, so the next move on all of that is his, not yours. The insurance certificate follows as a separate send once you have the PDF.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="T3" aria-label="Buy extension cords and power strips"></label><div class="item-main"><span class="item-t">Supply run: extension cords, 2 to 3, plus power strips</span><div class="item-meta"><span class="tag you">You</span><span class="tag">Costco section below</span></div><details class="item-why"><summary>Why</summary><p>Buy regardless of what SLCC says. Cheap, reusable at every future workshop, and June flagged this onsite.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="T4" aria-label="Buy water and cooler or ice"></label><div class="item-main"><span class="item-t">Supply run: case of water, cooler or ice</span><div class="item-meta"><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>Kirkland 16.9 oz sealed is what the label spec is built around, so the bottle choice is not free. One run covers the cords, the water, the tags and the snacks.</p></details></div></div>
+      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="T4" aria-label="Buy water and ice"></label><div class="item-main"><span class="item-t">Supply run: case of water, plus ice</span><div class="item-meta"><span class="tag you">You</span><span class="tag ok">Cooler settled, you own one</span></div><details class="item-why"><summary>Why</summary><p>You own a cooler, so ice is the only part of that to buy. Kirkland 16.9 oz sealed is what the label spec is built around, so the bottle choice is not free. One run covers the cords, the water, the tags and the snacks.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="T5" aria-label="Print and apply bottle labels"></label><div class="item-main"><span class="item-t">Bottle labels: print, laminate, apply, test-scan</span><div class="item-meta"><span class="tag ok">File is ready</span><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>Printing black and white at Brantoworks. The sheet is built and verified, six labels per US Letter page. See the Bottles section below for the file and the one print setting that can ruin it. Tell the counter: actual size, 100 percent, no scaling. Recommendation is 8 to 10 bottles for the front tables and the photos, not the whole case.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="T6" aria-label="Buy name tags markers pens tape"></label><div class="item-main"><span class="item-t">Supply run: name tags, markers, pens, tape</span><div class="item-meta"><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>Name tags do real work in a room of owners who should be meeting each other.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="T7" aria-label="Order or confirm food"></label><div class="item-main"><span class="item-t">Order or confirm food</span><div class="item-meta"><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>Confirm the pickup time fits the 5:30 PM load-in. The Costco list below supersedes this if you go that route.</p></details></div></div>
@@ -464,11 +510,11 @@ footer p{margin-bottom:7px}
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="T14" aria-label="Record the parachute run"></label><div class="item-main"><span class="item-t">Record a clean run of the hero demo as an offline parachute</span><div class="item-meta"><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>If the wifi dies mid-session, this is the difference between a recovery and a dead room.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="T15" aria-label="Prepare the close"></label><div class="item-main"><span class="item-t">Prepare the close: offer, QR, referral ask</span><div class="item-meta"><span class="tag auto">Auto</span></div><details class="item-why"><summary>Why</summary><p>Offer under 10 minutes, then questions. Offer before questions, always.</p></details></div></div>
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="T16" checked aria-label="Verify the close URL"></label><div class="item-main"><span class="item-t">Close link verified in a real browser, desktop and phone</span><div class="item-meta"><span class="tag ok">Verified today</span></div><details class="item-why"><summary>Why</summary><p>Opened live at 1440 and 375 wide. It shows the free audit for owner-operators, 45 minutes, Mountain Time. That is the same address printed on the bottle. A 200 response is not proof, so it was looked at.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="T18" aria-label="Confirm the helper"></label><div class="item-main"><span class="item-t">Confirm the helper: time, role, what to bring</span><div class="item-meta"><span class="tag risk">Blocked on the helper</span><span class="tag you">You</span></div></div></div>
+      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="T18" aria-label="Confirm Luke for photos and video"></label><div class="item-main"><span class="item-t">Confirm Luke: what time, what to shoot, what to bring</span><div class="item-meta"><span class="tag you">You</span><span class="tag ok">He volunteered</span></div><details class="item-why"><summary>Why</summary><p>Luke Pierce volunteered for photos and video. Give him a time, the four shots that matter, and tell him whether he is bringing a tripod. A volunteer with no brief shoots the wrong things, and there is no second take on Thursday night.</p></details></div></div>
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="T17" checked aria-label="Confirm the two-days-out email fired"></label><div class="item-main"><span class="item-t">Two-days-out email fired, carrying Room 105</span><div class="item-meta"><span class="tag ok">Done, one gap closed</span></div><details class="item-why"><summary>Why</summary><p>16 sends confirmed from the live log at 07:30 MT. One registrant landed at 07:56, 26 minutes after the run, so he missed that touch. He picks up the day-before email on 7/29, and a catch-up was sent.</p></details></div></div>
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="T19" checked aria-label="Attendee research briefs"></label><div class="item-main"><span class="item-t">Attendee research briefs, all 17 registrants</span><div class="item-meta"><span class="tag ok">Delivered</span></div><details class="item-why"><summary>Why</summary><p>One page each, handed privately at the seat. Real constraint: only 5 of 17 carry a business domain, 12 are consumer addresses, and 15 of 17 have no first name on file. Two guardrails: the workshop does not work attendees' individual tasks, so the briefs are a private gift at the seat and nothing in the room implies per-attendee build work. And demos run on a volunteer or a sample business, never a real attendee's gaps on the big screen.</p></details></div></div>
       <div class="item is-done"><label class="hit"><input type="checkbox" class="check" data-k="T20" checked aria-label="Brandon message drafted"></label><div class="item-main"><span class="item-t">Brandon message drafted for you to send</span><div class="item-meta"><span class="tag ok">Draft ready</span><span class="tag you">You send</span></div><details class="item-why"><summary>Why</summary><p>Drafted and voice-gated, never sent on your behalf. It is yours to send as part of your daily report.</p></details></div></div>
-      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="T21" aria-label="Recap email unblocked"></label><div class="item-main"><span class="item-t">Recap email is blocked and unowned, at risk</span><div class="item-meta"><span class="tag none">Nobody</span><span class="tag risk">Wed at the latest</span></div><details class="item-why"><summary>Why</summary><p>The only item on the whole checklist with no owner. Two things have to happen before Wednesday ends: the copy passes the voice gate, and the flag gets created on the server. Right now the follow-up does not fire on 7/31.</p></details></div></div>
+      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="T21" aria-label="Recap email flag armed"></label><div class="item-main"><span class="item-t">Arm the recap email flag on the server</span><div class="item-meta"><span class="tag ok">Copy unblocked</span><span class="tag risk">Wed at the latest</span></div><details class="item-why"><summary>Why</summary><p>The copy half is done. What is left is the flag existing on the server. Until it does, the follow-up does not fire on 7/31, and the recap is the motion that turns a full room into audit calls.</p></details></div></div>
     </div>
   </details>
 
@@ -495,7 +541,8 @@ footer p{margin-bottom:7px}
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="W13" aria-label="Pack the kit"></label><div class="item-main"><span class="item-t">Pack the kit physically, car loaded Wednesday night</span><div class="item-meta"><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>Wednesday night, not Thursday afternoon. Labeled bottles need to be done before the car gets loaded.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="W14" aria-label="Check weather and set departure"></label><div class="item-main"><span class="item-t">Check weather, set departure time with traffic padding</span><div class="item-meta"><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>Sandy at 4:30 to 5:00 PM on a weekday is rush hour.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="W15" aria-label="Prepare the testimonial ask"></label><div class="item-main"><span class="item-t">Prepare the testimonial ask</span><div class="item-meta"><span class="tag auto">Auto</span></div><details class="item-why"><summary>Why</summary><p>These attendees are leads to contract work. Testimonials get captured in the room or not at all.</p></details></div></div>
-      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="W16" aria-label="Stage the post-workshop follow-up"></label><div class="item-main"><span class="item-t">Stage the post-workshop follow-up so it is ready to fire</span><div class="item-meta"><span class="tag none">Unowned</span><span class="tag risk">Last day it can slip</span></div></div></div>
+      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="W16" aria-label="Stage the post-workshop follow-up"></label><div class="item-main"><span class="item-t">Arm the recap flag so the 7/31 follow-up actually fires</span><div class="item-meta"><span class="tag risk">Last day it can slip</span></div><details class="item-why"><summary>Why</summary><p>Copy is unblocked. The flag is the remaining half, and Wednesday is the last day it can slip and still fire.</p></details></div></div>
+      <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="W19" aria-label="Lock the kit URL and print the QR"></label><div class="item-main"><span class="item-t">Lock the take-home kit URL, then print the QR</span><div class="item-meta"><span class="tag risk">Print LAST</span><span class="tag you">You</span></div><details class="item-why"><summary>Why</summary><p>The kit page is moving to its own address, decided 7/28 at 10:12. A QR printed against the old address is worse than no QR, because it fails silently in a room where nobody will tell you. So the order is: URL final, open the final address in a browser and look at it, scan the printed code with your own phone, then print the rest. Current address: <a class="kitlink" data-kit href="#" target="_blank" rel="noopener">the kit page</a>.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="W17" aria-label="Print the run-of-show card"></label><div class="item-main"><span class="item-t">Print the one-page run-of-show card you hold during the session</span><div class="item-meta"><span class="tag auto">Auto</span></div></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="W18" aria-label="Confirm the ads stopped"></label><div class="item-main"><span class="item-t">Confirm the ads actually stopped</span><div class="item-meta"><span class="tag ok">Decided 7/28</span><span class="tag auto">Verify Wed</span></div><details class="item-why"><summary>Why</summary><p>No action needed to make it happen. The free campaign carries a hard stop of 2026-07-29 at 10:04 AM MT and the direct one has been paused since 7/25. Wednesday's job is to verify delivery ended and record it. Do not write to the ad account.</p></details></div></div>
     </div>
@@ -525,12 +572,12 @@ footer p{margin-bottom:7px}
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D13" aria-label="Food out"></label><div class="item-main"><span class="item-t">Food and drinks out</span><div class="item-meta"><span class="tag">6:25 PM</span></div></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D14" aria-label="Signage"></label><div class="item-main"><span class="item-t">Signage at the building entrance and on the Room 105 door</span><div class="item-meta"><span class="tag risk">People will get lost</span><span class="tag">6:25 PM</span></div><details class="item-why"><summary>Why</summary><p>Miller Campus after dark. Settle the Building 1 versus Building 2 question before you print the signs.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D15" aria-label="Wifi details posted"></label><div class="item-main"><span class="item-t">Guest wifi name and password written where everyone can see it</span><div class="item-meta"><span class="tag">6:25 PM</span></div><details class="item-why"><summary>Why</summary><p>Every attendee asks within four minutes. Answer it before it is asked.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D16" aria-label="Brief the helper"></label><div class="item-main"><span class="item-t">Brief the helper</span><div class="item-meta"><span class="tag">6:25 PM</span></div></div></div>
+      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D16" aria-label="Brief Luke on the shots"></label><div class="item-main"><span class="item-t">Brief Luke on the four shots before doors</span><div class="item-meta"><span class="tag">6:25 PM</span></div><details class="item-why"><summary>Why</summary><p>Room wide, you presenting, attendees heads-down on laptops, and a close-up of real work on a screen. Two minutes of direction is the difference between usable marketing and 200 photos of the backs of heads.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D17" aria-label="Sound and lighting check"></label><div class="item-main"><span class="item-t">Sound and lighting check, including the dimmer</span><div class="item-meta"><span class="tag">6:28 PM</span></div></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D18" aria-label="Doors open"></label><div class="item-main"><span class="item-t">Doors open, greet each person by name off the roster</span><div class="item-meta"><span class="tag">6:30 PM</span></div></div></div>
       <div class="item hard"><label class="hit"><input type="checkbox" class="check" data-k="D19" aria-label="Capture walk-ins"></label><div class="item-main"><span class="item-t">Capture every walk-in: name and email before they sit</span><div class="item-meta"><span class="tag risk">No email, no proceed</span><span class="tag">6:30 to 7:00</span></div></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D20" aria-label="Photos early"></label><div class="item-main"><span class="item-t">Photos early, while the room is full</span><div class="item-meta"><span class="tag">6:45 PM</span></div><details class="item-why"><summary>Why</summary><p>Room wide, you presenting, attendees on laptops, close-up of real work on a screen.</p></details></div></div>
-      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D21" aria-label="Video capture"></label><div class="item-main"><span class="item-t">Video: opening, hero moment, close</span><div class="item-meta"><span class="tag">During</span></div><details class="item-why"><summary>Why</summary><p>A phone on a tripod is enough. This is the next month of marketing.</p></details></div></div>
+      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D20" aria-label="Photos early"></label><div class="item-main"><span class="item-t">Photos early, while the room is full. Luke shoots</span><div class="item-meta"><span class="tag">6:45 PM</span><span class="tag ok">Luke</span></div><details class="item-why"><summary>Why</summary><p>Room wide, you presenting, attendees on laptops, close-up of real work on a screen. Early, because the room thins out.</p></details></div></div>
+      <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D21" aria-label="Video capture"></label><div class="item-main"><span class="item-t">Video: opening, hero moment, close. Luke shoots</span><div class="item-meta"><span class="tag">During</span><span class="tag ok">Luke</span></div><details class="item-why"><summary>Why</summary><p>A phone on a tripod is enough. This is the next month of marketing.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D22" aria-label="Run the session"></label><div class="item-main"><span class="item-t">Run the session to the run of show</span><div class="item-meta"><span class="tag">7:00 to 8:20</span></div><details class="item-why"><summary>Why</summary><p>Protect the Decision Council build. Cut anything else if the clock slips. The bottle on every table promises they leave with a tool they built, so that module running is a promise, not a preference.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D23" aria-label="The close"></label><div class="item-main"><span class="item-t">The close: offer, QR, referral ask, then questions</span><div class="item-meta"><span class="tag">8:20 PM</span></div><details class="item-why"><summary>Why</summary><p>Offer before questions, always.</p></details></div></div>
       <div class="item"><label class="hit"><input type="checkbox" class="check" data-k="D24" aria-label="Video testimonials"></label><div class="item-main"><span class="item-t">Capture 2 to 3 video testimonials before people leave</span><div class="item-meta"><span class="tag">8:30 PM</span></div><details class="item-why"><summary>Why</summary><p>"What did you walk in with, and what are you walking out with?"</p></details></div></div>
@@ -707,22 +754,24 @@ footer p{margin-bottom:7px}
     <tr><td>Laptop</td><td>Slide PDF from your phone or the USB stick, on any borrowed machine.</td></tr>
     <tr><td>Only 6 to 8 show</td><td>Run it exactly as designed. The June plan says explicitly: design to wow 8 people.</td></tr>
     <tr><td>More than 30 show</td><td>Standing room, waitlist the overflow for the next date. Never turn a warm lead away.</td></tr>
-    <tr><td>You are delayed</td><td>The helper opens the room, greets, and runs check-in.</td></tr>
+    <tr><td>You are delayed</td><td>Call Alex Dotter on the way, 801-957-5294, and ask Luke to open and hold the room. You are running check-in yourself, so a delay costs you the greeting, not the session.</td></tr>
   </table>
 
   <div class="note-box">
-    <div class="k">The five things most likely to hurt this week</div>
-    <p><strong>1. Insurance.</strong> Not paid, not sent, and the only item a third party can cancel the room over.</p>
-    <p><strong>2. The recap email has no owner and will not fire.</strong> If Wednesday ends with it unfixed, the motion that turns a full room into audit calls does not happen on 7/31.</p>
-    <p><strong>3. Bandwidth is an unknown</strong> for a session where 15 to 30 people all open laptops at once. Nobody has asked SLCC yet. It is in the email that is drafted and waiting.</p>
-    <p><strong>4. No helper.</strong> You are currently set up to greet, check in, present, photograph and tear down alone.</p>
-    <p style="margin-bottom:0"><strong>5. The headcount keeps moving and everything printed depends on it.</strong> 15 Monday, 17 Tuesday morning, and one registration landed 26 minutes after the mailer ran. Anything printed off a stale number is wrong by Thursday.</p>
+    <div class="k">What is actually left, as of 7/28 mid-morning</div>
+    <p><strong>Closed since this list was written:</strong> the room payment is confirmed, the logistics email is sent, the helper question is settled, the cooler is settled, and printing is black and white at Brantoworks. Five things came off. Here is what has not.</p>
+    <p><strong>1. Insurance.</strong> Buying it now, policy L4860114. It is not done when the card clears, it is done when the certificate is in Alex's inbox.</p>
+    <p><strong>2. The recap flag is not armed.</strong> If Wednesday ends with it unarmed, the motion that turns a full room into audit calls does not happen on 7/31. Copy is no longer the blocker.</p>
+    <p><strong>3. Bandwidth is still an unknown</strong> for a session where 15 to 30 people all open laptops at once. It is asked, in the 10:00 email, and the answer is Alex's to give. Assume nothing until he writes back.</p>
+    <p><strong>4. Wednesday's full timed dry run.</strong> The single highest-value thing left this week, and the easiest one to let slide because nothing external is chasing it.</p>
+    <p style="margin-bottom:0"><strong>5. The headcount keeps moving and everything printed depends on it.</strong> 15 Monday, 17 Tuesday morning, and one registration landed 26 minutes after the mailer ran. Anything printed off a stale number is wrong by Thursday. Same rule for the QR: URL final first, print second.</p>
   </div>
 </section>
 
 <footer>
   <p>Registration count is live as of 2026-07-28 08:02 MT, cohort filtered, test rows excluded. It moved twice on 7/28 alone, so treat it as volatile and re-pull before any print job.</p>
-  <p>Your ticks are saved in this browser only. Nothing on this page is sent anywhere and nothing here buys, orders or emails anything on your behalf.</p>
+  <p>Your ticks and your notes are saved in this browser, on this device, and nowhere else. Nothing on this page is sent anywhere, and nothing here buys, orders or emails anything on your behalf. Clearing your browser data clears them, so anything you would be sorry to lose belongs somewhere else too.</p>
+  <p>Attendee take-home page: <a class="kitlink" data-kit href="#" target="_blank" rel="noopener">the kit</a>. It is moving to its own address this week, so check it renders before you print anything that points at it.</p>
 </footer>
 </div>
 
@@ -747,6 +796,15 @@ footer p{margin-bottom:7px}
   try { store = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ store = {}; }
   function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){} }
 
+  /* ---- the take-home kit address ----
+     It is moving to its own domain this week. CHANGE IT HERE, ONE LINE, and
+     every mention on this page follows. Do not hard-code it into the markup. */
+  var KIT_URL = 'https://catalystworks.consulting/kit/';
+  Array.prototype.forEach.call(document.querySelectorAll('[data-kit]'), function(a){
+    a.href = KIT_URL;
+    a.title = KIT_URL;
+  });
+
   /* ---- nav ---- */
   var burger = document.getElementById('burger');
   var navlinks = document.getElementById('navlinks');
@@ -758,7 +816,15 @@ footer p{margin-bottom:7px}
     if (e.target.tagName === 'A'){ navlinks.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
   });
 
-  /* ---- checkbox state ---- */
+  /* ---- checkbox state ----
+     Every row carries an EXPLICIT id in the HTML (data-k="W1", data-dec="d1",
+     data-s="n8"). State is stored against that id and never against the row's
+     text or its position in the DOM. That is deliberate: this page gets
+     republished mid-week, and rows get reworded, reordered, added and removed
+     when the facts move. Keyed on text or index, a Wednesday republish would
+     silently slide Tuesday's notes onto the wrong rows. Keyed on the id, a
+     reworded row keeps its note, a deleted row's note simply goes unrendered,
+     and a NEW row starts empty. Ids are never recycled. */
   var boxes = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox]'));
   boxes.forEach(function(b){
     var k = b.dataset.k || ('dec:' + b.dataset.dec) || ('shop:' + b.dataset.s);
@@ -768,6 +834,102 @@ footer p{margin-bottom:7px}
     if (Object.prototype.hasOwnProperty.call(store, k)) b.checked = !!store[k];
     b.addEventListener('change', function(){
       store[b.dataset.key] = b.checked; save(); refresh();
+    });
+  });
+
+  /* ---- notes, one per row, same store, same stable ids ---- */
+  var NOTE_KEY = function(k){ return 'note:' + k; };
+  var noteEls = {};
+
+  function noteHost(box){
+    var r = box.closest('.item');     if (r) return r.querySelector('.item-main');
+    r = box.closest('.dec');          if (r) return r.querySelector('.dec-body');
+    r = box.closest('.shop-row');     if (r) return r.querySelector('.m');
+    return null;
+  }
+  function autosize(ta){ ta.style.height = 'auto'; ta.style.height = Math.max(104, ta.scrollHeight + 2) + 'px'; }
+
+  function paintNote(rec){
+    var v = (store[NOTE_KEY(rec.key)] || '').trim();
+    rec.d.classList.toggle('has', !!v);
+    rec.d.classList.toggle('editing', rec.d.open);
+    rec.txt.textContent = rec.d.open ? 'Close this note' : (v || 'Note');
+    rec.d.querySelector('summary').setAttribute('aria-label',
+      rec.d.open ? 'Close this note' : (v ? ('Edit the note: ' + v) : 'Add a note to this item'));
+  }
+
+  var noteTimers = {}, dirty = {};
+  function writeNote(rec, now){
+    dirty[rec.key] = rec.ta.value;
+    clearTimeout(noteTimers[rec.key]);
+    var commit = function(){
+      store[NOTE_KEY(rec.key)] = rec.ta.value;
+      if (!rec.ta.value.trim()) delete store[NOTE_KEY(rec.key)];
+      delete dirty[rec.key];
+      save(); paintNote(rec); stat();
+      rec.saved.classList.add('on');
+      setTimeout(function(){ rec.saved.classList.remove('on'); }, 1600);
+    };
+    if (now) commit(); else noteTimers[rec.key] = setTimeout(commit, 500);
+  }
+  /* He closes this tab in a parking lot. Anything still inside a debounce
+     when the tab goes away has to land before it does. */
+  function flushNotes(){
+    Object.keys(dirty).forEach(function(k){
+      var rec = noteEls[k]; if (rec){ clearTimeout(noteTimers[k]); writeNote(rec, true); }
+    });
+  }
+  document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') flushNotes(); });
+  window.addEventListener('pagehide', flushNotes);
+
+  boxes.forEach(function(b){
+    var host = noteHost(b); if (!host) return;
+    var key = b.dataset.key;
+
+    var d = document.createElement('details');
+    d.className = 'note';
+    var sum = document.createElement('summary');
+    sum.innerHTML = '<span class="pen" aria-hidden="true">&#9998;</span><span class="note-txt"></span>';
+    var ta = document.createElement('textarea');
+    ta.rows = 3;
+    ta.placeholder = 'What you learned. Saves as you type.';
+    ta.value = store[NOTE_KEY(key)] || '';
+    var act = document.createElement('div'); act.className = 'note-act';
+    var clr = document.createElement('button'); clr.type = 'button'; clr.className = 'note-clear'; clr.textContent = 'Clear this note';
+    var sv  = document.createElement('span'); sv.className = 'note-saved'; sv.textContent = 'Saved';
+    act.appendChild(clr); act.appendChild(sv);
+    d.appendChild(sum); d.appendChild(ta); d.appendChild(act);
+    /* Park the note next to the row's WHY toggle instead of under it. */
+    var acts = document.createElement('div');
+    acts.className = 'row-acts';
+    var why = host.querySelector(':scope > .item-why');
+    if (why) acts.appendChild(why);
+    acts.appendChild(d);
+    host.appendChild(acts);
+
+    var rec = { key:key, d:d, ta:ta, txt:sum.querySelector('.note-txt'), saved:sv };
+    noteEls[key] = rec;
+    paintNote(rec);
+
+    ta.addEventListener('input', function(){ autosize(ta); writeNote(rec, false); });
+    ta.addEventListener('blur',  function(){ writeNote(rec, true); document.body.classList.remove('typing'); });
+    /* The floating count pill sits over the bottom-left of the list. Harmless
+       while scrolling, in the way while writing. So it stands down while he types. */
+    ta.addEventListener('focusin', function(){ document.body.classList.add('typing'); });
+    /* The phone keyboard slides up over roughly the bottom half. Centring the
+       field AFTER that animation is what keeps it visible while he types. */
+    ta.addEventListener('focus', function(){
+      setTimeout(function(){
+        try { ta.scrollIntoView({ block:'center', behavior:'smooth' }); }
+        catch(e){ ta.scrollIntoView(); }
+      }, 330);
+    });
+    d.addEventListener('toggle', function(){ paintNote(rec); if (d.open) autosize(ta); });
+    clr.addEventListener('click', function(){
+      ta.value = ''; autosize(ta);
+      clearTimeout(noteTimers[key]); delete dirty[key];
+      delete store[NOTE_KEY(key)]; save(); paintNote(rec); stat();
+      d.open = false;
     });
   });
 
@@ -811,6 +973,19 @@ footer p{margin-bottom:7px}
     function tally(list){ var c=0; Array.prototype.forEach.call(list,function(i){ if(i.checked) c++; }); return c; }
     document.getElementById('sumA').textContent = tally(a) + ' / ' + a.length;
     document.getElementById('sumB').textContent = tally(b) + ' / ' + b.length;
+    stat();
+  }
+
+  /* what is LEFT is the number he actually wants standing in an aisle */
+  function stat(){
+    var el = document.getElementById('tstat'); if (!el) return;
+    var all = document.querySelectorAll('#checklist input[type=checkbox]');
+    var done = 0;
+    Array.prototype.forEach.call(all, function(i){ if (i.checked) done++; });
+    var notes = Object.keys(store).filter(function(k){
+      return k.indexOf('note:') === 0 && String(store[k]).trim();
+    }).length;
+    el.textContent = (all.length - done) + ' left  ·  ' + done + ' done  ·  ' + notes + (notes === 1 ? ' note' : ' notes');
   }
 
   /* ---- today opens itself ---- */
@@ -834,12 +1009,27 @@ footer p{margin-bottom:7px}
     openAll.setAttribute('aria-pressed', String(on));
     openAll.textContent = on ? 'Collapse every day' : 'Open every day';
   });
+  /* Ticks and notes reset SEPARATELY and neither touches the other. A tick is
+     one tap to put back. A note is the only thing on this page that cannot be
+     reconstructed from anywhere else, so it never rides along with a reset. */
   document.getElementById('resetAll').addEventListener('click', function(){
-    if (!window.confirm('Clear every tick on the checklist and the decisions?')) return;
-    Object.keys(store).forEach(function(k){ if (k.indexOf('shop:') !== 0) delete store[k]; });
+    if (!window.confirm('Clear every tick on the checklist and the decisions?\n\nYour notes are kept.')) return;
+    Object.keys(store).forEach(function(k){
+      if (k.indexOf('shop:') !== 0 && k.indexOf('note:') !== 0) delete store[k];
+    });
     boxes.forEach(function(b){ if (b.dataset.key.indexOf('shop:') !== 0) b.checked = b.defaultChecked; });
     boxes.forEach(function(b){ if (b.dataset.key.indexOf('shop:') !== 0) store[b.dataset.key] = b.checked; });
     save(); refresh();
+  });
+  document.getElementById('resetNotes').addEventListener('click', function(){
+    var n = Object.keys(store).filter(function(k){ return k.indexOf('note:') === 0; }).length;
+    if (!n){ window.alert('There are no notes to erase yet.'); return; }
+    if (!window.confirm('Erase all ' + n + ' of your notes?\n\nThis cannot be undone. Your ticks are kept.')) return;
+    Object.keys(store).forEach(function(k){ if (k.indexOf('note:') === 0) delete store[k]; });
+    Object.keys(noteEls).forEach(function(k){
+      var rec = noteEls[k]; rec.ta.value = ''; rec.d.open = false; paintNote(rec);
+    });
+    save(); stat();
   });
   var aisle = document.getElementById('aisleBtn');
   if (store['ui:aisle']) { document.body.classList.add('aisle'); aisle.setAttribute('aria-pressed','true'); }
@@ -931,6 +1121,7 @@ footer p{margin-bottom:7px}
 </script>
 </body>
 </html>
+
 
 
 
