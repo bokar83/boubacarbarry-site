@@ -322,6 +322,29 @@ strong{font-weight:600}
 a{color:var(--amber-deep);text-decoration-thickness:1px;text-underline-offset:3px}
 .band.ink a,.vault a{color:var(--molten)}
 
+/* ---------- storage warning ----------
+   Hidden by default and only ever revealed by script. If this laptop
+   refuses to save, an attendee must find that out in the first five
+   seconds, not after typing for ten minutes. Amber, top of page, above
+   everything, and it does not scroll away on its own. */
+.nosave{
+  display:none;
+  background:var(--amber);color:#1A1410;
+  border-bottom:2px solid var(--ink);
+}
+.nosave.on{display:block}
+.nosave-in{
+  max-width:1180px;margin:0 auto;padding:16px var(--pad);
+  display:flex;gap:14px 20px;align-items:flex-start;flex-wrap:wrap;
+}
+.nosave b{
+  font-family:var(--mono);font-size:11.5px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;
+  flex:0 0 auto;padding-top:3px;
+}
+.nosave p{margin:0;flex:1 1 320px;font-size:15.5px;line-height:1.5;font-weight:500}
+@media print{ .nosave{display:none !important} }
+
 /* ---------- print ---------- */
 @media print{
   body{background:#fff}
@@ -348,6 +371,16 @@ a{color:var(--amber-deep);text-decoration-thickness:1px;text-underline-offset:3p
 </svg>
 
 <div class="sr" role="status" aria-live="polite" id="announce"></div>
+
+<!-- Revealed by script only, when this browser refuses to save. Safari
+     private mode, a locked-down work laptop, a cookie blocker, or a full
+     disk all land here. The page keeps working either way. -->
+<div class="nosave" id="nosave" role="alert" hidden>
+  <div class="nosave-in">
+    <b>Heads up</b>
+    <p id="nosave-msg">This laptop will not let the page save anything. Everything still works. But close this tab and what you typed is gone, so paste anything you want to keep into an email to yourself before you leave.</p>
+  </div>
+</div>
 
 <!-- ============ MASTHEAD ============ -->
 <header class="wrap masthead">
@@ -719,16 +752,66 @@ Here it is: [paste what you are building here]</pre>
   var $  = function(s,r){ return (r||document).querySelector(s); };
   var $$ = function(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
 
-  /* localStorage can throw in private mode or when storage is full.
-     Degrade to memory so the page never breaks in the room. */
+  /* ---------------- storage, and telling the truth about it ----------------
+     Saving can fail three ways in a room like this: Safari private mode,
+     a work laptop locked down by IT, and a disk with nothing left. It can
+     also fail HALFWAY, when the first twenty boxes save and the twenty
+     first blows the quota.
+
+     Every one of those used to fail silently. An owner would type for ten
+     minutes, reload, and find an empty page with no idea why. So: every
+     access is wrapped, anything that fails falls back to memory so the
+     page keeps working, and the moment saving is not real we say so at
+     the top of the page in words an owner can act on.
+
+     Reading the property itself throws when cookies are blocked outright,
+     which is why even the probe sits inside a try. */
   var mem = {};
+  var warned = false;
+
+  var MSG_BLOCKED = 'This laptop will not let the page save anything. Everything still works. But close this tab and what you typed is gone, so paste anything you want to keep into an email to yourself before you leave.';
+  var MSG_FULL    = 'This laptop just ran out of room to save. It kept everything up to here. It is not keeping anything new, so paste what is on your screen into an email to yourself now.';
+
+  function warn(msg){
+    if(warned) return;
+    warned = true;
+    var box = document.getElementById('nosave');
+    var out = document.getElementById('nosave-msg');
+    if(!box) return;
+    if(out) out.textContent = msg;
+    box.hidden = false;
+    box.classList.add('on');
+  }
+
   var canStore = (function(){
-    try { var k='__t'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; }
-    catch(e){ return false; }
+    try {
+      var k = NS + '__probe';
+      localStorage.setItem(k, '1');
+      localStorage.removeItem(k);
+      return true;
+    } catch(e){ return false; }
   })();
-  function put(k,v){ if(canStore){ try{ localStorage.setItem(NS+k,v); return; }catch(e){} } mem[k]=v; }
-  function get(k){ if(canStore){ try{ var v=localStorage.getItem(NS+k); if(v!==null) return v; }catch(e){} } return mem[k]||''; }
-  function drop(k){ if(canStore){ try{ localStorage.removeItem(NS+k); }catch(e){} } delete mem[k]; }
+
+  if(!canStore) warn(MSG_BLOCKED);
+
+  function put(k,v){
+    if(canStore){
+      try { localStorage.setItem(NS+k, v); mem[k] = v; return; }
+      catch(e){ warn(MSG_FULL); }   /* quota, almost always */
+    }
+    mem[k] = v;
+  }
+  function get(k){
+    if(canStore){
+      try { var v = localStorage.getItem(NS+k); if(v !== null) return v; }
+      catch(e){}
+    }
+    return mem[k] || '';
+  }
+  function drop(k){
+    if(canStore){ try { localStorage.removeItem(NS+k); } catch(e){} }
+    delete mem[k];
+  }
 
   var announce = $('#announce');
   function say(msg){ if(announce){ announce.textContent=''; setTimeout(function(){ announce.textContent=msg; },40); } }
@@ -771,6 +854,23 @@ Here it is: [paste what you are building here]</pre>
       }
       render();
     });
+  });
+
+  /* ---------------- two tabs of this page at once ----------------
+     Easy to end up with, since the QR and the link both open a tab. Both
+     tabs share one store, so without this the second tab keeps whatever
+     it loaded with and the first edit made there overwrites work done in
+     the other one. The storage event fires only in the OTHER tab, so we
+     take the new value, and we skip the field being typed in right now so
+     nobody has the cursor pulled out from under them. */
+  window.addEventListener('storage', function(e){
+    if(!e.key || e.key.indexOf(NS) !== 0) return;
+    var k = e.key.slice(NS.length);
+    fields.forEach(function(el){
+      if(el.dataset.k !== k || el === document.activeElement) return;
+      el.value = (e.newValue === null) ? '' : e.newValue;
+    });
+    render();
   });
 
   /* ---------------- compose the prompts ---------------- */
@@ -977,6 +1077,21 @@ Here it is: [paste what you are building here]</pre>
     wipe.addEventListener('click', function(){
       if(!window.confirm('This erases everything you typed on this page, on this laptop. It cannot be undone. Erase it?')) return;
       fields.forEach(function(el){ el.value=''; drop(el.dataset.k); });
+
+      /* Nothing typed can reach the offline cache: no forms, no query
+         strings, nothing typed ever goes into a URL. Emptying it anyway
+         so that when an owner asks what this page kept of theirs, the
+         answer is nothing, with no asterisk. The page is already loaded
+         and keeps working; the cache refills on the next visit. */
+      try {
+        if(window.caches && caches.keys){
+          caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); });
+        }
+        if(navigator.serviceWorker && navigator.serviceWorker.controller){
+          navigator.serviceWorker.controller.postMessage({type:'PURGE'});
+        }
+      } catch(e){}
+
       render();
       say('Everything you typed has been erased from this laptop.');
       wipe.textContent = 'Erased';
