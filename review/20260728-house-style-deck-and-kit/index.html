@@ -1,0 +1,511 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>The deck in C, and the kit in A, B and C</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=4">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Martian+Mono:wght@300;400;600&family=Anybody:wdth,wght@75..125,400..800&family=Azeret+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Fouta Mark provenance: (c) Boubacar Barry - Fouta Djallon. Origin: house-style deck+kit 2026-07-28. Registry: agentsHQ/docs/ip/provenance-registry.md -->
+<style>
+/* ============================================================================
+   PAGE CHROME  (carried over from the three-directions page, unchanged)
+   ========================================================================= */
+:root{
+  --fouta-mark:"FDJ-BB-20260728-HOUSESTYLE-DECKKIT";
+  --pg-bg:#12140F; --pg-panel:#1A1D16; --pg-panel-2:#20241C; --pg-line:#333A2C;
+  --pg-text:#E6E7DF; --pg-dim:#A9AE9C; --pg-mute:#7B8171;
+  --pg-accent:#C7A14A; --pg-blue:#7C96CE; --pg-red:#C4542A;
+  --pg-sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --pg-mono:'Martian Mono',ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--pg-bg);color:var(--pg-text);font-family:var(--pg-sans);line-height:1.62;
+     -webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{max-width:100%}
+a{color:var(--pg-accent)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--pg-accent);outline-offset:3px;border-radius:3px}
+
+.topbar{position:sticky;top:0;z-index:900;background:rgba(18,20,15,.94);backdrop-filter:blur(9px);
+        -webkit-backdrop-filter:blur(9px);border-bottom:1px solid var(--pg-line)}
+.topbar-in{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;
+           justify-content:space-between;gap:12px;position:relative}
+.topbar-title{font-size:13px;font-weight:600;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-links{display:flex;flex-wrap:wrap;gap:3px}
+.nav-links a{font-size:12px;color:var(--pg-dim);text-decoration:none;padding:5px 9px;border-radius:5px;white-space:nowrap}
+.nav-links a:hover{background:var(--pg-panel-2);color:var(--pg-text)}
+.hamburger{display:none;background:var(--pg-panel-2);border:1px solid var(--pg-line);color:var(--pg-text);
+           font-size:19px;line-height:1;padding:7px 11px;border-radius:8px;cursor:pointer}
+@media(max-width:900px){
+  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;gap:0;
+             background:var(--pg-panel);border-bottom:1px solid var(--pg-line);padding:8px}
+  .nav-links.open{display:flex}
+  .nav-links a{padding:12px 14px;font-size:15px;border-radius:7px}
+  .hamburger{display:block}
+}
+.wrap{max-width:1180px;margin:0 auto;padding:34px 20px 110px}
+.eyebrow{font-family:var(--pg-mono);font-size:10.5px;font-weight:600;letter-spacing:.15em;
+         text-transform:uppercase;color:var(--pg-mute)}
+h1{font-size:clamp(27px,4.4vw,44px);font-weight:800;letter-spacing:-.022em;line-height:1.08;margin:12px 0 14px}
+h2{font-size:clamp(20px,3vw,28px);font-weight:700;letter-spacing:-.014em;margin:0 0 6px}
+h3{font-size:15px;font-weight:700;letter-spacing:.01em;margin:22px 0 8px}
+p{margin:0 0 14px;max-width:74ch}
+.lede{font-size:clamp(15.5px,2vw,18px);color:var(--pg-dim);max-width:70ch}
+.small{font-size:13.5px;color:var(--pg-dim)}
+.rule{height:1px;background:var(--pg-line);margin:34px 0}
+.callout{border:1px solid var(--pg-line);border-left:3px solid var(--pg-red);background:var(--pg-panel);
+         padding:16px 18px;border-radius:4px;margin:18px 0}
+.callout.ok{border-left-color:var(--pg-accent)}
+.callout p:last-child{margin-bottom:0}
+details.fold{border:1px solid var(--pg-line);background:var(--pg-panel);border-radius:5px;margin:14px 0;overflow:hidden}
+details.fold>summary{cursor:pointer;padding:13px 16px;font-size:13.5px;font-weight:600;list-style:none;
+                     display:flex;align-items:center;gap:9px;color:var(--pg-text)}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::before{content:"+";font-family:var(--pg-mono);color:var(--pg-accent);font-size:14px;flex:none}
+details.fold[open]>summary::before{content:"\2212"}
+details.fold>summary:hover{background:var(--pg-panel-2)}
+.foldbody{padding:2px 16px 18px;border-top:1px solid var(--pg-line)}
+.foldbody p{font-size:14px}
+.dirhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin:0 0 4px}
+.dirtag{font-family:var(--pg-mono);font-size:11px;font-weight:600;letter-spacing:.14em;padding:4px 9px;
+        border:1px solid var(--pg-line);border-radius:3px;color:var(--pg-dim);flex:none}
+.dirthesis{font-size:clamp(15px,2vw,17.5px);color:var(--pg-dim);max-width:72ch;margin:6px 0 20px;
+           border-left:2px solid var(--pg-line);padding-left:14px}
+.slidebox{position:relative;width:100%;overflow:hidden;border:1px solid var(--pg-line);border-radius:3px;
+          background:#000;margin:0 0 8px}
+.slidebox .stage{width:1600px;height:900px;transform-origin:top left;position:relative;overflow:hidden}
+.slidecap{font-family:var(--pg-mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+          color:var(--pg-mute);margin:0 0 30px}
+.slidecap b{color:var(--pg-accent)}
+@media(max-width:620px){.slidecap{font-size:9px;letter-spacing:.03em;line-height:1.5}}
+.spec{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0 4px}
+.spec th,.spec td{border:1px solid var(--pg-line);padding:9px 11px;text-align:left;vertical-align:top}
+.spec th{width:170px;font-weight:600;color:var(--pg-dim);background:var(--pg-panel-2);font-size:12.5px}
+.spec code{font-family:var(--pg-mono);font-size:11.5px;color:var(--pg-accent)}
+@media(max-width:640px){
+  .spec,.spec tbody,.spec tr,.spec th,.spec td{display:block;width:100%}
+  .spec th{border-bottom:none}
+  .spec td{border-top:none;margin-bottom:-1px}
+}
+.foot{border-top:1px solid var(--pg-line);margin-top:44px;padding-top:20px;font-size:12px;color:var(--pg-mute)}
+
+/* device frames for the kit mocks */
+.devices{display:grid;grid-template-columns:1fr 400px;gap:20px;align-items:start;margin:14px 0 6px}
+@media(max-width:980px){.devices{grid-template-columns:1fr}}
+.dev{border:1px solid var(--pg-line);border-radius:4px;overflow:hidden;background:#000}
+.dev-lbl{font-family:var(--pg-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+         color:var(--pg-mute);padding:7px 10px;border-bottom:1px solid var(--pg-line);background:var(--pg-panel)}
+.dev iframe{display:block;border:0;background:#fff}
+.dev.desk iframe{width:1440px;height:1500px;transform-origin:top left}
+.dev.phone iframe{width:375px;height:812px;margin:14px auto;display:block;
+                  border:1px solid var(--pg-line);border-radius:14px}
+.dev.phone{background:var(--pg-panel-2)}
+.openlink{font-family:var(--pg-mono);font-size:11px;letter-spacing:.06em}
+
+/* ============================================================================
+   SHARED SLIDE SYSTEM. ISO 128-2:2020 line weights. The 1600 px stage is an A3
+   landscape sheet, 420 mm wide, so 1 mm = 3.81 px.
+   ========================================================================= */
+.stage{
+  --lw018:0.69px; --lw025:0.95px; --lw035:1.33px; --lw05:1.90px;
+  --lw07:2.67px;  --lw10:3.81px;  --lw14:5.33px;  --lw20:7.62px;
+  --strip:266.667px;
+}
+.stage *{box-sizing:border-box}
+
+/* ============================================================================
+   DIRECTION C - THE PLATE
+   ========================================================================= */
+.C{
+  --stock:#C9CDBF;   /* drafting linen, olive grey */
+  --ink:#15170F;
+  --indigo:#20376A;
+  --oxide:#9C3B1C;   /* red oxide, reference numerals */
+  --thin:rgba(21,23,15,.52);
+  --faint:rgba(21,23,15,.26);
+  --tbbg:rgba(201,205,191,.92);
+  background:var(--stock);color:var(--ink);font-family:'Archivo',sans-serif;
+}
+/* THE BLUEPRINT. A cyanotype is white line on indigo, and that is exactly what a
+   leppi reserve is: the cloth the dye never reached. One token flip, no new
+   drawing, no new type. This is the whole reason the system survives 33 sheets. */
+.C.blue{
+  --stock:#16305E;
+  --ink:#E4E9DE;
+  --indigo:#E4E9DE;
+  --oxide:#D2A94E;   /* Fulani brass; oxide cannot hold on indigo */
+  --thin:rgba(228,233,222,.50);
+  --faint:rgba(228,233,222,.24);
+  --tbbg:rgba(22,48,94,.92);
+}
+.C .sheetborder{position:absolute;inset:26px;border:var(--lw14) solid var(--ink)}
+.C .sheetborder.thin{border-width:var(--lw035);border-color:var(--thin)}
+.C .sheetinner{position:absolute;inset:58px;border:var(--lw018) solid var(--faint)}
+.C .zone{position:absolute;font-family:'Azeret Mono',monospace;font-size:14px;font-weight:600;
+  color:var(--ink);opacity:.55}
+.C .ztick{position:absolute;background:var(--thin)}
+.C .figtitle{position:absolute;font-family:'Anybody',sans-serif;font-variation-settings:'wdth' 88,'wght' 750;
+  text-transform:uppercase;letter-spacing:-.008em;line-height:.94;margin:0;color:var(--ink)}
+.C .figno{position:absolute;font-family:'Azeret Mono',monospace;font-size:17px;font-weight:600;
+  letter-spacing:.2em;color:var(--oxide)}
+.C .titleblock{position:absolute;right:58px;bottom:58px;width:498px;border:var(--lw07) solid var(--ink);
+  background:var(--tbbg);display:grid;grid-template-columns:repeat(3,1fr)}
+.C .titleblock div{border-right:var(--lw018) solid var(--thin);border-bottom:var(--lw018) solid var(--thin);
+  padding:8px 10px 9px}
+.C .titleblock div:nth-child(3n){border-right:none}
+.C .titleblock div:nth-last-child(-n+3){border-bottom:none}
+.C .titleblock span{display:block;font-family:'Azeret Mono',monospace;font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink);opacity:.55;margin-bottom:3px}
+.C .titleblock b{display:block;font-family:'Azeret Mono',monospace;font-size:14px;font-weight:600;
+  letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.C .tbwide{grid-column:1 / -1}
+.C .spec-h,.C .spec-v{position:absolute;background:var(--ink)}
+.C .motif{position:absolute;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.C .hatch{position:absolute;
+  background:repeating-linear-gradient(45deg,var(--thin) 0 var(--lw018),transparent var(--lw018) 7px)}
+.C .dimline{position:absolute;height:var(--lw025);background:var(--ink);opacity:.72}
+.C .slash{position:absolute;width:var(--lw05);height:15px;background:var(--ink);opacity:.72;transform:rotate(45deg)}
+.C .ext{position:absolute;width:var(--lw018);background:var(--ink);opacity:.42}
+.C .dimtxt{position:absolute;font-family:'Azeret Mono',monospace;font-size:14px;font-weight:500;
+  letter-spacing:.05em;color:var(--ink);background:var(--stock);padding:0 6px}
+.C .ref{position:absolute;width:36px;height:36px;border:var(--lw05) solid var(--oxide);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-family:'Azeret Mono',monospace;font-size:17px;
+  font-weight:600;color:var(--oxide);background:var(--stock)}
+.C .lead-h{position:absolute;height:var(--lw025);background:var(--oxide);opacity:.85}
+.C .lead-v{position:absolute;width:var(--lw025);background:var(--oxide);opacity:.85}
+.C .dot{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--oxide)}
+.C .keytxt{position:absolute;font-size:36px;line-height:1.34;color:var(--ink)}
+.C .keytxt.big{font-size:42px;line-height:1.3;font-weight:500;color:var(--indigo)}
+.C.blue .keytxt.big{font-weight:400}
+.C .keytxt b{font-weight:700}
+.C .regkey{position:absolute;font-family:'Azeret Mono',monospace;font-size:22px;font-weight:600;
+  letter-spacing:.04em;color:var(--oxide);line-height:1.25}
+/* warp and weft. Whole pixel line widths: 0.69 px hairlines alias into and out of
+   existence across a wide fill and the section reads as two different materials. */
+.C .weave{position:absolute;
+  background-image:repeating-linear-gradient(to right,var(--thin) 0 1px,transparent 1px 9px),
+                   repeating-linear-gradient(to bottom,var(--faint) 0 1px,transparent 1px 15px)}
+.C .note{position:absolute;font-family:'Azeret Mono',monospace;font-size:14px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink);opacity:.55}
+.C .specbox{position:absolute;border:var(--lw07) solid var(--ink);padding:26px 30px;background:var(--tbbg)}
+.C .specbox pre{margin:0;font-family:'Azeret Mono',monospace;font-size:24px;line-height:1.5;
+  white-space:pre-wrap;color:var(--ink)}
+.C .specbox pre b{color:var(--oxide);font-weight:600}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-28-12:01:29 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="topbar-title">The deck in C, the kit in A / B / C</div>
+    <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false"
+      onclick="var n=document.getElementById('navlinks');var o=n.classList.toggle('open');this.setAttribute('aria-expanded',o);">&#9776;</button>
+    <nav class="nav-links" id="navlinks" aria-label="Section navigation">
+      <a href="#system" onclick="closeNav()">The system</a>
+      <a href="#deck" onclick="closeNav()">Deck in C</a>
+      <a href="#kit" onclick="closeNav()">The kit problem</a>
+      <a href="#kita" onclick="closeNav()">Kit in A</a>
+      <a href="#kitb" onclick="closeNav()">Kit in B</a>
+      <a href="#kitc" onclick="closeNav()">Kit in C</a>
+      <a href="#verdict" onclick="closeNav()">Verdict</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <p class="eyebrow">Exploration &middot; 2026-07-28 &middot; nothing here is live</p>
+  <h1>The whole deck in C, and the kit in all three</h1>
+  <p class="lede">Two questions. Does the technical plate survive thirty-three slides, or does it only work
+    on a hero. And does any of the three survive a long scrolling page with ten forms on it, read on a phone.</p>
+
+  <div class="callout">
+    <p><strong>The live deck and the live kit page were not touched.</strong> You present Thursday from the
+      deck that exists now, and attendees use the kit that exists now. Everything on this page is a mock built
+      alongside them.</p>
+  </div>
+
+  <!-- ==================================================================== -->
+  <section id="system">
+    <h2>What changed since this morning</h2>
+    <p>You saw one slide in C. One slide proves an idea can be beautiful. It does not prove it is a system.
+      Thirty-three does. The thing that had to be answered first is the one you would have hit on slide four:
+      <strong>what does a technical plate look like on a slide with nothing to draw.</strong></p>
+
+    <p>The answer came from the discipline itself. A drawing set is not a stack of drawings. It is a set of
+      <strong>sheet types</strong>, and most of the sheets in a real set carry no drawing at all: notes sheets,
+      schedules, work instructions, specifications. They are still unmistakably part of the set, because what
+      makes them belong is the sheet, the lettering and the line ladder, not the picture.</p>
+
+    <table class="spec">
+      <tr><th>Full apparatus</th><td>Sheet border at <code>1.4 mm</code>, zone letters A to C and 1 to 3, the
+        seven cell title block. <strong>Eleven sheets out of thirty-three:</strong> the two covers and the nine
+        blueprints. This is the loud version, and it only appears where the room is meant to stop.</td></tr>
+      <tr><th>Quiet apparatus</th><td>Border thins to <code>0.35 mm</code>, zone letters come off, the title
+        block collapses to one hairline strip along the foot. <strong>Twenty-two sheets.</strong> This is the
+        default. Same discipline, a fifth of the furniture.</td></tr>
+      <tr><th>Drawings</th><td><strong>Nine sheets out of thirty-three carry a drawing. Twenty-four carry
+        none.</strong> A drawing is only allowed when there is a real object and a real number. Everywhere
+        else the sheet does the work.</td></tr>
+      <tr><th>The blueprint</th><td>Your deck already alternates light and dark. In C the dark slide becomes a
+        cyanotype: white line on indigo. That is not a dark mode bolted on, it is what a blueprint physically
+        is, and it is also what a leppi reserve is, cloth the dye never reached. <strong>It is one token
+        flip.</strong> Ground and line swap, red oxide becomes Fulani brass because oxide cannot hold on
+        indigo, and no drawing or type changes at all.</td></tr>
+      <tr><th>Reading distance</th><td>Hard rule enforced across all 33: <strong>no content ever lives in
+        apparatus type.</strong> Dimension figures, zone letters and title block cells are set at 14 px on a
+        1600 px sheet and are genuinely unreadable from row 12. That is allowed, and only allowed, because
+        nothing a person needs is written there. Everything a person must read is 32 px or larger.</td></tr>
+    </table>
+
+    <h3>Where I was tempted to use the pattern as wallpaper</h3>
+    <p class="small">Three times, and I want them on the record.</p>
+    <p class="small"><strong>1. The empty right half.</strong> Notes sheets leave a lot of sheet showing, and the
+      obvious fix is a faint weave tint across it so the slide "feels Fulani." That is decoration wearing the
+      cloth as a texture, and it is the exact failure you named. The empty half stays empty. Sheet is not
+      background, it is stock.</p>
+    <p class="small"><strong>2. A motif band under every headline.</strong> A 40 px lozenge strip under each title
+      would tie the deck together instantly and cost nothing. It would also mean the motif appears 33 times while
+      meaning something twice. Cut. Headlines get a plain <code>0.7 mm</code> rule, which is a real drafting
+      convention and says only what it means: the title ends here.</p>
+    <p class="small"><strong>3. The one I did take, and you should push back on if you disagree.</strong> Slide 06
+      draws the cloth rotated ninety degrees and keys the six principles to the six strips. Six is the real strip
+      count of an arkilla kerka, and the list is really six items, so the drawing carries information. But I chose
+      that content to draw partly <em>because</em> the numbers matched. That is one step from decoration and I
+      would not do it twice in a deck. The five advisors and the three tools are drawn nowhere, because five
+      strips and three strips would be a cloth I invented to fit a slide.</p>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ==================================================================== -->
+  <section id="deck">
+    <div class="dirhead">
+      <span class="dirtag">DELIVERABLE 1</span>
+      <h2>The deck in C, all 33 sheets</h2>
+    </div>
+    <p class="dirthesis">Sheet numbers and copy are unchanged from the 2026-07-30 deck. The caption under each
+      sheet names its type and says plainly whether it carries a drawing.</p>
+    <div id="deckmount"></div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ==================================================================== -->
+  <section id="kit">
+    <div class="dirhead">
+      <span class="dirtag">DELIVERABLE 2</span>
+      <h2>The kit is a different problem</h2>
+    </div>
+    <p class="lede">A slide is one fixed rectangle you look at for ninety seconds from twenty feet away. The kit
+      is a two metre scroll with ten builders, roughly sixty input fields, copy buttons that have to be found
+      under pressure, and a privacy section somebody reads before they will type their prices in. On a phone.
+      Held in one hand. By a person who owns a heating company.</p>
+    <p>So the test is not which one is prettiest. It is which one still knows what to do when the content is a
+      label, a hint, an example, an empty box and a button, sixty times over.</p>
+    <p class="small">Each direction below is a real page, not a picture of one. Desktop is rendered at 1440 px
+      and scaled to fit; the phone frame is a live 375 px viewport. Open either one full size from the link.</p>
+  </section>
+
+  <div class="rule"></div>
+
+  <section id="kita">
+    <div class="dirhead"><span class="dirtag">KIT IN A</span><h2>Six strips</h2></div>
+    <p class="dirthesis">The strip is the column module. Six strips on desktop, two on a phone, module width held
+      rather than squeezed. Seams are drawn, never hidden. The sixth strip stays quieter than the other five.
+      One deliberate offset per page.</p>
+    <div class="devices">
+      <div class="dev desk"><div class="dev-lbl">Desktop &middot; 1440 px</div><iframe src="kit-a.html" title="Kit in direction A, desktop" loading="lazy"></iframe></div>
+      <div class="dev phone"><div class="dev-lbl">Phone &middot; 375 px, live viewport</div><iframe src="kit-a.html" title="Kit in direction A, phone" loading="lazy"></iframe></div>
+    </div>
+    <p class="slidecap"><a class="openlink" href="kit-a.html" target="_blank" rel="noopener">Open kit in A full size &#8594;</a></p>
+    <div class="callout ok">
+      <p><strong>Survives, and it needed one change to do it.</strong> The column module is genuinely useful on
+        a form: label and control in strips one to four, the worked example out in strip five where a margin
+        note belongs, and on a phone the example drops under the label because two strips have no margin left
+        to give. That is the cloth's own rule doing correct responsive design.</p>
+      <p class="small"><strong>What broke and what I changed.</strong> Fields were bare underlines, which is
+        beautiful and is not an affordance. At 375 px you cannot see where to tap. I gave the field a body. The
+        second problem is the seam: it is drawn down the whole page, so it ran straight through the middle of an
+        input and read as a rendering fault. The body fixes that too, because now the seam passes behind the
+        writing, which is what a seam does under cloth.</p>
+      <p class="small"><strong>What still costs you.</strong> The sixth strip is 17 percent of the page and it
+        is empty on a form. On a slide that silence is composition. On a page where somebody is filling in nine
+        boxes it is just a wide right margin, and I could not find honest work for it.</p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section id="kitb">
+    <div class="dirhead"><span class="dirtag">KIT IN B</span><h2>Six baths</h2></div>
+    <p class="dirthesis">Indigo ground. The input field is the reserve, the cloth the dye never reached. Chalk
+      annotation over the cloth for hints and labels. The idea is exact: you write in the part that was tied off
+      and protected.</p>
+    <div class="devices">
+      <div class="dev desk"><div class="dev-lbl">Desktop &middot; 1440 px</div><iframe src="kit-b.html" title="Kit in direction B, desktop" loading="lazy"></iframe></div>
+      <div class="dev phone"><div class="dev-lbl">Phone &middot; 375 px, live viewport</div><iframe src="kit-b.html" title="Kit in direction B, phone" loading="lazy"></iframe></div>
+    </div>
+    <p class="slidecap"><a class="openlink" href="kit-b.html" target="_blank" rel="noopener">Open kit in B full size &#8594;</a></p>
+    <div class="callout">
+      <p><strong>Does not survive, and it is the one I most wanted to save.</strong> The mapping is the best
+        idea in the whole set: an input field <em>is</em> a reserve, the cloth that was tied off and kept out of
+        the vat, and you write in the part that was protected. In the hero it is perfect. Look at the word
+        TONIGHT and at THIS LAPTOP in the privacy heading. That is the strongest single moment across all three
+        directions.</p>
+      <p class="small"><strong>Then you add the form and it dies.</strong> One reserve is an event. Five, in the
+        screenshot above, is already just cream boxes on blue. The real page has ten builders and about sixty
+        inputs, so the meaning is gone by the second station and what is left is a wall of pale rectangles on a
+        dark ground. The idea is destroyed by the one thing this page does most.</p>
+      <p class="small"><strong>To be accurate about why, this is not a contrast failure.</strong> I checked:
+        chalk labels and brass examples both clear the accessibility threshold on the indigo. It fails on
+        density and on volume, not on legibility, and it fails worst exactly where the page works hardest.</p>
+      <p class="small"><strong>Salvage.</strong> Keep six baths for covers, section breaks and social cards. And
+        take the reserve into whichever direction wins, as a rule reserved for one moment per page.</p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section id="kitc">
+    <div class="dirhead"><span class="dirtag">KIT IN C</span><h2>The plate</h2></div>
+    <p class="dirthesis">A scroll has no sheet edge, so the sheet border cannot survive the translation. What does
+      survive is the zone rail: the letters that run down the edge of a drawing sheet become the ruler down the
+      side of a long page, and it tells you where you are. Each builder is a numbered figure with a schedule of
+      parts. The copy button is the issue stamp.</p>
+    <div class="devices">
+      <div class="dev desk"><div class="dev-lbl">Desktop &middot; 1440 px</div><iframe src="kit-c.html" title="Kit in direction C, desktop" loading="lazy"></iframe></div>
+      <div class="dev phone"><div class="dev-lbl">Phone &middot; 375 px, live viewport</div><iframe src="kit-c.html" title="Kit in direction C, phone" loading="lazy"></iframe></div>
+    </div>
+    <p class="slidecap"><a class="openlink" href="kit-c.html" target="_blank" rel="noopener">Open kit in C full size &#8594;</a></p>
+    <div class="callout ok">
+      <p><strong>Survives, and it is the only one that came out of the translation better than it went in.</strong>
+        I did not expect that. On a slide the plate is an atmosphere. On this page it turns into information
+        architecture, because a form is a schedule of parts and a drawing office has been laying those out for
+        two hundred years.</p>
+      <p class="small"><strong>The schedule row is better than what the live page does now.</strong> Numeral,
+        label, hint, worked example on the left, the control on the right, one hairline per row. The numeral is
+        not decoration: it is the item number, it is the tab order, and it is what somebody says out loud when
+        they need help at table four. On a phone the row stacks and keeps the numeral, so you always know which
+        of the nine you are on.</p>
+      <p class="small"><strong>The sheet border had to go, and saying why is the whole answer.</strong> A border
+        promises you can see all four edges at once. A scroll can never keep that promise, so the border becomes
+        a picture frame the moment you drag. Two edges are real, the head and the foot, and those are the two I
+        kept. What carries the discipline instead is the zone rail. A drawing sheet letters its edges so two
+        people can say "zone B2" down a phone. Turned onto a scroll that becomes a ruler that answers "where am
+        I", the letter for the zone you are in follows you down and stops at its boundaries, and it costs 26 px
+        on a phone. It is apparatus doing a job rather than apparatus being quoted.</p>
+      <p class="small"><strong>What I had to give up.</strong> One title block for the whole page, at the foot,
+        not one per station. Ten title blocks would be exactly the "it becomes a widget" failure. And there is no
+        drawing anywhere on this page, which is correct: there is nothing here to draw.</p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ==================================================================== -->
+  <section id="verdict">
+    <h2>The honest read</h2>
+
+    <div class="callout ok">
+      <p><strong>C survives both, and it is the only one that does.</strong> That reverses what I told you this
+        morning, and the reason for the reversal is worth more than the answer: this morning I judged C as a
+        picture, and a picture cannot tell you whether something is a system. Thirty-three sheets and a form
+        page can. C held, because a drawing set already had an answer for the sheet with nothing to draw and I
+        did not have to invent one.</p>
+      <p>Take C for the deck and for the kit. Keep A alive: it is a real second, its column module is the better
+        answer for a marketing page where content is paragraphs rather than parts, and A and C share a spine, so
+        a site can move between them without a seam.</p>
+    </div>
+
+    <h3>Did the restraint hold across 33 sheets</h3>
+    <p class="small">Yes, and here is the count rather than the claim. <strong>Full apparatus on 11 sheets.
+      Quiet apparatus on 22. A drawing on 8; twenty five sheets carry none.</strong> The busy problem you named
+      was real and it came from one thing: the original slide put a dense drawing and a block of copy side by
+      side and let them fight. The fix is that the drawing and the full title block now appear only on covers
+      and blueprints, which is where the room is meant to stop, and the content sheets thin their border, drop
+      their zone letters and collapse the title block to a single line at the foot.</p>
+    <p class="small">The strongest sheets in the set are the blueprints, and the second strongest are the notes
+      sheets, which have no drawing on them at all. That is the result I did not expect and it is the one that
+      should decide this.</p>
+
+    <h3>Projector legibility, and where it is worst</h3>
+    <p class="small">The rule I enforced is <strong>no content ever lives in apparatus type</strong>. Everything
+      an attendee has to read is 32 px or larger on a 1600 px sheet, and most body copy is 34 to 42. Dimension
+      figures, zone letters and title block cells sit at 14 px and are genuinely unreadable from row 12. That is
+      allowed only because nothing anybody needs is written there. If a single fact ever migrates into the
+      title block, the whole scheme fails.</p>
+    <p class="small"><strong>Worst sheet: 15, the specification.</strong> The Decision Council prompt is ten
+      lines of monospace at 24 px, and from the back of a long room that is a squint. It is the same constraint
+      the live deck has, and the mitigation is the same one: it is printed on page 1 of the handout and you say
+      so out loud. Next worst are 02 and 12, the two column schedules, which run 30 to 32 px. Everything else
+      is comfortable.</p>
+
+    <h3>What a sheet with nothing to draw looks like</h3>
+    <p class="small">Sheet 04 is the clearest example, and 05, 07, 08, 09, 18, 19, 22 and 27 are the same type.
+      Figure number in oxide, headline, one 0.7 mm rule, the line that matters in indigo at 42 px, the paragraph
+      under it at 36, and then a third of the sheet left as bare stock. No weave, no motif, no tint. Empty stock
+      is not a gap waiting to be filled, it is the material, and that is the single hardest discipline in the
+      whole system to hold on a busy build day.</p>
+
+    <h3>Where this is still thin</h3>
+    <p class="small"><strong>1.</strong> Sheet 00's write-in lines for the wifi network and password are not
+      mocked. Real omission, easy to add, but it is missing from what you are looking at.</p>
+    <p class="small"><strong>2.</strong> The kit mocks show the hero, one full builder and the privacy section,
+      as asked. They do not show ten builders stacked. My honest expectation is that C's schedule survives
+      repetition better than either of the others because a numbered schedule is <em>meant</em> to be long, but
+      I have not proved that and you should not take it from me until it is built.</p>
+    <p class="small"><strong>3.</strong> Neither banned house style crept back in while I extended this. The
+      blueprint is the one place to keep watching: it is a dark ground, and the day somebody adds a bright
+      accent for a button state it becomes the look you banned wearing a costume. The rule that prevents it is
+      that the blueprint is an inversion of the same four colours and never gains a fifth.</p>
+  </section>
+
+  <div class="foot">
+    Fouta Mark: (c) Boubacar Barry, Fouta Djallon. Slide copy and kit copy are unchanged from the live
+    2026-07-30 deck and the live kit page. Exploration only, neither was touched.
+    <span aria-hidden="true">&#8203;&#8204;&#8203;&#8204;&#8204;&#8203;&#8204;&#8203;</span>
+  </div>
+</div>
+
+<script src="deck-c.js"></script>
+<script>
+function closeNav(){var n=document.getElementById('navlinks');if(n)n.classList.remove('open');
+  var h=document.querySelector('.hamburger');if(h)h.setAttribute('aria-expanded','false');}
+
+buildDeck('deckmount');
+
+/* scale every 1600x900 stage and every desktop iframe to its container */
+function fitStages(){
+  document.querySelectorAll('.slidebox').forEach(function(box){
+    var st=box.querySelector('.stage');
+    if(!st)return;
+    var k=box.clientWidth/1600;
+    st.style.transform='scale('+k+')';
+    box.style.height=Math.round(900*k)+'px';
+  });
+  document.querySelectorAll('.dev.desk').forEach(function(box){
+    var f=box.querySelector('iframe');
+    if(!f)return;
+    var k=box.clientWidth/1440;
+    f.style.transform='scale('+k+')';
+    f.style.transformOrigin='top left';
+    box.style.height=Math.round(1500*k+34)+'px';
+  });
+}
+window.addEventListener('resize',fitStages);
+window.addEventListener('load',fitStages);
+if(document.fonts&&document.fonts.ready){document.fonts.ready.then(fitStages);}
+fitStages();
+</script>
+</body>
+</html>
+
