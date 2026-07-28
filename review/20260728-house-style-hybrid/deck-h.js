@@ -557,9 +557,9 @@ function bodyDetail(s){
     o += d('lead-v','left:952px;top:302px;height:78px');
     o += d('ref','left:934px;top:266px','1');
     o += d('dot','left:1470px;top:'+(316+59)+'px');
-    o += d('lead-v','left:1473px;top:378px;height:150px');
-    o += d('lead-h','left:952px;top:526px;width:523px');
-    o += d('ref','left:934px;top:508px','2');
+    o += d('lead-v','left:1473px;top:378px;height:314px');
+    o += d('lead-h','left:952px;top:690px;width:523px');
+    o += d('ref','left:934px;top:672px','2');
     o += d('keytxt','left:88px;top:248px;width:800px;font-size:38px', s.keys[0]);
     o += d('keytxt big','left:88px;top:490px;width:800px;font-size:40px', s.keys[1]);
   }
