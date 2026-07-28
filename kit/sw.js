@@ -8,7 +8,7 @@
    stores nothing an attendee types. Their answers live in localStorage,
    which a service worker cannot read. */
 
-var CACHE = 'kit0730-v1';
+var CACHE = 'kit0730-v2';
 var ASSETS = ['./', './index.html', './ai-without-getting-burned-slides.pdf'];
 
 self.addEventListener('install', function (e) {
