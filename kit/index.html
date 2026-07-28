@@ -1148,7 +1148,15 @@ Here it is: [paste what you are building here]</pre>
      above still works without it, this only covers the reload case. */
   if('serviceWorker' in navigator && window.isSecureContext){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('sw.js').catch(function(){});
+      /* updateViaCache none because the host serves .js with a seven day
+         max-age. Browsers already bypass the HTTP cache when they check a
+         worker for updates, so this is belt and braces, but a fix pushed
+         on the day of must never be held back by a stale copy of this one
+         file. Then ask once on load, so a laptop left open through the
+         session still picks up a change without a hard reload. */
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+        .then(function(reg){ if(reg && reg.update){ try{ reg.update(); }catch(e){} } })
+        .catch(function(){});
     });
   }
 })();
