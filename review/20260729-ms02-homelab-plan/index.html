@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MS-02 Ultra Homelab &amp; agentsHQ Control-Plane Migration Plan</title>
+<style>
+  html{scroll-behavior:smooth;}
+  :root{
+    --bg:#eef1f2; --bg-alt:#ffffff; --fg:#161a1f; --fg-muted:#525a61;
+    --border:#d3d9dd; --accent:#1f6f78; --accent-fg:#ffffff;
+    --code-bg:#e6eaec; --warn-bg:#faf1de; --warn-border:#b8901f;
+    --ok-bg:#e7f3ec; --ok-border:#2f8f5c; --danger-bg:#f8e9e7; --danger-border:#b23b3b;
+    --nav-bg:#ffffff; --shadow:0 1px 3px rgba(20,30,35,.08);
+    --grid-dot:rgba(22,26,31,.055);
+    --font-mono:"Cascadia Code","Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+    --font-serif:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;
+  }
+  :root[data-theme="dark"]{
+    --bg:#10141a; --bg-alt:#171c23; --fg:#e7ebed; --fg-muted:#9aa3aa;
+    --border:#293039; --accent:#5fb8c2; --accent-fg:#08151a;
+    --code-bg:#1b2027; --warn-bg:#2b2311; --warn-border:#b8901f;
+    --ok-bg:#123023; --ok-border:#2f8f5c; --danger-bg:#301616; --danger-border:#b23b3b;
+    --nav-bg:#171c23; --shadow:0 1px 3px rgba(0,0,0,.5);
+    --grid-dot:rgba(231,235,237,.045);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#10141a; --bg-alt:#171c23; --fg:#e7ebed; --fg-muted:#9aa3aa;
+      --border:#293039; --accent:#5fb8c2; --accent-fg:#08151a;
+      --code-bg:#1b2027; --warn-bg:#2b2311; --warn-border:#b8901f;
+      --ok-bg:#123023; --ok-border:#2f8f5c; --danger-bg:#301616; --danger-border:#b23b3b;
+      --nav-bg:#171c23; --shadow:0 1px 3px rgba(0,0,0,.5);
+      --grid-dot:rgba(231,235,237,.045);
+    }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none!important;}
+    html{scroll-behavior:auto!important;}
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background-color:var(--bg);color:var(--fg);
+    background-image:radial-gradient(circle, var(--grid-dot) 1px, transparent 1px);
+    background-size:24px 24px;
+    font-family:var(--font-serif);line-height:1.65;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:0 1.1rem 4rem;}
+  h1{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.02em;font-weight:700;font-size:clamp(1.3rem,3.6vw,1.85rem);margin:1.5rem 0 .35rem;text-wrap:balance;}
+  .subtitle{color:var(--fg-muted);margin:0 0 1.1rem;font-size:.95rem;font-style:italic;max-width:70ch;}
+  h2{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.035em;font-weight:700;font-size:1.02rem;margin:0;}
+  h3{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.03em;font-size:.82rem;font-weight:700;color:var(--fg-muted);margin:1.2rem 0 .5rem;}
+  p{margin:.55rem 0;max-width:70ch;}
+  code{background:var(--code-bg);padding:.1rem .35rem;border-radius:3px;font-size:.88em;font-family:var(--font-mono);}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:3px;padding:.8rem 1rem;overflow-x:auto;font-family:var(--font-mono);font-size:.82rem;line-height:1.5;}
+  pre code{background:none;padding:0;}
+  .scrollbox{overflow-x:auto;border-radius:3px;}
+  table{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:.87rem;min-width:520px;font-variant-numeric:tabular-nums;}
+  caption{caption-side:top;text-align:left;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.03em;font-size:.72rem;color:var(--fg-muted);font-weight:700;margin-bottom:.35rem;}
+  th,td{border:1px solid var(--border);padding:.45rem .6rem;text-align:left;vertical-align:top;}
+  th{background:var(--code-bg);font-family:var(--font-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  ul,ol{padding-left:1.3rem;max-width:70ch;}
+  li{margin:.3rem 0;}
+  .callout{position:relative;border:1px solid var(--border);border-radius:2px;padding:1rem 1.15rem;margin:1.15rem 0;background:var(--bg-alt);}
+  .callout::before,.callout::after{content:"";position:absolute;width:11px;height:11px;pointer-events:none;}
+  .callout::before{top:-1px;left:-1px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);}
+  .callout::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);}
+  .callout.warn{background:var(--warn-bg);border-color:var(--warn-border);}
+  .callout.warn::before,.callout.warn::after{border-color:var(--warn-border);}
+  .callout.ok{background:var(--ok-bg);border-color:var(--ok-border);}
+  .callout.ok::before,.callout.ok::after{border-color:var(--ok-border);}
+  .callout.danger{background:var(--danger-bg);border-color:var(--danger-border);}
+  .callout.danger::before,.callout.danger::after{border-color:var(--danger-border);}
+  .callout h4{margin:0 0 .45rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.03em;font-size:.82rem;}
+  .spof{display:inline-block;font-family:var(--font-mono);font-size:.68rem;font-weight:700;letter-spacing:.03em;background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger-border);border-radius:2px;padding:.05rem .4rem;margin-left:.3rem;vertical-align:middle;}
+  details{border:1px solid var(--border);border-radius:3px;margin:1.15rem 0;background:var(--bg-alt);scroll-margin-top:64px;}
+  details>summary{cursor:pointer;padding:.75rem 1rem;list-style:none;display:flex;align-items:center;gap:.55rem;}
+  details>summary::-webkit-details-marker{display:none;}
+  details>summary::before{content:"▸";display:inline-block;transition:transform .15s;color:var(--accent);flex:none;}
+  details[open]>summary::before{transform:rotate(90deg);}
+  details>summary h2{display:flex;align-items:baseline;gap:.6rem;}
+  details>summary h2::before{content:attr(data-num);font-family:var(--font-mono);font-size:.62rem;font-weight:700;letter-spacing:.05em;color:var(--accent);border:1px solid var(--accent);border-radius:2px;padding:.07rem .4rem;flex:none;}
+  .details-body{padding:0 1.15rem 1.15rem;}
+  nav.topnav{position:sticky;top:0;z-index:50;background:var(--nav-bg);border-bottom:1px solid var(--border);box-shadow:var(--shadow);}
+  .nav-inner{max-width:980px;margin:0 auto;padding:.55rem 1.1rem;display:flex;align-items:center;gap:.75rem;}
+  .nav-title{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em;font-weight:700;font-size:.8rem;white-space:nowrap;}
+  .hamburger{display:none;background:none;border:1px solid var(--border);border-radius:3px;color:var(--fg);font-size:1.1rem;padding:.25rem .55rem;cursor:pointer;margin-left:auto;}
+  .navlinks{display:flex;flex-wrap:wrap;gap:.35rem .5rem;font-size:.78rem;}
+  .navlinks a{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.01em;color:var(--fg-muted);text-decoration:none;padding:.15rem .4rem;border-radius:3px;white-space:nowrap;font-size:.68rem;}
+  .navlinks a:hover{color:var(--accent);background:var(--code-bg);}
+  .theme-toggle{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.03em;background:none;border:1px solid var(--border);border-radius:3px;color:var(--fg);padding:.25rem .55rem;cursor:pointer;font-size:.7rem;}
+  @media (max-width:760px){
+    .navlinks{display:none;flex-direction:column;width:100%;order:3;}
+    .navlinks.open{display:flex;}
+    .nav-inner{flex-wrap:wrap;}
+    .hamburger{display:block;}
+    table{min-width:460px;}
+  }
+  .backtop{position:fixed;bottom:1.2rem;right:1.2rem;background:var(--accent);color:var(--accent-fg);border:none;border-radius:50%;width:44px;height:44px;font-size:1.2rem;cursor:pointer;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;}
+  .backtop.show{opacity:.92;pointer-events:auto;}
+  .pill{display:inline-block;background:var(--code-bg);border:1px solid var(--border);border-radius:2px;padding:.1rem .55rem;font-family:var(--font-mono);font-size:.72rem;margin-right:.3rem;}
+  .rec{font-weight:700;color:var(--accent);}
+  footer.doc-footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);color:var(--fg-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.03em;font-size:.7rem;}
+  a:focus-visible, button:focus-visible, summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-29-10:05:30 MT</div><!-- DEPLOY_STAMP_END -->
+<nav class="topnav">
+  <div class="nav-inner">
+    <span class="nav-title">MS-02 Plan</span>
+    <button class="hamburger" id="hamBtn" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+    <div class="navlinks" id="navLinks">
+      <a href="#s1">1. Architecture</a>
+      <a href="#s2">2. Day-One Setup</a>
+      <a href="#s3">3. Storage Map</a>
+      <a href="#s4">4. Install Order</a>
+      <a href="#s5">5. Migration</a>
+      <a href="#s6">6. Huawei Audit</a>
+      <a href="#s7">7. Security</a>
+      <a href="#s8">8. Backup/Recovery</a>
+      <a href="#s9">9. NAS Transition</a>
+      <a href="#s10">10. Validation</a>
+      <a href="#s11">11. 30-Day Plan</a>
+      <a href="#s12">12. End State</a>
+    </div>
+    <button class="theme-toggle" id="themeBtn">Theme</button>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>MS-02 Ultra Homelab &amp; agentsHQ Control-Plane Migration Plan</h1>
+  <p class="subtitle">Target machine: MINISFORUM MS-02 Ultra, 1TB SSD, Windows, wired Google Fiber, 24/7 uptime. Replaces the Huawei laptop as primary workstation, agentsHQ control plane, Home Assistant host (Zigbee USB), and Plex server. NAS added in ~6 months.</p>
+
+  <div class="callout ok">
+    <h4>Pressure-tested against — what changed as a result</h4>
+    <p><strong>Council pass (5 angles: uptime SRE, security/theft, homelab-conflicts veteran, data-recovery specialist, Boubacar-solo-operator)</strong> added: a UPS with software-managed graceful shutdown (not just surge protection) — the SRE's single biggest gap in the original brief; explicit re-keying of SSH and full secret rotation at migration time rather than copying credentials, because a "clean move" that carries old secrets isn't actually clean; a named interim backup target for the 6-month pre-NAS window, because "the SSD is the only copy of anything" was an unflagged single point of failure; and a hard steer away from any third-party hypervisor (VMware/VirtualBox/Hyper-V-standalone) toward WSL2-only virtualization, because mixing hypervisor engines on one consumer Windows box is the single most common cause of homelab breakage.</p>
+    <p><strong>Karpathy pass (anti-over-engineering)</strong> cut: Prometheus/Grafana monitoring (the existing Telegram bot + Task Scheduler health checks are enough for one box), a full bare-metal hypervisor (Proxmox/ESXi) host layer, RAID on a single internal SSD (not meaningful — real redundancy arrives with the NAS), a VPN server (Tailscale is simpler and safer for one operator), and any NAS folder build-out beyond a written plan — all deferred to Month 6 or dropped outright as scope the 6-month horizon doesn't need.</p>
+  </div>
+
+  <details open id="s1"><summary><h2 data-num="01">Target Architecture</h2></summary><div class="details-body">
+    <p>One physical box (MS-02) is the daily driver, the agentsHQ control plane, and the home-services host. The VPS remains the durable, always-on brain of agentsHQ regardless of what happens to the local machine — that split is intentional and is why this plan treats the MS-02 as replaceable infrastructure, not a dependency.</p>
+    <div class="scrollbox">
+<pre><code>┌───────────────────────────────────────────────────────────────────────────────────┐
+│                              INTERNET (Google Fiber, wired)                         │
+└───────────────────────────────────────────────────────────────────────────────────┘
+        │                                                    │
+        │ Tailscale (remote admin, no exposed ports)         │ HTTPS
+        ▼                                                    ▼
+┌───────────────────────────────┐                 ┌──────────────────────────────────┐
+│   MINISFORUM MS-02 (home)      │                 │   VPS  root@72.60.209.109         │
+│   Windows 11 Pro, 1TB SSD       │                 │   Ubuntu, Docker Compose          │
+│   24/7, wired LAN               │                 │   ALWAYS-ON, independent of MS-02  │
+│                                  │                 │  ┌─────────────┐ ┌─────────────┐ │
+│  ┌────────────────────────────┐ │   SSH (new key) │  │ orc-crewai  │ │ orc-postgres│ │
+│  │ Windows host (daily driver) │◄├─────────────────┤  └─────────────┘ └─────────────┘ │
+│  │  Claude Code CLI             │ │                │  ┌─────────────┐                 │
+│  │  repo: D:\Ai_Sandbox\agentsHQ│ │   git push/pull │  │ orchestrator│  <-- Gate lives  │
+│  │  worktrees per feature branch│─┼───────────────► │  └─────────────┘   here today    │
+│  └────────────────────────────┘ │   (GitHub)       └──────────────────────────────────┘
+│                                  │                              ▲
+│  ┌────────────────────────────┐ │                              │ GitHub = source of
+│  │ WSL2 (single virtualization │ │                              │ truth for code + memory
+│  │ layer — see Section 4)      │ │                              │
+│  │  ┌──────────┐ ┌───────────┐ │ │                 ┌──────────────────────────┐
+│  │  │ Docker    │ │ Home      │ │ │                 │  GitHub (bokar83/agentsHQ)│
+│  │  │ Desktop   │ │ Assistant │ │ │                 │  memory/ is version-      │
+│  │  │ (WSL2     │ │ Container │◄┼─┼── usbipd-win ──┐│  controlled INSIDE repo   │
+│  │  │ backend)  │ │ + Zigbee2 │ │ │  (Zigbee USB)   ││                          │
+│  │  │           │ │ MQTT      │ │ │                 │└──────────────────────────┘
+│  │  └──────────┘ └───────────┘ │ │                 │
+│  └────────────────────────────┘ │ │                 │
+│                                  │ │                 │
+│  ┌────────────────────────────┐ │ │                 │
+│  │ Plex (native Windows,       │ │ │                 │
+│  │ Stage 1 — see Section 4)    │ │ │                 │
+│  └────────────────────────────┘ │ │                 │
+│                                  │ │                 │
+│  USB: Zigbee coordinator ───────┘ │                 │
+│  UPS (USB-monitored, auto-shutdown)                  │
+└───────────────────────────────────┘                 │
+        │                                              │
+        │ USB / interim backup target                  │
+        ▼                                              │
+┌────────────────────────┐          (Month 6) ┌────────▼─────────────┐
+│ External USB SSD        │ ───── retired ───► │  NAS (new, added)     │
+│ (interim backup, Day 1) │        Month 6      │  Plex media store     │
+└────────────────────────┘                      │  Backup target        │
+                                                 │  Second copy of config │
+                                                 └───────────────────────┘</code></pre>
+    </div>
+    <p><strong>Read this diagram as two independent failure domains.</strong> The VPS side keeps agentsHQ's brain running even if the MS-02 is off, stolen, or dead — it already does today, unchanged by this migration. The MS-02 side is a replaceable client that talks to that brain over SSH and git. Nothing about Home Assistant, Plex, or the local Docker stack is load-bearing for the VPS; losing the MS-02 for a day costs convenience, not agentsHQ's continuity.</p>
+  </div></details>
+
+  <details id="s2"><summary><h2 data-num="02">Day-One MS-02 Setup</h2></summary><div class="details-body">
+    <p>Order matters: identity and encryption before anything touches the network; the box is at its most exposed in the first hour, unpatched and un-encrypted, so close that window first.</p>
+    <ol>
+      <li>Unbox, connect wired Ethernet (never rely on Wi-Fi for a 24/7 host), power on, complete Windows 11 setup with a local admin account (Microsoft account optional — a local admin plus Windows Hello PIN is enough for a single-operator home box).</li>
+      <li>Confirm Windows edition is <strong>Pro</strong> (required for BitLocker and for WSL2/Hyper-V platform features to be fully available — MS-02 units typically ship Pro, but verify via <code>winver</code> before proceeding; if Home, upgrade to Pro first).</li>
+      <li>Run Windows Update to full patch level, reboot as needed, <em>before</em> installing anything else.</li>
+      <li>Enable <strong>BitLocker</strong> full-disk encryption (TPM + PIN) on the system drive. Do this before any data of value lands on the disk — enabling it later re-encrypts in place but there's no reason to wait.</li>
+      <li>Set Windows Hello PIN / biometric for local login.</li>
+      <li>In BIOS/UEFI: set "restore last power state" or "always on" for after-power-loss recovery (see Section 8's 24/7 operation notes), confirm wired NIC is set to a fixed/reserved DHCP lease at the router, and disable any factory bloat auto-launch.</li>
+      <li>Rename the machine to something identifiable on the LAN (e.g. <code>MS02-HQ</code>) and confirm it via <code>ipconfig</code> that it's getting the wired address, not falling back to Wi-Fi.</li>
+      <li>Install and configure the UPS's monitoring software (see Section 8) and confirm the MS-02 sees a "on battery" signal in a manual pull-the-plug test before trusting it unattended.</li>
+      <li>Only now proceed to Section 4 (software installation order).</li>
+    </ol>
+  </div></details>
+
+  <details id="s3"><summary><h2 data-num="03">Storage Map</h2></summary><div class="details-body">
+    <h3>Now — 1TB SSD only</h3>
+    <div class="table-scroll">
+    <table>
+      <caption>Day-1 folder structure (single volume, C:\)</caption>
+      <thead><tr><th>Path</th><th>Purpose</th><th>Backed up how (Day 1)</th></tr></thead>
+      <tbody>
+        <tr><td><code>C:\Ai_Sandbox\agentsHQ</code></td><td>Canonical repo checkout (mirrors current <code>D:\Ai_Sandbox\agentsHQ</code> convention)</td><td>GitHub is the backup — the repo itself is disposable locally</td></tr>
+        <tr><td><code>C:\Ai_Sandbox\agentsHQ-worktrees\</code></td><td>Feature-branch worktrees, pruned daily</td><td>Disposable — always derivable from a branch on GitHub</td></tr>
+        <tr><td><code>C:\HomeAssistant\config</code></td><td>Home Assistant Container config volume (mounted into Docker)</td><td>Nightly copy to external USB SSD (Section 8)</td></tr>
+        <tr><td><code>C:\Docker\volumes\</code></td><td>Named Docker volumes (Zigbee2MQTT state, Mosquitto data, any local Postgres if ever added)</td><td>Nightly copy to external USB SSD</td></tr>
+        <tr><td><code>C:\PlexData\config</code></td><td>Plex application data + metadata/thumbnails (small, not the media itself)</td><td>Weekly copy to external USB SSD (metadata is regenerable but slow to rebuild)</td></tr>
+        <tr><td><code>D:\Media</code> (second partition, same physical SSD — not a second drive)</td><td>Plex media library, Day 1 only, small/starter library</td><td>Not backed up Day 1 — treated as replaceable; real backup starts once the NAS exists</td></tr>
+        <tr><td><code>C:\Secrets\</code> (BitLocker-encrypted volume already covers this; folder is access-controlled, not committed anywhere)</td><td>Local copy of <code>.env</code> and <code>secrets/gws-oauth-credentials.json</code> for the agentsHQ checkout</td><td>Never synced to cloud; see Section 7 rotation policy</td></tr>
+        <tr><td><code>D:\Backup-Staging\</code></td><td>Transient staging before pushing to the external USB SSD — never the only copy of anything (matches the existing <code>D:\tmp</code> scratch convention from agentsHQ's own rules)</td><td>N/A — staging only</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>The SSD is partitioned <code>C:</code> (OS + apps + config, ~200GB) / <code>D:</code> (media + scratch, remainder) purely so a future OS reinstall doesn't require moving the media library — not for redundancy; it's one physical disk, see the SPOF flag in Section 8.</p>
+
+    <h3>Later — MS-02 + NAS (Month 6)</h3>
+    <div class="table-scroll">
+    <table>
+      <caption>Target structure once NAS lands</caption>
+      <thead><tr><th>Location</th><th>Holds</th><th>Why here, not MS-02</th></tr></thead>
+      <tbody>
+        <tr><td>NAS: <code>/media/plex/</code></td><td>Full Plex media library</td><td>Grows unbounded; MS-02's 1TB shouldn't be the ceiling on library size</td></tr>
+        <tr><td>NAS: <code>/backup/ms02-config/</code></td><td>Automated nightly sync target replacing the external USB SSD</td><td>Always-on network target beats a USB drive that has to stay plugged in</td></tr>
+        <tr><td>NAS: <code>/backup/ha-config/</code></td><td>Home Assistant config history, versioned snapshots</td><td>Survives an MS-02 disk failure independently</td></tr>
+        <tr><td>MS-02: <code>C:\PlexData\config</code> (unchanged)</td><td>Plex app/metadata stays local for performance</td><td>Metadata DB performs poorly over SMB/NFS; media files don't need to</td></tr>
+        <tr><td>MS-02: <code>C:\HomeAssistant\config</code> (unchanged)</td><td>HA config stays local, mirrored to NAS nightly</td><td>HA needs low-latency local disk for the live DB; NAS is the safety copy, not primary</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div></details>
+
+  <details id="s4"><summary><h2 data-num="04">Software Installation Order</h2></summary><div class="details-body">
+    <div class="callout ok">
+      <h4>The hardest call in this plan: virtualization for Home Assistant + Zigbee USB + Docker on a Windows daily driver</h4>
+      <p class="rec">Recommendation: WSL2 as the single virtualization layer. No Hyper-V-standalone VMs, no VMware, no VirtualBox, no Proxmox-as-host. Run Home Assistant as the "Home Assistant Container" image inside Docker (WSL2 backend), and pass the Zigbee USB coordinator through with <code>usbipd-win</code>.</p>
+      <p><strong>Why, considering all four constraints at once (HAOS + Zigbee USB passthrough + Docker + Windows-desktop-daily-driver):</strong></p>
+      <ul>
+        <li><strong>USB passthrough is the deciding factor, and it rules out full HAOS-as-VM.</strong> The "proper" Home Assistant OS ships as a VM image expecting real USB passthrough. Hyper-V's only passthrough mechanism (Discrete Device Assignment) is unreliable for USB, RemoteFX is deprecated, and consumer Hyper-V support for it is thin. VMware Workstation and VirtualBox both do proper USB passthrough well — but both fight Hyper-V for the CPU's virtualization extensions, and WSL2/Docker Desktop already require Hyper-V's platform underneath. Running a second hypervisor engine "alongside" Hyper-V means one of them runs degraded through the Windows Hypervisor Platform (WHP) shim, and that's exactly the class of intermittent, hard-to-diagnose conflict a homelab veteran will have hit before (VM hangs on resume, USB devices silently drop, WSL2 networking breaks after the other hypervisor starts).</li>
+        <li><strong>The fix is to stop needing a VM's USB passthrough at all.</strong> Microsoft's own <code>usbipd-win</code> project attaches a USB device (the Zigbee coordinator) directly into a WSL2 distro over USB/IP — it's maintained, well-documented specifically for Zigbee/Z-Wave dongles, and doesn't touch Hyper-V's device model at all. Inside that WSL2 distro, run Docker Desktop (WSL2 backend, the modern default anyway) and run <strong>Home Assistant Container</strong> (the plain container image) instead of full HAOS. You lose the Supervisor's one-click add-on store; you gain the ability to run every add-on's equivalent (Zigbee2MQTT, Mosquitto, ESPHome, etc.) as its own ordinary Docker container in a <code>docker-compose.yml</code> — which is more reproducible, source-controllable, and consistent with how agentsHQ itself is already run.</li>
+        <li><strong>This also directly serves agentsHQ.</strong> WSL2 + Docker Desktop is the same stack agentsHQ's own local dev already assumes (Docker Compose, volume-mounted code). One virtualization layer serves both the home-services stack and the agentsHQ local tooling — not two separate systems to keep healthy.</li>
+        <li><strong>Rejected: Proxmox (or ESXi) as the host OS</strong>, i.e. making Windows itself a guest. This is the biggest-blast-radius option on the table: it adds a full bare-metal hypervisor layer under a machine whose <em>primary</em> job is being Boubacar's daily-driver desktop, complicates GPU access for both daily use and Plex hardware transcode, and trades away simplicity for a flexibility this one-person, single-box, 6-month-to-NAS setup doesn't need. It would make sense if this box's job were "run several server VMs" — it isn't; its job is "be a desktop that also runs a few background services."</li>
+        <li><strong>Rejected: Hyper-V-standalone VMs</strong> for the same USB-passthrough reason above, and because it forecloses ever using VMware/VirtualBox later without a fight.</li>
+      </ul>
+    </div>
+
+    <div class="table-scroll">
+    <table>
+      <caption>Install order (each step assumes the prior step is fully verified working)</caption>
+      <thead><tr><th>#</th><th>Install</th><th>Verify before moving on</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Windows enable: <code>wsl --install</code> (pulls WSL2 + a default Ubuntu distro)</td><td><code>wsl --status</code> shows version 2</td></tr>
+        <tr><td>2</td><td>Docker Desktop (WSL2 backend enabled in settings, not Hyper-V backend)</td><td><code>docker run hello-world</code> succeeds from both PowerShell and inside the WSL2 distro</td></tr>
+        <tr><td>3</td><td><code>usbipd-win</code> (Windows side) + <code>usbip</code> client tools (inside WSL2 distro)</td><td><code>usbipd list</code> shows the Zigbee coordinator; <code>usbipd attach --wsl</code> makes it appear under <code>lsusb</code> inside WSL2</td></tr>
+        <tr><td>4</td><td>Git for Windows + GitHub CLI</td><td><code>git --version</code>, authenticated <code>gh auth status</code></td></tr>
+        <tr><td>5</td><td>Claude Code CLI</td><td>launches, reads global config from <code>C:\Users\HUAWEI\.claude\</code> equivalent on the new profile</td></tr>
+        <tr><td>6</td><td>Clone agentsHQ from GitHub (see Section 5 — clean clone, not copy)</td><td>repo present, correct remote, correct branch</td></tr>
+        <tr><td>7</td><td>Docker Compose stack for Home Assistant Container + Zigbee2MQTT + Mosquitto (new <code>docker-compose.yml</code>, written fresh, not carried over from anywhere since this is a new topology)</td><td>HA web UI reachable on LAN, Zigbee2MQTT sees the coordinator</td></tr>
+        <tr><td>8</td><td>Plex Media Server — native Windows install, <strong>not</strong> containerized, Stage 1 (see below)</td><td>Plex reachable, hardware transcode test (Settings → Transcoder → "Show Advanced" → confirm hardware acceleration active) succeeds on a sample file</td></tr>
+        <tr><td>9</td><td>UPS monitoring client (vendor software, e.g. APC PowerChute / CyberPower PowerPanel) configured for graceful auto-shutdown</td><td>Pull-the-plug test triggers a clean shutdown before battery exhausts</td></tr>
+        <tr><td>10</td><td>Tailscale (remote access — see Section 7)</td><td>Reachable from a phone off the home network</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>Plex Stage 1 vs Stage 2:</strong> Stage 1 (Day 1, this box, small starter library) runs Plex <em>natively on Windows</em>, not in a container — this sidesteps any question of GPU passthrough into WSL2 for hardware transcode, which is possible but adds a layer of fragility for zero benefit at this library size. Native Plex gets direct access to the GPU for Intel QuickSync/AMD hardware transcode with no passthrough plumbing at all. Stage 2 (Month 6+, NAS present) repoints Plex's media library path at the NAS share over SMB, while Plex itself — and its metadata DB — stays on the MS-02 for performance; only reconsider moving Plex itself to run on the NAS if the NAS has real transcode hardware, which most consumer NAS units don't.</p>
+  </div></details>
+
+  <details id="s5"><summary><h2 data-num="05">agentsHQ Migration Checklist</h2></summary><div class="details-body">
+    <div class="callout ok">
+      <h4>Recommendation: clean clone from GitHub, not clone-computer, not copy-directory, not hybrid</h4>
+      <p>The deciding fact: <strong>the VPS is already the operational brain of agentsHQ and runs completely independently of the Huawei laptop.</strong> Nothing on the local machine is load-bearing for orc-crewai / orc-postgres / orchestrator — they keep running whether or not any laptop is on. That means the local machine's only real jobs are (a) hold a working git checkout, (b) hold re-issued credentials, and (c) be the thing Claude Code CLI runs on. All three are cheaply and more reliably rebuilt fresh than carried over:</p>
+      <ul>
+        <li><strong>Clone-computer</strong> (disk image / full machine clone) would carry over Huawei-specific driver cruft, stale scheduled tasks, and — critically — old private key material and unrotated secrets onto a machine that's supposed to start clean. Rejected.</li>
+        <li><strong>Copy-directory</strong> (just xcopy the repo folder over) risks carrying uncommitted local changes, stray build artifacts, or — worse — a stale <code>.git</code> state that silently diverges from origin/main. Rejected; the repo's whole point is that GitHub is the source of truth, so use it as one.</li>
+        <li><strong>"VPS is operational, just rebuild local control plane"</strong> — this is effectively what clean-clone means in practice, restated. It's the right instinct; clean-clone is how it's executed.</li>
+        <li><strong>Hybrid</strong> is unnecessary complexity for a system deliberately designed (repo on GitHub, memory versioned inside the repo, secrets never committed) to make a clean clone equivalent to a full restore.</li>
+      </ul>
+    </div>
+    <ol>
+      <li>On the MS-02, generate a fresh SSH keypair (<code>ssh-keygen -t ed25519 -C "ms02-boubacar"</code>) — never copy the Huawei's private key over. Add the public key to GitHub (bokar83 account) and to the VPS's <code>~/.ssh/authorized_keys</code>. Confirm <code>ssh root@72.60.209.109</code> works from the MS-02 before touching anything else.</li>
+      <li>Clone fresh: <code>git clone git@github.com:bokar83/agentsHQ.git C:\Ai_Sandbox\agentsHQ</code>. Do not copy the Huawei checkout.</li>
+      <li>Confirm <code>memory/</code> is present in the fresh clone (it's version-controlled inside the repo, per the project's own documented memory-path resolution) — no separate "memory migration" step exists or is needed, since it travels with <code>git clone</code> automatically.</li>
+      <li>Recreate the NTFS junction from <code>C:\Users\HUAWEI\.claude\projects\D--Ai-Sandbox-agentsHQ\memory\</code> to <code>C:\Ai_Sandbox\agentsHQ\memory\</code> on the new machine (same mechanism as today, new drive letter/path).</li>
+      <li>Re-provision <code>.env</code> from scratch on the MS-02 — do not copy the file. Pull each value from its actual source (OpenRouter dashboard, Telegram BotFather, Postgres admin, etc.) or, preferably, rotate each credential at this point (see Section 7) so the new machine never holds a secret the old machine also held.</li>
+      <li>Re-provision <code>secrets/gws-oauth-credentials.json</code> (Google Workspace OAuth) — re-run the OAuth consent flow fresh on the new machine rather than copying the file, so the authorized-device list in Google's own account security page reflects reality.</li>
+      <li>Confirm the pre-commit hook that blocks secrets outside <code>.env</code> is active on the fresh clone (it ships with the repo, but verify <code>git commit</code> actually triggers it once before trusting it).</li>
+      <li>Set up the worktree convention fresh: create <code>C:\Ai_Sandbox\agentsHQ-worktrees\</code>, confirm <code>git worktree add</code> against <code>origin/main</code> works, and re-create the daily worktree-prune scheduled task (Windows Task Scheduler jobs are machine-local — see Section 6, they don't migrate, they get rebuilt).</li>
+      <li>Run one full Gate-style round trip as a smoke test: make a trivial branch, push, confirm the VPS's Gate process (wherever it's currently running from) or a manual review picks it up — this validates the whole chain (SSH, git, GitHub, VPS pull) in one pass before declaring migration done.</li>
+      <li>Only after the smoke test passes: retire the Huawei's SSH key from GitHub and from the VPS's <code>authorized_keys</code> (see Section 7).</li>
+    </ol>
+  </div></details>
+
+  <details id="s6"><summary><h2 data-num="06">Huawei Audit Checklist</h2></summary><div class="details-body">
+    <p>Before the Huawei is retired, confirm nothing living only on that machine gets lost. Because agentsHQ's memory is a git-versioned junction and the VPS is independent, this list is shorter than it would be for a less deliberately-designed system — but it isn't empty.</p>
+    <ul>
+      <li><strong>Memory junction fact check:</strong> confirm <code>C:\Users\HUAWEI\.claude\projects\D--Ai-Sandbox-agentsHQ\memory\</code> is genuinely just a junction to the repo's <code>memory/</code> folder (not a divergent copy) by diffing a few files against <code>git log</code> on that path — if it ever drifted from the repo, that drift is Huawei-only and needs a manual commit before retirement.</li>
+      <li><strong>Windows Task Scheduler jobs are machine-local — list them, don't assume they travel.</strong> Run <code>Get-ScheduledTask | Where-Object {$_.TaskPath -notlike "\Microsoft*"}</code> and inventory every custom task (the worktree-prune job at minimum, plus any others). These must be <em>re-created</em> on the MS-02 per Section 5, not copied — Task Scheduler XML exports are brittle across Windows builds and re-authoring each job fresh is more reliable than importing.</li>
+      <li>Any uncommitted git state across all worktrees on the Huawei: <code>git status</code> in every worktree under <code>D:\Ai_Sandbox\agentsHQ-worktrees\</code> plus the canonical tree itself — commit or discard everything before wipe.</li>
+      <li>Any local-only file under the repo's gitignored paths that isn't <code>.env</code>/secrets (e.g. ad hoc scratch scripts someone meant to commit and forgot) — sweep <code>git status --ignored</code> for surprises.</li>
+      <li>Browser-saved passwords, session cookies, or saved SSH agent state tied to services agentsHQ uses (Google Workspace OAuth browser sessions, GitHub CLI token cache) — these should be revoked/rotated, not migrated (see Section 7).</li>
+      <li>Any Drive-synced local folder or Google Drive Desktop cache on the Huawei — confirm it's a cache of cloud state, not a unique copy, before wiping.</li>
+      <li>Physical: note the Huawei's known hardware issues (memory-leak cause already fixed per existing troubleshooting reference; faulty charger and an unresolved idle hard-hang) in case it's kept as a cold spare rather than disposed of — a known-flaky machine is fine as an emergency fallback, less fine as anything relied on.</li>
+      <li>Final step, only after Sections 5's smoke test passes and a backup cycle (Section 8) has run at least once from the MS-02: revoke the Huawei's SSH keys everywhere, sign it out of Google Workspace / GitHub, and either wipe it or downgrade it to fully offline cold storage.</li>
+    </ul>
+  </div></details>
+
+  <details id="s7"><summary><h2 data-num="07">Security Checklist</h2></summary><div class="details-body">
+    <div class="callout ok">
+      <h4>SSH: new identity for the new machine — do not inherit the Huawei's key</h4>
+      <p>Generate a fresh ed25519 keypair on the MS-02 (Section 5, step 1). Never copy a private key between machines, even for convenience — a key that has ever lived on a machine you're about to retire should be treated as a key you can no longer fully vouch for. New key, added everywhere the old one was, old one explicitly revoked once the new one is proven working. This is a five-minute cost that removes an entire class of "was the old laptop actually clean when I wiped it" doubt.</p>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <caption>Checklist</caption>
+      <thead><tr><th>Area</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>SSH</td><td>New ed25519 key on MS-02; old Huawei key revoked from GitHub + VPS <code>authorized_keys</code> once verified. Confirm VPS SSH is already key-only (password auth disabled) — if not, disable it now.</td></tr>
+        <tr><td>Credentials / API keys</td><td>Rotate, don't copy: OpenRouter key, Telegram bot token, Postgres password, Google Workspace OAuth (re-consent, don't copy the JSON), any other keys currently in the Huawei's <code>.env</code>. Treat every secret that ever sat on the Huawei as potentially exposed the moment that machine is retired — rotation costs minutes now versus an unbounded unknown later.</td></tr>
+        <tr><td>Disk encryption</td><td>BitLocker with TPM+PIN, enabled Day 1 (Section 2) — a stolen unencrypted 24/7 home box is a full credential-and-repo leak, not just a hardware loss.</td></tr>
+        <tr><td>Windows security</td><td>Windows Hello PIN for local login; Windows Defender kept on (no reason to disable it for a Docker/WSL2 workload); automatic Windows Update with a controlled restart window (Section 8) so patches don't lag on an internet-facing 24/7 box.</td></tr>
+        <tr><td>Remote access</td><td><strong>Tailscale</strong>, not an exposed RDP port or a self-run VPN server. Tailscale gives phone/laptop access to the MS-02 (and to Home Assistant/Plex UIs) without opening any inbound port on the home router — smaller attack surface, near-zero maintenance, matches the "manageable solo" constraint better than standing up and patching a VPN server for one operator.</td></tr>
+        <tr><td>Zigbee/USB</td><td><code>usbipd-win</code> attach is local-machine-only (no network exposure); no action needed beyond the install itself.</td></tr>
+        <tr><td>agentsHQ secrets hygiene</td><td>Unchanged, already correct: all secrets stay in <code>.env</code>/<code>secrets/</code>, gitignored, pre-commit-blocked from landing anywhere else. Confirm the hook fires on the fresh clone (Section 5).</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div></details>
+
+  <details id="s8"><summary><h2 data-num="08">Backup / Recovery Design</h2></summary><div class="details-body">
+    <div class="callout danger">
+      <h4>Named single points of failure</h4>
+      <ul>
+        <li><strong>The 1TB internal SSD is the only local copy of anything on this box.</strong><span class="spof">SPOF</span> No RAID is proposed for it (see Karpathy cut below) — the mitigation is an external backup target, not redundancy at the disk level.</li>
+        <li><strong>One power circuit, one wired WAN entry.</strong><span class="spof">SPOF</span> Mitigated for power by the UPS (below); WAN redundancy (e.g. a cellular failover) is out of scope for a personal box and not recommended — the VPS doesn't depend on home WAN uptime anyway.</li>
+        <li><strong>GitHub is a SPOF for the repo</strong> in the sense that agentsHQ has no second git remote — acceptable, since GitHub's own durability is far higher than anything this plan could add locally, and it's already the accepted design today.</li>
+      </ul>
+    </div>
+    <h3>What's backed up, and where (Day 1)</h3>
+    <p>Everything genuinely irreplaceable on the MS-02 is small: agentsHQ's own code/memory needs no local backup (GitHub covers it). What actually needs a local backup is Home Assistant config, Docker volume state, and Plex metadata — all copied nightly/weekly to a dedicated external USB SSD (~$60-100, plugged in permanently, not carried around) per the Storage Map in Section 3. This is the explicit interim answer for the 6-month gap before the NAS exists — it was not in the original brief and is the data-recovery angle's main addition to this plan.</p>
+    <h3>24/7 operation concerns</h3>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Concern</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>Power loss</td><td>UPS with USB monitoring (APC/CyberPower + vendor software) triggers graceful Windows shutdown before battery exhausts; BIOS set to auto-power-on when mains power returns, so the box comes back up unattended.</td></tr>
+        <tr><td>Thermals</td><td>MS-02 Ultra's stock cooling is adequate for its rated 24/7 load per its own spec; no action needed beyond keeping vents unobstructed and not stacking it inside a closed cabinet with no airflow.</td></tr>
+        <tr><td>SMART / drive health</td><td>Windows' built-in drive health check (or a lightweight tool like CrystalDiskInfo) run weekly via Task Scheduler, piping a warning to the existing Telegram bot — reusing agentsHQ's own notifier rather than standing up separate alerting infrastructure.</td></tr>
+        <tr><td>Update timing</td><td>Windows Update active hours set to avoid forced reboots during working hours; scheduled restart window (e.g. 3 AM) so patches land automatically without surprising an in-progress Claude Code session.</td></tr>
+        <tr><td>Auto-restart after power loss / crash</td><td>Covered above (BIOS auto-power-on) plus Docker Desktop's own "start on login" plus a Task Scheduler entry that starts Docker Desktop even without an interactive login, so the Home Assistant/Zigbee2MQTT stack survives an unattended reboot.</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <h3>"If the MS-02 dies tomorrow, how fast can I rebuild elsewhere?"</h3>
+    <div class="callout ok">
+      <p><strong>Concrete estimate: roughly 2-3 hours to a working agentsHQ control plane on any spare Windows machine, same day.</strong> Breakdown: ~30 min OS-level setup (WSL2, Docker Desktop, Git, Claude Code CLI installs) + ~15 min clean-clone agentsHQ from GitHub + ~30 min re-provision secrets/SSH per Section 5 + ~15 min smoke test. Home Assistant/Zigbee/Plex are NOT on this critical path — they rebuild from the external USB SSD backup (config restore, ~30-60 min) whenever convenient, because none of them block agentsHQ from being operational again. The VPS itself never needs rebuilding in this scenario — it was never dependent on the MS-02 in the first place.</p>
+    </div>
+  </div></details>
+
+  <details id="s9"><summary><h2 data-num="09">NAS Transition Plan (6 months out)</h2></summary><div class="details-body">
+    <ol>
+      <li>Choose a NAS sized for the Plex library's actual growth over the first 6 months (measure it, don't guess) plus the config-backup role from Section 3's "LATER" table — a 2-4 bay unit with basic RAID (mirroring, not parity-heavy) is enough; this is a personal box, not enterprise storage.</li>
+      <li>Set up the NAS's own backup target folder structure per Section 3 before moving anything onto it.</li>
+      <li>Point the existing nightly Home-Assistant/Docker-volume backup job at the NAS share instead of the external USB SSD; keep the USB SSD as an additional offline copy for a transition period rather than retiring it immediately (belt-and-suspenders during the cutover only, not a permanent third copy).</li>
+      <li>Migrate the Plex media library path to the NAS share; confirm playback and transcode still work correctly over the network share before deleting the local copy.</li>
+      <li>Update the 30-Day/ongoing SMART-monitoring job (Section 8) to also cover the NAS's own drives, reusing the same Telegram-alert pattern.</li>
+      <li>Do not use this as an opportunity to add RAID, ZFS, or virtualization complexity to the MS-02 itself — the NAS is where that complexity belongs; the MS-02 stays exactly as simple as Day 1.</li>
+    </ol>
+  </div></details>
+
+  <details id="s10"><summary><h2 data-num="10">Final Validation Test Checklist</h2></summary><div class="details-body">
+    <ul>
+      <li>☐ BitLocker confirmed enabled and unlocking correctly on reboot.</li>
+      <li>☐ SSH to VPS works from the new key only (old Huawei key confirmed revoked, not just "should be").</li>
+      <li>☐ Fresh clone of agentsHQ builds/runs Claude Code CLI correctly; memory junction resolves to real content.</li>
+      <li>☐ Full Gate round trip: trivial branch pushed from MS-02, reaches GitHub, VPS deploy path unaffected (VPS never needed touching — confirm it wasn't).</li>
+      <li>☐ Docker Desktop starts on boot without interactive login.</li>
+      <li>☐ Zigbee coordinator attaches into WSL2 via <code>usbipd-win</code> after a full reboot (not just after a manual attach) — this is the step most likely to silently regress.</li>
+      <li>☐ Home Assistant sees at least one real Zigbee device end-to-end.</li>
+      <li>☐ Plex hardware transcode confirmed active (not falling back to software) on a real playback test.</li>
+      <li>☐ UPS pull-the-plug test triggers graceful shutdown before battery exhausts.</li>
+      <li>☐ Power-loss-then-restore test: box powers back on unattended and all services (Docker stack, Plex) come back without manual intervention.</li>
+      <li>☐ Nightly backup job to external USB SSD has run at least once and the resulting files were spot-checked (not just "the job exited 0").</li>
+      <li>☐ Tailscale reachable from a device off the home network.</li>
+      <li>☐ Telegram alert test: force a fake SMART warning or a fake job failure and confirm the message actually arrives.</li>
+      <li>☐ Huawei fully audited per Section 6 and formally retired (keys revoked, sessions signed out) — only after every item above passes.</li>
+    </ul>
+  </div></details>
+
+  <details id="s11"><summary><h2 data-num="11">30-Day Hardening Plan</h2></summary><div class="details-body">
+    <h3>Day 1</h3>
+    <ul>
+      <li>Everything in Section 2 (Day-One Setup) and Section 4 (install order) through a passing Section 10 validation pass.</li>
+      <li>UPS installed and pull-the-plug tested.</li>
+      <li>SSH re-keyed, secrets re-provisioned (not copied).</li>
+    </ul>
+    <h3>Week 1</h3>
+    <ul>
+      <li>Nightly backup job to external USB SSD running and spot-checked at least twice.</li>
+      <li>SMART-monitoring + Telegram-alert job installed and test-fired.</li>
+      <li>Huawei fully audited (Section 6) and its SSH keys revoked once the MS-02 is proven stable for a few days.</li>
+      <li>Windows Update active hours + scheduled restart window tuned based on real usage patterns observed this week.</li>
+    </ul>
+    <h3>Month 1</h3>
+    <ul>
+      <li>A real power-loss-and-recover test performed deliberately (not just simulated) during a low-stakes window, to build confidence in the unattended-recovery story before it's ever needed for real.</li>
+      <li>Full restore drill: rebuild the agentsHQ control plane on a spare/borrowed machine from scratch, timed against the Section 8 estimate, to confirm the number is real and not theoretical.</li>
+      <li>Review whether the starter Plex library's growth rate confirms the NAS timeline still makes sense at 6 months, or should move earlier/later — this is the one open variable Day 1 can't fully answer.</li>
+      <li>Retire the Huawei from cold-spare status to fully wiped/disposed, once a month of stable MS-02 operation has passed.</li>
+    </ul>
+  </div></details>
+
+  <details id="s12"><summary><h2 data-num="12">Recommended End State</h2></summary><div class="details-body">
+    <p>If this were my machine: I'd run it exactly as scoped here and not one layer more complex. Windows stays the daily driver with BitLocker on from hour one — no hypervisor sits under it, because WSL2 already gives Docker and the Zigbee dongle everything they need without paying for a second virtualization engine I'd spend the next year debugging conflicts between. I would not touch Proxmox, VMware, or a standalone Hyper-V VM for this box — that's the right call for a rack of servers, not for one person's desktop that also happens to run Home Assistant and Plex.</p>
+    <p>I'd treat the SSD as disposable and design around that instead of pretending a single drive is durable: GitHub already makes the code and memory disposable-safe, and a $70 external SSD plus a nightly job makes the rest of it disposable-safe too, for less money and less complexity than RAID would have cost on a single internal drive anyway. I'd rotate every credential at migration time rather than carry a single one across from the Huawei — it's a few minutes of annoyance now against an unbounded "was that machine actually clean" question later, and that trade isn't close.</p>
+    <p>I'd skip Prometheus, Grafana, and anything else that turns a personal box into a second job to operate — the existing Telegram bot is already wired up and already gets checked, so it's the right alerting channel, not a new dashboard nobody opens. And I'd genuinely wait the full six months before buying the NAS: the plan above works completely without it, the interim USB-SSD backup is a real answer not a stopgap fiction, and buying storage before there's a measured need to size it against is exactly the kind of premature complexity this whole plan is built to avoid.</p>
+    <p>This is opinionated on purpose. Every recommendation above has a runner-up that was seriously considered and specifically rejected, with the reason written down next to it — if six months from now the tradeoffs look different (the NAS timeline, the Plex placement, the backup cadence), that's a signal to revisit the specific section, not the whole plan.</p>
+  </div></details>
+
+  <footer class="doc-footer">Internal engineering planning document. MS-02 Ultra homelab &amp; agentsHQ control-plane migration.</footer>
+</div>
+
+<button class="backtop" id="backTop" aria-label="Back to top">&#8593;</button>
+
+<script>
+(function(){
+  var hamBtn = document.getElementById('hamBtn');
+  var navLinks = document.getElementById('navLinks');
+  hamBtn.addEventListener('click', function(){
+    var open = navLinks.classList.toggle('open');
+    hamBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  navLinks.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){ navLinks.classList.remove('open'); });
+  });
+
+  var themeBtn = document.getElementById('themeBtn');
+  var root = document.documentElement;
+  function currentTheme(){
+    var stored = root.getAttribute('data-theme');
+    if (stored) return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  themeBtn.addEventListener('click', function(){
+    var next = currentTheme() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+  });
+
+  var backTop = document.getElementById('backTop');
+  window.addEventListener('scroll', function(){
+    backTop.classList.toggle('show', window.scrollY > 400);
+  });
+  backTop.addEventListener('click', function(){
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+})();
+</script>
+</body>
+</html>
+
