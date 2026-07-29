@@ -103,10 +103,28 @@
   .rec{font-weight:700;color:var(--accent);}
   footer.doc-footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);color:var(--fg-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.03em;font-size:.7rem;}
   a:focus-visible, button:focus-visible, summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .checklist{list-style:none;padding-left:0;}
+  .checklist li{margin:.35rem 0;}
+  .check-row{display:flex;align-items:flex-start;gap:.55rem;cursor:pointer;}
+  .check-row input[type="checkbox"]{margin-top:.25rem;flex:none;width:15px;height:15px;accent-color:var(--accent);cursor:pointer;}
+  .check-row.is-checked{color:var(--fg-muted);}
+  .check-row.is-checked .check-text{text-decoration:line-through;text-decoration-color:var(--border);}
+  #write-error-banner{display:none;position:sticky;top:52px;z-index:55;background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger-border);font-family:var(--font-mono);font-size:.78rem;padding:.55rem .9rem;margin:0 0 1rem;border-radius:3px;}
+  .notes-section{margin:1.5rem 0;padding:1rem 1.15rem;border:1px solid var(--border);border-radius:3px;background:var(--bg-alt);}
+  .notes-section h3{margin-top:0;}
+  .notes-section textarea{width:100%;min-height:90px;font-family:var(--font-serif);font-size:.9rem;padding:.6rem;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--fg);resize:vertical;box-sizing:border-box;}
+  .notes-section .note-actions{display:flex;justify-content:flex-end;margin-top:.5rem;}
+  .notes-section button.save-note{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.03em;background:var(--accent);color:var(--accent-fg);border:none;border-radius:3px;padding:.45rem 1rem;font-size:.75rem;cursor:pointer;}
+  .notes-section button.save-note:disabled{opacity:.5;cursor:default;}
+  .notes-log{list-style:none;padding:0;margin:1rem 0 0;}
+  .notes-log li{border-top:1px solid var(--border);padding:.6rem 0;}
+  .notes-log .note-ts{display:block;font-family:var(--font-mono);font-size:.68rem;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:.2rem;}
+  .notes-log .note-empty{color:var(--fg-muted);font-style:italic;font-size:.85rem;}
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-07-29-10:05:30 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-07-29-12:20:48 MT</div><!-- DEPLOY_STAMP_END -->
+
 <nav class="topnav">
   <div class="nav-inner">
     <span class="nav-title">MS-02 Plan</span>
@@ -130,6 +148,7 @@
 </nav>
 
 <div class="wrap">
+  <div id="write-error-banner" role="alert"></div>
   <h1>MS-02 Ultra Homelab &amp; agentsHQ Control-Plane Migration Plan</h1>
   <p class="subtitle">Target machine: MINISFORUM MS-02 Ultra, 1TB SSD, Windows, wired Google Fiber, 24/7 uptime. Replaces the Huawei laptop as primary workstation, agentsHQ control plane, Home Assistant host (Zigbee USB), and Plex server. NAS added in ~6 months.</p>
 
@@ -383,44 +402,44 @@
   </div></details>
 
   <details id="s10"><summary><h2 data-num="10">Final Validation Test Checklist</h2></summary><div class="details-body">
-    <ul>
-      <li>☐ BitLocker confirmed enabled and unlocking correctly on reboot.</li>
-      <li>☐ SSH to VPS works from the new key only (old Huawei key confirmed revoked, not just "should be").</li>
-      <li>☐ Fresh clone of agentsHQ builds/runs Claude Code CLI correctly; memory junction resolves to real content.</li>
-      <li>☐ Full Gate round trip: trivial branch pushed from MS-02, reaches GitHub, VPS deploy path unaffected (VPS never needed touching — confirm it wasn't).</li>
-      <li>☐ Docker Desktop starts on boot without interactive login.</li>
-      <li>☐ Zigbee coordinator attaches into WSL2 via <code>usbipd-win</code> after a full reboot (not just after a manual attach) — this is the step most likely to silently regress.</li>
-      <li>☐ Home Assistant sees at least one real Zigbee device end-to-end.</li>
-      <li>☐ Plex hardware transcode confirmed active (not falling back to software) on a real playback test.</li>
-      <li>☐ UPS pull-the-plug test triggers graceful shutdown before battery exhausts.</li>
-      <li>☐ Power-loss-then-restore test: box powers back on unattended and all services (Docker stack, Plex) come back without manual intervention.</li>
-      <li>☐ Nightly backup job to external USB SSD has run at least once and the resulting files were spot-checked (not just "the job exited 0").</li>
-      <li>☐ Tailscale reachable from a device off the home network.</li>
-      <li>☐ Telegram alert test: force a fake SMART warning or a fake job failure and confirm the message actually arrives.</li>
-      <li>☐ Huawei fully audited per Section 6 and formally retired (keys revoked, sessions signed out) — only after every item above passes.</li>
+    <ul class="checklist">
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-1"><span class="check-text">BitLocker confirmed enabled and unlocking correctly on reboot.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-2"><span class="check-text">SSH to VPS works from the new key only (old Huawei key confirmed revoked, not just "should be").</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-3"><span class="check-text">Fresh clone of agentsHQ builds/runs Claude Code CLI correctly; memory junction resolves to real content.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-4"><span class="check-text">Full Gate round trip: trivial branch pushed from MS-02, reaches GitHub, VPS deploy path unaffected (VPS never needed touching — confirm it wasn't).</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-5"><span class="check-text">Docker Desktop starts on boot without interactive login.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-6"><span class="check-text">Zigbee coordinator attaches into WSL2 via <code>usbipd-win</code> after a full reboot (not just after a manual attach) — this is the step most likely to silently regress.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-7"><span class="check-text">Home Assistant sees at least one real Zigbee device end-to-end.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-8"><span class="check-text">Plex hardware transcode confirmed active (not falling back to software) on a real playback test.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-9"><span class="check-text">UPS pull-the-plug test triggers graceful shutdown before battery exhausts.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-10"><span class="check-text">Power-loss-then-restore test: box powers back on unattended and all services (Docker stack, Plex) come back without manual intervention.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-11"><span class="check-text">Nightly backup job to external USB SSD has run at least once and the resulting files were spot-checked (not just "the job exited 0").</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-12"><span class="check-text">Tailscale reachable from a device off the home network.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-13"><span class="check-text">Telegram alert test: force a fake SMART warning or a fake job failure and confirm the message actually arrives.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s10-14"><span class="check-text">Huawei fully audited per Section 6 and formally retired (keys revoked, sessions signed out) — only after every item above passes.</span></label></li>
     </ul>
   </div></details>
 
   <details id="s11"><summary><h2 data-num="11">30-Day Hardening Plan</h2></summary><div class="details-body">
     <h3>Day 1</h3>
-    <ul>
-      <li>Everything in Section 2 (Day-One Setup) and Section 4 (install order) through a passing Section 10 validation pass.</li>
-      <li>UPS installed and pull-the-plug tested.</li>
-      <li>SSH re-keyed, secrets re-provisioned (not copied).</li>
+    <ul class="checklist">
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-day1-1"><span class="check-text">Everything in Section 2 (Day-One Setup) and Section 4 (install order) through a passing Section 10 validation pass.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-day1-2"><span class="check-text">UPS installed and pull-the-plug tested.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-day1-3"><span class="check-text">SSH re-keyed, secrets re-provisioned (not copied).</span></label></li>
     </ul>
     <h3>Week 1</h3>
-    <ul>
-      <li>Nightly backup job to external USB SSD running and spot-checked at least twice.</li>
-      <li>SMART-monitoring + Telegram-alert job installed and test-fired.</li>
-      <li>Huawei fully audited (Section 6) and its SSH keys revoked once the MS-02 is proven stable for a few days.</li>
-      <li>Windows Update active hours + scheduled restart window tuned based on real usage patterns observed this week.</li>
+    <ul class="checklist">
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-week1-1"><span class="check-text">Nightly backup job to external USB SSD running and spot-checked at least twice.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-week1-2"><span class="check-text">SMART-monitoring + Telegram-alert job installed and test-fired.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-week1-3"><span class="check-text">Huawei fully audited (Section 6) and its SSH keys revoked once the MS-02 is proven stable for a few days.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-week1-4"><span class="check-text">Windows Update active hours + scheduled restart window tuned based on real usage patterns observed this week.</span></label></li>
     </ul>
     <h3>Month 1</h3>
-    <ul>
-      <li>A real power-loss-and-recover test performed deliberately (not just simulated) during a low-stakes window, to build confidence in the unattended-recovery story before it's ever needed for real.</li>
-      <li>Full restore drill: rebuild the agentsHQ control plane on a spare/borrowed machine from scratch, timed against the Section 8 estimate, to confirm the number is real and not theoretical.</li>
-      <li>Review whether the starter Plex library's growth rate confirms the NAS timeline still makes sense at 6 months, or should move earlier/later — this is the one open variable Day 1 can't fully answer.</li>
-      <li>Retire the Huawei from cold-spare status to fully wiped/disposed, once a month of stable MS-02 operation has passed.</li>
+    <ul class="checklist">
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-month1-1"><span class="check-text">A real power-loss-and-recover test performed deliberately (not just simulated) during a low-stakes window, to build confidence in the unattended-recovery story before it's ever needed for real.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-month1-2"><span class="check-text">Full restore drill: rebuild the agentsHQ control plane on a spare/borrowed machine from scratch, timed against the Section 8 estimate, to confirm the number is real and not theoretical.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-month1-3"><span class="check-text">Review whether the starter Plex library's growth rate confirms the NAS timeline still makes sense at 6 months, or should move earlier/later — this is the one open variable Day 1 can't fully answer.</span></label></li>
+      <li><label class="check-row"><input type="checkbox" data-item-id="s11-month1-4"><span class="check-text">Retire the Huawei from cold-spare status to fully wiped/disposed, once a month of stable MS-02 operation has passed.</span></label></li>
     </ul>
   </div></details>
 
@@ -430,6 +449,18 @@
     <p>I'd skip Prometheus, Grafana, and anything else that turns a personal box into a second job to operate — the existing Telegram bot is already wired up and already gets checked, so it's the right alerting channel, not a new dashboard nobody opens. And I'd genuinely wait the full six months before buying the NAS: the plan above works completely without it, the interim USB-SSD backup is a real answer not a stopgap fiction, and buying storage before there's a measured need to size it against is exactly the kind of premature complexity this whole plan is built to avoid.</p>
     <p>This is opinionated on purpose. Every recommendation above has a runner-up that was seriously considered and specifically rejected, with the reason written down next to it — if six months from now the tradeoffs look different (the NAS timeline, the Plex placement, the backup cadence), that's a signal to revisit the specific section, not the whole plan.</p>
   </div></details>
+
+  <div class="notes-section" id="notes-section">
+    <h3>My Notes</h3>
+    <p class="subtitle" style="margin:.2rem 0 .7rem;">Timestamped, appendable, saved regardless of checklist status — a running log for observations as you work through Sections 10-11.</p>
+    <textarea id="note-input" placeholder="Add a note (e.g. what happened during a step, a decision, something to revisit)…"></textarea>
+    <div class="note-actions">
+      <button type="button" class="save-note" id="save-note-btn">Save note</button>
+    </div>
+    <ul class="notes-log" id="notes-log">
+      <li class="note-empty">No notes yet.</li>
+    </ul>
+  </div>
 
   <footer class="doc-footer">Internal engineering planning document. MS-02 Ultra homelab &amp; agentsHQ control-plane migration.</footer>
 </div>
@@ -467,8 +498,136 @@
   backTop.addEventListener('click', function(){
     window.scrollTo({top:0, behavior:'smooth'});
   });
+
+  // ── DB-backed checklist + notes (2026-07-29 standing rule: decision
+  // pages need a real database from v1, not browser localStorage, plus a
+  // place for timestamped notes available regardless of item status).
+  // Write-through pattern cloned from the Upwork board /
+  // personal-research review pages: read failures degrade quietly (fresh
+  // page = nothing checked yet, no notes), write failures show a VISIBLE
+  // banner — a failed save must never look like it succeeded.
+  var CHECKLIST_API = 'https://agentshq.boubacarbarry.com/api/orc/review-checklist';
+  var PAGE_SLUG = '20260729-ms02-homelab-plan';
+
+  function showWriteError(msg){
+    var b = document.getElementById('write-error-banner');
+    if (!b) return;
+    b.textContent = 'SAVE FAILED: ' + msg;
+    b.style.display = 'block';
+  }
+  function hideWriteError(){
+    var b = document.getElementById('write-error-banner');
+    if (b) b.style.display = 'none';
+  }
+
+  var checkboxes = Array.prototype.slice.call(document.querySelectorAll('.checklist input[type="checkbox"][data-item-id]'));
+
+  function applyCheckedState(items){
+    checkboxes.forEach(function(cb){
+      var id = cb.getAttribute('data-item-id');
+      var row = cb.closest('.check-row');
+      var st = items && items[id];
+      var checked = !!(st && st.checked);
+      cb.checked = checked;
+      if (row) row.classList.toggle('is-checked', checked);
+    });
+  }
+
+  function renderNotes(notes){
+    var log = document.getElementById('notes-log');
+    if (!log) return;
+    if (!notes || !notes.length){
+      log.innerHTML = '<li class="note-empty">No notes yet.</li>';
+      return;
+    }
+    var items = notes.slice().reverse(); // newest first
+    log.innerHTML = items.map(function(n){
+      var ts = '';
+      try { ts = new Date(n.created_at).toLocaleString('en-US', {timeZone:'America/Denver', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'}) + ' MT'; }
+      catch(e){ ts = n.created_at || ''; }
+      var esc = String(n.note_text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return '<li><span class="note-ts">' + ts + '</span>' + esc + '</li>';
+    }).join('');
+  }
+
+  function loadState(){
+    fetch(CHECKLIST_API + '/state?page_slug=' + encodeURIComponent(PAGE_SLUG))
+      .then(function(res){ return res.json().then(function(body){ return {res:res, body:body}; }); })
+      .then(function(r){
+        if (!r.res.ok || r.body.ok === false) throw new Error(r.body.error || ('HTTP ' + r.res.status));
+        applyCheckedState(r.body.items || {});
+        renderNotes(r.body.notes || []);
+      })
+      .catch(function(){
+        // Read failure -- degrade quietly to a fresh/unregistered page, same
+        // posture as the Upwork board's balance fetch. Not a write, so no
+        // visible banner; the page just shows nothing checked yet.
+      });
+  }
+
+  function registerPage(){
+    var items = checkboxes.map(function(cb){
+      return {
+        item_id: cb.getAttribute('data-item-id'),
+        item_label: (cb.closest('.check-row').querySelector('.check-text') || {}).textContent || '',
+      };
+    });
+    fetch(CHECKLIST_API + '/run', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({page_slug: PAGE_SLUG, items: items}),
+    }).then(function(){ loadState(); }).catch(function(){ loadState(); });
+  }
+
+  checkboxes.forEach(function(cb){
+    cb.addEventListener('change', function(){
+      var id = cb.getAttribute('data-item-id');
+      var checked = cb.checked;
+      var row = cb.closest('.check-row');
+      if (row) row.classList.toggle('is-checked', checked);
+      fetch(CHECKLIST_API + '/checked', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({page_slug: PAGE_SLUG, item_id: id, checked: checked}),
+      })
+        .then(function(res){ return res.json().then(function(body){ return {res:res, body:body}; }); })
+        .then(function(r){
+          if (!r.res.ok || r.body.ok === false) throw new Error(r.body.error || ('HTTP ' + r.res.status));
+          hideWriteError();
+        })
+        .catch(function(err){
+          showWriteError('Checklist item did NOT save to the database (' + err.message + '). It is only in this browser right now.');
+        });
+    });
+  });
+
+  var saveNoteBtn = document.getElementById('save-note-btn');
+  var noteInput = document.getElementById('note-input');
+  if (saveNoteBtn && noteInput){
+    saveNoteBtn.addEventListener('click', function(){
+      var text = (noteInput.value || '').trim();
+      if (!text) return;
+      saveNoteBtn.disabled = true;
+      fetch(CHECKLIST_API + '/note', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({page_slug: PAGE_SLUG, note_text: text}),
+      })
+        .then(function(res){ return res.json().then(function(body){ return {res:res, body:body}; }); })
+        .then(function(r){
+          if (!r.res.ok || r.body.ok === false) throw new Error(r.body.error || ('HTTP ' + r.res.status));
+          hideWriteError();
+          noteInput.value = '';
+          loadState();
+        })
+        .catch(function(err){
+          showWriteError('Note did NOT save to the database (' + err.message + '). Your text is still in the box, try again.');
+        })
+        .finally(function(){ saveNoteBtn.disabled = false; });
+    });
+  }
+
+  if (checkboxes.length) registerPage(); else loadState();
 })();
 </script>
 </body>
 </html>
+
 
