@@ -36,7 +36,7 @@
  * VPS deploy path) and out of scope for a static-site change.
  *
  * USAGE:
- *   <script src="/review/_shared/review-save-client.js"></script>
+ *   <script src="/review/shared/review-save-client.js"></script>
  *   ReviewSaveClient.fetchWithRetry(url, opts, onRetry)
  *     .then(function(res){ ... })
  *     .catch(function(err){ ... }); // only reached after all retries exhausted
