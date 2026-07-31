@@ -123,10 +123,17 @@
   .notes-log li{border-top:1px solid var(--border);padding:.6rem 0;}
   .notes-log .note-ts{display:block;font-family:var(--font-mono);font-size:.68rem;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:.2rem;}
   .notes-log .note-empty{color:var(--fg-muted);font-style:italic;font-size:.85rem;}
+  details.substep{border-color:var(--border);margin:.6rem 0 .6rem 0;background:var(--bg);scroll-margin-top:64px;}
+  details.substep>summary{padding:.5rem .75rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.02em;font-size:.68rem;font-weight:700;color:var(--accent);gap:.45rem;}
+  details.substep>summary::before{font-size:.85em;}
+  details.substep .details-body{padding:0 .9rem .85rem;font-family:var(--font-serif);}
+  details.substep .details-body ol,details.substep .details-body ul{padding-left:1.15rem;}
+  details.substep .details-body li{margin:.28rem 0;}
+  .caveat{display:inline-block;font-family:var(--font-mono);font-size:.65rem;font-weight:700;letter-spacing:.02em;background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-border);border-radius:2px;padding:.03rem .35rem;margin-right:.3rem;vertical-align:middle;}
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v6 · 2026-07-31-12:20:00 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v7 · 2026-07-31-20:15:00 MT</div><!-- DEPLOY_STAMP_END -->
 
 
 
@@ -168,6 +175,11 @@
     <h4>Pressure-tested against — what changed as a result</h4>
     <p><strong>Council pass (5 angles: uptime SRE, security/theft, homelab-conflicts veteran, data-recovery specialist, Boubacar-solo-operator)</strong> added: a UPS with software-managed graceful shutdown (not just surge protection) — the SRE's single biggest gap in the original brief; explicit re-keying of SSH and full secret rotation at migration time rather than copying credentials, because a "clean move" that carries old secrets isn't actually clean; a named interim backup target for the 6-month pre-NAS window, because "the SSD is the only copy of anything" was an unflagged single point of failure; and a hard steer away from any third-party hypervisor (VMware/VirtualBox/Hyper-V-standalone) toward WSL2-only virtualization, because mixing hypervisor engines on one consumer Windows box is the single most common cause of homelab breakage.</p>
     <p><strong>Karpathy pass (anti-over-engineering)</strong> cut: Prometheus/Grafana monitoring (the existing Telegram bot + Task Scheduler health checks are enough for one box), a full bare-metal hypervisor (Proxmox/ESXi) host layer, RAID on a single internal SSD (not meaningful — real redundancy arrives with the NAS), a VPN server (Tailscale is simpler and safer for one operator), and any NAS folder build-out beyond a written plan — all deferred to Month 6 or dropped outright as scope the 6-month horizon doesn't need.</p>
+  </div>
+
+  <div class="callout ok">
+    <h4>Revision 4 / v7 (2026-07-31) — every action item is now click-by-click, no outside googling required</h4>
+    <p>Boubacar's direct ask: any item that requires actually doing something (enabling a feature, changing a BIOS setting, running a GUI flow) needed the literal steps, not just the outcome. Every such item across Sections 2, 4, 5, and 8 now has a collapsible "Click-by-click" toggle with the exact click path — local admin setup, BitLocker (TPM+PIN, recovery-key backup), Windows Hello PIN, BIOS AC-power-recovery + disabling bloat (with an honest caveat: the exact BIOS wording isn't independently confirmed for this specific board, since a sibling Minisforum product's documented path turned out to be for a different CPU platform and doesn't transfer), machine rename, UPS monitoring software, Plex hardware-transcode confirmation, Tailscale install/login/verify, and Google OAuth re-provisioning (with a real correction — the consent-screen page moved to "Google Auth Platform" in a 2024+ Google Cloud Console update). One real design gap was also found and fixed in place, not just documented: <strong>Docker Desktop's own autostart cannot actually survive an unattended reboot without an interactive Windows login</strong> — Section 4 and Section 8 are corrected to recommend running Docker natively inside WSL2 via systemd instead, which starts with WSL2 itself and needs no login at all.</p>
   </div>
 
   <div class="callout warn">
@@ -232,14 +244,90 @@
   <details id="s2"><summary><h2 data-num="02">Day-One MS-02 Setup</h2></summary><div class="details-body">
     <p>Order matters: identity and encryption before anything touches the network; the box is at its most exposed in the first hour, unpatched and un-encrypted, so close that window first.</p>
     <ol>
-      <li>Unbox, connect wired Ethernet (never rely on Wi-Fi for a 24/7 host), power on, complete Windows 11 setup with a local admin account (Microsoft account optional — a local admin plus Windows Hello PIN is enough for a single-operator home box).</li>
+      <li>Unbox, connect wired Ethernet (never rely on Wi-Fi for a 24/7 host), power on, complete Windows 11 setup with a local admin account (Microsoft account optional — a local admin plus Windows Hello PIN is enough for a single-operator home box).
+        <details class="substep"><summary>Click-by-click: local admin account during Windows 11 setup (OOBE)</summary><div class="details-body">
+          <ol>
+            <li>Power on. On the network screen, connect the wired Ethernet cable — Windows should auto-detect it; if it insists on Wi-Fi setup, look for a small "I don't have internet" / "Continue with limited setup" link to skip past the Microsoft-account push.</li>
+            <li>If Windows still pushes a Microsoft account sign-in screen, look for "Sign-in options" (small text link, easy to miss) → "Offline account" / "Limited experience" → confirm past the "are you sure?" warning screen.</li>
+            <li>Enter a username for the local account when prompted (this becomes the Windows username — note it, since Section 5 step 4's memory-junction discovery depends on knowing it).</li>
+            <li>Set a password for the local account (or leave blank + confirm if prompted — a password is recommended since this account also gets Windows Hello PIN layered on top in step 5 below).</li>
+            <li>Answer the privacy/telemetry screens (location, diagnostics, ads) per personal preference — none of these affect anything else in this plan.</li>
+            <li>Let Windows finish "This might take several minutes" and land on the desktop.</li>
+          </ol>
+        </div></details>
+      </li>
       <li>Confirm Windows edition is <strong>Pro</strong> (required for BitLocker and for WSL2/Hyper-V platform features to be fully available — MS-02 units typically ship Pro, but verify via <code>winver</code> before proceeding; if Home, upgrade to Pro first).</li>
       <li>Run Windows Update to full patch level, reboot as needed, <em>before</em> installing anything else.</li>
-      <li>Enable <strong>BitLocker</strong> full-disk encryption (TPM + PIN) on the system drive. Do this before any data of value lands on the disk — enabling it later re-encrypts in place but there's no reason to wait.</li>
-      <li>Set Windows Hello PIN / biometric for local login.</li>
-      <li>In BIOS/UEFI: set "restore last power state" or "always on" for after-power-loss recovery (see Section 8's 24/7 operation notes), confirm wired NIC is set to a fixed/reserved DHCP lease at the router, and disable any factory bloat auto-launch.</li>
-      <li>Rename the machine to something identifiable on the LAN (e.g. <code>MS02-HQ</code>) and confirm it via <code>ipconfig</code> that it's getting the wired address, not falling back to Wi-Fi.</li>
-      <li>Install and configure the UPS's monitoring software (see Section 8) and confirm the MS-02 sees a "on battery" signal in a manual pull-the-plug test before trusting it unattended.</li>
+      <li>Enable <strong>BitLocker</strong> full-disk encryption (TPM + PIN) on the system drive. Do this before any data of value lands on the disk — enabling it later re-encrypts in place but there's no reason to wait.
+        <details class="substep"><summary>Click-by-click: enable BitLocker (TPM + PIN)</summary><div class="details-body">
+          <ol>
+            <li><strong>Confirm TPM is present and ready first.</strong> Press <code>Win+R</code>, type <code>tpm.msc</code>, Enter — the "Status" panel should say "The TPM is ready for use." (Alternatively, PowerShell: <code>Get-Tpm</code> and check <code>TpmReady : True</code>.) If it isn't ready, it needs enabling in BIOS first — see the BIOS toggle below (item 6); most modern boards ship with it on by default.</li>
+            <li>Open Control Panel (search "Control Panel" from Start) → System and Security → BitLocker Drive Encryption. (The newer Settings → Privacy &amp; Security → Device encryption path also exists in Windows 11, but the classic Control Panel path gives the TPM+PIN option this plan wants — Device encryption alone is TPM-only, no PIN.)</li>
+            <li>Next to the C: drive, click "Turn on BitLocker."</li>
+            <li><strong>Back up the recovery key BEFORE encryption starts — do this deliberately, don't accept the first option by reflex.</strong> You'll be offered: save to your Microsoft account, save to a USB flash drive, save to a file, or print it. Pick a location you will actually be able to reach during a real recovery (a password manager entry or a printed copy filed somewhere durable beats "whatever the wizard defaulted to") — note in this plan's own notes section (bottom of this page) where you put it.</li>
+            <li>Choose "Encrypt entire drive" (safer for a drive that's had any prior data on it) vs "Encrypt used disk space only" (faster, fine for a truly fresh drive) — for a fresh MS-02 setup, used-space-only is fine.</li>
+            <li>Choose the "new encryption mode" (the more compatible XTS-AES setting is the default and correct choice) → Continue.</li>
+            <li>When prompted for authentication method, choose <strong>"Enter a PIN"</strong> (this is the TPM+PIN mode this plan specifies, not TPM-only) → set a 4-20 digit PIN → confirm it.</li>
+            <li>Click "Start encrypting" — it runs in the background; you can keep using the PC. Confirm completion later via the same BitLocker Drive Encryption panel (should show "BitLocker on").</li>
+          </ol>
+        </div></details>
+      </li>
+      <li>Set Windows Hello PIN / biometric for local login.
+        <details class="substep"><summary>Click-by-click: set up Windows Hello PIN</summary><div class="details-body">
+          <ol>
+            <li>Open Settings (<code>Win+I</code>) → Accounts → Sign-in options.</li>
+            <li>Under "Ways to sign in," find "PIN (Windows Hello)" → click "Set up" (or "Add").</li>
+            <li>Verify the local account password when prompted.</li>
+            <li>Enter a new PIN, confirm it. There's a checkbox for "Include letters and symbols" — optional, leave off for a plain numeric PIN unless a stronger PIN is wanted.</li>
+            <li>Click OK. The PIN is active immediately — no restart needed, but signing out and back in is a good way to confirm it works before relying on it.</li>
+          </ol>
+        </div></details>
+      </li>
+      <li>In BIOS/UEFI: set "restore last power state" or "always on" for after-power-loss recovery (see Section 8's 24/7 operation notes), confirm wired NIC is set to a fixed/reserved DHCP lease at the router, and disable any factory bloat auto-launch.
+        <details class="substep"><summary>Click-by-click: BIOS AC-power-recovery setting + the DHCP-lease correction + disabling bloat</summary><div class="details-body">
+          <div class="callout warn" style="margin:.4rem 0 .8rem;">
+            <h4><span class="caveat">UNCONFIRMED PATH</span>MS-02 Ultra's exact BIOS wording, not independently verified</h4>
+            <p>The MS-02 Ultra runs an <strong>Intel Core Ultra 9 285HX</strong> — confirmed via Minisforum's own product pages and the MS-02 Ultra's official GitHub documentation (which references 285HX/vPro/MEBx, Intel-only features). A related Minisforum board, the MS-A2, has a well-documented AC-power-loss setting at <code>Advanced &gt; AMD CBS &gt; FCH Common Options &gt; Ac Power Loss Options &gt; Ac Loss Control</code> — but that board is AMD (Ryzen 9 9955HX), and that exact menu path does <strong>not</strong> carry over to the Intel-based MS-02 Ultra. Treat the path below as "check here first," confirm the actual wording on your unit, not as guaranteed-correct.</p>
+          </div>
+          <ol>
+            <li>Reboot the MS-02. During the very first boot screen (before Windows starts loading), repeatedly press <strong>Del</strong> (or <strong>F2</strong> if Del doesn't catch) to enter BIOS/UEFI setup.</li>
+            <li>Navigate to the <strong>Advanced</strong> tab (confirmed to exist on this board — it's where Minisforum's own docs put Hardware Monitor and Onboard Devices Setting).</li>
+            <li>Look for a submenu most likely named something like <strong>"APM Configuration"</strong> or <strong>"Power Management"</strong> — on Intel-platform AMI BIOS boards (which this is), the AC-power-recovery setting is most commonly labeled <strong>"Restore AC Power Loss"</strong>, with values <strong>Power Off / Power On / Last State</strong>. Set it to <strong>Last State</strong> (matches "restore last power state") or <strong>Power On</strong> (matches "always on" — either satisfies this plan's Section 8 auto-restart-after-power-loss requirement; Power On is slightly simpler to reason about).</li>
+            <li><strong>If that exact submenu isn't there:</strong> browse every submenu under Advanced looking for any option whose name contains "AC," "Power Loss," or "Power Failure" — it exists somewhere on an AMI board, the label is the only real uncertainty. Note the actual wording you find in this page's Notes section (bottom of page) so it's documented for next time.</li>
+            <li><strong>Disable factory bloat auto-launch</strong> (same BIOS session): check the Advanced tab's "Onboard Devices Setting" submenu (confirmed to exist) for anything related to RGB lighting controllers, unused onboard Wi-Fi/Bluetooth radios (irrelevant on a wired-only 24/7 box), or vendor utility auto-launch — disable what's genuinely unused. Also check Windows-side: Task Manager → Startup apps tab, disable any Minisforum-bundled utility that isn't needed (e.g. RGB control software) rather than hunting further in BIOS for it.</li>
+            <li>Press <strong>F10</strong> to save and exit (or use the Save &amp; Exit tab), confirm "Yes" on the save prompt.</li>
+          </ol>
+          <div class="callout" style="margin:.7rem 0 0;">
+            <h4>Fixed/reserved DHCP lease — this is a router setting, not a BIOS setting</h4>
+            <p>The plan's original wording groups this with the BIOS items, but a DHCP reservation is configured on your router/gateway's admin page (typically <code>192.168.1.1</code> or similar), not in the MS-02's BIOS. Steps: find the MS-02's MAC address (<code>ipconfig /all</code> in PowerShell, look for the wired adapter's "Physical Address") → log into the router admin page → find "DHCP Reservation" / "Address Reservation" / "Static Lease" (naming varies by router brand) → add an entry mapping that MAC to a fixed IP outside the router's dynamic pool range → save/apply (may briefly drop the connection while the router restarts DHCP).</p>
+          </div>
+        </div></details>
+      </li>
+      <li>Rename the machine to something identifiable on the LAN (e.g. <code>MS02-HQ</code>) and confirm it via <code>ipconfig</code> that it's getting the wired address, not falling back to Wi-Fi.
+        <details class="substep"><summary>Click-by-click: rename the machine</summary><div class="details-body">
+          <ol>
+            <li>Settings (<code>Win+I</code>) → System → About.</li>
+            <li>Click "Rename this PC" (the About and Home pages both also show a quick "Rename" shortcut button near the top).</li>
+            <li>Type the new name — letters, numbers, hyphens only, max 15 characters, no leading/trailing space (e.g. <code>MS02-HQ</code>).</li>
+            <li>Click Next → choose "Restart now" (needed for the name change to fully apply) or "Restart later."</li>
+            <li>After restart, confirm via PowerShell: <code>ipconfig /all</code> — check the wired Ethernet adapter section shows an active IPv4 address and the Wi-Fi adapter (if present) shows "Media disconnected" or no address, confirming it's really on the wired path.</li>
+          </ol>
+        </div></details>
+      </li>
+      <li>Install and configure the UPS's monitoring software (see Section 8) and confirm the MS-02 sees a "on battery" signal in a manual pull-the-plug test before trusting it unattended.
+        <details class="substep"><summary>Click-by-click: install + configure UPS monitoring software (APC PowerChute example)</summary><div class="details-body">
+          <p style="margin-top:0;">Exact software depends on the UPS brand actually purchased — APC's PowerChute Personal Edition is used here as the concrete example; CyberPower's PowerPanel Personal follows the same shape with a different UI. Update this toggle with the real product name once the UPS is bought.</p>
+          <ol>
+            <li>Connect the UPS's USB cable (ships in the box) between the UPS and a USB port on the MS-02 — required before install, the software won't detect the UPS otherwise.</li>
+            <li>Download and run the installer for the matching software (PowerChute Personal Edition for APC units). Default install path is <code>C:\Program Files (x86)\APC\PowerChute Personal Edition\</code>.</li>
+            <li>Approve the UAC "Allow this app to make changes" prompt.</li>
+            <li>Once installed, open PowerChute from its tray icon (small orange icon near the clock).</li>
+            <li>In its "Recommended tasks" panel, choose "Configure the shutdown options of your battery backup" — set the on-battery runtime threshold that should trigger an automatic graceful Windows shutdown (pick a value comfortably before the UPS's rated battery life ends, e.g. shutdown after 5 minutes on battery for a UPS rated ~20+ minutes at this load).</li>
+            <li>Save the configuration.</li>
+            <li><strong>Then</strong> do the actual pull-the-plug test this Day-1 item calls for: physically unplug the UPS from the wall (not just unplug the MS-02) and confirm PowerChute shows "on battery" status, then confirm the graceful shutdown actually fires at the configured threshold.</li>
+          </ol>
+        </div></details>
+      </li>
       <li>Only now proceed to Section 4 (software installation order).</li>
     </ol>
   </div></details>
@@ -322,6 +410,16 @@
       </ul>
     </div>
 
+    <div class="callout warn">
+      <h4>Real gap found researching the click-by-click steps: Docker Desktop's own autostart is NOT true headless autostart</h4>
+      <p>Section 10 (validation checklist, item s10-5) and Section 8 both assume "Docker Desktop starts on boot without interactive login" is achievable via a simple setting. It isn't — Docker Desktop's "Start Docker Desktop when you sign in" option still requires an actual interactive Windows sign-in to have happened first; it is not a background-service autostart. For a box meant to come back up fully unattended after a power loss (this plan's own Section 8 requirement), there are two real options, not one simple toggle:</p>
+      <ul>
+        <li><strong>(a) Enable Windows auto-login</strong> for one dedicated local account, so Windows reaches a signed-in desktop on its own and Docker Desktop's sign-in-triggered autostart then fires. Real tradeoff: auto-login weakens the "BitLocker + PIN" security posture this plan builds Day 1 — anyone with physical access reaches a logged-in desktop without the PIN. Worth Boubacar's explicit decision, not a silent default.</li>
+        <li><strong>(b) Skip Docker Desktop for the always-on stack and run Docker Engine directly inside the WSL2 Ubuntu distro via systemd instead.</strong> Add <code>systemd=true</code> under <code>[boot]</code> in <code>/etc/wsl.conf</code>, run <code>wsl --shutdown</code> from PowerShell to apply it, then inside that WSL2 shell run <code>sudo systemctl enable --now docker.service</code>. This starts with WSL2 itself — no Windows interactive login needed at all, and no auto-login tradeoff. This is the better fit for this plan's own 24/7-unattended requirement, and is the recommended fix — flagged here as a real correction to Section 4/8's original assumption, not just a click-by-click gap.</li>
+      </ul>
+      <p><strong>Recommendation: (b).</strong> It solves the actual requirement (unattended restart) without weakening Day 1's BitLocker+PIN security decision, and Docker Desktop's GUI isn't needed day-to-day once the compose stack is running — <code>docker compose</code> commands work identically against the WSL2-native engine.</p>
+    </div>
+
     <div class="table-scroll">
     <table>
       <caption>Install order (each step assumes the prior step is fully verified working)</caption>
@@ -340,6 +438,28 @@
       </tbody>
     </table>
     </div>
+
+    <details class="substep"><summary>Click-by-click: confirm Plex hardware transcode is active</summary><div class="details-body">
+      <ol>
+        <li>Open Plex Web (either <code>localhost:32400/web</code> on the MS-02 itself, or from another device on the LAN).</li>
+        <li>Click the wrench/settings icon (top right) → Settings → Transcoder (left sidebar, under "Server").</li>
+        <li>Click "Show Advanced" (top right of that settings panel — hidden by default).</li>
+        <li>Confirm "Use hardware acceleration when available" is checked (it usually is by default on a fresh install; turn it on if not).</li>
+        <li>Play a file that needs transcoding (different resolution/format than the playback device supports natively, or force it via the quality selector in the player).</li>
+        <li>While it's playing, go to the Plex Dashboard (Activity tab) — the active stream should show "(hw)" next to the transcode indicator. No "(hw)" tag means it silently fell back to software transcoding — worth knowing before assuming this passed.</li>
+      </ol>
+    </div></details>
+
+    <details class="substep"><summary>Click-by-click: install Tailscale, sign in, verify remote reachability</summary><div class="details-body">
+      <ol>
+        <li>Download the Windows installer (.msi) from Tailscale's own site, matching the MS-02's CPU architecture (x64).</li>
+        <li>Run the installer — once done, a Tailscale icon appears in the system tray.</li>
+        <li>Click the tray icon → "Log in."</li>
+        <li>Your default browser opens to an identity-provider login screen (Google/Microsoft/GitHub/email — whichever Boubacar picks as the Tailscale account). Complete login, including any 2FA prompt.</li>
+        <li>Back in the tray icon, it should now show "Connected" — the MS-02 has a stable Tailscale IP in the 100.64.0.0/10 range (visible in the tray menu or the Tailscale admin console at <a href="https://login.tailscale.com/admin/machines">login.tailscale.com/admin/machines</a>).</li>
+        <li><strong>Verify reachability for real:</strong> on a phone, turn off Wi-Fi (use cellular data only, so it's genuinely off the home network), install the Tailscale app, log into the same account, and confirm the MS-02 shows up and is reachable (e.g. open its Tailscale IP in a browser to reach Plex or Home Assistant's web UI).</li>
+      </ol>
+    </div></details>
 
     <p><strong>Plex Stage 1 vs Stage 2:</strong> Stage 1 (Day 1, this box, small starter library) runs Plex <em>natively on Windows</em>, not in a container — this sidesteps any question of GPU passthrough into WSL2 for hardware transcode, which is possible but adds a layer of fragility for zero benefit at this library size. Native Plex gets direct access to the GPU for Intel QuickSync/AMD hardware transcode with no passthrough plumbing at all. Stage 2 (Month 6+, NAS present) repoints Plex's media library path at the NAS share over SMB, while Plex itself — and its metadata DB — stays on the MS-02 for performance; only reconsider moving Plex itself to run on the NAS if the NAS has real transcode hardware, which most consumer NAS units don't.</p>
 
@@ -484,7 +604,24 @@ notepad C:\Ai_Sandbox\agentsHQ\.env
 # new machine never holds a secret the old machine also held.</code></pre>
         </div>
       </li>
-      <li><strong>Re-provision Google Workspace OAuth (GUI, not scriptable):</strong> open the Google Cloud Console project used by agentsHQ &rarr; APIs &amp; Services &rarr; Credentials &rarr; re-download the OAuth client, then run the app's own OAuth consent flow fresh on the MS-02 (do not copy the Huawei's saved OAuth credential file) &rarr; confirm the new device appears at <a href="https://myaccount.google.com/security">myaccount.google.com/security</a> under "Your devices."</li>
+      <li><strong>Re-provision Google Workspace OAuth (GUI, not scriptable):</strong> open the Google Cloud Console project used by agentsHQ &rarr; APIs &amp; Services &rarr; Credentials &rarr; re-download the OAuth client, then run the app's own OAuth consent flow fresh on the MS-02 (do not copy the Huawei's saved OAuth credential file) &rarr; confirm the new device appears at <a href="https://myaccount.google.com/security">myaccount.google.com/security</a> under "Your devices."
+        <details class="substep"><summary>Click-by-click: Google Cloud Console OAuth re-provision (path corrected — moved post-2024)</summary><div class="details-body">
+          <div class="callout warn" style="margin:.4rem 0 .8rem;">
+            <p style="margin:0;"><strong>Correction:</strong> as of a 2024+ Google Cloud Console UI change, the consent-screen page is no longer under a menu literally called "OAuth consent screen" — it moved to <strong>"Google Auth Platform."</strong> The steps below use the current wording.</p>
+          </div>
+          <ol>
+            <li>Go to <a href="https://console.cloud.google.com">console.cloud.google.com</a>, select the project agentsHQ already uses.</li>
+            <li>Left sidebar → APIs &amp; Services → <strong>Google Auth Platform</strong> (this replaced "OAuth consent screen").</li>
+            <li>Review/re-confirm: app name, user support email, authorized domains, developer contact email — these should already be set from the original setup; just confirm they're still accurate.</li>
+            <li>Still under APIs &amp; Services, click <strong>Credentials</strong> (separate page from Google Auth Platform).</li>
+            <li>Find the existing OAuth 2.0 Client ID agentsHQ uses (or create a new one if this MS-02 should have its own: "+ Create Credentials" → "OAuth client ID" → Application type "Desktop app" → name it something identifying the MS-02).</li>
+            <li>Click the download icon next to the Client ID → "Download JSON."</li>
+            <li>Move that JSON file to wherever agentsHQ's code expects the OAuth client file (per its own <code>.env</code>/config — do not reuse the Huawei's saved token file).</li>
+            <li>Run agentsHQ's own OAuth consent flow fresh (whatever script/command triggers the Google sign-in popup) — sign in with the Google account agentsHQ uses, approve the requested scopes.</li>
+            <li>Confirm the new device/session appears at <a href="https://myaccount.google.com/security">myaccount.google.com/security</a> under "Your devices" or "Recent security activity."</li>
+          </ol>
+        </div></details>
+      </li>
       <li><strong>Confirm the secret-detection pre-commit hook is active on the fresh clone</strong> — don't assume it "ships with the repo," prove it by committing a placeholder value shaped like a real credential and confirming it is rejected:
         <div class="scrollbox">
 <pre><code>cd C:\Ai_Sandbox\agentsHQ
@@ -630,10 +767,20 @@ Get-ChildItem E:\MS02-Backup -Recurse | Select-Object -First 20 FullName, LastWr
         <tr><td>Thermals</td><td>MS-02 Ultra's stock cooling is adequate for its rated 24/7 load per its own spec; no action needed beyond keeping vents unobstructed and not stacking it inside a closed cabinet with no airflow.</td></tr>
         <tr><td>SMART / drive health</td><td>Windows' built-in drive health check (or a lightweight tool like CrystalDiskInfo) run weekly via Task Scheduler, piping a warning to the existing Telegram bot — reusing agentsHQ's own notifier rather than standing up separate alerting infrastructure.</td></tr>
         <tr><td>Update timing</td><td>Windows Update active hours set to avoid forced reboots during working hours; scheduled restart window (e.g. 3 AM) so patches land automatically without surprising an in-progress Claude Code session.</td></tr>
-        <tr><td>Auto-restart after power loss / crash</td><td>Covered above (BIOS auto-power-on) plus Docker Desktop's own "start on login" plus a Task Scheduler entry that starts Docker Desktop even without an interactive login, so the Home Assistant/Zigbee2MQTT stack survives an unattended reboot.</td></tr>
+        <tr><td>Auto-restart after power loss / crash</td><td>Covered above (BIOS auto-power-on) plus <strong>Docker running as a WSL2-native systemd service, not Docker Desktop's login-triggered autostart</strong> — see Section 4's corrected recommendation; Docker Desktop alone cannot truly start without an interactive Windows sign-in having occurred first, which this table's original wording glossed over.</td></tr>
       </tbody>
     </table>
     </div>
+
+    <details class="substep"><summary>Click-by-click: set Windows Update active hours + restart window</summary><div class="details-body">
+      <ol>
+        <li>Settings (<code>Win+I</code>) → Windows Update → Advanced options.</li>
+        <li>Click "Active hours."</li>
+        <li>"Adjust active hours" dropdown: choose <strong>Automatically</strong> (Windows infers usage patterns and avoids restarting during them — lowest maintenance), or <strong>Manually</strong> to set explicit start/end times.</li>
+        <li>If Manually: pick start and end time, click the checkmark to save. Note Windows caps the manual range at 18 hours, so it always keeps a window free for security-update installs.</li>
+        <li>Separately, back on the main Windows Update page: if an update is pending and requires a restart, a "Schedule the restart" option appears there — use it to pin the actual reboot to a specific off-hours time (e.g. 3 AM) rather than letting Windows pick.</li>
+      </ol>
+    </div></details>
     <h3>"If the MS-02 dies tomorrow, how fast can I rebuild elsewhere?"</h3>
     <div class="callout ok">
       <p><strong>Concrete estimate: roughly 2-3 hours to a working agentsHQ control plane on any spare Windows machine, same day.</strong> Breakdown: ~30 min OS-level setup (WSL2, Docker Desktop, Git, Claude Code CLI installs) + ~15 min clean-clone agentsHQ from GitHub + ~30 min re-provision secrets/SSH per Section 5 + ~15 min smoke test. Home Assistant/Zigbee/Plex are NOT on this critical path — they rebuild from the external USB SSD backup (config restore, ~30-60 min) whenever convenient, because none of them block agentsHQ from being operational again. The VPS itself never needs rebuilding in this scenario — it was never dependent on the MS-02 in the first place.</p>
