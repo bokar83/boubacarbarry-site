@@ -154,7 +154,8 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v9 · 2026-07-31-17:17:35 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v10 · 2026-07-31-17:54:51 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -188,6 +189,11 @@
   <div id="write-error-banner" role="alert"></div>
   <h1>MS-02 Ultra Homelab &amp; agentsHQ Control-Plane Migration Plan</h1>
   <p class="subtitle">Target machine: MINISFORUM MS-02 Ultra, 1TB SSD, Windows, wired Google Fiber, 24/7 uptime. Replaces the Huawei laptop as primary workstation, agentsHQ control plane, Home Assistant host (Zigbee USB), and Plex server. NAS added in ~6 months.</p>
+
+  <div class="callout ok">
+    <h4>Revision 7 / v10 (2026-07-31) — DHCP reservation path corrected for Google Fiber mesh hardware, MAC-address step fixed</h4>
+    <p>Two real corrections, confirmed hands-on tonight, in Section 2's BIOS/DHCP toggle. <strong>(1)</strong> The reserved-DHCP-lease instructions previously said "log into the router admin page (typically <code>192.168.1.1</code>)" — wrong for this setup. Boubacar's router is Google Fiber's mesh hardware, and confirmed live: the GFiber phone app has no IP-reservation option at all. The real path (sourced from a Reddit r/googlefiber thread whose poster verified it directly with Google Support, cross-confirmed by Boubacar's own run tonight): <strong>fiber.google.com</strong> (the website, not the app) → Network → Edit Network → Advanced network settings → Devices → select the device → toggle "Reserved IP" on. <strong>(2)</strong> The MAC-address-finding step said plain <code>ipconfig</code> — confirmed live tonight that plain <code>ipconfig</code> does not print the "Physical Address" line at all; corrected to <code>ipconfig /all</code> everywhere in this section.</p>
+  </div>
 
   <div class="callout ok">
     <h4>Revision 6 / v9 (2026-07-31) — a checkbox + note field on every single click-by-click step, and the BIOS path confirmed live</h4>
@@ -340,13 +346,19 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\FVE" /v UseTPMPIN /t REG_DWORD /d 1 /f
             <li><strong>Disable factory bloat auto-launch</strong> (same BIOS session): check the Advanced tab's "Onboard Devices Setting" submenu (confirmed to exist) for anything related to RGB lighting controllers, unused onboard Wi-Fi/Bluetooth radios (irrelevant on a wired-only 24/7 box), or vendor utility auto-launch — disable what's genuinely unused. Also check Windows-side: Task Manager → Startup apps tab, disable any Minisforum-bundled utility that isn't needed (e.g. RGB control software) rather than hunting further in BIOS for it.</li>
             <li>Press <strong>F10</strong> to save and exit (or use the Save &amp; Exit tab), confirm "Yes" on the save prompt.</li>
           </ol>
-          <div class="callout" style="margin:.7rem 0 0;">
-            <h4>Fixed/reserved DHCP lease — this is a router setting, not a BIOS setting</h4>
-            <p>The plan's original wording groups this with the BIOS items, but a DHCP reservation is configured on your router/gateway's admin page (typically <code>192.168.1.1</code> or similar), not in the MS-02's BIOS. Steps: find the MS-02's MAC address (<code>ipconfig /all</code> in PowerShell, look for the wired adapter's "Physical Address") → log into the router admin page → find "DHCP Reservation" / "Address Reservation" / "Static Lease" (naming varies by router brand) → add an entry mapping that MAC to a fixed IP outside the router's dynamic pool range → save/apply (may briefly drop the connection while the router restarts DHCP).</p>
+          <div class="callout ok" style="margin:.7rem 0 0;">
+            <h4>Fixed/reserved DHCP lease — confirmed live: this is Google Fiber's mesh hardware, use fiber.google.com (the website), not the GFiber app</h4>
+            <p>Boubacar's router is Google Fiber's mesh hardware, normally managed via the GFiber phone app — but confirmed hands-on: <strong>the GFiber app does not support IP reservation at all.</strong> There is no generic "log into 192.168.1.1" admin page here. The real path, found via a Reddit thread (r/googlefiber) whose poster verified it directly with Google Support:</p>
+            <ol data-step-prefix="dhcp">
+              <li>Go to <strong>fiber.google.com</strong> (the website, not the app) and log in.</li>
+              <li><strong>Network → Edit Network → Advanced network settings → Devices.</strong></li>
+              <li>Find the MS-02's MAC address first (<code>ipconfig /all</code> in PowerShell, look for the wired adapter's "Physical Address" — plain <code>ipconfig</code> does not show it), then select the matching device in the Devices list (will show as <strong>BAOBAB-10K-HQ</strong> once the rename below has taken effect and re-registered with DHCP; match by MAC if it still shows an older/default name).</li>
+              <li>Click the <strong>"Reserved IP"</strong> slider/toggle for that device to turn it on.</li>
+            </ol>
           </div>
         </div></details>
       </li>
-      <li>Rename the machine to <strong><code>BAOBAB-10K-HQ</code></strong> (decided — 13 characters, valid NetBIOS name) and confirm it via <code>ipconfig</code> that it's getting the wired address, not falling back to Wi-Fi.
+      <li>Rename the machine to <strong><code>BAOBAB-10K-HQ</code></strong> (decided — 13 characters, valid NetBIOS name) and confirm it via <code>ipconfig /all</code> that it's getting the wired address, not falling back to Wi-Fi.
         <details class="substep"><summary>Click-by-click: rename the machine</summary><div class="details-body">
           <ol data-step-prefix="rename">
             <li>Settings (<code>Win+I</code>) → System → About.</li>
@@ -1220,6 +1232,7 @@ Get-ChildItem E:\MS02-Backup -Recurse | Select-Object -First 20 FullName, LastWr
 </script>
 </body>
 </html>
+
 
 
 
