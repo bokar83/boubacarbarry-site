@@ -133,7 +133,8 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v7 · 2026-07-31-20:45:00 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v8 · 2026-07-31-16:50:28 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -165,6 +166,11 @@
   <div id="write-error-banner" role="alert"></div>
   <h1>MS-02 Ultra Homelab &amp; agentsHQ Control-Plane Migration Plan</h1>
   <p class="subtitle">Target machine: MINISFORUM MS-02 Ultra, 1TB SSD, Windows, wired Google Fiber, 24/7 uptime. Replaces the Huawei laptop as primary workstation, agentsHQ control plane, Home Assistant host (Zigbee USB), and Plex server. NAS added in ~6 months.</p>
+
+  <div class="callout warn">
+    <h4>Revision 5 / v8 (2026-07-31) — BitLocker PIN prompt gap fixed, confirmed against a real live run</h4>
+    <p>Boubacar followed the BitLocker click-by-click steps below exactly as written and never got prompted for a PIN — Windows silently proceeded with TPM-only encryption instead. Root cause, confirmed live: Windows 11 only shows the PIN prompt during the BitLocker wizard if a Local Group Policy setting is configured first; without it, the wizard silently skips straight to TPM-only. Fixed in place in Section 2's BitLocker toggle below: a new step 1 sets the required policy (<code>gpedit.msc</code> → Administrative Templates → Windows Components → BitLocker Drive Encryption → Operating System Drives → "Require additional authentication at startup") before the rest of the wizard steps run, plus a recovery toggle for anyone (including Boubacar, just now) who already has TPM-only encryption and needs to add the PIN after the fact without restarting or undoing anything — that exact command was confirmed working live. A Windows Home fallback (no <code>gpedit.msc</code>) is also covered, sourced from two independent documented registry references rather than tested live on a Home machine — flagged as such, not presented as equally proven.</p>
+  </div>
 
   <div class="callout ok">
     <h4>Revision 2 (2026-07-31) — folder structure corrected, migration steps dry-run verified</h4>
@@ -261,15 +267,26 @@
       <li>Enable <strong>BitLocker</strong> full-disk encryption (TPM + PIN) on the system drive. Do this before any data of value lands on the disk — enabling it later re-encrypts in place but there's no reason to wait.
         <details class="substep"><summary>Click-by-click: enable BitLocker (TPM + PIN)</summary><div class="details-body">
           <ol>
-            <li><strong>Confirm TPM is present and ready first.</strong> Press <code>Win+R</code>, type <code>tpm.msc</code>, Enter — the "Status" panel should say "The TPM is ready for use." (Alternatively, PowerShell: <code>Get-Tpm</code> and check <code>TpmReady : True</code>.) If it isn't ready, it needs enabling in BIOS first — see the BIOS toggle below (item 6); most modern boards ship with it on by default.</li>
+            <li><strong>Set the Group Policy prerequisite FIRST — skip this and the PIN prompt in step 8 below silently never appears.</strong> Confirmed live: Windows 11's BitLocker wizard only offers "Enter a PIN" as an authentication method if this policy is configured; without it, the wizard proceeds straight to TPM-only encryption with zero indication anything was skipped. Press <code>Win+R</code>, type <code>gpedit.msc</code>, Enter → <code>Computer Configuration</code> → <code>Administrative Templates</code> → <code>Windows Components</code> → <code>BitLocker Drive Encryption</code> → <code>Operating System Drives</code> → double-click <strong>"Require additional authentication at startup"</strong> → set to <strong>Enabled</strong> → under "Configure TPM startup PIN" (in the options below the radio button), set the dropdown to <strong>"Require startup PIN with TPM"</strong> → OK. <strong>If <code>gpedit.msc</code> says "Windows cannot find gpedit.msc"</strong> — that means this is Windows Home, which has no Group Policy Editor; see the Windows Home box at the bottom of this toggle before continuing, and do not guess a fix without it.</li>
+            <li><strong>Confirm TPM is present and ready.</strong> Press <code>Win+R</code>, type <code>tpm.msc</code>, Enter — the "Status" panel should say "The TPM is ready for use." (Alternatively, PowerShell: <code>Get-Tpm</code> and check <code>TpmReady : True</code>.) If it isn't ready, it needs enabling in BIOS first — see the BIOS toggle below (item 6); most modern boards ship with it on by default.</li>
             <li>Open Control Panel (search "Control Panel" from Start) → System and Security → BitLocker Drive Encryption. (The newer Settings → Privacy &amp; Security → Device encryption path also exists in Windows 11, but the classic Control Panel path gives the TPM+PIN option this plan wants — Device encryption alone is TPM-only, no PIN.)</li>
             <li>Next to the C: drive, click "Turn on BitLocker."</li>
             <li><strong>Back up the recovery key BEFORE encryption starts — do this deliberately, don't accept the first option by reflex.</strong> You'll be offered: save to your Microsoft account, save to a USB flash drive, save to a file, or print it. Pick a location you will actually be able to reach during a real recovery (a password manager entry or a printed copy filed somewhere durable beats "whatever the wizard defaulted to") — note in this plan's own notes section (bottom of this page) where you put it.</li>
             <li>Choose "Encrypt entire drive" (safer for a drive that's had any prior data on it) vs "Encrypt used disk space only" (faster, fine for a truly fresh drive) — for a fresh MS-02 setup, used-space-only is fine.</li>
             <li>Choose the "new encryption mode" (the more compatible XTS-AES setting is the default and correct choice) → Continue.</li>
-            <li>When prompted for authentication method, choose <strong>"Enter a PIN"</strong> (this is the TPM+PIN mode this plan specifies, not TPM-only) → set a 4-20 digit PIN → confirm it.</li>
+            <li>When prompted for authentication method, choose <strong>"Enter a PIN"</strong> (this is the TPM+PIN mode this plan specifies, not TPM-only) → set a 4-20 digit PIN → confirm it. <strong>If this "Enter a PIN" choice doesn't appear</strong> and Windows goes straight into encrypting, step 1's Group Policy setting wasn't applied — stop, don't restart, and use the recovery box below to add the PIN after the fact instead of starting over.</li>
             <li>Click "Start encrypting" — it runs in the background; you can keep using the PC. Confirm completion later via the same BitLocker Drive Encryption panel (should show "BitLocker on").</li>
           </ol>
+          <div class="callout warn" style="margin-top:.75rem;">
+            <h4>Already encrypted without the PIN prompt? Add the PIN now — no restart, no undo needed</h4>
+            <p>This is the exact situation that happened live on this walkthrough, and this exact fix confirmed working: <strong>(1)</strong> apply the Group Policy step above (<code>gpedit.msc</code> → same path → "Require additional authentication at startup" → Enabled → "Configure TPM startup PIN" → "Require startup PIN with TPM"). <strong>(2)</strong> Open an elevated PowerShell or Command Prompt (right-click Start → "Terminal (Admin)") and run:</p>
+            <pre><code>manage-bde -protectors -add C: -TPMAndPIN &lt;pin&gt;</code></pre>
+            <p>Replace <code>&lt;pin&gt;</code> with a 4-20 digit PIN. This adds the PIN protector alongside the existing TPM-only protector on the drive that's already encrypting or already encrypted — it does not restart the encryption, does not require decrypting first, and does not touch data. Confirm it took by running <code>manage-bde -protectors -get C:</code> and checking for a "TPM And PIN" or "Numerical Password" protector alongside "TPM." Reboot once afterward to confirm the PIN prompt actually appears at startup.</p>
+            <p><strong>If <code>gpedit.msc</code> doesn't exist (Windows Home):</strong> the Group Policy Editor isn't available, but the same setting can be written directly to the registry it would otherwise configure — researched and cross-checked against two independent documented BitLocker registry references (not verified live on a Home machine in this walkthrough, unlike the <code>gpedit.msc</code> path above, which was). In an elevated Command Prompt:</p>
+            <pre><code>reg add "HKLM\SOFTWARE\Policies\Microsoft\FVE" /v UseAdvancedStartup /t REG_DWORD /d 1 /f
+reg add "HKLM\SOFTWARE\Policies\Microsoft\FVE" /v UseTPMPIN /t REG_DWORD /d 1 /f</code></pre>
+            <p>Then run <code>gpupdate /force</code> (or just restart) before the <code>manage-bde -protectors -add</code> command above. If this still doesn't produce the PIN prompt or protector, stop guessing further registry changes — flag it to research/support rather than trial-and-error on a security setting.</p>
+          </div>
         </div></details>
       </li>
       <li>Set Windows Hello PIN / biometric for local login.
@@ -1073,6 +1090,7 @@ Get-ChildItem E:\MS02-Backup -Recurse | Select-Object -First 20 FullName, LastWr
 </script>
 </body>
 </html>
+
 
 
 
