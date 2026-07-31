@@ -519,6 +519,24 @@
   var API = 'https://agentshq.boubacarbarry.com/api/orc/cashgen-decisions';
   var PAGE_SLUG = '20260731-cash-generation-recommendations';
 
+  // The orchestrator container restarts on every Gate auto-merge deploy
+  // (docker compose restart, a few seconds of downtime each time). A request
+  // landing in that window fails at the network layer -- fetch() rejects with
+  // a generic TypeError ("Failed to fetch"), not an HTTP error -- and is
+  // retryable: same request, moments later, against a live container,
+  // succeeds. Only retry on that network-layer rejection; an HTTP response
+  // (even an error one) means the server was reachable, so it is returned
+  // as-is for the caller to handle.
+  function fetchWithRetry(url, opts, attempts, delayMs){
+    attempts = attempts || 3;
+    delayMs = delayMs || 500;
+    return fetch(url, opts).catch(function(err){
+      if (attempts <= 1) throw err;
+      return new Promise(function(resolve){ setTimeout(resolve, delayMs); })
+        .then(function(){ return fetchWithRetry(url, opts, attempts - 1, delayMs * 2); });
+    });
+  }
+
   function showWriteError(msg){
     var b = document.getElementById('write-error-banner');
     if (!b) return;
@@ -573,7 +591,7 @@
   }
 
   function loadState(){
-    fetch(API + '/state?page_slug=' + encodeURIComponent(PAGE_SLUG))
+    fetchWithRetry(API + '/state?page_slug=' + encodeURIComponent(PAGE_SLUG))
       .then(function(res){ return res.json().then(function(body){ return {res:res, body:body}; }); })
       .then(function(r){
         if (!r.res.ok || r.body.ok === false) throw new Error(r.body.error || ('HTTP ' + r.res.status));
@@ -593,7 +611,7 @@
         item_label: block.getAttribute('data-item-label') || '',
       };
     });
-    fetch(API + '/run', {
+    fetchWithRetry(API + '/run', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({page_slug: PAGE_SLUG, items: items}),
     }).then(function(){ loadState(); }).catch(function(){ loadState(); });
@@ -604,7 +622,7 @@
     block.querySelectorAll('.decision-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         var decision = btn.getAttribute('data-decision');
-        fetch(API + '/decision', {
+        fetchWithRetry(API + '/decision', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({page_slug: PAGE_SLUG, item_id: id, decision: decision}),
         })
@@ -631,7 +649,7 @@
         var text = (noteInput.value || '').trim();
         if (!text) return;
         saveNoteBtn.disabled = true;
-        fetch(API + '/note', {
+        fetchWithRetry(API + '/note', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({page_slug: PAGE_SLUG, item_id: id, note_text: text}),
         })
