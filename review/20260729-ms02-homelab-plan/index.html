@@ -126,7 +126,7 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v4 · 2026-07-31-11:56:30 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v5 · 2026-07-31-12:15:00 MT</div><!-- DEPLOY_STAMP_END -->
 
 
 
@@ -168,6 +168,11 @@
     <h4>Pressure-tested against — what changed as a result</h4>
     <p><strong>Council pass (5 angles: uptime SRE, security/theft, homelab-conflicts veteran, data-recovery specialist, Boubacar-solo-operator)</strong> added: a UPS with software-managed graceful shutdown (not just surge protection) — the SRE's single biggest gap in the original brief; explicit re-keying of SSH and full secret rotation at migration time rather than copying credentials, because a "clean move" that carries old secrets isn't actually clean; a named interim backup target for the 6-month pre-NAS window, because "the SSD is the only copy of anything" was an unflagged single point of failure; and a hard steer away from any third-party hypervisor (VMware/VirtualBox/Hyper-V-standalone) toward WSL2-only virtualization, because mixing hypervisor engines on one consumer Windows box is the single most common cause of homelab breakage.</p>
     <p><strong>Karpathy pass (anti-over-engineering)</strong> cut: Prometheus/Grafana monitoring (the existing Telegram bot + Task Scheduler health checks are enough for one box), a full bare-metal hypervisor (Proxmox/ESXi) host layer, RAID on a single internal SSD (not meaningful — real redundancy arrives with the NAS), a VPN server (Tailscale is simpler and safer for one operator), and any NAS folder build-out beyond a written plan — all deferred to Month 6 or dropped outright as scope the 6-month horizon doesn't need.</p>
+  </div>
+
+  <div class="callout warn">
+    <h4>Revision 3 (2026-07-31) — second Council + Karpathy pass, four real gaps closed</h4>
+    <p>A fresh 5-voice Council + 10-principle Karpathy re-review of this exact plan (not a rubber stamp of the v3 dry-run) found four things a first-time reader would actually get stuck on. All four are fixed in place, not just flagged: <strong>(1)</strong> Section 5 step 1 confirmed SSH to the VPS but never confirmed the same key authenticates to GitHub before step 2's clone depends on it — added an explicit <code>ssh -T git@github.com</code> check. <strong>(2)</strong> Section 4's Docker Compose file mixed Windows-style volume paths with a WSL2-only device path in the same file — no single shell could have run it as written; paths are now consistent WSL2 mount points (<code>/mnt/c/...</code>) with an explicit "run from inside WSL2, not PowerShell" instruction. <strong>(3)</strong> Section 8's nightly backup job was referenced by the Storage Map and required by validation checklist item s10-11, but no section ever gave it a literal script — added a full <code>robocopy</code> + <code>Register-ScheduledTask</code> block, same pattern as the existing worktree-prune task. <strong>(4)</strong> Section 4's install-order table still named <code>HUAWEI</code> as if it were a fixed path on the new machine — the exact assumption Section 5 step 4 exists to warn against — corrected to generic phrasing. Full record: Section 13.</p>
   </div>
 
   <details open id="s1"><summary><h2 data-num="01">Target Architecture</h2></summary><div class="details-body">
@@ -326,7 +331,7 @@
         <tr><td>2</td><td>Docker Desktop (WSL2 backend enabled in settings, not Hyper-V backend)</td><td><code>docker run hello-world</code> succeeds from both PowerShell and inside the WSL2 distro</td></tr>
         <tr><td>3</td><td><code>usbipd-win</code> (Windows side) + <code>usbip</code> client tools (inside WSL2 distro)</td><td><code>usbipd list</code> shows the Zigbee coordinator; <code>usbipd attach --wsl</code> makes it appear under <code>lsusb</code> inside WSL2</td></tr>
         <tr><td>4</td><td>Git for Windows + GitHub CLI</td><td><code>git --version</code>, authenticated <code>gh auth status</code></td></tr>
-        <tr><td>5</td><td>Claude Code CLI</td><td>launches, reads global config from <code>C:\Users\HUAWEI\.claude\</code> equivalent on the new profile</td></tr>
+        <tr><td>5</td><td>Claude Code CLI</td><td>launches, creates its own per-user config under <code>C:\Users\&lt;new-username&gt;\.claude\</code> — do not assume the username is <code>HUAWEI</code>; that exact wrong assumption is what Section 5 step 4's dry-run finding caught and fixed</td></tr>
         <tr><td>6</td><td>Clone agentsHQ from GitHub (see Section 5 — clean clone, not copy)</td><td>repo present, correct remote, correct branch</td></tr>
         <tr><td>7</td><td>Docker Compose stack for Home Assistant Container + Zigbee2MQTT + Mosquitto (new <code>docker-compose.yml</code>, written fresh, not carried over from anywhere since this is a new topology)</td><td>HA web UI reachable on LAN, Zigbee2MQTT sees the coordinator</td></tr>
         <tr><td>8</td><td>Plex Media Server — native Windows install, <strong>not</strong> containerized, Stage 1 (see below)</td><td>Plex reachable, hardware transcode test (Settings → Transcoder → "Show Advanced" → confirm hardware acceleration active) succeeds on a sample file</td></tr>
@@ -355,15 +360,31 @@ setx PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR "C:\HomeServices\Plex\config" /M
 # Reboot or sign out/in once so the machine-wide env var takes effect before
 # installing Plex -- setx does not affect the CURRENT session.</code></pre>
     </div>
+    <div class="callout warn">
+      <h4>Second-pass finding (Council + Karpathy re-review) — this compose file cannot be run from PowerShell as originally written</h4>
+      <p>The original volume paths (<code>C:\HomeServices\...</code>) and the Zigbee device path (<code>/dev/ttyUSB0</code>) are two different filesystem namespaces. <code>/dev/ttyUSB0</code> only exists inside the WSL2 distro after <code>usbipd attach</code> — it is not a path Windows or Docker Desktop's Windows-side engine can resolve. That means this compose file must be brought up <strong>from inside the WSL2 Ubuntu shell</strong>, not from PowerShell — and once you're in that shell, a Windows-style <code>C:\...</code> volume path is also wrong syntax; WSL2 sees the C: drive at <code>/mnt/c/...</code>. The fix below makes every path in the file consistent with running it from the one shell context where the device passthrough actually works.</p>
+    </div>
+    <div class="scrollbox">
+<pre><code># Run this INSIDE the WSL2 Ubuntu shell (not PowerShell) -- open it with `wsl`
+# from PowerShell first, then cd here. This is the one shell where usbipd's
+# attached device AND a Docker Desktop WSL2-integrated `docker compose` both
+# resolve correctly at the same time.
+cd /mnt/c/HomeServices/Docker
+docker compose up -d
+# Verify the Zigbee device is visible in THIS shell before starting the stack:
+ls -la /dev/ttyUSB0   # must exist here -- if missing, re-run `usbipd attach --wsl` first</code></pre>
+    </div>
     <div class="scrollbox">
 <pre><code># C:\HomeServices\Docker\docker-compose.yml (step 7 in the install-order table)
 # version omitted deliberately -- Compose v2 no longer requires it.
+# All volume paths use the WSL2 mount point (/mnt/c/...), not C:\... , because
+# this file is brought up from inside the WSL2 shell -- see the callout above.
 services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
     volumes:
-      - C:\HomeServices\HomeAssistant\config:/config
+      - /mnt/c/HomeServices/HomeAssistant/config:/config
     restart: unless-stopped
     network_mode: host
 
@@ -371,7 +392,7 @@ services:
     image: koenkk/zigbee2mqtt
     container_name: zigbee2mqtt
     volumes:
-      - C:\HomeServices\Docker\volumes\zigbee2mqtt:/app/data
+      - /mnt/c/HomeServices/Docker/volumes/zigbee2mqtt:/app/data
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0   # path inside WSL2 after usbipd attach, confirm with `lsusb`
     restart: unless-stopped
@@ -380,7 +401,7 @@ services:
     image: eclipse-mosquitto
     container_name: mosquitto
     volumes:
-      - C:\HomeServices\Docker\volumes\mosquitto:/mosquitto/data
+      - /mnt/c/HomeServices/Docker/volumes/mosquitto:/mosquitto/data
     restart: unless-stopped</code></pre>
     </div>
   </div></details>
@@ -405,7 +426,15 @@ services:
 # Add the same public key to the VPS:
 ssh root@72.60.209.109 "echo '&lt;paste-public-key-here&gt;' >> ~/.ssh/authorized_keys"
 # Confirm before touching anything else:
-ssh root@72.60.209.109 "echo ok"</code></pre>
+ssh root@72.60.209.109 "echo ok"
+# Second-pass finding (Council + Karpathy re-review): the VPS check above does
+# NOT prove GitHub will accept this key -- they are two separate credentials.
+# Confirm GitHub auth explicitly before step 2 attempts a git@github.com clone:
+ssh -T git@github.com
+# EXPECT: "Hi bokar83! You've successfully authenticated..." (exit code 1 is
+# normal for this specific command -- GitHub has no shell to hand back).
+# If it asks for a password or shows Permission denied, the key was not
+# actually added on the GitHub side yet -- fix that before step 2, not after.</code></pre>
         </div>
       </li>
       <li><strong>Clean clone, never a copy of the Huawei checkout:</strong>
@@ -488,8 +517,14 @@ cd C:\Ai_Sandbox\agentsHQ-worktrees\wt-smoke-test
 git add SMOKE_TEST.md
 git commit -m "chore: MS-02 migration smoke test [WIP]"
 git push origin chore/ms02-smoke-test
-# Confirm on GitHub the branch + commit landed, and the VPS pull path picks it
-# up on its next cycle. This was only a connectivity proof -- clean it up:
+# Confirm on GitHub the branch + commit landed. Then confirm the VPS pull path
+# actually picked it up -- don't just assume the 5-min auto-pull cycle worked:
+ssh root@72.60.209.109 "cd /root/agentsHQ && git log --oneline -1 origin/chore/ms02-smoke-test"
+# EXPECT: the same commit SHA GitHub shows for chore/ms02-smoke-test. If it's
+# not there yet, wait up to 5 min (safe_pull.sh's own cycle) and check again
+# before assuming anything is broken.
+
+# This was only a connectivity proof -- clean it up:
 cd C:\Ai_Sandbox\agentsHQ
 git worktree remove C:\Ai_Sandbox\agentsHQ-worktrees\wt-smoke-test
 git push origin --delete chore/ms02-smoke-test</code></pre>
@@ -555,6 +590,37 @@ ssh root@72.60.209.109 "grep -v 'old-huawei-key-comment' ~/.ssh/authorized_keys 
     </div>
     <h3>What's backed up, and where (Day 1)</h3>
     <p>Everything genuinely irreplaceable on the MS-02 is small: agentsHQ's own code/memory needs no local backup (GitHub covers it). What actually needs a local backup is Home Assistant config, Docker volume state, and Plex metadata — all copied nightly/weekly to a dedicated external USB SSD (~$60-100, plugged in permanently, not carried around) per the Storage Map in Section 3. This is the explicit interim answer for the 6-month gap before the NAS exists — it was not in the original brief and is the data-recovery angle's main addition to this plan.</p>
+    <div class="callout warn">
+      <h4>Second-pass finding (Council + Karpathy re-review) — this backup job was referenced everywhere but never actually written</h4>
+      <p>Section 3's storage map and Section 10's validation checklist (item s10-11) both assume a nightly backup job exists and has run — but no section anywhere gave it a literal script, unlike the worktree-prune task in Section 5 which got a real <code>Register-ScheduledTask</code> block. That gap would have left Boubacar with a checklist item there was no way to actually complete. Fixed below, same pattern as Section 5 step 8.</p>
+    </div>
+    <div class="scrollbox">
+<pre><code># Run once, external USB SSD already plugged in and assigned a drive letter
+# (e.g. E:). Robocopy is built into Windows -- no dependency to install.
+# /MIR mirrors source into dest (deletes files at dest no longer at source);
+# /R:2 /W:5 keeps retry behavior bounded instead of hanging on a locked file.
+
+New-Item -ItemType Directory -Force -Path E:\MS02-Backup | Out-Null
+
+$backupScript = @'
+$ts = Get-Date -Format "yyyy-MM-dd_HHmm"
+$log = "C:\HomeServices\Docker\volumes\..\..\backup-log-$ts.txt"
+robocopy "C:\HomeServices\HomeAssistant\config" "E:\MS02-Backup\HomeAssistant" /MIR /R:2 /W:5 /LOG+:$log
+robocopy "C:\HomeServices\Docker\volumes"        "E:\MS02-Backup\DockerVolumes" /MIR /R:2 /W:5 /LOG+:$log
+robocopy "C:\HomeServices\Plex\config"           "E:\MS02-Backup\PlexConfig"    /MIR /R:2 /W:5 /LOG+:$log
+'@
+$backupScript | Out-File -Encoding utf8 C:\HomeServices\backup-nightly.ps1
+
+$action  = New-ScheduledTaskAction -Execute "pwsh.exe" `
+  -Argument "-File C:\HomeServices\backup-nightly.ps1"
+$trigger = New-ScheduledTaskTrigger -Daily -At 2:00am
+Register-ScheduledTask -TaskName "MS02-Nightly-Backup" `
+  -Action $action -Trigger $trigger -RunLevel Highest
+
+# Spot-check after the first real run (do not just trust "job exited 0" --
+# item s10-11 explicitly requires the files were actually inspected):
+Get-ChildItem E:\MS02-Backup -Recurse | Select-Object -First 20 FullName, LastWriteTime</code></pre>
+    </div>
     <h3>24/7 operation concerns</h3>
     <div class="table-scroll">
     <table>
@@ -653,6 +719,22 @@ ssh root@72.60.209.109 "grep -v 'old-huawei-key-comment' ~/.ssh/authorized_keys 
     </table>
     </div>
     <p>Every fix above is already reflected directly in Sections 3, 4, and 5 — this section is the record of how they were found, not a second set of instructions to also follow.</p>
+
+    <h3>Second pass — Council + Karpathy re-review (this revision)</h3>
+    <p>The findings above came from the original v3 dry-run simulation. The four below came from a separate, later Council + Karpathy pass over the same plan, specifically checking whether every step a first-time reader needs is actually present and internally consistent — not a repeat of the same simulation.</p>
+    <div class="table-scroll">
+    <table>
+      <caption>Second-pass findings and fixes</caption>
+      <thead><tr><th>#</th><th>Where</th><th>What broke / was missing</th><th>Fix applied</th></tr></thead>
+      <tbody>
+        <tr><td>9</td><td>Section 5, step 1 (SSH key)</td><td>Confirmed SSH to the VPS but never confirmed the SAME key authenticates to GitHub — step 2's <code>git@github.com</code> clone silently depends on that being true.</td><td>Added an explicit <code>ssh -T git@github.com</code> check with the expected output, run before step 2.</td></tr>
+        <tr><td>10</td><td>Section 4 (Docker Compose)</td><td>The compose file mixed Windows-style volume paths (<code>C:\HomeServices\...</code>) with a WSL2-only device path (<code>/dev/ttyUSB0</code>) — no single shell could run it as written; PowerShell can't resolve the device path, and WSL2 can't resolve the Windows-style volume paths.</td><td>Rewrote all volume paths as WSL2 mount points (<code>/mnt/c/HomeServices/...</code>) and added an explicit instruction to run <code>docker compose up -d</code> from inside the WSL2 Ubuntu shell, with a device-visibility check first.</td></tr>
+        <tr><td>11</td><td>Section 8 (Backup)</td><td>The Storage Map (Section 3) and validation checklist item s10-11 both assumed a nightly backup job exists — no section ever gave it a literal script, unlike the worktree-prune task which got a real <code>Register-ScheduledTask</code> block.</td><td>Added a full <code>robocopy</code> + <code>Register-ScheduledTask</code> block for Home Assistant config, Docker volumes, and Plex config, plus a spot-check command matching what s10-11 requires.</td></tr>
+        <tr><td>12</td><td>Section 4, install-order table row 5</td><td>Still named <code>C:\Users\HUAWEI\.claude\</code> as if it were a fixed path on the new machine — the exact wrong assumption Section 5 step 4 exists to warn against, left uncorrected in a different table.</td><td>Reworded to generic <code>C:\Users\&lt;new-username&gt;\.claude\</code> with a cross-reference to why that assumption already broke once.</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>All four fixes above are reflected directly in Sections 4, 5, and 8. None of these are lab-tested against physical MS-02 hardware (neither was the original v3 dry-run) — both passes are simulated read-throughs against the literal commands as written, not a run on the actual box. That distinction matters for Section 10's validation checklist, which is the step that closes this gap for real.</p>
   </div></details>
 
   <div class="notes-section" id="notes-section">
