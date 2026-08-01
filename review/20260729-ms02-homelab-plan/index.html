@@ -125,6 +125,10 @@
   .notes-log .note-empty{color:var(--fg-muted);font-style:italic;font-size:.85rem;}
   details.substep{border-color:var(--border);margin:.6rem 0 .6rem 0;background:var(--bg);scroll-margin-top:64px;}
   details.substep>summary{padding:.5rem .75rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.02em;font-size:.68rem;font-weight:700;color:var(--accent);gap:.45rem;}
+  details.notes-collapse{background:transparent;border-style:dashed;margin:.9rem 0;}
+  details.notes-collapse>summary{padding:.55rem .8rem;font-family:var(--font-serif);font-style:italic;font-size:.85rem;font-weight:400;color:var(--fg-muted);}
+  details.notes-collapse>summary:hover{color:var(--accent);}
+  details.notes-collapse>.details-body{padding:0 .8rem .8rem;}
   details.substep>summary::before{font-size:.85em;}
   details.substep .details-body{padding:0 .9rem .85rem;font-family:var(--font-serif);}
   details.substep .details-body ol,details.substep .details-body ul{padding-left:1.15rem;}
@@ -394,6 +398,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\FVE" /v UseTPMPIN /t REG_DWORD /d 1 /f
   </div></details>
 
   <details id="s3"><summary><h2 data-num="03">Storage Map</h2></summary><div class="details-body">
+    <details class="notes-collapse"><summary>Why the folder structure changed this pass (click to expand) — agentsHQ convention + Drive taxonomy, 3 concrete fixes</summary><div class="details-body">
     <div class="callout ok">
       <h4>Revised this pass — the folder structure now mirrors agentsHQ's own convention plus the Drive reorg's categorical logic, not an ad-hoc flat list</h4>
       <p>Two source patterns were read directly, not invented: agentsHQ's own repo shape (function-named top-level dirs — <code>memory/</code>, <code>skills/</code>, <code>orchestrator/</code>, <code>scripts/</code>, <code>secrets/</code> — one folder per purpose, with secrets living <em>inside</em> the repo root, gitignored) and the Drive reorg's numbered-category taxonomy (<code>01 The Drop Zone</code>, <code>10 Me &amp; Mine</code>, <code>40 Work &amp; Ventures</code>, <code>80 The Attic</code>, <code>90 The Holding Pen</code> — one home per life-domain, deliberate gaps for future insertion, a named exception-intake and a named archive, never an implicit dumping ground). Where the two disagreed, agentsHQ's convention won, per the standing tiebreaker: an AI agent already has trained instincts for it.</p>
@@ -404,12 +409,15 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\FVE" /v UseTPMPIN /t REG_DWORD /d 1 /f
         <li><strong>Added a named archive folder, which the prior revision had nowhere at all</strong> (originally <code>D:\Archive\</code> under this revision's now-superseded two-volume layout — see the single-C:-drive correction below; it's <code>C:\Archive\</code> today). Sections 6, 9, and 11 all describe retiring something (the Huawei, the USB SSD, superseded HA config snapshots) — but the repo's own standing rule is archive, never delete. Without a named archive destination those steps had nowhere real to point. Mirrors the Drive taxonomy's <code>80 The Attic</code>.</li>
       </ul>
     </div>
+    </div></details>
 
     <h3>Now — 1TB SSD, single volume (C:, full 1TB, no partition split)</h3>
+    <details class="notes-collapse"><summary>Why single C: drive, not C:/D: split (click to expand) — confirmed hardware + a prior machine's real failure mode</summary><div class="details-body">
     <div class="callout warn" style="margin:0 0 .8rem;">
       <h4>Corrected this pass — no C:/D: split. Confirmed: the real MS-02 has one drive, and a split is explicitly unwanted</h4>
       <p>Earlier revisions of this plan assumed a two-volume layout (C: for OS/apps, D: for media/scratch/archive). Boubacar's actual MS-02 has a single drive, C:, the full 1TB, no partition — and he does not want one created: a prior machine split this way ran into exactly the failure mode a split invites, one partition filling up while the other sits mostly empty, with no easy way to reclaim space without a repartition. Every path below is rewritten onto that single C: drive, keeping the same folder-structure organization (agentsHQ's own directory convention + the Drive taxonomy's one-home-per-domain logic) — only the drive letter changes, not the shape.</p>
     </div>
+    </div></details>
     <div class="table-scroll">
     <table>
       <caption>Day-1 folder structure</caption>
@@ -462,6 +470,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\FVE" /v UseTPMPIN /t REG_DWORD /d 1 /f
   </div></details>
 
   <details id="s4"><summary><h2 data-num="04">Software Installation Order</h2></summary><div class="details-body">
+    <details class="notes-collapse"><summary>Why WSL2, not Hyper-V/VMware/VirtualBox/Proxmox (click to expand) — the hardest call in this plan</summary><div class="details-body">
     <div class="callout ok">
       <h4>The hardest call in this plan: virtualization for Home Assistant + Zigbee USB + Docker on a Windows daily driver</h4>
       <p class="rec">Recommendation: WSL2 as the single virtualization layer. No Hyper-V-standalone VMs, no VMware, no VirtualBox, no Proxmox-as-host. Run Home Assistant as the "Home Assistant Container" image inside Docker (WSL2 backend), and pass the Zigbee USB coordinator through with <code>usbipd-win</code>.</p>
@@ -474,7 +483,9 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\FVE" /v UseTPMPIN /t REG_DWORD /d 1 /f
         <li><strong>Rejected: Hyper-V-standalone VMs</strong> for the same USB-passthrough reason above, and because it forecloses ever using VMware/VirtualBox later without a fight.</li>
       </ul>
     </div>
+    </div></details>
 
+    <details class="notes-collapse"><summary>Why NOT plain Docker Desktop autostart (click to expand) — real gap found, corrected to WSL2-native systemd</summary><div class="details-body">
     <div class="callout warn">
       <h4>Real gap found researching the click-by-click steps: Docker Desktop's own autostart is NOT true headless autostart</h4>
       <p>Section 10 (validation checklist, item s10-5) and Section 8 both assume "Docker Desktop starts on boot without interactive login" is achievable via a simple setting. It isn't — Docker Desktop's "Start Docker Desktop when you sign in" option still requires an actual interactive Windows sign-in to have happened first; it is not a background-service autostart. For a box meant to come back up fully unattended after a power loss (this plan's own Section 8 requirement), there are two real options, not one simple toggle:</p>
@@ -484,6 +495,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\FVE" /v UseTPMPIN /t REG_DWORD /d 1 /f
       </ul>
       <p><strong>Recommendation: (b).</strong> It solves the actual requirement (unattended restart) without weakening Day 1's BitLocker+PIN security decision, and Docker Desktop's GUI isn't needed day-to-day once the compose stack is running — <code>docker compose</code> commands work identically against the WSL2-native engine.</p>
     </div>
+    </div></details>
 
     <div class="table-scroll">
     <table>
@@ -592,6 +604,7 @@ services:
   </div></details>
 
   <details id="s5"><summary><h2 data-num="05">agentsHQ Migration Checklist</h2></summary><div class="details-body">
+    <details class="notes-collapse"><summary>Why clean clone, not clone-computer/copy-directory/hybrid (click to expand)</summary><div class="details-body">
     <div class="callout ok">
       <h4>Recommendation: clean clone from GitHub, not clone-computer, not copy-directory, not hybrid</h4>
       <p>The deciding fact: <strong>the VPS is already the operational brain of agentsHQ and runs completely independently of the Huawei laptop.</strong> Nothing on the local machine is load-bearing for orc-crewai / orc-postgres / orchestrator — they keep running whether or not any laptop is on. That means the local machine's only real jobs are (a) hold a working git checkout, (b) hold re-issued credentials, and (c) be the thing Claude Code CLI runs on. All three are cheaply and more reliably rebuilt fresh than carried over:</p>
@@ -602,6 +615,7 @@ services:
         <li><strong>Hybrid</strong> is unnecessary complexity for a system deliberately designed (repo on GitHub, memory versioned inside the repo, secrets never committed) to make a clean clone equivalent to a full restore.</li>
       </ul>
     </div>
+    </div></details>
     <p class="subtitle" style="margin:.3rem 0 1rem;">Every step below is literal and copy-paste-ready, dry-run simulated before shipping (full log in Section 13) — run in order, each assumes the previous one passed. <code>&lt;PROJECT_DIR&gt;</code> is a placeholder discovered in step 4 — do not assume the new machine's Windows username will be <code>HUAWEI</code>.</p>
     <ol data-step-prefix="migration">
       <li><strong>Fresh SSH key, never the Huawei's:</strong>
