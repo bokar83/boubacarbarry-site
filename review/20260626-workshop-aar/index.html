@@ -505,10 +505,44 @@
     .cause .rank.r4 { background: var(--green); color: var(--ink-dark); }
     .cause .rank.r5 { background: var(--weave); color: var(--ink-dark); }
 
+    /* The floating back-to-top button is brass now, so its label has to be
+       dark. White on brass does not clear contrast. */
+    #backToTop { color: var(--ink-dark); border-color: var(--brass); }
+    #backToTop:hover { background: var(--ember-bright); color: var(--ink-dark); }
+
+    /* ---------------- deploy stamp vs the quick-nav, at phone widths --------
+       The stamp is injected at publish time, so it does not exist in a local
+       build and only ever collides on the live page. It is fixed at top 8px /
+       right 10px with z-index 99999 and INLINE styles, which is why the
+       overrides below need !important to reach it.
+
+       At 375px the stamp is wide enough to cover most of the row it sits in,
+       and the quick-nav button scrolled straight underneath it: "JUMP TO
+       SECTION" rendered as "JUMP TO SECTI". The stamp is required, must stay
+       upper-right and must not shrink, so the nav moves out of its path
+       rather than the stamp moving out of the way.
+
+       The fix is measured, not positional. A sticky nav parked below the
+       stamp band was tried first and rejected: it fixed the overlap but tore
+       the toggle away from its own list, so at 320px the open nav showed an X
+       floating over the stat cards with its links scrolled off elsewhere.
+       Trading one visual defect for a worse one is not a fix.
+
+       So nothing moves. A scroll handler measures the two rectangles, and the
+       stamp stands down only for as long as something would actually sit on
+       top of it. It is never removed, never shrunk, and never leaves the
+       upper right. Covers open and closed, every width, and any element added
+       to the watch list later. */
+    body.stamp-dodge #deploy-stamp {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v8 · 2026-08-03-13:03:08 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v9 · 2026-08-03-13:22:42 MT</div><!-- DEPLOY_STAMP_END -->
 
 
 <div class="selvedge" aria-hidden="true"></div>
@@ -1774,6 +1808,46 @@ We do not know. The check-in sheet names exactly who did not walk through the do
         t.setAttribute('aria-expanded', 'false');
       });
     });
+  })();
+
+  // ---- deploy stamp collision dodge ---------------------------------------
+  // The stamp is injected at publish time, fixed in the upper right at
+  // z-index 99999, so it does not exist in a local build and only ever
+  // collides on the live page. At 375px it is wide enough to cover most of
+  // its row, and the quick-nav header was rendering as "JUMP TO SECTI".
+  //
+  // It is measured rather than moved: the stamp has to stay upper-right at
+  // full size, so it stands down only while something would genuinely sit on
+  // top of it, and returns the moment that stops being true.
+  (function () {
+    var stamp = document.getElementById('deploy-stamp');
+    if (!stamp) { return; }
+
+    function hits(a, b) {
+      return !(a.right <= b.left || b.right <= a.left ||
+               a.bottom <= b.top || b.bottom <= a.top);
+    }
+
+    function check() {
+      // Measured while hidden is still correct: visibility/opacity keep the
+      // box in layout, so the rect does not change and this cannot oscillate.
+      var s = stamp.getBoundingClientRect();
+      var watch = document.querySelectorAll('.nav-toggle, .toc.open');
+      var clash = false;
+      Array.prototype.forEach.call(watch, function (el) {
+        if (clash) { return; }
+        if (window.getComputedStyle(el).display === 'none') { return; }
+        var r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0 && hits(s, r)) { clash = true; }
+      });
+      document.body.classList.toggle('stamp-dodge', clash);
+    }
+
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    // Opening the nav or switching tabs changes the geometry after the click.
+    document.addEventListener('click', function () { setTimeout(check, 60); }, true);
   })();
 
 </script>
