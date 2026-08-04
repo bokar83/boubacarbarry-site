@@ -1,0 +1,779 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DVD Shelf List &mdash; Plex library, corrected</title>
+<style>
+  :root {
+    --bg: #16181c;
+    --bg-elevated: #1d2025;
+    --bg-card: #202329;
+    --ink: #e9e6df;
+    --ink-dim: #9b968c;
+    --ink-faint: #6b6860;
+    --accent: #c9973f;
+    --accent-dim: #8f6d34;
+    --missing: #c76a5a;
+    --missing-bg: rgba(199, 106, 90, 0.09);
+    --blocked: #c9973f;
+    --blocked-bg: rgba(201, 151, 63, 0.12);
+    --complete: #6fa27a;
+    --complete-bg: rgba(111, 162, 122, 0.09);
+    --rule: #2b2e34;
+    --rule-soft: #24272c;
+    --shadow: 0 1px 0 rgba(0,0,0,0.4);
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f4f2ec;
+    --bg-elevated: #ffffff;
+    --bg-card: #ffffff;
+    --ink: #201d17;
+    --ink-dim: #6b6558;
+    --ink-faint: #a39c8c;
+    --accent: #9c6f22;
+    --accent-dim: #c9973f;
+    --missing: #a8402f;
+    --missing-bg: rgba(168, 64, 47, 0.06);
+    --blocked: #9c6f22;
+    --blocked-bg: rgba(156, 111, 34, 0.08);
+    --complete: #3d7a52;
+    --complete-bg: rgba(61, 122, 82, 0.07);
+    --rule: #e2ddd0;
+    --rule-soft: #ebe6d9;
+    --shadow: 0 1px 0 rgba(0,0,0,0.05);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f4f2ec;
+      --bg-elevated: #ffffff;
+      --bg-card: #ffffff;
+      --ink: #201d17;
+      --ink-dim: #6b6558;
+      --ink-faint: #a39c8c;
+      --accent: #9c6f22;
+      --accent-dim: #c9973f;
+      --missing: #a8402f;
+      --missing-bg: rgba(168, 64, 47, 0.06);
+      --blocked: #9c6f22;
+      --blocked-bg: rgba(156, 111, 34, 0.08);
+      --complete: #3d7a52;
+      --complete-bg: rgba(61, 122, 82, 0.07);
+      --rule: #e2ddd0;
+      --rule-soft: #ebe6d9;
+      --shadow: 0 1px 0 rgba(0,0,0,0.05);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { max-width: 100%; overflow-x: hidden; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .display { font-family: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif; }
+  .mono { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+
+  /* quick-nav bar */
+  .quicknav {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    padding: 0.6rem 1rem;
+    margin: 0 0 2rem;
+    overflow-x: auto;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--rule);
+    font-size: 0.78rem;
+  }
+  .quicknav a {
+    color: var(--ink-dim);
+    text-decoration: none;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .quicknav a:hover { color: var(--ink); background: var(--bg-card); }
+
+  header.masthead { padding-bottom: 2rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--rule); }
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin: 0 0 0.6rem; }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.08; margin: 0 0 0.7rem; font-weight: 600; text-wrap: balance; letter-spacing: -0.01em; }
+  .dek { color: var(--ink-dim); font-size: 1rem; max-width: 60ch; margin: 0 0 1.6rem; }
+
+  .stat-row { display: flex; gap: 1.75rem; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 0.15rem; }
+  .stat .n { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; }
+  .stat .n.accent { color: var(--accent); }
+  .stat .n.missing { color: var(--missing); }
+  .stat .n.blocked { color: var(--blocked); }
+  .stat .n.complete { color: var(--complete); }
+  .stat .l { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  .callout {
+    margin: 0 0 2.5rem;
+    padding: 1rem 1.15rem;
+    border-radius: 10px;
+    border: 1px solid var(--blocked);
+    background: var(--blocked-bg);
+    font-size: 0.88rem;
+    color: var(--ink);
+  }
+  .callout strong { color: var(--blocked); }
+  .callout code {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 0.85em;
+    background: var(--bg-card);
+    padding: 0.05rem 0.3rem;
+    border-radius: 4px;
+  }
+
+  section.group { margin-bottom: 3rem; scroll-margin-top: 4rem; }
+  .group-head { display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 1.1rem; }
+  .group-head h2 { font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; margin: 0; color: var(--ink); }
+  .group-head .count-pill { font-size: 0.7rem; color: var(--ink-faint); background: var(--bg-elevated); border: 1px solid var(--rule); border-radius: 999px; padding: 0.1rem 0.55rem; }
+
+  .cards { display: grid; gap: 0.7rem; }
+  .card { background: var(--bg-card); border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; scroll-margin-top: 4rem; }
+  .card.blocked-card { border-color: var(--blocked); }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.95rem 1.15rem; flex-wrap: wrap; }
+  .card-title { display: flex; align-items: baseline; gap: 0.65rem; min-width: 0; }
+  .card-title h3 { font-size: 1.08rem; font-weight: 600; margin: 0; letter-spacing: -0.005em; }
+  .have-count { font-size: 0.78rem; color: var(--ink-faint); white-space: nowrap; }
+  .status-chip { font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; padding: 0.22rem 0.55rem; border-radius: 5px; white-space: nowrap; }
+  .status-chip.missing { color: var(--missing); background: var(--missing-bg); }
+  .status-chip.blocked { color: var(--blocked); background: var(--blocked-bg); }
+  .status-chip.complete { color: var(--complete); background: var(--complete-bg); }
+
+  .missing-list { list-style: none; margin: 0; padding: 0 1.15rem 1.05rem; display: grid; gap: 0.4rem; }
+  .missing-list li { display: flex; align-items: flex-start; gap: 0.55rem; font-size: 0.92rem; color: var(--ink); padding-top: 0.4rem; border-top: 1px solid var(--rule-soft); }
+  .missing-list li:first-child { border-top: none; padding-top: 0; }
+  .box { flex: none; width: 0.85rem; height: 0.85rem; margin-top: 0.2rem; border: 1.5px solid var(--missing); border-radius: 3px; opacity: 0.7; }
+  .box.blocked-box { border-color: var(--blocked); }
+  .low-confidence { color: var(--ink-dim); font-style: italic; }
+  .low-confidence .box { border-color: var(--ink-faint); opacity: 0.5; }
+
+  .subhead { padding: 0.9rem 1.15rem 0 ; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+
+  .note-block { padding: 0 1.15rem 1.05rem; font-size: 0.85rem; color: var(--ink-dim); border-top: 1px dashed var(--rule); margin-top: 0.2rem; padding-top: 0.7rem; }
+  .note-block strong { color: var(--ink); font-weight: 600; }
+
+  details.uncertain { margin-top: 3rem; border: 1px solid var(--rule); border-radius: 10px; background: var(--bg-card); overflow: hidden; }
+  details.uncertain summary { cursor: pointer; padding: 1rem 1.15rem; font-weight: 600; font-size: 0.92rem; list-style: none; display: flex; align-items: center; gap: 0.5rem; }
+  details.uncertain summary::-webkit-details-marker { display: none; }
+  details.uncertain summary::before { content: "▸"; color: var(--accent); transition: transform 0.15s ease; }
+  details.uncertain[open] summary::before { transform: rotate(90deg); }
+  .uncertain-body { padding: 0 1.15rem 1.15rem; display: grid; gap: 0.7rem; font-size: 0.88rem; color: var(--ink-dim); }
+  .uncertain-body p { margin: 0; }
+  .uncertain-body strong { color: var(--ink); }
+
+  footer.colophon { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); font-size: 0.78rem; color: var(--ink-faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+
+  #back-to-top {
+    position: fixed; right: 1.25rem; bottom: 1.25rem;
+    width: 2.6rem; height: 2.6rem;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 30;
+  }
+  #back-to-top.show { opacity: 1; pointer-events: auto; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media print { body { background: #fff; color: #111; } .quicknav, #back-to-top { display: none; } }
+</style>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-04-13:24:32 MT</div><!-- DEPLOY_STAMP_END -->
+<div class="quicknav" id="quicknav">
+  <a href="#answer">The answer</a>
+  <a href="#accounting">Accounting</a>
+  <a href="#buried">Buried films (140)</a>
+  <a href="#skipped">Not imported (138)</a>
+  <a href="#fix">The fix</a>
+  <a href="#needs-attention">Need attention (13)</a>
+  <a href="#complete">Complete (15)</a>
+  <a href="#open">Still open</a>
+</div>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow display">BAOBAB-10K-HQ &middot; Plex Library</p>
+    <h1 class="display">DVD shelf list &mdash; and why Plex kept saying 763</h1>
+    <p class="dek">Rebuilt from what is actually <strong>on the drive</strong>, not from what Plex was willing to show. The &ldquo;missing 292 movies&rdquo; were never missing. Every one of them is on the disk, and almost all were already inside Plex &mdash; hidden. Root cause first, then the corrected shelf list.</p>
+    <div class="stat-row mono">
+      <div class="stat"><span class="n accent">1,059</span><span class="l">Video files on disk</span></div>
+      <div class="stat"><span class="n complete">921</span><span class="l">Inside Plex</span></div>
+      <div class="stat"><span class="n blocked">140</span><span class="l">Owned but hidden</span></div>
+      <div class="stat"><span class="n complete">0</span><span class="l">Actually missing</span></div>
+    </div>
+  </header>
+
+  <div class="callout" id="answer">
+    <strong>Nothing is missing. Plex was hiding 140 films you already own by filing them as extra copies of seven other movies.</strong>
+    <p style="margin:0.6rem 0 0;">Plex wants every movie file named <code>Title (Year).ext</code>. The files in <code>Disney Movie Collection</code> are named the other way round &mdash; <code>1994 - The Lion King.avi</code>, year first. Plex could not read a title out of that, so instead of creating a new movie for each file, it attached them to a movie it had already created. It did this by decade. Every 2000s file went onto one entry, every 1990s file onto another, across seven decades.</p>
+    <p style="margin:0.6rem 0 0;">That is why the count never moved. The scans were not failing &mdash; the files were being imported every single time. They just were not becoming <em>new movies</em>. <strong>The Lion King, Aladdin, Beauty and the Beast, Tangled, Lilo &amp; Stitch and 135 others are sitting in your library right now</strong>, filed as alternate versions of films like <em>20,000 Leagues Under the Sea</em>.</p>
+    <p style="margin:0.6rem 0 0;"><strong>You can see this yourself in about ten seconds.</strong> Open the Movies library, click the <strong>All</strong> dropdown, choose <strong>Duplicates</strong>. Seven entries show a large version count &mdash; one of them says 61. Those are the seven.</p>
+  </div>
+
+  <section class="group" id="accounting">
+    <div class="group-head">
+      <h2>Where all 1,059 files actually are</h2>
+      <span class="count-pill mono">nothing unaccounted for</span>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <ul class="missing-list" style="padding-top:1.05rem;">
+          <li><span class="box" style="border-color:var(--complete);"></span><span><strong>781 films &mdash; owned, in Plex, visible normally.</strong> These behave correctly and are what the collections further down are built from.</span></li>
+          <li><span class="box blocked-box"></span><span><strong>140 films &mdash; owned, in Plex, but hidden</strong> inside seven entries. Listed by name below. <strong>Do not buy any of these.</strong></span></li>
+          <li><span class="box" style="border-color:var(--ink-faint);"></span><span><strong>138 files &mdash; on the drive, deliberately not imported.</strong> Every one checked individually, all correct to skip. Broken down below.</span></li>
+          <li><span class="box" style="border-color:var(--complete);"></span><span><strong>0 files &mdash; listed in Plex but gone from the drive.</strong> No broken entries, no dead links.</span></li>
+          <li><span class="box" style="border-color:var(--complete);"></span><span><strong>0 films &mdash; genuinely missing.</strong> Nothing that should have imported failed to.</span></li>
+        </ul>
+        <div class="note-block"><strong>Where the number 794 came from.</strong> The web app showed 794 while the underlying data said 763. Both were right: 763 movies plus 31 collections, counted together. It was never a third problem.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="group" id="buried">
+    <div class="group-head">
+      <h2>The 140 films you own that Plex is hiding</h2>
+      <span class="count-pill mono">7 entries &middot; do not re-buy</span>
+    </div>
+    <div class="cards">
+
+      <div class="card blocked-card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Cinderella</h3><span class="have-count mono">1950s &middot; 9 films</span></div>
+          <span class="status-chip blocked">9 buried here</span>
+        </div>
+        <div class="note-block" style="border-top:none;margin-top:0;padding-top:0.9rem;">Plex shows this as <strong>one movie</strong> called &ldquo;Cinderella&rdquo; with 9 &ldquo;versions&rdquo;. Those 9 versions are actually 9 <strong>different films</strong>, listed below. All 9 are on the drive and already inside Plex &mdash; they are just invisible from the normal Movies view.</div>
+        <ul class="missing-list">
+          <li><span class="box blocked-box"></span><span>Cinderella <span class="have-count mono">(1950)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Alice in Wonderland <span class="have-count mono">(1951)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Peter Pan <span class="have-count mono">(1953)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Living Desert <span class="have-count mono">(1953)</span></span></li>
+          <li><span class="box blocked-box"></span><span>20,000 Leagues Under the Sea <span class="have-count mono">(1954)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Lady and the Tramp <span class="have-count mono">(1955)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Old Yeller <span class="have-count mono">(1957)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Darby O&#x27;Gill and the Little People <span class="have-count mono">(1959)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Sleeping Beauty <span class="have-count mono">(1959)</span></span></li>
+        </ul>
+      </div>
+
+      <div class="card blocked-card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Pollyanna</h3><span class="have-count mono">1960s &middot; 7 films</span></div>
+          <span class="status-chip blocked">7 buried here</span>
+        </div>
+        <div class="note-block" style="border-top:none;margin-top:0;padding-top:0.9rem;">Plex shows this as <strong>one movie</strong> called &ldquo;Pollyanna&rdquo; with 7 &ldquo;versions&rdquo;. Those 7 versions are actually 7 <strong>different films</strong>, listed below. All 7 are on the drive and already inside Plex &mdash; they are just invisible from the normal Movies view.</div>
+        <ul class="missing-list">
+          <li><span class="box blocked-box"></span><span>Swiss Family Robinson <span class="have-count mono">(1960)</span></span></li>
+          <li><span class="box blocked-box"></span><span>101 Dalmatians <span class="have-count mono">(1961)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Sword in the Stone <span class="have-count mono">(1963)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Mary Poppins <span class="have-count mono">(1964)</span></span></li>
+          <li><span class="box blocked-box"></span><span>That Darn Cat <span class="have-count mono">(1965)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Jungle Book <span class="have-count mono">(1967)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Love Bug <span class="have-count mono">(1968)</span></span></li>
+        </ul>
+      </div>
+
+      <div class="card blocked-card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">The AristoCats</h3><span class="have-count mono">1970s &middot; 8 films</span></div>
+          <span class="status-chip blocked">8 buried here</span>
+        </div>
+        <div class="note-block" style="border-top:none;margin-top:0;padding-top:0.9rem;">Plex shows this as <strong>one movie</strong> called &ldquo;The AristoCats&rdquo; with 8 &ldquo;versions&rdquo;. Those 8 versions are actually 8 <strong>different films</strong>, listed below. All 8 are on the drive and already inside Plex &mdash; they are just invisible from the normal Movies view.</div>
+        <ul class="missing-list">
+          <li><span class="box blocked-box"></span><span>The Aristocats <span class="have-count mono">(1970)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Bedknobs and Broomsticks <span class="have-count mono">(1971)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Million Dollar Duck <span class="have-count mono">(1971)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Robin Hood <span class="have-count mono">(1973)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Herbie Rides Again <span class="have-count mono">(1974)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Pete&#x27;s Dragon <span class="have-count mono">(1977)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Many Adventures of Winnie the Pooh <span class="have-count mono">(1977)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Rescuers <span class="have-count mono">(1977)</span></span></li>
+        </ul>
+      </div>
+
+      <div class="card blocked-card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Disney Atari</h3><span class="have-count mono">1980s &middot; 8 films</span></div>
+          <span class="status-chip blocked">8 buried here</span>
+        </div>
+        <div class="note-block" style="border-top:none;margin-top:0;padding-top:0.9rem;">Plex shows this as <strong>one movie</strong> called &ldquo;Disney Atari&rdquo; with 8 &ldquo;versions&rdquo;. Those 8 versions are actually 8 <strong>different films</strong>, listed below. All 8 are on the drive and already inside Plex &mdash; they are just invisible from the normal Movies view.</div>
+        <ul class="missing-list">
+          <li><span class="box blocked-box"></span><span>The Fox and the Hound <span class="have-count mono">(1981)</span></span></li>
+          <li><span class="box blocked-box"></span><span>A Disney Christmas Gift <span class="have-count mono">(1982)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Black Cauldron <span class="have-count mono">(1985)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Great Mouse Detective <span class="have-count mono">(1986)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Brave Little Toaster <span class="have-count mono">(1987)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Oliver &amp; Company <span class="have-count mono">(1988)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Who Framed Roger Rabbit <span class="have-count mono">(1988)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Little Mermaid <span class="have-count mono">(1989)</span></span></li>
+        </ul>
+      </div>
+
+      <div class="card blocked-card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Rootin&#x27; Tootin&#x27; Roundup</h3><span class="have-count mono">1990s &middot; 25 films</span></div>
+          <span class="status-chip blocked">25 buried here</span>
+        </div>
+        <div class="note-block" style="border-top:none;margin-top:0;padding-top:0.9rem;">Plex shows this as <strong>one movie</strong> called &ldquo;Rootin&#x27; Tootin&#x27; Roundup&rdquo; with 25 &ldquo;versions&rdquo;. Those 25 versions are actually 25 <strong>different films</strong>, listed below. All 25 are on the drive and already inside Plex &mdash; they are just invisible from the normal Movies view.</div>
+        <ul class="missing-list">
+          <li><span class="box blocked-box"></span><span>Ducktales The Movie - Treasure of the Lost Lamp <span class="have-count mono">(1990)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Rescuers Down Under <span class="have-count mono">(1990)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Beauty and the Beast <span class="have-count mono">(1991)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Aladdin <span class="have-count mono">(1992)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Nightmare Before Christmas <span class="have-count mono">(1993)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Aladdin - The Return of Jafar <span class="have-count mono">(1994)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Lion King <span class="have-count mono">(1994)</span></span></li>
+          <li><span class="box blocked-box"></span><span>A Goofy Movie <span class="have-count mono">(1995)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Pocahontas <span class="have-count mono">(1995)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Aladdin and the King of Thieves <span class="have-count mono">(1996)</span></span></li>
+          <li><span class="box blocked-box"></span><span>James and the Giant Peach <span class="have-count mono">(1996)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Hunchback of Notre Dame <span class="have-count mono">(1996)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Anastasia <span class="have-count mono">(1997)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Beauty and the Beast - The Enchanted Christmas <span class="have-count mono">(1997)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Hercules <span class="have-count mono">(1997)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Winnie The Pooh&#x27;s Most Grand Adventure <span class="have-count mono">(1997)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Belle&#x27;s Magical World <span class="have-count mono">(1998)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Mulan <span class="have-count mono">(1998)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Pocahontas II - Journey to a New World <span class="have-count mono">(1998)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Lion King 2 - Simba&#x27;s Pride <span class="have-count mono">(1998)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Doug&#x27;s 1st Movie <span class="have-count mono">(1999)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Mickey&#x27;s Once Upon A Christmas <span class="have-count mono">(1999)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Tarzan <span class="have-count mono">(1999)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Winnie The Pooh - Seasons of Giving <span class="have-count mono">(1999)</span></span></li>
+          <li><span class="box blocked-box"></span><span>A Bug&#x27;s Life <span class="have-count mono">(?)</span></span></li>
+        </ul>
+      </div>
+
+      <div class="card blocked-card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">20,000 Leagues Under the Sea</h3><span class="have-count mono">2000s &middot; 61 films</span></div>
+          <span class="status-chip blocked">61 buried here</span>
+        </div>
+        <div class="note-block" style="border-top:none;margin-top:0;padding-top:0.9rem;">Plex shows this as <strong>one movie</strong> called &ldquo;20,000 Leagues Under the Sea&rdquo; with 61 &ldquo;versions&rdquo;. Those 61 versions are actually 61 <strong>different films</strong>, listed below. All 61 are on the drive and already inside Plex &mdash; they are just invisible from the normal Movies view.</div>
+        <ul class="missing-list">
+          <li><span class="box blocked-box"></span><span>An Extremely Goofy Movie <span class="have-count mono">(2000)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Buzz Lightyear Of Star Command, The Adventure Begins <span class="have-count mono">(2000)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Dinosaur <span class="have-count mono">(2000)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Emperor&#x27;s New Groove <span class="have-count mono">(2000)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Little Mermaid 2-Return to the Sea <span class="have-count mono">(2000)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Tigger Movie <span class="have-count mono">(2000)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Atlantis The Lost Empire <span class="have-count mono">(2001)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Lady And The Tramp II - Scamp&#x27;s Adventure <span class="have-count mono">(2001)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Mickey&#x27;s Magical Christmas-Snowed In at the House of Mouse <span class="have-count mono">(2001)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Recess Schools Out <span class="have-count mono">(2001)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Spirited Away <span class="have-count mono">(2001)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Cinderella II - Dreams Come True <span class="have-count mono">(2002)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Kim Possible - The Secret Files - Attack Of The Killer Bebes, Downhill, &amp; Partners <span class="have-count mono">(2002)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Lilo And Stitch <span class="have-count mono">(2002)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Mickey&#x27;s House of Mouse - The Villains <span class="have-count mono">(2002)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Peter Pan II - Return to Neverland <span class="have-count mono">(2002)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Tarzan &amp; Jane <span class="have-count mono">(2002)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Hunchback of Notre Dame II <span class="have-count mono">(2002)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Treasure Planet <span class="have-count mono">(2002)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Winnie the Pooh-A Very Merry Pooh Year <span class="have-count mono">(2002)</span></span></li>
+          <li><span class="box blocked-box"></span><span>101 Dalmatians 2 - Patch&#x27;s London Adventure <span class="have-count mono">(2003)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Atlantis 2 Milo&#x27;s Return <span class="have-count mono">(2003)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Brother Bear <span class="have-count mono">(2003)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Kim Possible - A Stitch In Time <span class="have-count mono">(2003)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Piglet&#x27;s Big Movie <span class="have-count mono">(2003)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Stitch! The Movie <span class="have-count mono">(2003)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Jungle Book 2 <span class="have-count mono">(2003)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Home On The Range <span class="have-count mono">(2004)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Howl&#x27;s Moving Castle <span class="have-count mono">(2004)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Kim Possible - The Villain Files <span class="have-count mono">(2004)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Mickey Donald Goofy - The Three Musketeers <span class="have-count mono">(2004)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Mickeys Twice Upon a Christmas <span class="have-count mono">(2004)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Mulan II <span class="have-count mono">(2004)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Teachers Pet <span class="have-count mono">(2004)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Lion King 1-1.5 - Hakuna Matata <span class="have-count mono">(2004)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Winnie the Pooh - Springtime With Roo <span class="have-count mono">(2004)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Chicken Little <span class="have-count mono">(2005)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Disney&#x27;s Christmas Favourites <span class="have-count mono">(2005)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Kim Possible - So The Drama <span class="have-count mono">(2005)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Kronk&#x27;s New Groove <span class="have-count mono">(2005)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Lilo and Stitch 2 - Stitch has a Glitch <span class="have-count mono">(2005)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Pooh&#x27;s Heffalump Movie <span class="have-count mono">(2005)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Tarzan II <span class="have-count mono">(2005)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Valiant <span class="have-count mono">(2005)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Bambi II <span class="have-count mono">(2006)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Brother Bear 2 <span class="have-count mono">(2006)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Leroy &amp; Stitch <span class="have-count mono">(2006)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Fox and the Hound 2 <span class="have-count mono">(2006)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Wild <span class="have-count mono">(2006)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Cinderella III - A Twist in Time <span class="have-count mono">(2007)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Disney Princess Enchanted Tales - Follow Your Dreams <span class="have-count mono">(2007)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Enchanted <span class="have-count mono">(2007)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Meet The Robinsons <span class="have-count mono">(2007)</span></span></li>
+          <li><span class="box blocked-box"></span><span>My Friends Tigger and Pooh Super Sleuth Christmas Movie <span class="have-count mono">(2007)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Bolt <span class="have-count mono">(2008)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Ponyo <span class="have-count mono">(2008)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Little Mermaid - Ariel&#x27;s Beginning <span class="have-count mono">(2008)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Tinker Bell <span class="have-count mono">(2008)</span></span></li>
+          <li><span class="box blocked-box"></span><span>A Christmas Carol <span class="have-count mono">(2009)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Princess and the Frog <span class="have-count mono">(2009)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Tinker Bell and The Lost Treasure <span class="have-count mono">(2009)</span></span></li>
+        </ul>
+      </div>
+
+      <div class="card blocked-card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Disney Parks: Disney&#x27;s Animal Kingdom</h3><span class="have-count mono">2010s &middot; 22 films</span></div>
+          <span class="status-chip blocked">22 buried here</span>
+        </div>
+        <div class="note-block" style="border-top:none;margin-top:0;padding-top:0.9rem;">Plex shows this as <strong>one movie</strong> called &ldquo;Disney Parks: Disney&#x27;s Animal Kingdom&rdquo; with 22 &ldquo;versions&rdquo;. Those 22 versions are actually 22 <strong>different films</strong>, listed below. All 22 are on the drive and already inside Plex &mdash; they are just invisible from the normal Movies view.</div>
+        <ul class="missing-list">
+          <li><span class="box blocked-box"></span><span>Tangled <span class="have-count mono">(2010)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Tinker Bell and The Great Fairy Rescue <span class="have-count mono">(2010)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Gnomeo and Juliet <span class="have-count mono">(2011)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Mars Needs Moms <span class="have-count mono">(2011)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Phineas and Ferb - The Movie Across The 2nd Dimension <span class="have-count mono">(2011)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Winnie the Pooh <span class="have-count mono">(2011)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Frankenweenie <span class="have-count mono">(2012)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Sofia The First Once Upon a Princess <span class="have-count mono">(2012)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Tangled Ever After <span class="have-count mono">(2012)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Secret World Of Arrietty <span class="have-count mono">(2012)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Tinker Bell Secret of the Wings <span class="have-count mono">(2012)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Wreck-It Ralph <span class="have-count mono">(2012)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Frozen <span class="have-count mono">(2013)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Planes <span class="have-count mono">(2013)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Big Hero 6 <span class="have-count mono">(2014)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Planes - Fire and Rescue <span class="have-count mono">(2014)</span></span></li>
+          <li><span class="box blocked-box"></span><span>The Pirate Fairy <span class="have-count mono">(2014)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Tinker Bell and the Legend of the NeverBeast <span class="have-count mono">(2014)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Strange Magic <span class="have-count mono">(2015)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Moana <span class="have-count mono">(2016)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Zootopia <span class="have-count mono">(2016)</span></span></li>
+          <li><span class="box blocked-box"></span><span>Tangled Before Ever After <span class="have-count mono">(2017)</span></span></li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="group" id="skipped">
+    <div class="group-head">
+      <h2>The 138 files Plex did not import, and why each is correct</h2>
+      <span class="count-pill mono">no action needed</span>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <ul class="missing-list" style="padding-top:1.05rem;">
+          <li><span class="box" style="border-color:var(--ink-faint);"></span><span><strong>131 &mdash; Phineas and Ferb episodes.</strong> A four-season TV show sitting in the Movies folder. Plex correctly refuses to treat episodes as movies. <em>This is the one real filing mistake on the drive</em> &mdash; the folder belongs in the TV library.</span></li>
+          <li><span class="box" style="border-color:var(--ink-faint);"></span><span><strong>3 &mdash; Rocky bonus clips.</strong> An alternate ending, a deleted scene and an outtakes reel in an <code>Extras</code> folder. Plex skips extras folders by design.</span></li>
+          <li><span class="box" style="border-color:var(--ink-faint);"></span><span><strong>2 &mdash; sample clips.</strong> Throwaway preview snippets shipped alongside two downloads. Correctly ignored.</span></li>
+          <li><span class="box" style="border-color:var(--ink-faint);"></span><span><strong>1 &mdash; MAURITIUS.iso.</strong> A disc image, not a movie file. Plex does not import these into a movie library.</span></li>
+          <li><span class="box" style="border-color:var(--ink-faint);"></span><span><strong>1 &mdash; The Incredibles.avi, and it is empty.</strong> Zero bytes, dated 2013, a dead placeholder. The real film is on the drive in the Pixar folder and is already in Plex. Nothing to recover, and that file can be deleted.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="group" id="fix">
+    <div class="group-head">
+      <h2>How to fix it &mdash; smallest safe step first</h2>
+      <span class="count-pill mono">untested, so prove it on 7 files</span>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Step 1 &mdash; the three-minute test</h3></div><span class="status-chip blocked">do this first</span></div>
+        <div class="note-block" style="border-top:none;padding-top:0.9rem;margin-top:0;">Rename only the <strong>seven 1960s files</strong>, from <code>1964 - Mary Poppins.avi</code> to <code>Mary Poppins (1964).avi</code>, then scan. If the movie count moves from 763 to about 769 and those films appear on their own, the fix is proven and the rest can follow. If it does not move, nothing has been lost and we take the other route. <strong>This has not been tested yet</strong> &mdash; which is exactly why it is worth three minutes before touching 153 more files.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Step 2 &mdash; rename the rest</h3></div><span class="status-chip missing">only if step 1 works</span></div>
+        <div class="note-block" style="border-top:none;padding-top:0.9rem;margin-top:0;">The same rename across the remaining 153 Disney files. This is the same operation already run successfully on 93 files in the Academy Awards folder, so the tooling and the pattern are known. Renaming also solves a second problem quietly: Plex skips folders whose timestamp has not changed, which is why every rescan and both server restarts did nothing at all. Renaming changes the folder, so Plex is forced to look properly.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Step 3 &mdash; clear out the seven wrong entries</h3></div><span class="status-chip missing">after step 2</span></div>
+        <div class="note-block" style="border-top:none;padding-top:0.9rem;margin-top:0;">Library menu, then <strong>Empty Trash</strong>. This removes the seven bad entries once their files have new names. <strong>One side effect worth knowing before you click:</strong> three of the seven &mdash; Cinderella, Pollyanna and The AristoCats &mdash; are currently in your Disney collection. Emptying the trash drops them out of it. They come back as fresh entries and need adding to that collection again.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Step 4 &mdash; move Phineas and Ferb</h3></div><span class="status-chip missing">separate job</span></div>
+        <div class="note-block" style="border-top:none;padding-top:0.9rem;margin-top:0;">Move that folder out of the Movies location and into the TV Shows library. Unrelated to the Disney problem, kept as its own step so that if something goes sideways it is obvious which change caused it.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">The rule that prevents all of this</h3></div><span class="status-chip complete">going forward</span></div>
+        <div class="note-block" style="border-top:none;padding-top:0.9rem;margin-top:0;">One movie per file, named <code>Title (Year).ext</code>. Year in brackets at the end, never at the front. Every symptom in this document traces back to that one line. Checked across the whole drive: <strong>the year-first pattern exists in exactly one folder</strong>, the Disney one, in 158 of its 160 files. Other folders have messy names full of release tags and those imported fine &mdash; so there is no need to go renaming the rest of the library. It is specifically year-first that breaks Plex.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="group" id="needs-attention">
+    <div class="group-head">
+      <h2>Needs attention — confirmed live, 2026-08-04</h2>
+      <span class="count-pill mono">13 collections</span>
+    </div>
+    <div class="cards">
+
+      <div class="card" id="alfred-hitchcock">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Alfred Hitchcock</h3><span class="have-count mono">16 owned</span></div>
+          <span class="status-chip missing">11 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>Notorious (1946)</li>
+          <li><span class="box"></span>Strangers on a Train (1951)</li>
+          <li><span class="box"></span>Dial M for Murder (1954)</li>
+          <li><span class="box"></span>To Catch a Thief (1955)</li>
+          <li><span class="box"></span>Suspicion (1941)</li>
+          <li><span class="box"></span>Spellbound (1945)</li>
+          <li><span class="box"></span>Lifeboat (1944)</li>
+          <li><span class="box"></span>The Wrong Man (1956)</li>
+          <li class="low-confidence"><span class="box"></span>The 39 Steps (1935), The Lady Vanishes (1938), Jamaica Inn (1939) — British pre-Hollywood period</li>
+        </ul>
+        <div class="note-block">The Hitchcock pack (15-16 films) was already fully scanned and matched into the library and collection before today's Disney scan issue started — its 16 owned titles are confirmed live, and this 11-missing list is unaffected by the Disney blocker.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Pixar</h3><span class="have-count mono">21 owned</span></div>
+          <span class="status-chip missing">7 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>The Good Dinosaur (2015)</li>
+          <li><span class="box"></span>Finding Dory (2016)</li>
+          <li><span class="box"></span>Onward (2020)</li>
+          <li><span class="box"></span>Soul (2020)</li>
+          <li><span class="box"></span>Luca (2021)</li>
+          <li><span class="box"></span>Turning Red (2022)</li>
+          <li><span class="box"></span>Lightyear (2022)</li>
+        </ul>
+        <div class="note-block">Confirmed genuinely absent — searched the whole drive, not just the Disney folder, none of the 7 above exist anywhere on disk. <strong>One exception, not counted in the 7:</strong> <em>A Bug's Life</em> (1998) sits as a stray file inside the Disney pack's 1990s folder — physically on disk, but caught by the same scan blocker as the 37 Disney titles below. Don't pull A Bug's Life from the shelf either; check after the scan issue clears.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">X-Men</h3><span class="have-count mono">10 owned</span></div>
+          <span class="status-chip missing">3 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>The Wolverine (2013)</li>
+          <li><span class="box"></span>X-Men: Days of Future Past (2014)</li>
+          <li><span class="box"></span>The New Mutants (2020)</li>
+        </ul>
+        <div class="note-block">Deadpool &amp; Wolverine (2024) intentionally left out — MCU-canon now, already in the Marvel collection.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Oscar Best Picture Winners</h3><span class="have-count mono">94 owned</span></div>
+          <span class="status-chip missing">3 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>All the King's Men (1949 winner)</li>
+          <li><span class="box"></span>CODA (2021 winner)</li>
+          <li><span class="box"></span>Anora (2024 winner, awarded March 2025)</li>
+        </ul>
+        <div class="note-block"><strong>All About Eve (1950 winner) confirmed found and added today</strong> — it was already on disk from the Academy Awards folder rename pass, unrelated to the Disney/Hitchcock packs. Whoever won for 2025 films (ceremony ~March 2026) is past reliable knowledge — worth a manual check, not guessed here.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">DC Universe</h3><span class="have-count mono">25 owned</span></div>
+          <span class="status-chip missing">4 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>Shazam! (2019 — only the sequel is owned)</li>
+          <li><span class="box"></span>The Suicide Squad (2021, James Gunn — different film from Suicide Squad 2016, which you have)</li>
+          <li><span class="box"></span>Birds of Prey (2020)</li>
+          <li><span class="box"></span>Batman: The Movie (1966, Adam West)</li>
+        </ul>
+        <div class="note-block"><strong>Judgment call, not counted above:</strong> Green Lantern, Joker + Joker: Folie à Deux, Watchmen, Constantine, Catwoman, V for Vendetta, Supergirl — DC-owned but not connected-universe superhero films. Your call whether these belong here.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Marvel</h3><span class="have-count mono">36 owned</span></div>
+          <span class="status-chip missing">2 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>Black Widow (2021)</li>
+          <li><span class="box"></span>Captain America: Brave New World (2025)</li>
+        </ul>
+        <div class="note-block">Scoped to MCU only — X-Men and Venom deliberately excluded (own collection / not connected story).</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Spider-Man</h3><span class="have-count mono">8 owned</span></div>
+          <span class="status-chip missing">2 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>Spider-Man 3 (2007) — Raimi trilogy, 1 &amp; 2 owned, 3 is not</li>
+          <li><span class="box"></span>The Amazing Spider-Man 2 (2014) — only the first is owned</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Terminator</h3><span class="have-count mono">4 owned</span></div>
+          <span class="status-chip missing">2 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>Terminator Salvation (2009)</li>
+          <li><span class="box"></span>Terminator: Dark Fate (2019)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Naked Gun</h3><span class="have-count mono">3 owned</span></div>
+          <span class="status-chip missing">1 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>The Naked Gun (2025 reboot, Liam Neeson)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Fast &amp; Furious</h3><span class="have-count mono">9 owned</span></div>
+          <span class="status-chip missing">1 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>F9 / F9: The Fast Saga (2021) — the 9th film, even though Fast X (10th) is owned</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Despicable Me / Minions</h3><span class="have-count mono">5 owned</span></div>
+          <span class="status-chip missing">1 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>Minions: The Rise of Gru (2022)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">Men in Black</h3><span class="have-count mono">3 owned</span></div>
+          <span class="status-chip missing">1 missing</span>
+        </div>
+        <ul class="missing-list">
+          <li><span class="box"></span>Men in Black: International (2019)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><h3 class="display">James Bond</h3><span class="have-count mono">26 owned</span></div>
+          <span class="status-chip missing">optional</span>
+        </div>
+        <ul class="missing-list">
+          <li class="low-confidence"><span class="box"></span>Casino Royale (1967) — the non-canon spy-spoof version, not the 2006 Craig film (which you already have). Minor, optional.</li>
+        </ul>
+        <div class="note-block">All 25 Eon films plus Never Say Never Again (1983) are owned — essentially complete.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="group" id="complete">
+    <div class="group-head">
+      <h2>Complete</h2>
+      <span class="count-pill mono">15 collections</span>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Star Wars</h3><span class="have-count mono">12 owned</span></div><span class="status-chip complete">complete</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">John Wick</h3><span class="have-count mono">5 owned</span></div><span class="status-chip complete">complete</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Harry Potter</h3><span class="have-count mono">8 owned</span></div><span class="status-chip complete">complete</span></div>
+        <div class="note-block">Fantastic Beasts (3 films) is a different franchise/protagonist in the same universe — not counted as a gap, just worth knowing it exists.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Mission: Impossible</h3><span class="have-count mono">8 owned</span></div><span class="status-chip complete">complete</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Rocky / Creed</h3><span class="have-count mono">9 owned</span></div><span class="status-chip complete">complete</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Home Alone</h3><span class="have-count mono">5 owned</span></div><span class="status-chip complete">complete</span></div>
+        <div class="note-block">Home Sweet Home Alone (2021, Disney+ reboot) exists but isn't counted — different creative team/canon.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Ice Age</h3><span class="have-count mono">5 owned</span></div><span class="status-chip complete">complete</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Kung Fu Panda</h3><span class="have-count mono">4 owned</span></div><span class="status-chip complete">complete</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Chronicles of Narnia</h3><span class="have-count mono">3 owned</span></div><span class="status-chip complete">complete</span></div>
+        <div class="note-block">A Netflix installment is reportedly in the works, no confirmed release to check against.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Sherlock Holmes (Downey Jr.)</h3><span class="have-count mono">2 owned</span></div><span class="status-chip complete">complete</span></div>
+        <div class="note-block">A third film has been rumored for years, nothing confirmed to check against.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">National Treasure</h3><span class="have-count mono">2 owned</span></div><span class="status-chip complete">complete</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Ocean's</h3><span class="have-count mono">4 owned</span></div><span class="status-chip complete">complete</span></div>
+        <div class="note-block">Eleven, Twelve, Thirteen, Eight (2001–2018 series). The 1960 Rat Pack original wasn't checked — different film, your call whether it belongs in this collection.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Transformers</h3><span class="have-count mono">7 owned</span></div><span class="status-chip complete">complete</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">Rush Hour</h3><span class="have-count mono">3 owned</span></div><span class="status-chip complete">complete</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><h3 class="display">French Movies</h3><span class="have-count mono">52 owned</span></div><span class="status-chip complete">broad category</span></div>
+        <div class="note-block">Not a tight franchise, so no full gap list applies. One checkable thread: the Asterix series (12 owned) is missing Asterix and the Secret of the Magic Potion (2018) and Asterix &amp; Obelix: The Middle Kingdom (2023).</div>
+      </div>
+    </div>
+  </section>
+
+
+  <details class="uncertain" id="open">
+    <summary class="display">What is proven, what is not, and what nobody has checked</summary>
+    <div class="uncertain-body">
+      <p><strong>Proven three separate ways.</strong> That 140 films are stacked into seven entries was confirmed by reading Plex's own database directly, then independently through Plex's web interface, which returns 61 separate media entries for &ldquo;20,000 Leagues Under the Sea&rdquo;, and then by Plex's own Duplicates filter, which flags all seven without being told to. The file counts come from a full listing of the drive compared line by line against the database.</p>
+      <p><strong>Not explained: why it grouped by decade.</strong> The grouping is real and measurable. Why Plex chose decade-sized buckets is not established. There is a genuine anomaly worth naming rather than papering over: the 1928 to 1949 Disney files use the <em>identical</em> year-first naming and imported perfectly as individual movies. Whatever the precise rule is, it does not kick in before 1950. The fix does not depend on knowing why, but this should not be dressed up as fully understood.</p>
+      <p><strong>The fix has not been run.</strong> Nothing on this page has been applied to the library. The rename approach is the best-supported option and there is a successful precedent on 93 other files, but it is untested against <em>this</em> problem, which is why step 1 is deliberately small and reversible.</p>
+      <p><strong>Nobody has checked whether the other 758 entries point at the right film.</strong> They all carry real metadata IDs, which means Plex matched them to <em>something</em>, not that it matched them to the correct thing. Three of the seven bad entries came back as &ldquo;Disney Atari&rdquo;, &ldquo;Rootin' Tootin' Roundup&rdquo; and &ldquo;Disney Parks: Disney's Animal Kingdom&rdquo;, which shows match quality in that folder was poor generally. &ldquo;No files missing&rdquo; is not the same claim as &ldquo;the library is correct&rdquo;, and only the first has been verified.</p>
+      <p><strong>Five films have no metadata at all.</strong> Duty to God, Les Percussions de Guinee, two Louis de Funes titles, and a Pixar shorts compilation. They are in the library and playable, just unidentified. Harmless, and easy to name by hand if it bothers you.</p>
+      <p><strong>What was ruled out, so it does not get re-tested.</strong> The drive fault was real and is fixed; the disk check came back clean and it was not causing this. Folder nesting was tested by flattening eleven folders and made no difference. Metadata matching was suspected but was never the blocker &mdash; unmatched files still get added to a library, they are never dropped. Permissions were not it either, since 921 files from that same drive imported fine.</p>
+      <p><strong>Earlier versions of this page were wrong in a way worth flagging.</strong> They were built from what Plex displayed, and Plex was hiding 140 owned films. The Disney entry previously read &ldquo;37 owned&rdquo; when that folder holds 160 files. Building a shopping list on that view risks sending you out to buy films already on the drive. This version is built from the drive itself, for exactly that reason.</p>
+    </div>
+  </details>
+
+  <footer class="colophon mono">
+    <span>Rebuilt 2026-08-04 &middot; BAOBAB-10K-HQ</span>
+    <span>Source of truth: the Movies drive itself, 1,059 video files, cross-checked against Plex's own database and web interface. Root cause confirmed, fix not yet applied.</span>
+  </footer>
+
+</div>
+
+<a href="#quicknav" id="back-to-top" aria-label="Back to top">&uarr;</a>
+<script>
+  var btt = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function () {
+    if (window.scrollY > 500) { btt.classList.add('show'); } else { btt.classList.remove('show'); }
+  });
+</script>
+</body>
+</html>
+
