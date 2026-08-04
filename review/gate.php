@@ -256,7 +256,7 @@ exit;
 
 function render_form(string $next, string $error): void
 {
-    http_response_code($error === '' ? 401 : 401);
+    http_response_code(401);
     no_store();
     header('Content-Type: text/html; charset=utf-8');
     $nextAttr  = htmlspecialchars($next, ENT_QUOTES, 'UTF-8');
@@ -351,6 +351,9 @@ button.go:focus-visible{outline:2px solid var(--cyan-hi); outline-offset:2px}
   margin-top:16px; padding:11px 13px; border-radius:3px; font-size:14px;
   background:rgba(255,107,107,.10); border:1px solid rgba(255,107,107,.42); color:#FFC9C9;
 }
+/* The message sits between the field and the button, so it does not need the
+   button's full standing gap on top of its own. */
+.err + button.go{margin-top:12px}
 .foot{
   margin-top:26px; padding-top:16px; border-top:1px solid var(--line-soft);
   font-size:12.5px; color:var(--ink-faint);
@@ -390,12 +393,12 @@ button.go:focus-visible{outline:2px solid var(--cyan-hi); outline-offset:2px}
       </button>
     </div>
 
+    <?php if ($errorHtml !== ''): ?>
+      <p class="err" role="alert"><?= $errorHtml ?></p>
+    <?php endif; ?>
+
     <button class="go" type="submit">Unlock</button>
   </form>
-
-  <?php if ($errorHtml !== ''): ?>
-    <p class="err" role="alert"><?= $errorHtml ?></p>
-  <?php endif; ?>
 
   <p class="foot">One unlock covers everything under this address for 30 days on this browser.</p>
 </main>
