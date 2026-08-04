@@ -1,9 +1,11 @@
 # /review/ is the working area. The pages here carry unfinished thinking,
 # named people, and business detail that was never meant to be found by a
-# stranger. The password panel on some of these pages is drawn in CSS and
-# removed by a class on <body>, so it hides the page from a visitor, not from
-# anyone who reads the response. Treat everything under here as readable to
-# whoever holds the URL, and keep the URLs from being handed out.
+# stranger. It used to be readable to anyone holding the address: the password
+# panel on some of these pages is drawn in CSS and removed by a class on
+# <body>, so it hid the page from a visitor, not from anyone who read the
+# response. The rewrite at the bottom of this file closes that. Nothing under
+# here is served by the web server directly any more; gate.php serves it, and
+# only to a request carrying a valid signed cookie.
 
 # No directory listings. The server already behaves this way; saying it here
 # means it survives a panel change.
@@ -30,4 +32,38 @@ Options -Indexes
 # it applies to every page and every attached file underneath.
 <IfModule mod_headers.c>
   Header set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+</IfModule>
+
+# Everything under this directory goes through the gate. This is the line that
+# turns the CSS panel into an actual lock: the web server stops serving these
+# files, and gate.php hands them over only after checking a signed cookie.
+#
+# This covers attachments too, not just pages. The files/ directory underneath
+# was never behind the panel at all, because the panel only ever existed inside
+# the HTML.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /review/
+
+  # The gate must stay directly reachable or the rule below would rewrite it
+  # into itself. The internal redirect re-enters this file, matches here, and
+  # stops.
+  RewriteRule ^gate\.php$ - [L]
+
+  # If the key file above public_html is ever lost, /review/ will answer 503 for
+  # everything and the way back is to restore review/_setup-gate.php from
+  # history, add "RewriteRule ^_setup-gate\.php$ - [L]" here, deploy, POST the
+  # password to it from the VPS over IPv4, then remove both again.
+
+  # Everything else. No condition on the cookie: mod_rewrite can only see that
+  # a cookie is present, not that its signature is good, so testing it here
+  # would let anyone in who set the cookie by hand. The check belongs in PHP.
+  RewriteRule ^ gate.php [L]
+</IfModule>
+
+# If mod_rewrite were ever unavailable, the rule above would silently vanish
+# and every page here would go back to being served in the clear. Deny by
+# default in that case: a broken gate should fail shut, not open.
+<IfModule !mod_rewrite.c>
+  Require all denied
 </IfModule>

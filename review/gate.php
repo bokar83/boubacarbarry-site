@@ -225,6 +225,7 @@ $types = [
     'ico'  => 'image/x-icon',
     'pdf'  => 'application/pdf',
     'txt'  => 'text/plain; charset=utf-8',
+    'md'   => 'text/plain; charset=utf-8',
     'csv'  => 'text/csv; charset=utf-8',
     'xml'  => 'application/xml',
     'woff' => 'font/woff',
@@ -237,6 +238,13 @@ $ext = strtolower((string) pathinfo($real, PATHINFO_EXTENSION));
 
 no_store();
 header('Content-Type: ' . ($types[$ext] ?? 'application/octet-stream'));
+
+// readfile streams, but only if nothing is buffering it first. Two archived
+// pages in here are around 20MB of inlined images, and collecting one of those
+// into an output buffer would hit the memory limit and return a blank page.
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
 readfile($real);
 exit;
 
