@@ -45,6 +45,12 @@ jobs:
           # same branch, so the tip is the state that actually needs to be in sync -- and a
           # detached HEAD could not push the heal back.
           ref: ${{ github.ref_name }}
+          # Full history so the rebase-retry below actually works. checkout defaults to a
+          # depth-1 shallow clone, which has no merge base to rebase onto -- exactly the
+          # path that runs when the heal collides with the scheduled sweep. ~123MB / 810
+          # commits, a few seconds on a hosted runner, in exchange for a retry that cannot
+          # dead-end and hand a routine collision to a human.
+          fetch-depth: 0
 
       - name: Self-heal -- rebuild the hub (self-populate + auto-archive + prune)
         shell: pwsh
