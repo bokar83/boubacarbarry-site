@@ -4,15 +4,23 @@ name: Review Hub Sync Check
 # whatever it had to fix, and only THEN runs -Check to verify the tree is genuinely in sync.
 #
 # Why heal-then-check instead of check-only (2026-08-06):
-# -Check fails on two very different things. REAL drift -- a page added without a rebuild, a
-# manifest entry pointing at a folder that no longer exists, a corrupted marker block -- is a
-# mistake, and failing the push is correct. But it also failed on PURE TIME PASSING: an item
-# crossing the 21-day auto-archive cutoff since the last scheduled sweep. Nobody made that
-# mistake and no local action could have prevented it, yet it turned a routine review push
-# red. 21 of 100 Review Hub Sync Check runs failed that way between 2026-07-28 and 2026-08-06.
-# Running the rebuild first removes the race outright: anything overdue is archived by this
-# very job, and -Check then passes for the right reason. Real drift still fails, because the
-# rebuild cannot invent a missing folder or restore a marker block it refuses to write over.
+# -Check was failing on two different things and treating both as somebody's mistake.
+#
+#   SELF-POPULATE DRIFT -- a page published without re-running the rebuild, so the folder is
+#   on disk but absent from the manifest. Real drift, but trivially self-healable: the
+#   rebuild's whole self-populate job is to add exactly that entry.
+#   PURE TIME PASSING -- an item crossing the 21-day auto-archive cutoff since the last
+#   scheduled sweep. Nobody made a mistake at all and no local action could have prevented
+#   it, yet it turned a routine review push red.
+#
+# 69 of the last 200 Review Hub Sync Check runs failed, spanning 2026-07-21 to 2026-08-06.
+# Sampling the failure text: the 26 most recent split 20 time-passing / 6 self-populate,
+# while an older slice around 2026-07-21 skews the other way. Both classes are large, and
+# BOTH are healed by simply running the rebuild before checking -- which is why widening
+# review-archive.yml's cron could never have worked: it does not touch the self-populate half
+# at all, and only narrows the other. Real, unhealable drift still fails: the rebuild cannot
+# invent a folder a manifest entry points at, and it refuses to write over a corrupted marker
+# block rather than emitting a stale hub.
 #
 # Superseded approach (6e3ec79, reverted in the same commit as this file): widening
 # review-archive.yml's cron from daily to hourly only SHRANK the race window instead of
