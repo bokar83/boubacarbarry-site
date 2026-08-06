@@ -1,11 +1,25 @@
 name: Review Hub Daily Archive
-# Daily trigger for the 21-day auto-archive sweep. The rebuild script only runs on deploy,
-# which is not daily, so the age-based cutoff needs its own daily run. This regenerates the
+# Hourly trigger for the 21-day auto-archive sweep. The rebuild script only runs on deploy,
+# so the age-based cutoff needs its own scheduled run. This regenerates the
 # hub (self-populate + auto-archive + prune) and commits the result if anything changed.
 # Archive is move-not-delete: aged pages move to review/archive/ and stay in the repo.
+#
+# Was daily at 09:17 UTC until 2026-08-06 (fix for a recurring false-failure pattern):
+# review-sync.yml's push-triggered sync-check fails ANY push touching review/** if an
+# item has crossed the 21-day cutoff since the last sweep. With a once-daily sweep that
+# left a ~9h/day window (roughly 00:00-09:17 UTC, right after the UTC date flips an item
+# past 21 days) where routine review-hub pushes failed CI for a reason no local dev
+# action could have prevented -- pure time passing, not real drift. 21 of the last 100
+# Review Hub Sync Check runs failed this way (2026-07-28 through 2026-08-06), all
+# clustered inside that daily gap. Sweeping hourly instead shrinks the exposure window
+# from ~9h to <=1h, which should eliminate nearly all of these false-failure emails
+# without touching review-sync.yml's gate semantics (it still correctly fails on real
+# manifest/folder drift). If the false-failure pattern in Actions notification emails
+# persists after this change, the real fix is to have review-sync.yml self-heal (run the
+# mutating rebuild + commit before -Check) instead of only widening this cron.
 on:
   schedule:
-    - cron: '17 9 * * *'   # 09:17 UTC daily
+    - cron: '17 * * * *'   # hourly, at :17 past each hour
   workflow_dispatch:
 permissions:
   contents: write
