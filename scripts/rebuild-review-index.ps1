@@ -303,7 +303,19 @@ if (-not $archivedCards) { $archivedCards = "`n    <div class=`"empty`">Nothing 
 $html = Get-Content $IndexPath -Raw -Encoding UTF8
 $html = Replace-Block $html '    <!-- REVIEW_CARDS_START -->'    '    <!-- REVIEW_CARDS_END -->'    $cards
 $html = Replace-Block $html '    <!-- REVIEW_ARCHIVED_START -->' '    <!-- REVIEW_ARCHIVED_END -->' $archivedCards
-Set-Content $IndexPath $html -Encoding UTF8
+
+# IDEMPOTENT WRITE (2026-08-06). This used to be `Set-Content $IndexPath $html -Encoding UTF8`,
+# which is NOT a round-trip: Get-Content -Raw keeps the newline already at the end of the file
+# and Set-Content then appends its own, so every rebuild grew index.html by one blank line even
+# when nothing had changed. That made the scheduled sweep produce a diff and push a commit to
+# main on EVERY tick (~24 junk commits/day once the cron went hourly), and it made "did anything
+# change?" a useless signal for any workflow trying to commit only real changes. Normalising to
+# exactly one trailing LF and writing the bytes directly makes a no-op rebuild byte-identical.
+# WriteAllText (rather than Set-Content) also pins the encoding to UTF-8 no-BOM regardless of
+# whether this runs under Windows PowerShell 5.1 (Set-Content UTF8 = BOM) or pwsh 7 (no BOM),
+# so a local rebuild and a CI rebuild can never flip the BOM back and forth.
+$html = ($html -replace '(\r?\n)+\z', '') + "`n"
+[System.IO.File]::WriteAllText($IndexPath, $html, [System.Text.UTF8Encoding]::new($false))
 
 # --- Verify written card counts match, or fail loud -------------------------
 $writtenAll = ([regex]::Matches((Get-Content $IndexPath -Raw), 'class="review-card[^"]*"')).Count

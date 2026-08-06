@@ -1,7 +1,26 @@
 name: Review Hub Sync Check
-# Fails the push if review/index.html or the manifest is out of sync with the review/
-# directory, or an item is overdue for the 21-day auto-archive. This is the unskippable
-# backstop: even if someone forgets to run the rebuild before deploy, CI catches the drift.
+# Self-HEALING gate for the review hub. On any push touching review/**, this workflow now
+# runs the MUTATING rebuild first (self-populate + 21-day auto-archive + prune), commits
+# whatever it had to fix, and only THEN runs -Check to verify the tree is genuinely in sync.
+#
+# Why heal-then-check instead of check-only (2026-08-06):
+# -Check fails on two very different things. REAL drift -- a page added without a rebuild, a
+# manifest entry pointing at a folder that no longer exists, a corrupted marker block -- is a
+# mistake, and failing the push is correct. But it also failed on PURE TIME PASSING: an item
+# crossing the 21-day auto-archive cutoff since the last scheduled sweep. Nobody made that
+# mistake and no local action could have prevented it, yet it turned a routine review push
+# red. 21 of 100 Review Hub Sync Check runs failed that way between 2026-07-28 and 2026-08-06.
+# Running the rebuild first removes the race outright: anything overdue is archived by this
+# very job, and -Check then passes for the right reason. Real drift still fails, because the
+# rebuild cannot invent a missing folder or restore a marker block it refuses to write over.
+#
+# Superseded approach (6e3ec79, reverted in the same commit as this file): widening
+# review-archive.yml's cron from daily to hourly only SHRANK the race window instead of
+# closing it, and did not reliably do even that -- GitHub does not honor an hourly schedule
+# on this repo (observed gaps of 2h20m to 3h38m, never at the requested :17), while 24x the
+# scheduled runs bought two "The job was not acquired by Runner of type hosted" infra
+# failures inside 17 hours after 30 consecutive clean daily runs. That cron is back to daily,
+# where it belongs, now that this workflow closes the race properly.
 on:
   push:
     paths:
@@ -9,14 +28,71 @@ on:
       - 'scripts/rebuild-review-index.ps1'
       - '.github/workflows/review-sync.yml'
   workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  # Two pushes in quick succession must not both try to heal and push. Queue, never cancel:
+  # a cancelled heal would leave the drift it was fixing in place.
+  group: review-sync-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   sync-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Check out the branch TIP, not the pushed SHA. The scheduled sweep pushes to the
+          # same branch, so the tip is the state that actually needs to be in sync -- and a
+          # detached HEAD could not push the heal back.
+          ref: ${{ github.ref_name }}
+
+      - name: Self-heal -- rebuild the hub (self-populate + auto-archive + prune)
+        shell: pwsh
+        run: ./scripts/rebuild-review-index.ps1
+
+      - name: Commit and push the heal, if it changed anything
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain review/)" ]; then
+            echo "Hub was already in sync -- nothing to heal."
+            echo "Review hub was already in sync; no heal commit needed." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "::notice::Review hub was out of sync on push; CI healed it. See the review-bot commit on this branch."
+          {
+            echo "### Review hub self-healed"
+            echo ''
+            echo '```'
+            git status --porcelain review/
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          git config user.name  "review-bot"
+          git config user.email "review-bot@users.noreply.github.com"
+          git add review/
+          # [skip ci] keeps this push from re-triggering this same workflow.
+          git commit -m "chore(review): self-heal hub sync in CI [skip ci]"
+          # The daily archive sweep pushes to this branch too. A collision should be a
+          # non-event, not a red X -- rebase onto the remote and retry rather than failing.
+          for attempt in 1 2 3; do
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              echo "Pushed the heal commit on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Push rejected (attempt ${attempt}); rebasing onto origin/${GITHUB_REF_NAME} and retrying."
+            if ! git pull --rebase origin "${GITHUB_REF_NAME}"; then
+              git rebase --abort || true
+              echo "::error::Rebase onto origin/${GITHUB_REF_NAME} conflicted; the heal commit needs a human."
+              exit 1
+            fi
+          done
+          echo "::error::Could not push the self-heal commit after 3 attempts."
+          exit 1
+
       - name: Verify review hub is in sync
         shell: pwsh
         run: ./scripts/rebuild-review-index.ps1 -Check
+
       - name: No placeholder pay links (guard, 2026-07-02)
         shell: pwsh
         run: |
