@@ -11,6 +11,22 @@
 #                       render in the collapsed "Archived" section. keep:true is exempt.
 #   3. KEEP / PIN     : keep:true entries pin to the TOP with a "Kept" badge and never
 #                       auto-archive. The manifest is the durable source of truth.
+#   4. PINNED ORDER (2026-08-07): kept items additionally support an optional integer
+#                       "pinned_order" field in review/.review-manifest.json. When set on
+#                       a kept item, that item renders FIRST within the Kept block, in
+#                       ascending numeric order (1 before 2 before 3, gaps are fine).
+#                       Kept items without pinned_order keep the previous date-desc order,
+#                       rendering beneath the numbered ones. pinned_order on a non-kept
+#                       item has no effect -- ordering only applies inside the Kept block.
+#                       This is CHAT-DRIVEN, not a UI control: to reorder, open
+#                       review/.review-manifest.json, find the item by "slug", add or
+#                       change its "pinned_order": <int> field (add "pinned_order": 1 to
+#                       one item and "pinned_order": 2 to another to put the first one
+#                       above the second), save, commit. The next run of this script (or
+#                       publish-review.ps1 / close-review.ps1 / prune-reviews.ps1, which
+#                       all call it automatically) re-renders the hub with the new order.
+#                       No Supabase write needed -- this lives in the git-tracked manifest
+#                       only, same as "keep" itself.
 #
 # -Check : sync-check only (no writes). Exits 1 if the manifest is out of sync with the
 #          review/ directory OR an item is overdue for archive. CI uses this to fail a
@@ -59,6 +75,16 @@ function Get-EffArchived($item) {
 
 function Get-EffKept($item) {
     return ((Test-Keep $item) -or (Test-DbKept $item.slug))
+}
+
+# Manual display-order override for KEPT items only (see PINNED ORDER header note).
+# Returns $null when unset or when the item is not effectively kept, so callers can
+# treat $null as "fall back to date-desc" with a single check.
+function Get-PinnedOrder($item) {
+    if (-not (Get-EffKept $item)) { return $null }
+    if ($item.PSObject.Properties.Name -notcontains 'pinned_order') { return $null }
+    if ($null -eq $item.pinned_order -or $item.pinned_order -eq '') { return $null }
+    return [int]$item.pinned_order
 }
 
 function Get-PageTitle([string]$indexFile, [string]$slug) {
@@ -285,9 +311,16 @@ if ($toArchive.Count -gt 0) {
 
 # --- Partition + order ------------------------------------------------------
 # Active = not archived (manifest lifecycle MERGED with review_states decisions),
-# not closed. Kept items pin to the top (then by date desc).
+# not closed. Kept items pin to the top. Within the Kept block, items with an explicit
+# pinned_order render first in ascending numeric order; remaining Kept items (and all
+# non-Kept items below them) keep the previous date-desc order. See PINNED ORDER header
+# note for how pinned_order gets set.
 $active = @($manifest | Where-Object { -not (Get-EffArchived $_) -and -not $_.closed })
-$activeSorted = @($active | Sort-Object @{ Expression = { if (Get-EffKept $_) { 0 } else { 1 } } }, @{ Expression = { $_.created }; Descending = $true })
+$activeSorted = @($active | Sort-Object `
+    @{ Expression = { if (Get-EffKept $_) { 0 } else { 1 } } }, `
+    @{ Expression = { if ($null -ne (Get-PinnedOrder $_)) { 0 } else { 1 } } }, `
+    @{ Expression = { $po = Get-PinnedOrder $_; if ($null -ne $po) { $po } else { [int]::MaxValue } } }, `
+    @{ Expression = { $_.created }; Descending = $true })
 $archivedItems = @($manifest | Where-Object { Get-EffArchived $_ } | Sort-Object @{ Expression = { $_.created }; Descending = $true })
 
 # --- Build card blocks ------------------------------------------------------

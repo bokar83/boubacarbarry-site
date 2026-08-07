@@ -63,6 +63,7 @@
   .archived-wrap summary { cursor: pointer; color: var(--muted); font-size: 0.82rem; font-weight: 600; padding: 0.5rem 0; list-style: none; user-select: none; }
   .archived-wrap summary::-webkit-details-marker { display: none; }
   .archived-wrap summary::before { content: "\25B8"; margin-right: 0.4rem; display: inline-block; transition: transform 0.15s; }
+  .archived-wrap summary .arch-count { opacity: 0.7; font-weight: 500; }
   .archived-wrap[open] summary::before { transform: rotate(90deg); }
   .archived-wrap .review-list { margin-top: 0.75rem; opacity: 0.85; }
   .archived-wrap .review-card { border-style: dashed; }
@@ -771,7 +772,7 @@
        Add an <input id="reviewSearch"> here and filter cards by .title text. Not built yet. -->
 
   <details class="archived-wrap" id="archived">
-    <summary>Archived</summary>
+    <summary>Archived <span id="archivedCount" class="arch-count"></span></summary>
     <div class="review-list" id="archivedList">
     <!-- REVIEW_ARCHIVED_START -->
     <div class="review-card" data-slug="20260716-operational-pain-toolkit">
@@ -1995,6 +1996,18 @@
     var archWrap = document.getElementById('archived');
     if (!mainList || !archList) return;
 
+    // "Archived (N)" count on the disclosure toggle -- N always reflects what is
+    // actually IN the archived list right now (server-rendered on load, then kept in
+    // sync after any client-side archive/unarchive move below). Read from the DOM
+    // rather than trusted once at load so it can never drift from what's really there.
+    var archCountEl = document.getElementById('archivedCount');
+    function updateArchCount() {
+      if (!archCountEl) return;
+      var n = archList.querySelectorAll('.review-card').length;
+      archCountEl.textContent = '(' + n + ')';
+    }
+    updateArchCount();
+
     // Supabase REST via plain fetch (no CDN library). The old supabase-js loader from
     // cdn.jsdelivr.net silently dropped the page to per-device localStorage whenever the
     // CDN was blocked or slow (db=null path) -- that was the "my archive reset" failure.
@@ -2089,6 +2102,7 @@
       makeActions(card, true);
       clearEmpty(archList); archList.appendChild(card);
       maybeEmpty(mainList, 'No active reviews.');
+      updateArchCount();
     }
     function moveToActive(card) {
       card.classList.remove('archived');
@@ -2096,6 +2110,7 @@
       clearEmpty(mainList);
       if (has(load(KEEP), card.getAttribute('data-slug'))) { pinTop(card); } else { mainList.appendChild(card); }
       maybeEmpty(archList, 'Nothing archived yet.');
+      updateArchCount();
     }
     function pinTop(card) {
       card.classList.add('pinned'); setKeptBadge(card, true); makeActions(card, false);
@@ -2137,6 +2152,7 @@
       var arch = _arch.slice(), kept = _kept.slice();
       arch.forEach(function (slug) { var c = findCard(slug); if (c && c.parentNode === mainList) moveToArchive(c); });
       kept.slice().reverse().forEach(function (slug) { var c = findCard(slug); if (c && c.parentNode === mainList && !has(arch, slug)) pinTop(c); });
+      updateArchCount();
     });
 
     // Delegated click handling for all action buttons.
