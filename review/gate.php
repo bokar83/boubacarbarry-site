@@ -201,6 +201,49 @@ $real = realpath($absolute);
 if ($real === false
     || !is_file($real)
     || strncmp($real, $base . DIRECTORY_SEPARATOR, strlen($base) + 1) !== 0) {
+    // ARCHIVE FALLBACK (2026-08-07). rebuild-review-index.ps1's 21-day auto-archive
+    // sweep (and a human clicking Archive on the hub) physically MOVES a page from
+    // review/<slug>/ to review/archive/<slug>/ -- files are never deleted, but nothing
+    // is left at the original path, so the request above resolves to nothing and this
+    // function was returning a flat 404 for every archived page's original URL. That
+    // contradicts the whole point of archiving: "when we archive items I don't want
+    // those pages deleted... I want them just archived so I can still access them
+    // later" (Boubacar). The hub's own archived-section card already links to this
+    // same original /review/<slug>/ address (Format-Card in rebuild-review-index.ps1
+    // does not special-case archived items), so that link was quietly broken too.
+    //
+    // Rather than generate a static per-page redirect rule at archive time -- a second
+    // moving part that would need writing and maintaining forever, on top of the
+    // manifest -- resolve it here, once, the same way every other request in this file
+    // is resolved: if the identical relative path exists under archive/, 301 the
+    // browser there. Skip the check for a request already inside archive/ (a real 404
+    // there is a real 404) so this can never loop.
+    $rel1 = ltrim($rel, '/');
+    if ($rel1 !== '' && $rel1 !== 'archive' && strncmp($rel1, 'archive/', 8) !== 0) {
+        // Track whether this is a directory-style hit (the page root, wanting a
+        // trailing slash on the redirect) vs a direct file/attachment path (which
+        // must redirect to the exact same relative path, no slash appended -- a
+        // trailing slash after a real filename like "foo.pdf/" would just 404 again).
+        $archiveIsDir     = false;
+        $archiveAbsolute  = __DIR__ . '/archive/' . $rel1;
+        if (is_dir($archiveAbsolute)) {
+            $archiveIsDir    = true;
+            $archiveAbsolute = rtrim($archiveAbsolute, '/') . '/index.html';
+        } elseif (str_ends_with($rel1, '/')) {
+            $archiveIsDir    = true;
+            $archiveAbsolute = rtrim($archiveAbsolute, '/') . '/index.html';
+        }
+        $archiveReal = realpath($archiveAbsolute);
+        if ($archiveReal !== false
+            && is_file($archiveReal)
+            && strncmp($archiveReal, $base . DIRECTORY_SEPARATOR, strlen($base) + 1) === 0) {
+            no_store();
+            $archiveRel1 = rtrim($rel1, '/');
+            $target = REVIEW_PREFIX . 'archive/' . $archiveRel1 . ($archiveIsDir ? '/' : '');
+            header('Location: ' . $target, true, 301);
+            exit;
+        }
+    }
     stop(404, 'Not found.');
 }
 
