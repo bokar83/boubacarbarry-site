@@ -145,13 +145,27 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--ink);font-siz
 .pstate.on{background:var(--ok);color:#fff;border-color:var(--ok)}
 .pstate.off{background:#9aa4ab;color:#fff;border-color:#9aa4ab}
 .pbody{padding:13px 15px}
-.pwhy{margin:0 0 11px;font-size:.9rem;color:#3d4a52;max-width:74ch}
+/* overflow-wrap here is load-bearing, not defensive. Evidence text carries a
+   source URL, linkify wraps it in an <a>, and an unbroken 55-character URL is
+   an unbreakable box: it forced the card to 478px inside a 375px screen and put
+   a horizontal scrollbar on the whole document. The seeded sample URLs were
+   short enough to fit, so only real prospect data surfaced it. */
+.pwhy{margin:0 0 11px;font-size:.9rem;color:#3d4a52;max-width:74ch;overflow-wrap:anywhere}
+.pcard a{overflow-wrap:anywhere}
+.pcard,.phead,.pbody,.pwho{min-width:0}
 /* overflow-wrap, never word-break:break-all. break-all splits ordinary words
    mid-syllable -- it rendered "title" as "titl / e" -- while overflow-wrap only
    breaks a token that genuinely cannot fit, which is the long URL case it was
    there for in the first place. */
 .psrc{font-family:var(--mono);font-size:.7rem;overflow-wrap:anywhere}
 .psrc a{color:var(--indigo)}
+.routenote{white-space:pre-wrap;color:#4d5b64;line-height:1.5}
+.evmore{margin:0 0 11px;background:var(--paper)}
+.evmore>summary{font-size:.68rem;padding:7px 11px}
+.evmore .pwhy{margin:0}
+.pcard ul.routes{margin:8px 0 0}
+.pcard .route{padding-left:16px}
+.pcard .route code{font-family:var(--mono);font-size:.78rem;overflow-wrap:anywhere}
 #pfind{width:100%;font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.86rem}
 
 /* The drafted message. A real fenced box, monospaced, with one copy action --
@@ -2575,11 +2589,41 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--ink);font-siz
       return '<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>';});
   }
 
+  // A route is not always a column. The first real prospect to land carried an
+  // empty email/linkedin/phone and its verified route was a booking link inside
+  // the contact_route note. Reading only the columns would have rendered "None
+  // on this row" directly above a perfectly good, verified link -- telling him
+  // the opposite of the truth on the one field the whole page exists to serve.
+  // So the note is mined for addresses too, and anything found gets a copy
+  // control, because a route he cannot copy in one action is friction.
   function routesOf(c){
-    var out=[];
-    if(c.email) out.push({label:"Email",value:c.email,verified:true});
-    if(c.linkedin_url) out.push({label:"LinkedIn",value:c.linkedin_url,verified:true});
-    if(c.phone) out.push({label:"Phone",value:c.phone,verified:true});
+    var out=[], seen={};
+    function add(label,value){
+      value=String(value||"").trim().replace(/[),.;]+$/,"");
+      if(!value||seen[value]) return;
+      seen[value]=1; out.push({label:label,value:value});
+    }
+    if(c.email) add("Email",c.email);
+    if(c.linkedin_url) add("LinkedIn",c.linkedin_url);
+    if(c.phone) add("Phone",c.phone);
+
+    // Mine the route note, but ONLY from lines that assert a route. The note is
+    // written as a route on the first line followed by labelled metadata, and
+    // some of that metadata names addresses that were deliberately REJECTED --
+    // the first real prospect's note ends "Rejected alternative:
+    // info@... is real but generic, and generic inboxes do not reach a human who
+    // can say yes." Mining every address in the note promoted that rejected
+    // inbox into the verified-route list with its own copy button, which is the
+    // page actively arguing against its own research. Labelled lines are
+    // provenance and are shown in full below; they are not routes.
+    var SKIP=/^\s*(rejected|found on|verified how|source|type|note|status|checked)\b/i;
+    (routeNoteOf(c)||"").split(/\r?\n/).forEach(function(line){
+      if(SKIP.test(line)) return;
+      (line.match(/https?:\/\/[^\s<)]+/g)||[]).forEach(function(u){
+        add(/linkedin\.com/i.test(u)?"LinkedIn":"Link",u);});
+      (line.match(/[\w.+-]+@[\w-]+\.[\w.]+/g)||[]).forEach(function(e){
+        add("Email",e);});
+    });
     return out;
   }
 
@@ -2602,18 +2646,45 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--ink);font-siz
 
     h+='<div class="pbody">';
 
-    if(ev){h+='<p class="pwhy"><b>Why they qualify.</b> '+linkify(ev)+'</p>';}
+    // Evidence arrives as a full research dossier -- the first real prospect's
+    // ran well over a thousand characters. Printed in full it buried the drafted
+    // message, the one thing he opens this page to act on, a screen and a half
+    // below the fold. So: the lead sentence stays visible, the rest folds away.
+    // The whole point of this surface is to remove friction, and a wall of text
+    // between him and the message IS the friction.
+    if(ev){
+      var EV_LEAD=260;
+      if(ev.length>EV_LEAD){
+        var cut=ev.lastIndexOf(" ",EV_LEAD);
+        if(cut<120) cut=EV_LEAD;
+        h+='<p class="pwhy"><b>Why they qualify.</b> '+linkify(ev.slice(0,cut))+'&hellip;</p>'
+          +'<details class="evmore"><summary>Read the full evidence</summary>'
+          +'<div class="detail pwhy">'+linkify(ev)+'</div></details>';
+      }else{
+        h+='<p class="pwhy"><b>Why they qualify.</b> '+linkify(ev)+'</p>';
+      }
+    }
     else{h+='<p class="pwhy"><b>Why they qualify.</b> Not recorded on this row. '
       +'Treat this one as unverified until the reason is filled in.</p>';}
 
     if(routes.length||rn){
-      h+='<p class="pwhy"><b>Verified route.</b> ';
-      h+=routes.map(function(r){
-        return esc(r.label)+' <code>'+esc(r.value)+'</code>'
-          +'<button class="copymini" data-copy="'+esc(r.value)+'">Copy</button>';
-      }).join(" &middot; ");
-      if(rn){h+='<br><span class="psrc">'+linkify(rn)+'</span>';}
-      h+='</p>';
+      h+='<div class="pwhy"><b>Verified route.</b>';
+      if(routes.length){
+        h+='<ul class="routes">'+routes.map(function(r){
+          return '<li class="route verified"><span class="dot"></span>'
+            +esc(r.label)+' <code>'+esc(r.value)+'</code>'
+            +'<button class="copymini" data-copy="'+esc(r.value)+'">Copy</button></li>';
+        }).join("")+'</ul>';
+      }
+      // pre-wrap: the researcher writes this as several lines (what the route
+      // is, how it was verified, when). Collapsing it into one run destroyed
+      // that structure. It folds away too -- the copyable routes above are the
+      // action, this is the provenance behind them.
+      if(rn){
+        h+='<details class="evmore"><summary>How this route was verified</summary>'
+          +'<div class="psrc routenote">'+linkify(rn)+'</div></details>';
+      }
+      h+='</div>';
     }else{
       h+='<p class="pwhy"><b>Verified route.</b> None on this row. '
         +'Do not guess one; leave it until it is verified.</p>';
