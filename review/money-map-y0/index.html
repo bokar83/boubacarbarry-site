@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -47,6 +47,28 @@
     .sync.saving { color: var(--amber); }
     .sync.offline .dot { background: var(--red); }
     .sync.offline { color: var(--red); border-color: var(--red-border); }
+
+    /* FRESHNESS READOUT (2026-08-11). The sync pill says whether the socket is
+       up. It never said how old the DATA is, and the only date visible on this
+       page was the deploy stamp in the corner -- which is when the HTML shell
+       was last published, NOT when the board was last written. A reader who
+       glanced at that stamp read a live page as a snapshot. This line is the
+       answer: it states the age of the newest row in the board, in words, and
+       it turns amber then red as that age crosses the thresholds below. */
+    .freshness { display: block; margin-top: 0.5rem; font-size: 0.76rem; line-height: 1.55; color: var(--muted); max-width: 60ch; }
+    .freshness .fr-strong { color: var(--ink); font-weight: 700; }
+    .freshness[data-state="stale"] { color: var(--amber); }
+    .freshness[data-state="stale"] .fr-strong { color: var(--amber); }
+    .freshness[data-state="down"] { color: var(--red); font-weight: 700; }
+    .freshness[data-state="down"] .fr-strong { color: var(--red); }
+
+    /* The loud half. A page that cannot reach the board must SAY so at full
+       size, not shrink it into a 10px pill nobody reads. */
+    .stale-banner { margin: 0.85rem 0 0; padding: 0.75rem 0.95rem; border-radius: 10px; border: 2px solid var(--red-border); background: var(--red-soft); color: var(--red); font-size: 0.85rem; line-height: 1.6; max-width: 68ch; }
+    .stale-banner b { color: var(--red); display: block; font-size: 0.95rem; letter-spacing: 0.02em; margin-bottom: 0.25rem; }
+    .stale-banner.warn { border-color: var(--amber-border); background: var(--amber-soft); color: var(--amber); }
+    .stale-banner.warn b { color: var(--amber); }
+    .stale-banner[hidden] { display: none; }
 
     /* STICKY MINI-NAV */
     .mini { position: sticky; top: 0; z-index: 50; display: flex; gap: 0.4rem; padding: 0.55rem 0.6rem; margin: 0.9rem 0 1rem; background: rgba(20,18,16,0.94); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 11px; overflow-x: auto; }
@@ -349,7 +371,8 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v12 · 2026-08-04-12:44:12 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v13 · 2026-08-11-14:53:21 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -366,6 +389,8 @@
     <p class="sub">New in Utah, no warm network, starting from a standing start. One goal: real money in the account. This is the single page you open every morning. It runs on a 12-week year, so the finish line is always close enough to sprint to. Log your asks first, then unlock the build work, glance at the two cash lanes. Everything syncs across your phone, laptop, and tablet automatically.</p>
     <p class="doc-meta">Built from the real logs, pressure-tested. Truth-only, every fact cited, unknowns marked FIND. State syncs live across all your devices. Internal.</p>
     <span class="sync" id="syncPill"><span class="dot"></span><span id="syncText">Connecting</span></span>
+    <span class="freshness" id="freshness" data-state="loading">Checking the board&hellip;</span>
+    <div class="stale-banner" id="staleBanner" hidden></div>
   </header>
 
   <nav class="mini" id="jumpnav" aria-label="Jump">
@@ -1158,7 +1183,96 @@
   }
   window.__y0_renderRevLanes = renderRevLanes;
 
+  // ---- FRESHNESS (added 2026-08-11) -------------------------------------
+  // WHY: this page fetches its content from the board at load time, so the
+  // HTML carries no data and a source-read of it shows none. The only date on
+  // screen was the deploy stamp in the corner, which is when the SHELL was
+  // published. On 2026-08-11 that combination made a live page get reported as
+  // a static snapshot from the shell's publish date. Nothing on the page was
+  // wrong; nothing on the page said how old the data was either. This does.
+  //
+  // Two thresholds. Amber at 3 days says "the board itself has not been
+  // written in a while" -- true staleness of the DATA, his to act on. Red is
+  // reserved for the page failing to READ the board, which is the case where
+  // what you are looking at is not current and you cannot tell by looking.
+  var STALE_WARN_HOURS = 72;
+  var frEl = document.getElementById('freshness');
+  var bannerEl = document.getElementById('staleBanner');
+
+  function frAgo(ms){
+    var s = Math.max(0, Math.floor(ms / 1000));
+    if (s < 90) return 'just now';
+    var m = Math.floor(s / 60);
+    if (m < 90) return m + ' minute' + (m === 1 ? '' : 's') + ' ago';
+    var h = Math.floor(m / 60);
+    if (h < 48) return h + ' hour' + (h === 1 ? '' : 's') + ' ago';
+    var d = Math.floor(h / 24);
+    return d + ' day' + (d === 1 ? '' : 's') + ' ago';
+  }
+  function frClock(d){
+    try {
+      return d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+    } catch(e){ return d.toISOString().slice(0,16).replace('T',' '); }
+  }
+  function showBanner(html, warn){
+    if (!bannerEl) return;
+    bannerEl.innerHTML = html;
+    bannerEl.className = 'stale-banner' + (warn ? ' warn' : '');
+    bannerEl.hidden = false;
+  }
+  function hideBanner(){ if (bannerEl) bannerEl.hidden = true; }
+
+  // Called with the newest updated_at seen in the board, or null when the read
+  // failed. rowCount is what actually came back.
+  function setFreshness(newestIso, rowCount){
+    if (!frEl) return;
+    var now = new Date();
+    if (!newestIso){
+      frEl.setAttribute('data-state', 'down');
+      frEl.innerHTML = '<span class="fr-strong">Board not reachable.</span> ' +
+        'Last checked ' + frClock(now) + '. Nothing below is confirmed current.';
+      showBanner('<b>THIS PAGE IS NOT LIVE RIGHT NOW.</b>' +
+        'The board could not be read, so the lanes below are empty or left over from before. ' +
+        'Do not read anything on this page as current until this message goes away. ' +
+        'Reload first. If it stays, the board itself is unreachable and the money map is not being tracked on this screen.', false);
+      return;
+    }
+    var newest = new Date(newestIso);
+    var ageMs = now - newest;
+    var ageH = ageMs / 3600000;
+    var line = '<span class="fr-strong">Board data as of ' + frClock(newest) + '</span> (' + frAgo(ageMs) + ')' +
+      ' &middot; ' + rowCount + ' rows read live at ' + frClock(now) + '.' +
+      ' <span style="opacity:0.75">The stamp in the top corner is when this page was last published, not when the board was last written.</span>';
+    frEl.innerHTML = line;
+    if (ageH > STALE_WARN_HOURS){
+      frEl.setAttribute('data-state', 'stale');
+      showBanner('<b>THE BOARD HAS NOT BEEN WRITTEN IN ' + Math.floor(ageH / 24) + ' DAYS.</b>' +
+        'The page is reading the board fine, so this is not a broken screen. It means nothing has been logged to the money map since ' +
+        frClock(newest) + '. Either the work is not being recorded, or it is not happening.', true);
+    } else {
+      frEl.setAttribute('data-state', 'live');
+      hideBanner();
+    }
+  }
+
+  // Local relabel of the shared deploy stamp so it cannot be misread as a data
+  // date on THIS page. The injector that writes it is site-wide and governed by
+  // its own rule, so it is not touched here.
+  (function labelStamp(){
+    try {
+      var s = document.getElementById('deploy-stamp');
+      if (s && s.textContent.indexOf('page build') === -1){
+        s.textContent = 'page build ' + s.textContent;
+      }
+    } catch(e){}
+  })();
+
   function hydrateFromRemote(rows){
+    var newest = null;
+    rows.forEach(function(r){
+      if (r.updated_at && (newest === null || r.updated_at > newest)) newest = r.updated_at;
+    });
+    setFreshness(newest, rows.length);
     rows.forEach(function(r){ state[r.item_id] = r.value; lsSet(r.item_id, r.value); applyToDom(r.item_id, r.value); });
     // goal target
     var gt = state['goal-target'];
@@ -1171,10 +1285,15 @@
 
   if (sb){
     setSync('saving', 'Loading');
-    sb.from('y0_money_map_state').select('item_id,value').eq('board_id', BOARD_ID)
+    sb.from('y0_money_map_state').select('item_id,value,updated_at').eq('board_id', BOARD_ID)
       .then(function(res){
-        if (res.error){ setSync('offline', 'Offline (local only)'); renderRevLanes(); return; }
-        hydrateFromRemote(res.data || []);
+        if (res.error){ setSync('offline', 'Offline (local only)'); setFreshness(null, 0); renderRevLanes(); return; }
+        var rows = res.data || [];
+        // A 200 that returns nothing is the quietest failure of the lot: the
+        // page renders, the pill goes green, and the board looks empty rather
+        // than unreachable. Treat it as down, because it is.
+        if (!rows.length){ setSync('offline', 'Offline (local only)'); setFreshness(null, 0); renderRevLanes(); return; }
+        hydrateFromRemote(rows);
         setSync('live', 'Synced');
         // realtime: phone/laptop/tablet update live
         sb.channel('y0-board')
@@ -1183,19 +1302,34 @@
               var row = payload.new || payload.old; if (!row) return;
               var item = row.item_id, value = (payload.eventType === 'DELETE') ? '' : row.value;
               state[item] = value; lsSet(item, value); applyToDom(item, value);
+              // A live write is the newest row by definition; move the
+              // freshness line with it so it never lags behind the board.
+              setFreshness((row.updated_at || new Date().toISOString()), Object.keys(state).length);
               if (window.__y0_renderAsk) window.__y0_renderAsk();
               renderRevLanes();
               recomputeScorecard();
             })
           .subscribe(function(status){ if (status === 'SUBSCRIBED') setSync('live', 'Live sync on'); });
       })
-      .catch(function(){ setSync('offline', 'Offline (local only)'); renderRevLanes(); });
+      .catch(function(){ setSync('offline', 'Offline (local only)'); setFreshness(null, 0); renderRevLanes(); });
   } else {
     setSync('offline', 'Offline (local only)');
+    setFreshness(null, 0);
     if (window.__y0_renderAsk) window.__y0_renderAsk();
     renderRevLanes();
     recomputeScorecard();
   }
+
+  // A read that never returns at all resolves neither .then nor .catch, so the
+  // two handlers above cannot cover it. Without this the page would sit on
+  // "Checking the board..." indefinitely and look like it was still working.
+  setTimeout(function(){
+    if (frEl && frEl.getAttribute('data-state') === 'loading'){
+      setSync('offline', 'Offline (local only)');
+      setFreshness(null, 0);
+      renderRevLanes();
+    }
+  }, 12000);
 
   // ---- back to top ----
   var btt = document.getElementById('backToTop');
@@ -1219,6 +1353,7 @@
 </script>
 </body>
 </html>
+
 
 
 
