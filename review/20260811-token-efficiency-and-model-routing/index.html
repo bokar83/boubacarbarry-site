@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -31,7 +31,13 @@
     border:1px solid var(--border); border-left:4px solid var(--accent);
     border-radius:10px; padding:18px 20px; margin:18px 0 26px;
   }
-  .tldr h2{margin-top:0; border:none; padding:0; font-size:1.05rem; text-transform:uppercase; letter-spacing:.04em; color:var(--accent);}
+  .tldr summary{
+    margin-top:0; border:none; padding:0; font-size:1.05rem; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--accent); cursor:pointer; list-style:none;
+    display:flex; justify-content:space-between; align-items:center; font-weight:700;
+  }
+  .tldr summary::-webkit-details-marker{display:none;}
+  .tldr summary::after{content:"tap to collapse / expand"; color:var(--text-dim); font-size:0.7rem; text-transform:none; letter-spacing:0; font-weight:400;}
   .tldr ul{margin:8px 0 0; padding-left:20px;}
   .tldr li{margin-bottom:6px;}
 
@@ -105,7 +111,8 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-11-09:09:36 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-08-11-09:41:31 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 <div class="quicknav">
   <div class="quicknav-inner">
@@ -127,8 +134,8 @@
   <h1>How we manage AI usage: context size + model choice</h1>
   <p class="subtitle">Two related findings from the night of 2026-08-10, on one page because they're two halves of the same story. Internal working doc -- plain language, no polish pass.</p>
 
-  <div class="tldr" id="tldr">
-    <h2>TL;DR</h2>
+  <details class="tldr" id="tldr" open>
+    <summary>TL;DR</summary>
     <ul>
       <li><b>The problem (measured, not guessed):</b> every single agent dispatch pays a fixed <b>129,552 bytes (~32,389 tokens)</b> of standing instructions before it reads one line of the actual task. At 401 dispatches/week that's ~13.0M tokens/week of pure overhead.</li>
       <li><b>The root cause (the genuinely new finding):</b> a subagent never reuses the parent session's cache -- it cold-writes that whole floor on its first call, then re-reads it every turn, on a 5-minute cache TTL. That's why <code>cache_read</code> was 340M of ~386M tokens in one session. It scales linearly with the floor.</li>
@@ -136,7 +143,7 @@
       <li><b>The companion finding:</b> a separate policy on WHICH model + how much reasoning depth to use per task. Key discovery: <b>there is no per-call "effort" dial in the Agent tool</b> -- reasoning depth is a session-wide setting, not something you can turn up for one hard task. The real lever is how the prompt is written.</li>
       <li><b>Where it actually stands right now:</b> <span class="badge blocked">NOT LIVE</span> all three branches below are built, tested, and pushed -- but sitting Gate-held, waiting on your own Telegram tap. Nothing here is official until you approve it.</li>
     </ul>
-  </div>
+  </details>
 
   <div class="numgrid">
     <div class="numcard"><div class="big">129,552 B</div><div class="lbl">~32,389 tok standing floor, paid on every dispatch</div></div>
@@ -328,4 +335,5 @@ TOTAL FLOOR               129,552 B    ~32,389 tok</code></pre>
 
 </body>
 </html>
+
 
