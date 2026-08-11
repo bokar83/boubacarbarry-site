@@ -76,6 +76,14 @@ $startMarker
   #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
   #rf-top{opacity:0;pointer-events:none;}
   #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
   @media (prefers-color-scheme: light){
     #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
       border-color:rgba(0,0,0,0.16);}
