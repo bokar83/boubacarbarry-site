@@ -25,13 +25,37 @@
 # Pass -DryRun to run the full copy/stamp/manifest/index-rebuild pipeline without the git
 # add/commit/push step, for safe local verification against a scratch review/ tree.
 
+# LAYOUT HARD STANDARD (added 2026-08-11, SYS-472). Publishing is now GATED on the page
+# actually having the furniture Boubacar has asked for four separate times:
+#   1. TL;DR at the very top, sections underneath it.
+#   2. The TL;DR itself is collapsible.
+#   3. Every section collapsible with a toggle.
+#   4. A back-to-top button on every page.
+#   5. Hamburger nav on mobile, normal nav on desktop, floating if practical.
+# His reason, which shapes the design more than the list does: "I don't want to have to read
+# 30 pages of a TL;DR to get to the content every single time. I need to be able to just
+# quickly jump into this after future reviews." The page is built for the SECOND visit.
+#
+# Two mechanisms, deliberately split:
+#   - inject-review-furniture.ps1 ADDS what can be added safely to any DOM (back-to-top,
+#     per-page fold-state memory so he never re-scrolls the same summary, expand/collapse
+#     all). Nobody can forget these; they are part of the flow, like the deploy stamp.
+#   - validate-review-page.ps1 CHECKS what cannot be synthesised (collapsible TL;DR,
+#     per-section toggles, nav + hamburger) and this script REFUSES TO PUBLISH on failure.
+# Start from scripts/templates/review-page-template.html and both pass automatically.
+#
+# -AllowNonCompliant downgrades the layout gate to a loud warning. It exists so an urgent
+# page is never blocked outright, and it prints exactly what is broken so the debt is
+# visible rather than silent. Do not reach for it as a shortcut -- fix the page.
+
 param(
     [Parameter(Mandatory)][string]$SourceFile,
     [Parameter(Mandatory)][string]$Slug,
     [string]$Title = "",
     [string]$Version = "v1",
     [switch]$DifferentPage,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$AllowNonCompliant
 )
 
 Set-StrictMode -Version Latest
@@ -78,13 +102,44 @@ if (Test-Path (Join-Path $SlugDir "index.html")) {
     }
 }
 
-New-Item -ItemType Directory -Path $SlugDir -Force | Out-Null
-Copy-Item $SourceFile (Join-Path $SlugDir "index.html") -Force
+# Build the finished page in a STAGING file first, so a page that fails the layout gate
+# never lands half-published in review/<slug>/ and never touches the manifest or the index.
+$Staged = Join-Path ([System.IO.Path]::GetTempPath()) ("review-stage-" + [guid]::NewGuid().ToString("N") + ".html")
+Copy-Item $SourceFile $Staged -Force
 
-# HARD RULE (feedback_review_pages_version_deploy_stamp): auto-inject the version +
-# deploy-timestamp stamp (upper-right) so every review page is stamped at publish time.
-# No one can forget it -- it is part of the flow, not a manual step.
-& (Join-Path $PSScriptRoot "inject-deploy-stamp.ps1") (Join-Path $SlugDir "index.html") $Version
+try {
+    # HARD RULE (feedback_review_pages_version_deploy_stamp): auto-inject the version +
+    # deploy-timestamp stamp (upper-right) so every review page is stamped at publish time.
+    # No one can forget it -- it is part of the flow, not a manual step.
+    & (Join-Path $PSScriptRoot "inject-deploy-stamp.ps1") $Staged $Version
+
+    # HARD RULE (feedback_html_deliverables_require_nav_collapse_backtotop_always_2026_07_28):
+    # auto-inject the back-to-top button + the per-page fold-state memory that makes a repeat
+    # visit fast. Same reasoning as the stamp: part of the flow, not a thing to remember.
+    & (Join-Path $PSScriptRoot "inject-review-furniture.ps1") $Staged
+
+    # Now gate on the structural rules the injector cannot synthesise.
+    $layout = @(& (Join-Path $PSScriptRoot "validate-review-page.ps1") $Staged)[-1]
+    if (-not $layout.Pass) {
+        if ($AllowNonCompliant) {
+            Write-Host ""
+            Write-Warning "LAYOUT GATE OVERRIDDEN with -AllowNonCompliant. Publishing a page that breaks $(@($layout.Failures).Count) of Boubacar's layout rules. Fix it and republish."
+        } else {
+            Write-Host ""
+            Write-Host "PUBLISH BLOCKED -- this page breaks the review-page layout hard standard." -ForegroundColor Red
+            Write-Host "Nothing was copied, no manifest row written, no commit made." -ForegroundColor Red
+            Write-Host "Fix the page (start from scripts/templates/review-page-template.html), or, only if it is genuinely urgent, re-run with -AllowNonCompliant." -ForegroundColor Yellow
+            Write-Error "Review-page layout standard failed for slug '$Slug'."
+            exit 1
+        }
+    }
+
+    New-Item -ItemType Directory -Path $SlugDir -Force | Out-Null
+    Copy-Item $Staged (Join-Path $SlugDir "index.html") -Force
+}
+finally {
+    if (Test-Path $Staged) { Remove-Item $Staged -Force -ErrorAction SilentlyContinue }
+}
 
 # Update manifest -- same row updated on republish, never a duplicate appended.
 $manifest = if (Test-Path $ManifestPath) {

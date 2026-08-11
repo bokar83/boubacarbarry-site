@@ -49,7 +49,17 @@ $endMarker   = "<!-- DEPLOY_STAMP_END -->"
 
 # Subtle mono pill, upper-right, fixed. Readable on the dark review palette; pointer-events
 # none so it never blocks toggles/nav/back-to-top underneath it.
+#
+# COLLISION FIX 2026-08-11 (SYS-473): the stamp is position:fixed at z-index 99999, so at
+# 375px it sat on top of the sticky section nav -- observed twice the same day on two
+# different pages. Under 560px it now moves to the BOTTOM-LEFT corner, which is the one
+# corner nothing else claims (the floating back-to-top / fold controls injected by
+# inject-review-furniture.ps1 live bottom-RIGHT, the nav lives top). Desktop is unchanged:
+# still upper-right, per the standing version-stamp hard rule.
 $stampHtml = $startMarker +
+    '<style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;' +
+    'right:auto !important;bottom:10px !important;left:10px !important;}}' +
+    '@media print{#deploy-stamp{position:static !important;}}</style>' +
     '<div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;' +
     "font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;" +
     'font-size:11px;line-height:1;color:rgba(165,151,131,0.78);' +
