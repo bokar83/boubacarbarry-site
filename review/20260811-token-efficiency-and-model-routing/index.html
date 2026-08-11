@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Token Efficiency + Model Routing -- 2026-08-10</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8; --code-bg:#11141b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg); color:var(--text); font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    margin:0; padding:0; line-height:1.55;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:28px 20px 100px;}
+  h1{font-size:1.7rem; margin:0 0 6px;}
+  h2{font-size:1.25rem; margin:36px 0 12px; border-bottom:1px solid var(--border); padding-bottom:8px;}
+  h3{font-size:1.05rem; margin:22px 0 8px; color:var(--accent);}
+  p{margin:0 0 12px; color:var(--text);}
+  .subtitle{color:var(--text-dim); font-size:0.95rem; margin-bottom:20px;}
+  .badge{display:inline-block; padding:2px 9px; border-radius:99px; font-size:0.72rem; font-weight:600; letter-spacing:.02em;}
+  .badge.blocked{background:rgba(255,122,122,.15); color:var(--bad); border:1px solid rgba(255,122,122,.4);}
+  .badge.shipped{background:rgba(127,224,184,.15); color:var(--good); border:1px solid rgba(127,224,184,.4);}
+  .badge.pending{background:rgba(242,184,75,.15); color:var(--warn); border:1px solid rgba(242,184,75,.4);}
+
+  .tldr{
+    background:linear-gradient(135deg, rgba(95,179,255,.09), rgba(127,224,184,.06));
+    border:1px solid var(--border); border-left:4px solid var(--accent);
+    border-radius:10px; padding:18px 20px; margin:18px 0 26px;
+  }
+  .tldr h2{margin-top:0; border:none; padding:0; font-size:1.05rem; text-transform:uppercase; letter-spacing:.04em; color:var(--accent);}
+  .tldr ul{margin:8px 0 0; padding-left:20px;}
+  .tldr li{margin-bottom:6px;}
+
+  .numgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:16px 0 24px;}
+  .numcard{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+  .numcard .big{font-size:1.5rem; font-weight:700; color:var(--accent2);}
+  .numcard .lbl{font-size:0.8rem; color:var(--text-dim); margin-top:4px;}
+
+  .blocker{
+    background:rgba(255,122,122,.08); border:1px solid rgba(255,122,122,.35); border-radius:10px;
+    padding:16px 18px; margin:20px 0;
+  }
+  .blocker h3{color:var(--bad); margin-top:0;}
+  .blocker table{width:100%; border-collapse:collapse; margin-top:10px; font-size:0.9rem;}
+  .blocker td, .blocker th{padding:6px 8px; border-bottom:1px solid rgba(255,122,122,.2); text-align:left;}
+
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:0.88rem;}
+  th{background:var(--bg2); text-align:left; padding:8px 10px; border-bottom:2px solid var(--border); color:var(--accent);}
+  td{padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top;}
+  tr:hover td{background:rgba(255,255,255,.02);}
+
+  code, .mono{font-family:"SF Mono",Consolas,"Cascadia Code",monospace; font-size:0.85em; color:var(--accent2);}
+  pre{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:8px;
+    padding:14px 16px; overflow-x:auto; font-size:0.82rem; line-height:1.5; color:var(--text);
+  }
+  pre code{color:inherit;}
+
+  details{
+    background:var(--card); border:1px solid var(--border); border-radius:10px;
+    margin:12px 0; padding:0; overflow:hidden;
+  }
+  details > summary{
+    cursor:pointer; padding:13px 16px; font-weight:600; list-style:none;
+    display:flex; justify-content:space-between; align-items:center;
+    color:var(--text);
+  }
+  details > summary::-webkit-details-marker{display:none;}
+  details > summary::after{content:"+"; color:var(--accent); font-size:1.2rem; font-weight:400;}
+  details[open] > summary::after{content:"−";}
+  details > summary:hover{background:rgba(255,255,255,.03);}
+  .details-body{padding:2px 16px 16px;}
+
+  .quicknav{
+    position:sticky; top:0; z-index:50; background:rgba(15,17,21,.96); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border); padding:10px 20px; margin:0 0 8px;
+  }
+  .quicknav-inner{max-width:960px; margin:0 auto; display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center;}
+  .quicknav a{color:var(--text-dim); text-decoration:none; font-size:0.82rem; white-space:nowrap;}
+  .quicknav a:hover{color:var(--accent);}
+  .quicknav .label{color:var(--accent); font-weight:700; font-size:0.82rem; margin-right:4px;}
+
+  #backtotop{
+    position:fixed; bottom:22px; right:22px; background:var(--accent); color:#0f1115;
+    border:none; border-radius:99px; padding:10px 16px; font-weight:700; font-size:0.82rem;
+    cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.4); display:none; z-index:60;
+  }
+  #backtotop.show{display:block;}
+
+  .footnote{color:var(--text-dim); font-size:0.8rem; margin-top:6px;}
+  a{color:var(--accent);}
+  .refuted{border-left:3px solid var(--bad); padding-left:12px; margin:10px 0;}
+  .refuted b{color:var(--bad);}
+  .lever{border-left:3px solid var(--good); padding-left:12px; margin:10px 0;}
+  .lever b{color:var(--good);}
+  @media (max-width:600px){
+    .wrap{padding:18px 14px 90px;}
+    table{font-size:0.78rem;}
+    th, td{padding:6px 6px;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-11-09:09:36 MT</div><!-- DEPLOY_STAMP_END -->
+
+<div class="quicknav">
+  <div class="quicknav-inner">
+    <span class="label">JUMP:</span>
+    <a href="#tldr">TL;DR</a>
+    <a href="#blocker">Blocker</a>
+    <a href="#floor">The Floor</a>
+    <a href="#mechanism">Why cache_read</a>
+    <a href="#doesnotwork">What doesn't work</a>
+    <a href="#levers">What works</a>
+    <a href="#routing">Model routing</a>
+    <a href="#effort">Effort knob</a>
+    <a href="#refs">Sources</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <h1>How we manage AI usage: context size + model choice</h1>
+  <p class="subtitle">Two related findings from the night of 2026-08-10, on one page because they're two halves of the same story. Internal working doc -- plain language, no polish pass.</p>
+
+  <div class="tldr" id="tldr">
+    <h2>TL;DR</h2>
+    <ul>
+      <li><b>The problem (measured, not guessed):</b> every single agent dispatch pays a fixed <b>129,552 bytes (~32,389 tokens)</b> of standing instructions before it reads one line of the actual task. At 401 dispatches/week that's ~13.0M tokens/week of pure overhead.</li>
+      <li><b>The root cause (the genuinely new finding):</b> a subagent never reuses the parent session's cache -- it cold-writes that whole floor on its first call, then re-reads it every turn, on a 5-minute cache TTL. That's why <code>cache_read</code> was 340M of ~386M tokens in one session. It scales linearly with the floor.</li>
+      <li><b>The fix that shipped tonight, no code required:</b> route every read-only dispatch to the <code>Explore</code> agent type -- it's the only kind of subagent that skips loading CLAUDE.md entirely. That alone avoids <b>98,715 B / ~24,679 tok per dispatch -- 76% of the floor</b>.</li>
+      <li><b>The companion finding:</b> a separate policy on WHICH model + how much reasoning depth to use per task. Key discovery: <b>there is no per-call "effort" dial in the Agent tool</b> -- reasoning depth is a session-wide setting, not something you can turn up for one hard task. The real lever is how the prompt is written.</li>
+      <li><b>Where it actually stands right now:</b> <span class="badge blocked">NOT LIVE</span> all three branches below are built, tested, and pushed -- but sitting Gate-held, waiting on your own Telegram tap. Nothing here is official until you approve it.</li>
+    </ul>
+  </div>
+
+  <div class="numgrid">
+    <div class="numcard"><div class="big">129,552 B</div><div class="lbl">~32,389 tok standing floor, paid on every dispatch</div></div>
+    <div class="numcard"><div class="big">76%</div><div class="lbl">of the floor avoided by routing read-only work to Explore</div></div>
+    <div class="numcard"><div class="big">84,242 &rarr; 71,400 B</div><div class="lbl">CLAUDE.md size, across two pointer-ize passes tonight</div></div>
+    <div class="numcard"><div class="big">340M / 386M</div><div class="lbl">tokens in one session that were cache_read (the symptom)</div></div>
+  </div>
+
+  <div class="blocker" id="blocker">
+    <h3>&#9888; Current blocker: 3 branches, all waiting on your Telegram approval</h3>
+    <p>Everything below is real, built, and pushed to <code>origin</code> tonight (2026-08-10). <b>None of it is merged to <code>origin/main</code> yet.</b> All three touch CLAUDE.md / governance docs / hook scripts, which puts them on the Tier-C damage list -- they need your explicit Telegram tap, not an auto-merge. Until you approve, the fixes described on this page are not officially in effect.</p>
+    <table>
+      <tr><th>Branch</th><th>Commit</th><th>What it ships</th></tr>
+      <tr><td class="mono">docs/token-efficiency-lever2-2026-08-10</td><td class="mono">6654b43</td><td>The context-floor SOP, measurement tool, Explore-routing rule</td></tr>
+      <tr><td class="mono">docs/hard-rule-boot-section-pointerize-0810</td><td class="mono">0e606d2</td><td>CLAUDE.md pointer-ize pass: 73,643 &rarr; 71,400 B</td></tr>
+      <tr><td class="mono">docs/model-effort-routing-policy-0810</td><td class="mono">c058870</td><td>Model + effort routing policy doc + the advisory PreToolUse hook</td></tr>
+    </table>
+    <p class="footnote">Your Telegram queue is the actual blocker on all three going "official." Nothing needs a code fix -- it needs a tap.</p>
+  </div>
+
+  <h2 id="floor">1. The standing context floor (measured 2026-08-10)</h2>
+  <p>Every agent dispatch pays for a fixed block of content before it does any real work. Measured with <code>scripts/context_floor_audit.py</code>:</p>
+  <pre><code>project CLAUDE.md          73,643 B    ~18,411 tok
+user-global CLAUDE.md      25,072 B     ~6,268 tok
+auto-memory index          24,400 B     ~6,100 tok   (loader cap; 7,890 B more sit on
+                                                      disk and never reach an agent)
+copy-battery SubagentStart  5,622 B     ~1,406 tok
+task-board SubagentStart      815 B       ~204 tok
+------------------------------------------------------
+TOTAL FLOOR               129,552 B    ~32,389 tok</code></pre>
+  <p>At 401 dispatches measured over 7 days, that's roughly <b>13.0M tokens/week</b> spent on content that does no task-specific work.</p>
+
+  <h2 id="mechanism">2. Why it shows up as cache_read -- the real mechanism</h2>
+  <p>The dominant line item in usage is <code>cache_read_input_tokens</code> -- 340M of ~386M in one measured session. That looks like "caching is working, nothing to fix." It's actually the symptom of the problem, not a reprieve from it.</p>
+  <p>Two facts about how subagent dispatches work make the math deterministic:</p>
+  <ol>
+    <li>A subagent starts its own conversation with its own cache. It does <b>not</b> reuse the parent's cache prefix. Its first call is a cold write of the entire 129,552 B floor.</li>
+    <li>A subagent's cache uses a <b>5-minute TTL</b>, even when the main session gets a full hour on the same subscription.</li>
+  </ol>
+  <p>So each dispatch writes the floor cold, then re-reads that same prefix on every turn it takes, and anything with a gap over 5 minutes writes it cold again. In short:</p>
+  <pre><code>cache_read  &#8776;  (number of dispatch turns)  &times;  (size of the standing floor)</code></pre>
+  <p>Cache reads are cheap per-token, which is why this went unnoticed for months. But the relationship to the floor is <b>linear</b>. Cut the floor in half, cut that entire mass in half. Turn count is the actual work happening and dispatch count is deliberately high (delegating off the main thread is the right pattern) -- <b>the floor is the only variable actually worth attacking.</b></p>
+
+  <h2 id="doesnotwork">3. What does NOT work (refuted, worth recording)</h2>
+  <p>These were all proposed in good faith and each is refuted by documented harness behavior. They're the ones a reasonable person tries first -- recording the dead ends matters as much as the wins.</p>
+
+  <div class="refuted"><b>Splitting CLAUDE.md into <code>@import</code>s saves nothing.</b> The <code>@path</code> import syntax expands and loads imported files at launch, alongside the file referencing them. Imports are eager. A 73KB file split into six imported files is still 73KB on every dispatch.</div>
+  <div class="refuted"><b>A <code>SubagentStart</code> hook cannot slim anything down.</b> The event is non-blocking, injection-only. A hook can ADD context; it cannot remove or replace what the harness already injected. Every hook in the chain is strictly additive to the floor.</div>
+  <div class="refuted"><b>Restricting a custom agent's <code>tools:</code> does not shrink its context.</b> Tool restriction is enforced at runtime, not at context-load time. It's a safety control, not an efficiency one.</div>
+  <div class="refuted"><b>A "context tier" label in the dispatch prompt saves nothing.</b> An earlier design (June 2026) proposed a <code>CONTEXT-TIER: minimal | lean | full</code> line on every subagent prompt, projecting a minimal agent would "skip ~6K tokens of the memory index." Wrong premise: the memory index is <i>injected by the harness</i>, not <i>read by the agent</i>, so telling an agent not to read it changes nothing about what's already loaded. The idea sat unbuilt for 64 days -- lucky, because building it would have shipped a convention with measurable cost and zero measurable benefit.</div>
+
+  <p><b>The rule that came out of this:</b> a context-reduction idea has to name the actual mechanism that removes bytes. If it only tells an agent to want fewer bytes, it is not a fix.</p>
+
+  <h2 id="levers">4. What DOES work</h2>
+
+  <h3>Lever A -- route read-only work to Explore (the big one, shipped)</h3>
+  <div class="lever"><p>The built-in <code>Explore</code> and <code>Plan</code> subagent types <b>skip loading CLAUDE.md files entirely</b> (both project and user-global), to keep research fast and cheap. Every other subagent type loads both. That's <b>98,715 B / ~24,679 tokens avoided per dispatch -- 76% of the entire floor.</b></p>
+  <p>The rule: a dispatch that only reads, searches, greps, or summarizes goes to <code>Explore</code>. A dispatch that writes files, commits, sends, or deploys goes to a full agent.</p>
+  <p class="footnote">This is the version of "context tiering" that actually works, because it maps onto a real mechanism withholding bytes rather than an instruction the agent is asked to honor.</p></div>
+
+  <h3>Lever B -- pointer-ize the standing files</h3>
+  <div class="lever"><p>The test for every line in a standing instruction file: <i>if this text vanished from the agent's context, would it VIOLATE a rule, or just lose backstory it could fetch on demand?</i> Only backstory moves out. The directive sentence stays; the incident narrative behind it becomes a one-line pointer to a linked file.</p>
+  <p>Two structural traps found live in this repo: <b>mirroring double-charges</b> (rules copied from a capped memory index into the always-loaded CLAUDE.md so they don't silently drop are now in the floor twice -- a 16,083-byte block, 22% of the file, exists for exactly this reason), and <b>a capped index still costs its cap</b> (bytes past the loader cap reach no agent, but the bytes under the cap still bill every dispatch -- growing the index past the cap is pure loss).</p></div>
+
+  <h3>Lever C -- make SubagentStart hook output conditional and short</h3>
+  <div class="lever"><p>Hooks are fully under our control. Ours currently emit ~1,610 tokens unconditionally, on every dispatch including read-only searches that will never produce a line of copy. A hook can read its stdin payload and emit nothing when the injected rule can't apply.</p></div>
+
+  <h3>Lever D -- path-scoped rules for genuinely conditional guidance</h3>
+  <div class="lever"><p>Rules under <code>.claude/rules/*.md</code> with a <code>paths:</code> frontmatter key load on demand when a matching file is opened, not at startup. Real progressive disclosure -- the only such mechanism available for rule content. Note: a HARD rule that must reach every agent regardless of what it opens can't move here.</p></div>
+
+  <details>
+    <summary>Full standing procedure + honest limits of this SOP</summary>
+    <div class="details-body">
+      <h3>Standing procedure going forward</h3>
+      <ol>
+        <li>Route by capability, not habit: read-only/research &rarr; <code>Explore</code>; writing/committing/sending/deploying &rarr; full agent.</li>
+        <li>Every addition to a standing file names what it displaces. These files are a fixed budget multiplied by every dispatch, not a place to append. Adding a rule is fine; adding its four-paragraph origin story to the always-loaded copy is not.</li>
+        <li>Re-measure before and after any trim: <code>scripts/context_floor_audit.py --baseline &lt;saved&gt;</code>. An unmeasured trim did not happen.</li>
+        <li>Conditional guidance goes to <code>.claude/rules/</code> with <code>paths:</code>. Always-on guidance earns its place in the floor or gets a pointer.</li>
+        <li>A hook that fires on every dispatch stays short and, where possible, conditional.</li>
+        <li>Re-check the floor whenever a standing file grows.</li>
+      </ol>
+      <h3>Honest limits</h3>
+      <p>The skill catalog and the deferred-tool name listing are injected by the harness with no documented per-dispatch scoping control -- real weight, outside this procedure's reach. There is no documented mechanism to give a custom agent a smaller CLAUDE.md. The <code>Explore</code>/<code>Plan</code> exemption is specific to those two built-in agents, not a general capability -- any full agent still pays the full file. That's exactly why Lever B (actually shrinking the file) is unavoidable, not optional.</p>
+    </div>
+  </details>
+
+  <h3>What shipped tonight vs. what needs a decision from you</h3>
+  <table>
+    <tr><th>Item</th><th>Status</th><th>Detail</th></tr>
+    <tr><td>Measurement tool (<code>context_floor_audit.py</code>)</td><td><span class="badge shipped">SHIPPED</span></td><td>Re-runnable, baseline saved</td></tr>
+    <tr><td>Explore-routing rule</td><td><span class="badge shipped">SHIPPED</span></td><td>Written into CLAUDE.md + AGENT_SOP.md, on the pending branch</td></tr>
+    <tr><td>Token-efficiency SOP doc</td><td><span class="badge shipped">SHIPPED</span></td><td>This page's primary source</td></tr>
+    <tr><td>CLAUDE.md pointer-ize pass (Option C)</td><td><span class="badge shipped">SHIPPED</span></td><td>73,643 &rarr; 71,400 B, on its own branch</td></tr>
+    <tr><td>Raise the memory loader cap (Option A) OR curate MEMORY.md under cap (Option B)</td><td><span class="badge pending">YOUR CALL</span></td><td>Not done -- filed as SYS-492. The 16,083 B mirror block in CLAUDE.md exists only because MEMORY.md overflows its 24,400 B loader cap. Recommendation on file is Option C (pointerize in place, already done); A or B would retire the mirror block entirely but change enforcement mechanics, so it goes to you rather than landing silently.</td></tr>
+    <tr><td>Make copy-battery hook conditional</td><td><span class="badge pending">OPEN</span></td><td>Emits ~1,406 tok unconditionally to every dispatch (~564K tok/week). Left alone deliberately -- it's a live enforcement backstop outside this repo, needs the same care as any guardrail edit.</td></tr>
+  </table>
+
+  <h2 id="routing">5. Model + effort routing policy (the companion finding)</h2>
+  <p>Built the same night, in response to a related but separate ask: not "how big is the context," but "which model, and how much reasoning depth, for which task."</p>
+
+  <h3 id="effort">The headline finding: there is no per-call effort knob</h3>
+  <div class="blocker" style="border-color:rgba(242,184,75,.4); background:rgba(242,184,75,.06);">
+    <p style="margin:0;"><b>Verified directly against the live tool schema, not assumed:</b> the Agent tool takes <code>model</code> (sonnet / opus / haiku / fable) but has <b>no <code>effort</code>, <code>thinking</code>, or <code>reasoning_effort</code> parameter at all.</b> Reasoning depth is controlled by a single session-wide setting (<code>effortLevel</code> in settings.json, currently <code>medium</code>), which applies to every turn including trivial ones -- there's no way to dial it up for one hard dispatch without paying that cost everywhere. The actual lever for buying more reasoning depth on a specific task is <b>how the prompt is written</b>, not a parameter.</p>
+  </div>
+
+  <h3>The matrix -- what model to use, by task type</h3>
+  <table>
+    <tr><th>Task type</th><th>Agent model</th><th>Why</th></tr>
+    <tr><td>Read-only lookup / single fact</td><td>Don't dispatch -- do it inline</td><td>A dispatch costs more than the lookup itself</td></tr>
+    <tr><td>Routine triage / DB hygiene / status flips</td><td><code>haiku</code></td><td>Mechanical, verifiable, reversible -- no real reasoning needed</td></tr>
+    <tr><td>Mechanical low-risk edits (docs, config, registry rows)</td><td>inherit (default)</td><td>Low stakes but judgment in placement; haiku under-reads context</td></tr>
+    <tr><td>Code write/edit, single file, contained</td><td><code>sonnet</code></td><td><b>MODEL FLOOR hard rule</b> -- never haiku, never fable by default</td></tr>
+    <tr><td>Code write/refactor, multi-file or cross-module</td><td><b><code>opus</code></b></td><td>Strongest on multi-file/end-to-end; give it the complete spec up front</td></tr>
+    <tr><td>Code review</td><td><code>sonnet</code> min, <code>opus</code> for damage-list-adjacent</td><td>Floor applies to review, not just writing</td></tr>
+    <tr><td>Architecture / PRD / "should we build this"</td><td><b><code>opus</code></b></td><td>Wrong architecture calls are expensive and slow to reverse -- cheapest place to spend</td></tr>
+    <tr><td>Council / Karpathy pressure-testing</td><td>don't override (Council); <code>opus</code> for Karpathy-on-code</td><td>Multi-model diversity IS the mechanism for Council</td></tr>
+    <tr><td>Research, uncertain scope</td><td>inherit (sonnet); escalate to <code>opus</code> if 2 hypotheses already failed</td><td>Most investigation is search; depth only worth buying after cheap search demonstrably fails</td></tr>
+    <tr><td>High-stakes / irreversible (damage list)</td><td><b><code>opus</code>, always</b></td><td>Non-negotiable -- require it to state what's irreversible before acting</td></tr>
+    <tr><td>Copy in Boubacar's name</td><td><code>sonnet</code> minimum</td><td>Copy battery still mandatory regardless of model</td></tr>
+  </table>
+  <p class="footnote">Fable 5, every row: opt-in only, never auto-selected, dispatch only when explicitly named for that task.</p>
+
+  <details>
+    <summary>Buying depth without an effort knob -- the actual prompt-level toolkit</summary>
+    <div class="details-body">
+      <ul>
+        <li><b>Force a plan before action:</b> "Before your first edit, state the change you intend and the one thing that would prove it wrong." Cheap, catches the most expensive class of error.</li>
+        <li><b>Name a verification contract:</b> "You are done when &lt;specific command&gt; passes / &lt;file&gt; contains &lt;thing&gt;." Removes ambiguity that makes models over- or under-work.</li>
+        <li><b>Complete spec, then hands off (Opus 5 specifically):</b> give it everything up front and let it run. Micro-sequencing degrades it.</li>
+        <li><b>Constrain narration and length explicitly (Opus 5 specifically):</b> it over-narrates and writes long files by default; the effort knob doesn't fix that.</li>
+        <li><b>State scope literally:</b> "apply this to every section, not just the first." Models don't reliably generalize an instruction across items on their own.</li>
+        <li><b>Do NOT scaffold progress updates for Sonnet 5</b> -- it produces them itself; old scaffolding wastes tokens.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>What IS wired today: the advisory PreToolUse hook</summary>
+    <div class="details-body">
+      <p><code>scripts/claude-hooks/model-policy-inject.js</code> is a <b>PreToolUse</b> hook on the Agent tool (confirmed firing on real dispatches tonight). PreToolUse is the right event because it fires before the dispatch, while the model choice is still changeable -- unlike SubagentStart, which fires after the model is already bound.</p>
+      <p>What it does: classifies the dispatch prompt with keyword heuristics into trivial/triage, code, or high-stakes; injects a short advisory <i>only</i> when the model choice looks actionable (a code/high-stakes dispatch pinned below the floor, or a plainly trivial dispatch not using haiku); stays silent otherwise, which is deliberate -- most dispatches produce zero injected tokens so this doesn't fight the parallel context-size effort.</p>
+      <p><b>What it honestly cannot do:</b> change the model. PreToolUse gives an allow/block/inject shape, not a rewrite-the-arguments shape. It reminds; the dispatcher still decides. It never blocks -- a keyword heuristic can't be trusted to brick a dispatch.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Orchestrator-level knobs (separate from the Agent tool, richer, landed today)</summary>
+    <div class="details-body">
+      <table>
+        <tr><th>Knob</th><th>Where</th><th>What it does</th></tr>
+        <tr><td><code>MODEL_REGISTRY</code></td><td><code>agents.py</code> ~L55</td><td>claude-sonnet &rarr; anthropic/claude-sonnet-5, claude-opus &rarr; anthropic/claude-opus-5, claude-haiku &rarr; anthropic/claude-haiku-4.5, gemini-flash &rarr; google/gemini-2.5-flash. All OpenRouter-prefixed.</td></tr>
+        <tr><td><code>select_llm(role, task_complexity, temperature)</code></td><td><code>agents.py</code> ~L632</td><td>A real complexity knob: simple / moderate / complex, routed through role capability + cost tier.</td></tr>
+        <tr><td><code>_PINNED_ROLE_MODEL</code></td><td><code>agents.py</code> ~L621</td><td>Bypasses cost-tier: coder &rarr; sonnet at simple/moderate, <b>opus at complex</b>; consultant/orchestrator &rarr; sonnet.</td></tr>
+        <tr><td><code>BACKGROUND_TASK_MODEL_ALIAS = "gemini-flash"</code></td><td><code>agents.py</code> ~L90</td><td>For pure relay/formatting only -- hard scope limit in code comment: never code, never review, never Council, never original copy in his name.</td></tr>
+        <tr><td><code>COST_TIER_ORDER</code></td><td><code>agents.py</code> ~L113</td><td>Trap found: <code>max_cost_tier</code> is a MAXIMUM not a floor -- raising it never excludes cheap models. Exactly why <code>_PINNED_ROLE_MODEL</code> exists.</td></tr>
+        <tr><td>thinking / reasoning param</td><td>-- absent --</td><td><code>llm_router.py</code> passes no reasoning parameter at all. Opus 5 / Sonnet 5 expose a native <code>thinking</code> param, but we can't reach it -- the hard rule is all LLM calls go through OpenRouter, never Anthropic-direct. Named as a real, open gap, not a knob we have today.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <h2 id="refs">Sources</h2>
+  <details>
+    <summary>Branches, commits, and files this page is drawn from</summary>
+    <div class="details-body">
+      <ul>
+        <li><code>docs/governance/token-efficiency-sop-2026-08-10.md</code> -- branch <code>docs/token-efficiency-lever2-2026-08-10</code>, commit <code class="mono">6654b432599e657fcb5ea1c5c2a519169b7f8c8f</code></li>
+        <li><code>docs/roadmap/future-enhancements.md</code> (SYS-492 entry) -- same branch</li>
+        <li><code>CLAUDE.md</code> pointer-ize pass -- branch <code>docs/hard-rule-boot-section-pointerize-0810</code>, commit <code class="mono">0e606d25b7878b25b266ccf6204411a4d8e7288c</code> (73,643 &rarr; 71,400 B; combined with an earlier same-day pass, 84,242 &rarr; 73,643 B)</li>
+        <li><code>docs/governance/model-and-effort-routing-policy-2026-08-10.md</code> -- branch <code>docs/model-effort-routing-policy-0810</code>, commit <code class="mono">c0588706a1cc502cfcd723ad202d6fc0ff2a9a38</code></li>
+        <li><code>scripts/context_floor_audit.py</code> -- the measurement tool</li>
+        <li><code>docs/audits/token-health/context_floor_baseline_2026-08-10.json</code> -- the saved baseline</li>
+        <li><code>docs/governance/CLAUDE-pointer-draft-2026-06-07.md</code> -- the original two-lever plan this SOP supersedes/completes</li>
+        <li><code>docs/audits/2026-07-26-promptfix-model-awareness-research.md</code> -- per-model prompting behavior source for section 5</li>
+      </ul>
+      <p class="footnote">All three branches confirmed still unmerged to origin/main as of publish time -- verify current status with <code>git branch -r --contains &lt;sha&gt;</code> before treating any fix on this page as officially live.</p>
+    </div>
+  </details>
+
+</div>
+
+<button id="backtotop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&uarr; Top</button>
+<script>
+  window.addEventListener('scroll', function(){
+    var btn = document.getElementById('backtotop');
+    if (window.scrollY > 400) btn.classList.add('show'); else btn.classList.remove('show');
+  });
+</script>
+
+</body>
+</html>
+
