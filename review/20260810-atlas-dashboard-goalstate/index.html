@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Dashboard: Atlas Consolidated Goal-State</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#2a2f3a;
+    --text:#e8eaed; --muted:#9aa3b2; --accent:#5b8cff; --accent2:#3ddc97;
+    --warn:#ffb454; --danger:#ff6b6b; --code-bg:#11141a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55; font-size:16px;
+  }
+  a{color:var(--accent);}
+  .wrap{max-width:920px; margin:0 auto; padding:24px 20px 100px;}
+  header.hero{
+    padding:28px 20px; border-bottom:1px solid var(--border); margin-bottom:24px;
+    background:linear-gradient(180deg, rgba(91,140,255,0.08), transparent);
+  }
+  header.hero .wrap{padding:0;}
+  h1{font-size:1.6rem; margin:0 0 6px;}
+  .meta{color:var(--muted); font-size:0.9rem;}
+  .badge{
+    display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.75rem;
+    font-weight:600; letter-spacing:0.02em; margin-right:6px; margin-bottom:6px;
+  }
+  .badge.status{background:rgba(61,220,151,0.15); color:var(--accent2); border:1px solid rgba(61,220,151,0.4);}
+  .badge.lane{background:rgba(91,140,255,0.15); color:var(--accent); border:1px solid rgba(91,140,255,0.4);}
+
+  /* quick nav */
+  nav.quicknav{
+    position:sticky; top:0; z-index:50; background:rgba(15,17,21,0.96); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border); padding:10px 20px; overflow-x:auto; white-space:nowrap;
+  }
+  nav.quicknav a{
+    display:inline-block; color:var(--muted); text-decoration:none; font-size:0.85rem;
+    padding:6px 10px; border-radius:6px; margin-right:4px;
+  }
+  nav.quicknav a:hover, nav.quicknav a:focus{background:var(--panel2); color:var(--text);}
+
+  section{margin:34px 0;}
+  h2{font-size:1.25rem; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:14px;}
+  h3{font-size:1.05rem; margin:20px 0 8px; color:var(--text);}
+
+  .tldr{
+    background:var(--panel); border:1px solid var(--accent); border-radius:10px;
+    padding:18px 20px; margin:16px 0;
+  }
+  .tldr p{margin:0 0 10px;}
+  .tldr p:last-child{margin-bottom:0;}
+  .tldr strong{color:var(--accent2);}
+
+  .callout{
+    background:var(--panel2); border-left:3px solid var(--warn); border-radius:6px;
+    padding:12px 16px; margin:14px 0; font-size:0.95rem;
+  }
+
+  /* decision blocks */
+  .decision{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:18px 20px; margin:18px 0;
+  }
+  .decision h4{margin:0 0 8px; font-size:1.02rem; color:var(--text);}
+  .decision .q-context{color:var(--muted); font-size:0.92rem; margin-bottom:12px;}
+  .options{display:flex; flex-direction:column; gap:8px;}
+  .option{
+    display:flex; align-items:flex-start; gap:10px; padding:10px 12px;
+    border:1px solid var(--border); border-radius:8px; cursor:pointer;
+    background:var(--panel2); transition:border-color .15s, background .15s;
+  }
+  .option:hover{border-color:var(--accent);}
+  .option input{margin-top:3px; flex-shrink:0;}
+  .option .opt-label{font-weight:600; font-size:0.95rem;}
+  .option .opt-sub{color:var(--muted); font-size:0.85rem; margin-top:2px;}
+  .option.recommended{border-color:var(--accent2);}
+  .option.recommended .opt-label::after{
+    content:" - RECOMMENDED"; color:var(--accent2); font-size:0.72rem; font-weight:700;
+  }
+  .decision-note{margin-top:10px;}
+  .decision-note textarea{
+    width:100%; min-height:54px; background:var(--code-bg); border:1px solid var(--border);
+    border-radius:6px; color:var(--text); padding:8px 10px; font-family:inherit; font-size:0.9rem; resize:vertical;
+  }
+  .decision-note label{display:block; font-size:0.8rem; color:var(--muted); margin-bottom:4px;}
+
+  /* collapsibles */
+  details{
+    background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    margin:10px 0; padding:0;
+  }
+  details summary{
+    cursor:pointer; padding:12px 16px; font-weight:600; list-style:none;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  details summary::-webkit-details-marker{display:none;}
+  details summary::after{content:"+"; color:var(--muted); font-size:1.2rem; font-weight:400;}
+  details[open] summary::after{content:"–";}
+  details .content{padding:0 16px 16px;}
+  details[open] summary{border-bottom:1px solid var(--border);}
+
+  table{width:100%; border-collapse:collapse; font-size:0.88rem; margin:10px 0;}
+  th,td{text-align:left; padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top;}
+  th{color:var(--muted); font-weight:600; font-size:0.78rem; text-transform:uppercase; letter-spacing:.03em;}
+  tr:hover td{background:rgba(255,255,255,0.02);}
+
+  code, .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:0.85em;}
+  code{background:var(--code-bg); padding:1px 5px; border-radius:4px; color:var(--accent2);}
+  pre{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:8px;
+    padding:14px 16px; overflow-x:auto; font-size:0.85rem;
+  }
+  pre code{background:none; padding:0; color:var(--text);}
+
+  ul, ol{padding-left:22px;}
+  li{margin:4px 0;}
+
+  .checklist{list-style:none; padding-left:0;}
+  .checklist li{
+    padding:8px 10px 8px 34px; position:relative; border-bottom:1px solid var(--border); font-size:0.92rem;
+  }
+  .checklist li:last-child{border-bottom:none;}
+  .checklist li::before{
+    content:""; position:absolute; left:8px; top:11px; width:14px; height:14px;
+    border:1.5px solid var(--muted); border-radius:3px;
+  }
+  .checklist.notdo li::before{border-color:var(--danger);}
+
+  .quote-block{
+    font-style:italic; color:var(--muted); border-left:3px solid var(--accent);
+    padding:8px 16px; margin:12px 0; font-size:0.93rem;
+  }
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:640px){ .grid2{grid-template-columns:1fr;} }
+
+  .back-to-top{
+    position:fixed; bottom:20px; right:20px; background:var(--accent); color:#fff;
+    border:none; border-radius:50%; width:46px; height:46px; font-size:1.2rem;
+    cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.4); display:none; z-index:60;
+    align-items:center; justify-content:center;
+  }
+  .back-to-top.show{display:flex;}
+
+  footer{color:var(--muted); font-size:0.8rem; text-align:center; margin-top:50px; padding-top:20px; border-top:1px solid var(--border);}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-10-23:00:56 MT</div><!-- DEPLOY_STAMP_END -->
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge status">RESEARCH + DESIGN - AWAITING YOUR DECISION</span>
+    <span class="badge lane">Lane: research</span>
+    <h1>One Dashboard: Atlas Consolidated Goal-State</h1>
+    <div class="meta">2026-08-10 · No code written for this doc · Source: <code>docs/decisions/atlas-consolidated-dashboard-goal-state-2026-08-10.md</code></div>
+  </div>
+</header>
+
+<nav class="quicknav" id="quicknav">
+  <a href="#tldr">TL;DR</a>
+  <a href="#decisions">4 Decisions</a>
+  <a href="#inventory">Inventory</a>
+  <a href="#recommendation">Recommendation</a>
+  <a href="#checklist">Done Checklist</a>
+  <a href="#notbuild">What NOT to Build</a>
+  <a href="#paused">Paused Branch</a>
+</nav>
+
+<div class="wrap">
+
+  <section id="tldr">
+    <h2>TL;DR</h2>
+    <div class="tldr">
+      <p>You already have one real dashboard. It's <strong>atlas.html</strong> - live, PIN-authed, polling 15 real endpoints. You also have a second one at <strong>boubacarbarry.com/monitor</strong>, built for a different audience (client demo), never finished its data wiring, and with no evidence you actually use it day to day. That second one is the "dashboards all over the place" problem.</p>
+      <p>Recommendation: <strong>extend Atlas, retire the monitor's ops role, keep the monitor alive only as the client-facing demo prop it was actually built to be.</strong> One board for you. One prop for prospects. Zero overlap.</p>
+      <p>One thing to hear up front: the SIL (Service Intelligence Layer) research doc you asked me to fold in is <strong>not a dashboard spec.</strong> It's a product thesis for a different, future product. It says "dashboard" exactly once. It's useful here only as a set of design principles - not as a requirements list. Section on the inventory covers exactly where it does and doesn't apply.</p>
+    </div>
+    <div class="quote-block">
+      Your own words tonight: "I want one single dashboard. That's what Atlas was supposed to be... Go back and look at the logs. Look at what we did and why we did what we did and really set yourself a goal of what the finish looks like."
+    </div>
+  </section>
+
+  <section id="decisions">
+    <h2>4 decisions I need from you</h2>
+    <p class="q-context" style="margin-bottom:16px;">These are static option blocks for you to think through and mark up  -  nothing here saves to a database, this is a one-time architecture call, not a recurring tracker. Tell me your picks (or write in the notes box) and I'll act on them.</p>
+
+    <div class="decision">
+      <h4>1. Split the audiences?</h4>
+      <div class="q-context">Atlas = yours only, no redaction. The React "monitor" app = demo prop for prospects only, never used as an ops tool. This is the load-bearing decision  -  everything else in the plan depends on it.</div>
+      <div class="options">
+        <label class="option recommended">
+          <input type="radio" name="q1" value="yes">
+          <span><span class="opt-label">Yes, split them permanently</span><br><span class="opt-sub">One place you look for real ops (Atlas). One separate sales asset (the React app), finished as a demo, never called a dashboard again.</span></span>
+        </label>
+        <label class="option">
+          <input type="radio" name="q1" value="no">
+          <span><span class="opt-label">No, keep trying for one surface, two audiences</span><br><span class="opt-sub">This is the design that already failed once (the June spec) for a nameable reason  -  every decision has to satisfy two opposed masters.</span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="decision">
+      <h4>2. Do you actually look at boubacarbarry.com/monitor?</h4>
+      <div class="q-context">No usage evidence was found either way in memory or docs. If you don't use it, its 6 tabs get ported to Atlas (where useful) and it goes demo-only. If you do use it, name what you look at so those pieces get ported first, before anything is deprecated.</div>
+      <div class="options">
+        <label class="option recommended">
+          <input type="radio" name="q2" value="no">
+          <span><span class="opt-label">No  -  I don't actually use it</span><br><span class="opt-sub">Go ahead and port anything worth keeping into Atlas, then treat /monitor as demo-only.</span></span>
+        </label>
+        <label class="option">
+          <input type="radio" name="q2" value="yes">
+          <span><span class="opt-label">Yes, I use it  -  here's what</span><br><span class="opt-sub">Use the notes box below to name the tab(s)/data you actually check.</span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="decision">
+      <h4>3. Confirm SIL stays parked</h4>
+      <div class="q-context">Its own review trigger fires 2026-08-24. This doc treats the SIL research as a source of design principles only, not a dashboard requirement, and does not restart that project. Say so if you meant it differently.</div>
+      <div class="options">
+        <label class="option recommended">
+          <input type="radio" name="q3" value="parked">
+          <span><span class="opt-label">Confirmed  -  SIL stays parked</span><br><span class="opt-sub">Design-principles-only role for this dashboard work. Revisit on the 8/24 trigger, not before.</span></span>
+        </label>
+        <label class="option">
+          <input type="radio" name="q3" value="unpark">
+          <span><span class="opt-label">No  -  I meant something more active</span><br><span class="opt-sub">Use the notes box to say what you actually want done with SIL now.</span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="decision">
+      <h4>4. Agent-roster tile: show not-yet-built agents?</h4>
+      <div class="q-context"><code>agent_manifest.yaml</code> already has rows marked <code>status: proposed</code> for agents that don't exist yet. The June spec said show them greyed-out as "coming." Still want that, or hide them entirely until they're real?</div>
+      <div class="options">
+        <label class="option recommended">
+          <input type="radio" name="q4" value="greyed">
+          <span><span class="opt-label">Show them, greyed-out, labeled "coming"</span><br><span class="opt-sub">Matches the original June spec intent  -  gives you visibility into the roadmap, not just what's live.</span></span>
+        </label>
+        <label class="option">
+          <input type="radio" name="q4" value="hide">
+          <span><span class="opt-label">Hide until real</span><br><span class="opt-sub">Roster tile shows only agents that actually exist and are running today.</span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="decision-note">
+      <label for="notes">Your notes (optional  -  reasoning, exceptions, anything not covered above)</label>
+      <textarea id="notes" placeholder="Type here..."></textarea>
+    </div>
+  </section>
+
+  <section id="inventory">
+    <h2>The dashboard inventory</h2>
+    <p>Three families of surfaces exist today, plus a pile of specs and one paused build. Full detail is collapsed below  -  the short version: only two of these are actually "dashboards" in the sense you mean, and only one of them is real.</p>
+
+    <details>
+      <summary>Family A  -  Atlas Mission Control (the real one, LIVE)</summary>
+      <div class="content">
+        <table>
+          <tr><th>Component</th><th>Path</th><th>Notes</th></tr>
+          <tr><td>Shell</td><td class="mono">thepopebot/chat-ui/atlas.html</td><td>~16 tile cards</td></tr>
+          <tr><td>Logic</td><td class="mono">thepopebot/chat-ui/atlas.js</td><td>PIN → bearer token, 4h TTL, sessionStorage</td></tr>
+          <tr><td>Backend routes</td><td class="mono">orchestrator/app.py</td><td>~45 <code>/atlas/*</code> endpoints</td></tr>
+          <tr><td>Backend logic</td><td class="mono">orchestrator/atlas_dashboard.py</td><td>tested: test_atlas_dashboard.py</td></tr>
+          <tr><td>Serving</td><td class="mono">nginx (thepopebot-chat-ui)</td><td>proxies <code>/api/orc</code> to orchestrator</td></tr>
+        </table>
+        <p><strong>Tiles live today:</strong> priority-queue, cron-liveness, gate-queue, auto-healer, state, queue (approvals), absorb-status, heartbeats, leads, sw-status, spend, cost-rollup, content, errors, state-json, chat.</p>
+        <p><strong>13 nginx-routed sub-pages</strong>, all real: /atlas/cost, /roadmap, /lessons, /lighthouse, /absorb-triage, /command-center, /hf-review, /queue, /alerts, /sys20-hf-expansion, /hf-lanes-review, /hf-frontier, /hf-proposals.</p>
+        <div class="callout"><strong>Correction to a prior audit:</strong> <code>command-center.html</code> was wrongly called a dead stub in an earlier same-night pass. It's not  -  nginx routes it and it functions as the cockpit launcher/index page. Do not retire it. Also: <code>atlas-lighthouse.html</code> is a sub-page, not the main board  -  <code>atlas.html</code> is the main board.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Family B  -  the "monitor" React app (the duplicate)</summary>
+      <div class="content">
+        <p><strong>Status:</strong> live infra, partial data, no evidence of routine use.</p>
+        <table>
+          <tr><th>Component</th><th>Path</th><th>Notes</th></tr>
+          <tr><td>Frontend</td><td class="mono">dashboard/frontend/src/</td><td>React + Vite</td></tr>
+          <tr><td>Backend</td><td class="mono">dashboard/backend/main.py</td><td>separate FastAPI app, image-built</td></tr>
+          <tr><td>Public URL</td><td class="mono">boubacarbarry.com/monitor</td><td>canonical</td></tr>
+        </table>
+        <p>Tabs: Research, Marketing, Sales, CEO, System, Errors. Plus demo-safe mode, a <code>?share=</code> view, and a <code>?astryx=1</code> pilot route.</p>
+        <p><strong>Two real defects, confirmed by reading the code:</strong></p>
+        <ol>
+          <li><code>COMMAND_CENTER_USE_LIVE_MANIFEST</code> is absent from <code>docker-compose.yml</code>  -  production serves a static 13-agent fixture, not the real manifest.</li>
+          <li>Demo copy was never voice-passed and is not demo-ready for a prospect. Last touched 2026-06-26  -  six weeks stale.</li>
+        </ol>
+        <p><strong>Usage evidence: weak.</strong> Memory shows you correcting its URL/deploy path multiple times  -  that proves you care it's correct, not that you use it. No record of operational use, and it's never gone live in front of a prospect.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Family C  -  decision pages on /review/ (a different job  -  leave alone)</summary>
+      <div class="content">
+        <p>These are DB-backed decision surfaces, not status dashboards, and already follow the one-canonical-page-per-purpose rule.</p>
+        <table>
+          <tr><th>URL</th><th>Purpose</th></tr>
+          <tr><td class="mono">/review/20260619-upwork/</td><td>job board, DB-backed</td></tr>
+          <tr><td class="mono">/review/sw-warm-board/</td><td>warm-lead board</td></tr>
+          <tr><td class="mono">/review/sw-warm-approve/</td><td>approval stages</td></tr>
+          <tr><td class="mono">/review/money-map-y0/</td><td>Y0 Money Map, Supabase-backed</td></tr>
+        </table>
+        <p><strong>A decision page is where you act on one thing. A dashboard is where you see everything at once.</strong> Merging them would break both  -  recommend leaving Family C alone entirely.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Specs, proposals, and abandoned builds</summary>
+      <div class="content">
+        <table>
+          <tr><th>Path</th><th>Status</th></tr>
+          <tr><td class="mono">docs/decisions/agentshq-command-center-build-spec-2026-06-26.md</td><td>Backend items 1-4 SHIPPED, Phase 2 deferred</td></tr>
+          <tr><td class="mono">docs/decisions/cw-demo-dashboard-requirements.md</td><td>concept approved, UI never finished</td></tr>
+          <tr><td class="mono">dashboard/COMMAND_CENTER_NOTES.md</td><td>scaffold [WIP], abandoned 2026-06-26</td></tr>
+          <tr><td class="mono">docs/decisions/STATISTICAL_EDGE_DASHBOARD_DESIGN.md</td><td>design-only, deferred, different domain</td></tr>
+          <tr><td class="mono">docs/prds/cos-data-home-2026-08-05.md</td><td>draft  -  explicitly vetoes a new web UI</td></tr>
+          <tr><td class="mono">docs/prds/cos-v2-chief-of-staff.md</td><td>draft  -  "no new dashboard" / "no monitor"</td></tr>
+        </table>
+        <p><strong>Two separate recent PRDs independently concluded another surface is a cost, not a feature.</strong> The instinct behind tonight's instruction to consolidate was already written down twice by other lanes before this doc.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Where the SIL research doc does and doesn't apply</summary>
+      <div class="content">
+        <p>The SIL doc is 36 sections about building a <strong>commercial product for service organizations</strong> (industrial field-service knowledge capture). It's not a dashboard spec  -  "dashboard" appears once, in a Phase-2 bullet.</p>
+        <p>Where it genuinely does apply: as <strong>design doctrine</strong>. Its architecture principles map cleanly onto the truthfulness problem the Atlas board already has  -  real event sources instead of caches, provenance on every number, no fake "it fired so it must have worked." All of that is echoed in the done-checklist below.</p>
+        <p><strong>What it does not mean:</strong> do not modernize Atlas toward the SIL stack (graph databases, ontologies, multi-model routing). The SIL doc's own rule (§32) bans building the platform before the narrow workflow works  -  and Atlas is the narrow workflow that already works. Its boring stack (static HTML + vanilla JS + PIN + FastAPI JSON) is a feature: zero build step, deploys with a <code>docker compose restart</code>, live for months.</p>
+      </div>
+    </details>
+  </section>
+
+  <section id="recommendation">
+    <h2>The recommendation: Option A</h2>
+    <div class="grid2">
+      <div class="decision" style="border-color:var(--accent2);">
+        <h4>Option A  -  Extend Atlas, demote the monitor to demo-only</h4>
+        <p>Fold tonight's paused branch in, add the agent-roster tile from the existing manifest, regroup tiles by question, port anything unique from the monitor, formally redesignate <code>dashboard/frontend</code> as the client demo prop.</p>
+        <p><strong>Effort:</strong> S-M (tonight's branch is ~70% of the tile work) &nbsp;|&nbsp; <strong>Risk:</strong> Low, additive/read-only/auth-gated &nbsp;|&nbsp; <strong>Reversible:</strong> Yes</p>
+      </div>
+      <div class="decision">
+        <h4>Option B  -  Resurrect the React build as the one board</h4>
+        <p>Finish <code>dashboard/frontend</code>, flip the manifest flag, port all 16 tiles into React, retire <code>atlas.html</code>.</p>
+        <p><strong>Effort:</strong> L &nbsp;|&nbsp; <strong>Risk:</strong> High  -  image-built, publicly routed, no PIN, data layer unfinished &nbsp;|&nbsp; <strong>Reversible:</strong> Poorly</p>
+      </div>
+    </div>
+    <div class="decision">
+      <h4>Option C  -  Build fresh</h4>
+      <p><strong>Effort:</strong> XL &nbsp;|&nbsp; <strong>Risk:</strong> Highest  -  this is the exact move your instruction was issued to prevent. Recommend against without further argument.</p>
+    </div>
+
+    <h3>Why Option A</h3>
+    <ol>
+      <li><strong>Atlas already wins on every hard criterion:</strong> live, PIN-authed, 15 real endpoints, 13 routed sub-pages, test coverage, zero build step. The monitor is publicly routed, image-built, fixture-backed, and unused.</li>
+      <li><strong>The cheapest path to "what Atlas was supposed to be" is one tile, not one rewrite.</strong> <code>agent_manifest.yaml</code> already has the fields the June spec wanted. Nothing reads it today.</li>
+      <li><strong>The dual-audience problem is the real bug</strong>  -  and Option A is the only option that actually fixes it. B and C both inherit the "one surface, two masters" trap that stalled the June build.</li>
+      <li><strong>Tonight's paused branch is already most of the work</strong> and stopped in exactly the right place, before live verification.</li>
+      <li><strong>The SIL doc's own rule says so:</strong> don't build the platform before the narrow workflow works. Atlas is the narrow workflow that works.</li>
+    </ol>
+    <div class="callout"><strong>What you're actually deciding</strong> is not "which framework"  -  it's whether you want one surface serving both you and prospects, or two surfaces with clean separation. The first attempt at "one surface" already failed, on record, for a nameable reason.</div>
+  </section>
+
+  <section id="checklist">
+    <h2>Machine-verifiable "done" checklist</h2>
+    <p>Every line below is checkable by a script or a screenshot  -  no judgment calls. A future build task on this is not done until every box passes.</p>
+    <details open>
+      <summary>15-item checklist</summary>
+      <div class="content">
+        <h3>Data truth</h3>
+        <ul class="checklist">
+          <li>Every polled endpoint returns HTTP 200 with non-empty JSON. Zero 404s, zero 500s.</li>
+          <li>Every tile's JSON includes a source identifier and timestamp, or an explicit <code>{"available": false, "reason": "..."}</code>.</li>
+          <li>No tile renders a number from a cache, fixture, or hardcoded constant  -  <code>grep -r "fixture"</code> on the ops path returns nothing.</li>
+          <li>Every tile reading a laptop-written or possibly-stale source states that on screen, in words.</li>
+        </ul>
+        <h3>Consolidation</h3>
+        <ul class="checklist">
+          <li><code>agent_manifest.yaml</code> is read by at least one live Atlas endpoint; roster tile renders with <code>function_group</code> grouping.</li>
+          <li><code>COMMAND_CENTER_USE_LIVE_MANIFEST</code> is set in docker-compose.yml, or the fixture path is deleted  -  no half-wired state.</li>
+          <li>No ops question is answerable only at <code>/monitor</code>. Each of the 6 tabs is either ported to Atlas or explicitly declared demo-only in writing.</li>
+          <li>Every nginx <code>/atlas/*</code> route resolves to a page that fetches live data or is explicitly labeled a static snapshot.</li>
+        </ul>
+        <h3>Verification</h3>
+        <ul class="checklist">
+          <li>Playwright screenshot of /atlas at desktop width and 375px, after full load, actually looked at (standing visual-verification rule).</li>
+          <li>Hamburger nav present below the mobile breakpoint (standing mobile rule).</li>
+          <li>PIN auth confirmed still required  -  an unauthenticated curl to each new endpoint returns 401/403, never data.</li>
+          <li><code>test_atlas_dashboard.py</code> passes, with new tests covering each new function's missing-data path.</li>
+        </ul>
+        <h3>Non-regression</h3>
+        <ul class="checklist">
+          <li>No new endpoint mutates anything  -  every added route is a GET.</li>
+          <li>Board first paint under 3 seconds on a cold session, measured not estimated.</li>
+          <li><code>docs/LIVE_STATE.md</code> carries a row for the canonical Atlas URL  -  it does not today, and that's its own small defect worth fixing in the same pass.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section id="notbuild">
+    <h2>What NOT to build</h2>
+    <details open>
+      <summary>7 hard nos for this pass</summary>
+      <div class="content">
+        <ul class="checklist notdo">
+          <li>No new framework, no React rewrite of Atlas, no build step.</li>
+          <li>No graph database for the ops board.</li>
+          <li>No third dashboard, under any name, for any reason.</li>
+          <li>No tile that answers a question you haven't actually asked.</li>
+          <li>No auto-refresh faster than 30 seconds.</li>
+          <li>No write actions added in the same pass as consolidation  -  read-only first.</li>
+          <li>No retirement of <code>command-center.html</code> until the nginx route is re-verified and its inbound links are checked.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section id="paused">
+    <h2>The paused build from tonight</h2>
+    <p><strong>Branch:</strong> <code>feat/atlas-dashboard-gate-usage-sys-0810</code> @ <code>6b82344b7</code>, tagged [WIP], not merged. <strong>Verdict: keep it  -  don't discard, don't redo.</strong></p>
+    <details>
+      <summary>What's already built + what happens next</summary>
+      <div class="content">
+        <p>Real, kept changes: two new usage-tracker / SYS-backlog endpoints behind existing PIN auth, two new tile cards, and renderers for a "held/blocked, needs a tap" branch list. Read-only, auth-gated, reads real sources (gate log, the real task-board table), handles missing data gracefully.</p>
+        <p><strong>Steps for whoever picks it up, in order:</strong></p>
+        <ol>
+          <li>Rebase onto current <code>origin/main</code> first  -  the branch is behind and shows unrelated deletions that are just noise from files that landed after the branch point. Do not merge before this.</li>
+          <li>Do not retire <code>command-center.html</code>  -  nginx still routes it.</li>
+          <li>Complete the verification that was correctly paused: live VPS curl against the two new endpoints, then Playwright at desktop + 375px, screenshots actually looked at.</li>
+          <li>Then, and only then, add the agent-roster tile and regroup tiles by question (see the "Row 1-5" structure in the source doc).</li>
+          <li><code>orchestrator/*.py</code> is Tier C / HIGH_RISK  -  this branch will be Gate-held and needs a real Telegram tap from you. Chat approval doesn't satisfy it, and no agent may write the approval marker.</li>
+        </ol>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    Republished as a review page per the standing rule: decisions get reviewed here, not in raw repo .md files.<br>
+    Source doc: <code>docs/decisions/atlas-consolidated-dashboard-goal-state-2026-08-10.md</code> (commit f564a5756, merged to main)
+  </footer>
+
+</div>
+
+<button class="back-to-top" id="backToTop" aria-label="Back to top">↑</button>
+
+<script>
+  var btn = document.getElementById('backToTop');
+  window.addEventListener('scroll', function(){
+    if (window.scrollY > 400) { btn.classList.add('show'); } else { btn.classList.remove('show'); }
+  });
+  btn.addEventListener('click', function(){
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+
+  // radio option highlight
+  document.querySelectorAll('.option input[type=radio]').forEach(function(inp){
+    inp.addEventListener('change', function(){
+      var name = inp.name;
+      document.querySelectorAll('input[name="'+name+'"]').forEach(function(other){
+        other.closest('.option').style.background = '';
+      });
+      inp.closest('.option').style.background = 'rgba(91,140,255,0.12)';
+    });
+  });
+</script>
+
+</body>
+</html>
+
