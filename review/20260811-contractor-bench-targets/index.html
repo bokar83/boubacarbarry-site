@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contractor bench targets — named people and firms</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:1000px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:1000px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  h3{font-size:1rem; margin:22px 0 8px; color:var(--accent2);}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; white-space:pre-wrap; font-size:.88rem;
+    line-height:1.5;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.86rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  .table-scroll table{min-width:820px;}
+  blockquote{border-left:3px solid var(--accent); margin:0 0 14px; padding:2px 0 2px 14px;
+    color:var(--text-dim); font-style:italic;}
+  .flag{border-left:3px solid var(--warn); background:rgba(242,184,75,.07);
+    padding:10px 14px; margin:0 0 14px; border-radius:0 8px 8px 0;}
+  .good-note{border-left:3px solid var(--good); background:rgba(127,224,184,.07);
+    padding:10px 14px; margin:0 0 14px; border-radius:0 8px 8px 0;}
+  .draft{background:#11141b; border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin:0 0 18px;}
+  .draft .who{font-weight:700; color:var(--accent); margin:0 0 4px; font-size:.95rem;}
+  .draft .route{color:var(--text-dim); font-size:.8rem; margin:0 0 10px;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-11-18:20:42 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Bench targets</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-play">The play</a>
+      <a href="#sec-who">Who asked</a>
+      <a href="#sec-keep">Keep</a>
+      <a href="#sec-rbl">RBL finding</a>
+      <a href="#sec-table">The table</a>
+      <a href="#sec-cold">Cold Utah</a>
+      <a href="#sec-networks">Networks</a>
+      <a href="#sec-openers">The openers</a>
+      <a href="#sec-aug27">Aug 27</a>
+      <a href="#sec-thin">What is thin</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Contractor bench targets: named people, named firms</h1>
+    <div class="meta">Who to reach out to about joining their delivery bench &middot; 2026-08-11 &middot; Nothing sent, nobody contacted</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>Two firms already publish exactly the arrangement you want, and you know humans inside both.</strong></p>
+      <ul>
+        <li><strong>The RBL Group</strong> runs a public <em>Consulting Associates</em> page with fifteen named consultants, and shows <strong>no AI capability in its US practice</strong>. You have four warm contacts there. <strong>Joe Hanson offered in July 2025 to introduce you to Michael Phillips, Jessica or Erin. You said yes and never followed up. That offer is still sitting open.</strong></li>
+        <li><strong>Amplēo</strong> sells fractional finance, fractional marketing and fractional HR. There is <strong>no fractional AI line</strong>. You met their Chief Growth Officer, Joe Grover, at StartFest, and you may share a middle school.</li>
+      </ul>
+      <p><strong>Who raised working together:</strong> best-evidenced answer is <strong>Jacob Knight, CEO of JWAL-Software</strong>. Two sources, one caveat, both in section 3.</p>
+      <p><strong>Google Keep is not readable</strong> and cannot be made readable. Proven, not assumed. Section 4 has the one line to paste.</p>
+      <p><strong>Umbrex is a dead end.</strong> Their own page says <em>"primarily for former MBB consultants."</em> Catalant is the one that fits.</p>
+      <p><strong>Unprompted:</strong> Amplēo is running an AI-leadership event on <strong>August 27, the same night as your workshop</strong>. Section 10.</p>
+      <p><strong>25 ranked rows, 10 verified cold Utah firms, 7 drafted openers scored 92.</strong> Nothing has been sent.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-play" open>
+    <summary><h2>1. The play, and one correction</h2></summary>
+    <div class="sec-body">
+      <p>You offer yourself as a <strong>contractor to firms that already hold client relationships</strong> and want AI capability without carrying a full-time person. Not selling them consulting. Joining their bench, at the rate they already pay contractors.</p>
+      <p>Your words: <em>"I should not be afraid to reach out to consulting firms and offer my service to them and then they pay me the normal rate that they pay their consultants who are contractors to fulfil certain contracts. Especially those that are focused on HR or focused on AI."</em></p>
+      <p><strong>Why this inverts the hardest constraint:</strong> their client trust substitutes for the trust anchor you do not have. You have zero retained clients. The firm's client does not need to trust you. Only the firm does, and several of these already do.</p>
+      <h3>Correction: capacity is a constraint you manage, not exclusivity you sell</h3>
+      <p>An earlier version of this thinking cited a UK firm's "one client at a time" exclusivity as a trust mechanic. That was wrong at your price point, and you said so: <em>"I am wary to say that I would be a fractional person doing one company at a time. If I were charging $20,000 a month, yes, I could do that but I'm not charging that amount so I need to be able to be fractional to multiple."</em></p>
+      <p><strong>Nothing in any message below implies single-client exclusivity.</strong> Running several at once is stated as a feature, because it is what separates a real contractor from a job-seeker in disguise.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-who" open>
+    <summary><h2>2. The person who raised working together</h2></summary>
+    <div class="sec-body">
+      <p><strong>Jacob Knight, Chief Executive Officer, JWAL-Software.</strong></p>
+      <p>Two independent pieces of evidence:</p>
+      <ol>
+        <li><strong>Your own StartFest note</strong>, captured from Keep on 2026-07-17, ranks him first of eleven: <em>"Jacob Knight — might have WORK for Boubacar as a trainer. Direct revenue lead."</em></li>
+        <li><strong>He initiated.</strong> LinkedIn invitation notification, 2026-06-23 22:01 UTC, mid-StartFest: <em>"Jacob, Chief Executive Officer from JWAL-Software is waiting for your response."</em> He is also in your connections export as Jacob Knight, JWAL-Software, Chief Executive Officer, with the highest score in the ghostwriting lane.</li>
+      </ol>
+      <div class="flag">
+        <p><strong>The caveat, stated rather than papered over.</strong> Your recollection was <em>"one of them actually asked me before about maybe potentially working with them or working for them to learn how to do some more hands-on stuff."</em> That last clause also matches a second thread in the same note: <em>"Boubacar asked GENAIPI (Kevin + owner) on 2026-06-26 about coming to work with them to learn HR/AI in context."</em> In that one, the recorded direction is <strong>you asking them</strong>.</p>
+        <p>So: Jacob Knight is who the record best supports for someone raising work with you. GENAIPI best matches the learn-hands-on phrasing but runs the other way. Both are in the table.</p>
+        <p><strong>Second caveat.</strong> His CEO title is primary, from the LinkedIn notification. But JWAL-Software has no findable web presence, and an independent name search returned only unrelated people. Real person, real title, unverifiable firm. You can settle it by opening his profile.</p>
+      </div>
+      <p>The one line to paste that settles all of it is in section 11.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-keep" open>
+    <summary><h2>3. Google Keep: not readable, and this was proven not assumed</h2></summary>
+    <div class="sec-body">
+      <p>Both stored OAuth credential sets were probed against the live Keep API on 2026-08-11.</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Credential</th><th>Account</th><th>Keep scope?</th><th>API response</th></tr></thead>
+        <tbody>
+          <tr><td><code>gws-oauth-credentials.json</code></td><td>bokar83@gmail.com</td><td>No</td><td><code>403 ACCESS_TOKEN_SCOPE_INSUFFICIENT</code></td></tr>
+          <tr><td><code>gws-oauth-credentials-cw.json</code></td><td>Catalyst Works</td><td>No</td><td><code>403 ACCESS_TOKEN_SCOPE_INSUFFICIENT</code></td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p><strong>Adding the scope would not fix it.</strong> The Keep API is a Workspace-only surface. The account holding the StartFest notes is a consumer gmail.com account, which the Keep API does not serve at all. A Drive search for StartFest returned only headshot folders and pocket-card artwork, no exported note.</p>
+      <p><strong>What survived anyway:</strong> the StartFest note was photographed and transcribed into the system on 2026-07-17, so those eleven names are in the table below. What is unreachable is any <em>other</em> Keep note, and the verbatim wording of that one.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-rbl" open>
+    <summary><h2>4. The strongest single finding: RBL publishes its bench, and it has an AI hole</h2></summary>
+    <div class="sec-body">
+      <div class="good-note">
+        <p><code>rbl.net/about-us/consulting-associates</code> is a standing <strong>Consulting Associates</strong> page listing <strong>fifteen named consultants</strong>, under RBL's own sentence: <em>"We partner with veteran thought leaders and practitioners to help solve your specific challenges."</em></p>
+        <p>That is not a bench signal inferred from a careers page. It is the exact contract shape you want, published by the firm, with a public roster you could be added to.</p>
+      </div>
+      <p>Two more things landed in the same pass:</p>
+      <ul>
+        <li><strong>Mark Nyman is on that roster</strong>, listed by RBL as <em>Consultant</em>. His identity is now confirmed from RBL's own site, not only from the 2013 to 2014 email trail.</li>
+        <li><strong>RBL shows no AI capability in its US practice.</strong> The only AI offering on the site is a Latin-America-only <em>"Capacidades Humanas + IA"</em> line. The most respected HR-consulting firm in the field, a published associate model, and no US AI offering. That is the gap, and you already have four warm humans inside it.</li>
+      </ul>
+      <p>New name surfaced: <strong>Mike Panowyk, Managing Director, North America</strong>. Firm contact is <code>rblmail@rbl.net</code>. Go through Joe or Norm first. He is the structural fallback, not the opener.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-table" open>
+    <summary><h2>5. The ranked table: 25 named people</h2></summary>
+    <div class="sec-body">
+      <p>Rank is warmth times fit. Warmth beats prestige throughout. <strong>Direct</strong> = a live email or message trail. <strong>Met</strong> = in person at StartFest 2026. <strong>Connection</strong> = in your LinkedIn connections, no recorded conversation.</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>#</th><th>Person</th><th>Firm</th><th>What the firm does</th><th>Known?</th><th>Channel</th><th>Why a contractor, not a hire</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>Joe Hanson</strong></td><td>The RBL Group, Provo</td><td>HR and leadership consulting, the Dave Ulrich firm</td><td><strong>Direct.</strong> 2025-06-13: <em>"Excited to helping you move forward."</em> Then 2025-07-15: <em>"Would you like to try and connect with Michael Phillips, Jessica or Erin? I can connect you with them if desired."</em> <strong>You said yes and never followed up. Still open.</strong></td><td><code>jhanson@rbl.net</code></td><td>RBL already publishes an associate roster, so the contract shape exists. He personally offered to open doors and got no reply, which makes a warm re-approach cheap for both sides.</td></tr>
+          <tr><td>2</td><td><strong>Norm Smallwood</strong></td><td>The RBL Group, Provo</td><td>Co-founder</td><td><strong>Direct.</strong> 2025-12-11: <em>"I mentioned to Dave your situation and he asked if you could send your resume. He hears of opportunities."</em> Also convened a 2025-05-26 Zoom titled <em>"Discuss potential role and interests."</em></td><td><code>nsmallwood@rbl.net</code></td><td>He already spent his own credibility trying to place you in a role. Billable capacity is easier for him to say yes to than finding a headcount.</td></tr>
+          <tr><td>3</td><td><strong>Joe Grover</strong></td><td><strong>Amplēo</strong>, Utah County</td><td><strong>"Fractional Finance, Marketing &amp; HR for Growing Companies."</strong> His own bio page: <em>"Joe Grover is the Chief Growth Officer of Ampleo… a fractional CMO and marketing advisor."</em></td><td><strong>Met.</strong> A CMO using AI. Your note says probably a Miner, both at SoJo Middle, similar age. Shared-school opener available.</td><td><code>ampleo.com/contact</code> or <code>linkedin.com/in/joelgrover/</code></td><td><strong>Best structural fit found anywhere.</strong> Amplēo's whole business model IS a fractional bench, it already sells fractional HR, and it has <strong>no fractional AI line</strong>. He is Chief Growth Officer, so adding a service line is literally his job.</td></tr>
+          <tr><td>4</td><td><strong>Jacob Knight</strong></td><td>JWAL-Software</td><td>Firm unverifiable</td><td><strong>Met</strong>, and he initiated. Possible trainer work per your own note.</td><td>LinkedIn DM</td><td>Training and delivery work is bursty. A contractor absorbs a spike without a permanent seat. See the caveat in section 2.</td></tr>
+          <tr><td>5</td><td><strong>Landon Essig</strong></td><td><strong>CoDev</strong>, Lehi</td><td><em>"CoDev builds global offshore teams in software development, support operations, and marketing."</em></td><td><strong>Met.</strong> Demoed Claude in Chrome working his Gmail in the room.</td><td><code>contact@codev.com</code>, 801-331-8770</td><td>Their homepage sells <strong>"Individual Experts: deeply skilled professionals for mid- to long-term roles who integrate seamlessly into your team."</strong> That is the contract, printed on the site. They also run a <em>CoDev Go-to-Market: AI-powered offshore teams</em> line.</td></tr>
+          <tr><td>6</td><td><strong>Kristen Hansen</strong></td><td><strong>Leland</strong>, Lehi</td><td>Coaching marketplace that now also runs <strong>"Recruit AI-native talent: proven AI-native operators for your team, sourced and vetted on real builds"</strong> and <strong>"AI Services: Leland scopes, builds, and deploys AI systems and workflows."</strong></td><td><strong>Connect target</strong> from the StartFest schedule, weaker than a captured lead. Confirmed as Head of AI Education, and a 2025 Women Tech Council Rising Star.</td><td><code>partnerships@joinleland.com</code></td><td>Highest pure fit on the list. A firm that literally places AI-native operators onto client teams and separately sells AI build work. <strong>Note: "Leland" is normally a voice-transcription slip in our notes. Here it is a real company, confirmed from a loaded article. Do not auto-correct it this time.</strong></td></tr>
+          <tr><td>7</td><td><strong>Andrea Stone, SHRM-SCP</strong></td><td><strong>Ascenta HR</strong>, Founder</td><td><em>"the unified system that develops employees, guides managers, and standardizes how people work happens across teams and locations"</em>, with an assistive-intelligence layer</td><td><strong>Met</strong>, and <strong>she messaged you</strong> on LinkedIn 2026-06-23 23:55 UTC. Whether you replied is not visible in any channel readable from here, so treat it as open, not as dropped.</td><td><code>linkedin.com/in/andrea-stone-shrm-scp-650b9231b</code></td><td><strong>Downgraded on verification, honestly.</strong> Ascenta HR is a solo-founder, pre-launch product in founding-pilot stage. No bench to join today. She stays high as a peer at the identical HR-plus-AI intersection who reached out first, but the near-term shape is collaboration, not billable work.</td></tr>
+          <tr><td>8</td><td><strong>Dave Ulrich</strong></td><td>The RBL Group</td><td>Partner. The best-known name in the HR field.</td><td><strong>Direct.</strong> 2025-12-11, to you: <em>"I sometimes hear of opportunities and will pass along your resume and name. As an outside chance, do you think we could invite GE Power to the HRLP offering in Fall 2026"</em></td><td><code>dulrich@rbl.net</code></td><td><strong>He asked you for something and got no recorded answer.</strong> Reciprocity already points the right way. Go through Joe or Norm, and answer the GE Power question first.</td></tr>
+          <tr><td>9</td><td><strong>Mark Nyman</strong></td><td>The RBL Group</td><td>Listed on RBL's own associates page as <em>Consultant</em></td><td><strong>Direct</strong>, historical. <code>mnyman@rbl.net</code> on RBL distribution lists 2013 to 2014, plus a 2014 BYU guest-lecture note naming him, sent to <code>boubacar@byu.net</code>.</td><td><code>mnyman@rbl.net</code></td><td>Same associate model. Oldest tie of the four. <strong>Nyman with an N is NOT Mark Lyman with an L.</strong> Lyman is do-not-contact. Nyman is not. Do not let a homophone merge them.</td></tr>
+          <tr><td>10</td><td><strong>Gabe Larsen</strong></td><td><strong>Atonom</strong></td><td><em>"Hire Your First AI Employee."</em> AI agent product for support and ops.</td><td><strong>Met.</strong> Second route in: <strong>Clint Carlos, Head of Enterprise and Partner Ecosystem at Atonom</strong>, separately a LinkedIn connection.</td><td><code>atonom.ai/partners</code> apply page</td><td>Their partner page: <em>"Agencies, AI architects, and technology partners delivering Cloud Employees in the real world,"</em> with a Become a Partner application. A real implementation-partner channel. His CRO title is PARTIAL, corroborated by four secondary sources but no Atonom-owned page. CEO is David Elkington.</td></tr>
+          <tr><td>11</td><td><strong>Brendan Langen</strong></td><td>Human Agency</td><td><em>"partners with organizations to explore, design, and implement AI strategies that are secure, scalable, and human-centered"</em></td><td><strong>Connection</strong>, and the exact person the Chief of Staff role reported to. You applied 2026-03-04 and again 2026-04-15 and prepped hard in April. It did not land.</td><td>LinkedIn DM</td><td>The role is <strong>still open and being reposted</strong>, so the seat was not filled by someone else. They already hire Canadian staff as independent contractors. <strong>Read the flag below before spending a message here.</strong></td></tr>
+          <tr><td>12</td><td><strong>Michael Phillips</strong></td><td>The RBL Group</td><td>Role not established</td><td><strong>Warm by referral only.</strong> Named by Joe Hanson in the 2025-07-15 intro offer.</td><td>Via Joe Hanson</td><td>Reachable through an intro already offered and never used. Do not approach cold. Ask Joe.</td></tr>
+          <tr><td>13</td><td><strong>"Jessica" and "Erin"</strong></td><td>The RBL Group</td><td>Surnames and roles <strong>not established</strong></td><td><strong>Warm by referral only.</strong> Same sentence from Joe Hanson.</td><td>Via Joe Hanson</td><td><strong>Recorded honestly: first names only. I could not establish surnames or roles and will not guess.</strong> Joe supplies both when he makes the intro.</td></tr>
+          <tr><td>14</td><td><strong>Jon Cheney</strong></td><td>GenAIPI (General AI Proficiency Institute)</td><td>AI leadership training and enterprise AI-proficiency assessments. Confirmed <strong>Founder &amp; CEO</strong> on <code>genaipi.org/about</code>, founded early 2025.</td><td><strong>Met.</strong> Accepted your invitation 2026-06-24. You asked them on 2026-06-26 about coming to work with them to learn HR and AI in context.</td><td><code>info@genaipi.org</code></td><td>A training institute scales through instructors, the classic contractor shape. Their contact page lists <em>"Sales &amp; Partnerships: enterprise solutions, bulk licensing, and strategic partnerships."</em> Also the learn-hands-on thread, running the other direction.</td></tr>
+          <tr><td>15</td><td><strong>Ed Harrington</strong></td><td>Alpine Talent Group, Utah</td><td>Retained executive search</td><td><strong>Connection.</strong> Export title: <strong>Managing Principal</strong>. Utah geo-confirmed.</td><td>LinkedIn DM</td><td>Search firms hit assignments they cannot staff and routinely subcontract. Also a referral node into every client he has placed into.</td></tr>
+          <tr><td>16</td><td><strong>Alf Carlesäter</strong></td><td>GROW HR Consulting</td><td>Export title: <strong>Founder, Fractional CHRO</strong></td><td><strong>Connection.</strong> One of only 97 rows in the whole export carrying an email address.</td><td>Email, in the export</td><td>A solo fractional CHRO is capacity-bound by definition. Subcontracting the AI build is the only way he sells it at all.</td></tr>
+          <tr><td>17</td><td><strong>Michael Malin</strong></td><td><strong>Model Forge AI</strong></td><td><em>"AI Supply Chain Decision Software,"</em> and the contact page reads <em>"We Solve Big Problems with AI."</em> Confirmed Founder.</td><td><strong>Met.</strong></td><td><code>info@modelforge.ai</code>, (435) 222-2876. Contact page has a <em>"30 min with Michael"</em> booking widget.</td><td>Already sells AI, so the fit is overflow delivery capacity rather than a missing capability. Founder-led shop, no formal bench found.</td></tr>
+          <tr><td>18</td><td><strong>Laura Kerns, SPHR</strong></td><td>Laura Kerns Consulting LLC</td><td>Export title: <strong>Founder &amp; Fractional Head of People</strong></td><td><strong>Connection.</strong></td><td>LinkedIn DM</td><td>Solo operator, no build capability, client relationships already held.</td></tr>
+          <tr><td>19</td><td><strong>Jeremy Webb</strong></td><td>Consult Dean</td><td>Export title: <strong>Principal Consultant</strong></td><td><strong>Connection</strong>, carries an email in the export.</td><td>Email</td><td>Principal at a consultancy is the buying seat for bench capacity, not just a referral seat.</td></tr>
+          <tr><td>20</td><td><strong>Jordan Gunderson</strong></td><td>Izeni, Provo</td><td><em>"Practical AI and workflow automation. Find the bottlenecks, automate the busywork."</em> Services are AI Workflow Audit, AI Automation Sprint, Custom AI Tools.</td><td><strong>Met.</strong></td><td><code>izeni.com/free-consultation/</code></td><td>Small automation shop that could plausibly bring on sprint capacity. Title PARTIAL: "President" comes from a data aggregator only, no Izeni team page exists.</td></tr>
+          <tr><td>21</td><td><strong>Teneal Taylor</strong></td><td>Chariot Consulting LLC</td><td>Export title: <strong>Founder &amp; Principal Consultant</strong></td><td><strong>Connection.</strong></td><td>LinkedIn DM</td><td>Every engagement she wins beyond her own hours needs someone.</td></tr>
+          <tr><td>22</td><td><strong>Shaun Muir</strong></td><td>Kevin Edward Executive Search</td><td>Export title: <strong>Managing Director</strong></td><td><strong>Connection.</strong></td><td>LinkedIn DM</td><td>Same subcontract logic as row 15, without the Utah geography.</td></tr>
+          <tr><td>23</td><td><strong>Matthew Gluckman</strong></td><td>Think WorkWell</td><td>Export title: <strong>Founder</strong></td><td><strong>Connection.</strong></td><td>LinkedIn DM</td><td>Small people-side firm. Founder is the decision-maker and the delivery constraint at once.</td></tr>
+          <tr><td>24</td><td><strong>Diana Daiub</strong></td><td>:Dynamics</td><td>Export title: <strong>Founder, Fractional COO</strong></td><td><strong>Connection.</strong></td><td>LinkedIn DM</td><td>Fractional COO work is operations-heavy and automation-hungry, and she cannot build it herself.</td></tr>
+          <tr><td>25</td><td><strong>Galina Gelfand</strong></td><td>Digital Human Resources GGTL</td><td>Export title: <strong>Managing Director</strong></td><td><strong>Connection.</strong></td><td>LinkedIn DM</td><td>The firm name states the intersection. Managing Director is the seat that can sign a contractor.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="flag">
+        <h3>Flag on Human Agency, raised rather than buried</h3>
+        <p>Verification could not find a corporate website for this firm under any plausible domain. What it did find: a live Greenhouse board carrying roughly <strong>150 open requisitions</strong> across <strong>14 listed offices</strong>, <strong>zero named humans</strong> anywhere, and no locatable LinkedIn company page. <code>humanagency.co</code> is an unrelated UK app studio. <code>humanagency.io</code> is an unrelated developer tool. A Substack titled <em>Human Agency</em> has zero posts and no evidence tying it to the firm.</p>
+        <p>Not an accusation. Could be stealth or a recent rebrand. But 150 reqs and 14 offices with no website and no named people is not a normal footprint, and you applied there twice. <strong>Keep Brendan Langen on the list because the connection and the role are real, but treat it as unverified until you can see who is behind it.</strong> You can settle it in thirty seconds by opening his profile, which the research tooling cannot do.</p>
+      </div>
+      <h3>Excluded, and why</h3>
+      <ul>
+        <li><strong>Do-not-contact, absolute:</strong> Brandon Orton, Luke Pierce, Joe Nabrotzky, Mark Lyman, Devin Bray, Jordan Phoenix, and the standing permanent ban. Luke Pierce surfaces in the export as a plausible-looking bench fit. Still excluded.</li>
+        <li><strong>Utah SBDC:</strong> blackout until the August 13 call.</li>
+        <li><strong>Owned by the existing warm-list plan:</strong> Chris Farnsworth, PJ Schwartz, Kari Gardner, Aarif Aziz (messaged July 2); Khalique Zaman, Monique Williams, Lindy Mansfield (on hold); Sean Morrison, Rachel Weiss, Trent Savage, Douglas Bowen, Cheikh Ndiaye, Tim Young (the July 6 batch). <strong>PJ Schwartz at BambooHR is the painful one</strong>, because BambooHR runs a real implementation-partner ecosystem and he is a Partner Account Manager. Reopen him in that plan, not this one.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-cold">
+    <summary><h2>6. Cold Utah firms, every page loaded and checked</h2></summary>
+    <div class="sec-body">
+      <p>No prior relationship on any of these, so they rank below every warm row. All confirmed by loading the firm's own site.</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Firm</th><th>City</th><th>What they do</th><th>Named human, exact title</th><th>Contact</th><th>Fit note</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Solution Services HR</strong></td><td>American Fork</td><td>HR outsourcing for small businesses: payroll, benefits, compliance, risk</td><td><strong>Shane William, Founder &amp; CEO</strong></td><td><code>info@ssihr.com</code>, 801-756-1600</td><td>Named founder, PEO client base, <strong>no AI anywhere on the site.</strong> Best cold row here.</td></tr>
+          <tr><td><strong>Elle Mathis &amp; Co</strong></td><td>South Jordan</td><td>Fractional HR: builds and installs HR infrastructure for founders, CEOs and PE-backed companies</td><td><strong>Elle Mathis, Founder</strong></td><td><code>info@ellemathis.com</code>, 801-432-0438</td><td>Solo fractional operator, capacity-bound by definition. Has an AI lead-magnet tool, no AI in delivery.</td></tr>
+          <tr><td><strong>IsoTalent</strong></td><td>South Jordan</td><td>Recruiting technology: sourcing, screening, full-cycle recruiting</td><td><strong>Paul Ahlstrom, CEO &amp; Co-founder</strong>; <strong>Robb Lifferth, COO &amp; Co-founder</strong>; <strong>Lane Losee, VP of Recruiting Operations</strong></td><td>Form at <code>/contact-us</code>, 833-476-4473</td><td>Deepest named leadership of the cold set. Product-shaped, so more likely to want build help than advisory help.</td></tr>
+          <tr><td><strong>WTA Inc.</strong></td><td>Utah</td><td>PEO: payroll, benefits, HR management for small business owners</td><td><strong>Jon Barlow, Chief Operations Officer</strong></td><td><code>info@wtapeo.com</code>, 801-262-9032</td><td>COO is the right seat for an operations-automation pitch. No AI on the site.</td></tr>
+          <tr><td><strong>Insight for Leadership</strong></td><td>Utah</td><td>ICF-certified executive and team coaching, leadership development</td><td><strong>Eric Hicks, PhD, PCC, Founder</strong>; <strong>Christina Hicks, MEd, Founder</strong></td><td><code>ehicks@insightforleadership.com</code>, 801-623-8241</td><td>Two-person practice. Small, but a named founder answering his own email is a low-friction first conversation.</td></tr>
+          <tr><td><strong>PrincePerelson &amp; Associates</strong></td><td>Salt Lake City</td><td>Executive search, permanent and contract placement, temporary staffing</td><td><strong>NO NAMED HUMAN ON SITE</strong></td><td><code>info@perelson.com</code>, 801-532-1000</td><td>Strongest structural fit of any cold row: contract placement is literally the business model. Weakest entry point: nobody to address.</td></tr>
+          <tr><td><strong>Pathway Group</strong></td><td>Salt Lake City</td><td>Organizational strategy and nonprofit consulting: fundraising, executive search, governance</td><td><strong>Dave Jones, Founder &amp; Strategic Advisor</strong>; <strong>Phyllis Hockett, Founder &amp; Strategic Advisor</strong>, plus roughly twenty named Advisors with individual emails</td><td>Individual staff emails</td><td>Largest published associate roster found anywhere in Utah. Client base is nonprofits, so budget is the real question, not structure.</td></tr>
+          <tr><td><strong>Helpside</strong></td><td>Lindon</td><td>PEO: payroll, benefits, HR and risk for 20 to 150 employee companies across the Intermountain West</td><td><strong>NO NAMED HUMAN ON SITE</strong></td><td>800-748-5102</td><td>Right client base, no door. Needs a name before it is worth a message.</td></tr>
+          <tr><td><strong>Sunstone HR</strong></td><td>Utah</td><td>On-demand and fractional HR: compliance, recruiting, employee relations, interim HR</td><td><strong>NO NAMED HUMAN ON SITE</strong></td><td><code>info@sunstonehr.com</code></td><td>Same as above.</td></tr>
+          <tr><td><strong>Arbinger Institute</strong></td><td>Farmington</td><td>Global leadership development, Outward Mindset culture and behavior change</td><td><strong>NO NAMED HUMAN ON SITE</strong></td><td><code>go.arbinger.com</code> strategy-session form</td><td>Says its materials are built by <em>"a collective group of experts with various backgrounds,"</em> a soft bench hint and nothing more.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>Also verified and named on the technology side: <strong>Atlas Automation</strong> (Lehi), <strong>Automation Consultants LLC</strong> (Salt Lake City), <strong>EdgeVantage AI</strong> (Layton), <strong>Qual IT</strong> (Murray), <strong>Executech</strong>, <strong>CMP</strong> (Logan), <strong>Haynie &amp; Company</strong> (Salt Lake City), <strong>NOW CFO</strong>. These already sell automation, so the pitch is overflow capacity rather than a missing capability, which is a weaker story than the no-AI HR firms above.</p>
+      <p><strong>Honest empty category.</strong> Utah digital and ops-consulting agencies produced nothing usable. Every candidate turned out to be headquartered outside Utah on page load: Tampa, Zeeland Michigan, Arizona. Reported as empty rather than padded with out-of-state firms.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-networks">
+    <summary><h2>7. Consultant networks, and one correction worth having</h2></summary>
+    <div class="sec-body">
+      <p>Checked because they look like an obvious shortcut onto somebody else's bench. One of them is not.</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Network</th><th>Stated eligibility, verbatim from their own page</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Umbrex</strong></td><td><em>"Umbrex is primarily for former MBB consultants."</em> Also <em>"90% of our consultants are alums of top tier consulting firms."</em></td><td><strong>Does not fit. Do not apply.</strong> You are not McKinsey, Bain or BCG. No fee, but the gate is explicit.</td></tr>
+          <tr><td><strong>Veritux</strong>, Umbrex's own sister brand</td><td><em>"open to independent professionals who have prior experience at a global consulting firm"</em></td><td><strong>Stretch, not a clean fit.</strong> In-house Fortune 100 HR is not consulting-firm experience. Their words, not an inference.</td></tr>
+          <tr><td><strong>Catalant</strong></td><td>Describes its pool as spanning <em>"Fortune 500 companies and elite consulting firms,"</em> average over twenty years of experience</td><td><strong>Best fit of the four. Apply here first.</strong> Fortune 500 in-house experience is named as qualifying.</td></tr>
+          <tr><td><strong>Business Talent Group</strong></td><td><em>"Do you have the expertise and skills to meet our clients' needs?"</em> No firm-pedigree gate printed</td><td><strong>Worth applying.</strong> Softest stated bar found.</td></tr>
+          <tr><td><strong>MBO Partners</strong></td><td>Pool described as including <em>"25K Consultants with Big 4 firm experience"</em></td><td><strong>Worth applying.</strong> Big 4 is a lower bar than MBB, and no screening criteria are printed.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>A background lane, not a substitute for the named warm rows. Applying to a marketplace is a form submission. Rows 1 through 7 are relationships.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-openers" open>
+    <summary><h2>8. The openers, drafted and scored</h2></summary>
+    <div class="sec-body">
+      <p>Register throughout: <em>here is what I can carry for you</em>, never <em>let me help your business</em>. Peer-to-peer notes about capacity. Every factual anchor traces to a primary source. Voice pass run as a series, <strong>scored 92</strong>.</p>
+      <p><strong>Nothing here has been sent. You send.</strong></p>
+
+      <div class="draft">
+        <div class="who">1. Joe Hanson, The RBL Group</div>
+        <div class="route">Email to jhanson@rbl.net &middot; Subject: The intro you offered last July</div>
+<pre>Joe, last July you offered to connect me with Michael Phillips, Jessica or Erin.
+I said I would follow up and then I did not. Nobody's fault but mine.
+
+Coming back around, with a different ask than the one I had then.
+
+I am not looking for a seat at RBL. I want to be on the bench.
+
+Since we last talked I built the AI system my own practice runs on, and I use it
+every single day, which is a much harsher teacher than reading about it. Put that
+next to fifteen years in HR, most of it at GE, right in the middle of the split
+without leading it, and I can carry the parts of a client engagement that quietly
+eat your team's hours.
+
+You bring the client. I show up as your contractor at whatever RBL pays
+contractors. The work carries RBL's name, not mine.
+
+Is that offer of an intro still open?</pre>
+      </div>
+
+      <div class="draft">
+        <div class="who">2. Joe Grover, Amplēo</div>
+        <div class="route">LinkedIn DM to linkedin.com/in/joelgrover/</div>
+<pre>Joe, we met at StartFest in June. Before the business part, a question that has
+nothing to do with it. Did you go to South Jordan Middle? I think we may have
+overlapped, or come close.
+
+Now the short version of why I am writing.
+
+Ampleo sells fractional finance, fractional marketing and fractional HR. There is
+no fractional AI. That gap is the whole reason for this message.
+
+Fifteen years in HR, most of it at GE, through a corporate split I was standing in
+the middle of rather than leading. Then I built the AI system my own practice runs
+on, and I have been living in it daily since.
+
+I am not pitching Ampleo a project. I want to be one of your fractional people.
+Your client, your name, your rate. I carry several at a time, so you can point me
+at one engagement and skip the next without it being awkward.
+
+Coffee in Provo or Lehi, whichever is easier for you?</pre>
+      </div>
+
+      <div class="draft">
+        <div class="who">3. Norm Smallwood, The RBL Group</div>
+        <div class="route">Email to nsmallwood@rbl.net &middot; Subject: An update, and a different kind of ask</div>
+<pre>Norm, you and Dave went out of your way for me last December. Passing my name
+around, asking for the resume. I have not forgotten it.
+
+Here is the update. I stopped waiting for the right seat to open and started my
+own practice. I run the whole operating side of it on AI I wrote myself, the
+intake, the research, the follow-up, the reporting nobody enjoys doing.
+
+So I would rather stop being someone you keep an eye out for and start being
+useful to RBL directly.
+
+Put me on the bench. Your client, your name on the work, your standard contractor
+rate. I take the delivery pieces that burn partner hours and the AI piece nobody
+has the calendar space to build. I run a few of these at a time, so this is
+capacity you can dial up or down.
+
+Fifteen years in HR, most of it at GE, through the split. I was not leading that
+charge. I was standing in the middle of it, which taught me more.
+
+Lunch when you are next in the office?</pre>
+      </div>
+
+      <div class="draft">
+        <div class="who">4. Jacob Knight, JWAL-Software</div>
+        <div class="route">LinkedIn DM</div>
+<pre>Jacob, StartFest, June. You said you might have trainer work coming.
+
+I will admit I did a poor job that day of explaining what I actually do, so here
+it is in four lines.
+
+Fifteen years in HR, most of it at GE. Then I got tired of talking about AI and
+built the thing I actually use to run my own shop. Intake, research, follow-up,
+reporting. I am in it daily, which beats any course I could sit through.
+
+If JWAL ever needs someone to train a client team on AI that survives contact with
+a real workday, or an extra set of hands on a delivery that is running hot, I am
+available as a contractor at whatever you pay yours.
+
+Still have that work? I will come to you.</pre>
+      </div>
+
+      <div class="draft">
+        <div class="who">5. Landon Essig, CoDev</div>
+        <div class="route">LinkedIn DM, or contact@codev.com</div>
+<pre>Landon, StartFest, June. You demoed Claude working your Gmail in front of the
+room. That is the part I still remember, because everyone else that day was
+talking about AI and you just ran it.
+
+CoDev places individual experts into client teams for mid to long-term roles. I
+would like to be one of them, on the AI and automation side.
+
+Fifteen years in HR, most of it at GE. Then I built the AI system my own practice
+runs on and I use it every day, which is a harsher teacher than any course I could
+sit through.
+
+Your client, your name, your rate. I run a few at once, so you can slot me into
+one engagement and leave me out of the next.
+
+You are in Lehi. I will drive to you.</pre>
+      </div>
+
+      <h3>Two more, already drafted and voice-passed</h3>
+      <p>Ranked below the five above, both for real reasons stated in the table. Ready if you want them.</p>
+
+      <div class="draft">
+        <div class="who">Andrea Stone, Ascenta HR</div>
+        <div class="route">LinkedIn DM</div>
+<pre>Andrea, you messaged me on LinkedIn right after StartFest. Coming back to it now
+with something more useful than a hello.
+
+Out of everyone I met that week you are the only one standing in exactly the same
+spot I am. HR on one side, AI on the other, both of us trying to make the second
+one genuinely useful to the first instead of a slide in a deck.
+
+My position, plainly. Fifteen years in HR, most of it at GE. Then the back office
+of my practice became AI I built myself, and I have been living inside it since.
+What I do not have is your client base.
+
+So this is not a pitch at you. It is an offer to work behind you. If an engagement
+ever needs delivery capacity, or you sell an AI piece and would rather not build
+it yourself, I would be your subcontractor at your rate. You keep the client and
+the credit.
+
+And if the real answer is just coffee and comparing notes, I would take that too.</pre>
+      </div>
+
+      <div class="draft">
+        <div class="who">Brendan Langen, Human Agency</div>
+        <div class="route">LinkedIn DM &middot; Read the Human Agency flag in section 5 first</div>
+<pre>Brendan, I went through the Chief of Staff process on your team earlier this year
+and prepped hard for it. It did not land. I am not making a second run at it here.
+
+Different offer.
+
+In the months since, I built the AI system my own practice runs on and I use it
+daily. Behind that is fifteen years in HR, most of it at GE, including a corporate
+split I was standing in the middle of rather than leading.
+
+If Human Agency ever has more client work than bench, I would rather be your
+contractor than your candidate. Your client, your name, your rate. I keep a few
+running at once, so it is capacity you can switch on for one engagement and off
+again.
+
+Worth fifteen minutes to find out whether that is ever useful?</pre>
+      </div>
+
+      <h3>Voice scoring, as a series</h3>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Fabricated story</td><td><strong>PASS.</strong> Every anchor traces to a cited primary source.</td></tr>
+          <tr><td>Manufactured vulnerability</td><td><strong>PASS.</strong> Each self-critical line is situational and sourced, and fails the everyone-swap. <em>"I said I would follow up and then I did not"</em> is in the email thread. <em>"I did a poor job that day"</em> is your own recorded StartFest critique.</td></tr>
+          <tr><td>Earned insight and connection bridge</td><td><strong>PASS.</strong> The bridge in all seven is fifteen years inside a Fortune 100 HR function set against a system you built and run yourself. Each note is additionally anchored to a specific shared event.</td></tr>
+          <tr><td>Halbert reject anti-axes</td><td><strong>PASS.</strong> No urgency, no multipliers, no fake proof, no P.S. stack, no credential signature.</td></tr>
+          <tr><td>Halbert keep axes</td><td><strong>PASS.</strong> One reader, one ask, specific, emotional before logical.</td></tr>
+          <tr><td>Burstiness and anti-tell</td><td><strong>PASS.</strong> Each note carries a sentence under six words and one over twenty-five. The skeletons differ on purpose: dropped intro, shared school, gratitude then update, self-critique, a remembered demo, peer parity, rejection flipped. The offer sentence is phrased seven different ways so the series does not read as a template.</td></tr>
+          <tr><td>Hard rules</td><td>Zero em-dashes. Sentence case. First person. Never your full name. No claim you ran HR or operations or were an executive. No client claims. <strong>No single-client exclusivity anywhere.</strong></td></tr>
+          <tr><td><strong>Composite</strong></td><td><strong>92</strong></td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="flag">
+        <p><strong>One correction made during the voice pass, recorded because it matters.</strong> The Brendan Langen draft originally read <em>"never heard back either time."</em> Gmail shows two April 2026 interview-prep documents for that exact role, so you plainly did hear back. That line would have been false to the recipient's own knowledge, in the first sentence. It now reads <em>"I went through the process and prepped hard for it. It did not land."</em></p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-aug27" open>
+    <summary><h2>9. Unprompted, because it is your calendar and nobody else caught it</h2></summary>
+    <div class="sec-body">
+      <div class="flag">
+        <p><strong>Amplēo is running an AI-leadership event on 2026-08-27 at the Loveland Living Planet Aquarium, titled "NOT EVERY LEADER WILL THRIVE IN THE AI ERA."</strong> Found on their site while verifying Joe Grover.</p>
+        <p>That is <strong>the same date as your August 27 workshop</strong>, the $50 one.</p>
+      </div>
+      <p>Two things follow, and both are your call:</p>
+      <ol>
+        <li><strong>It is a scheduling and audience collision.</strong> Same night, same valley, overlapping audience of Utah leaders worried about AI. Worth knowing before you market that date any harder.</li>
+        <li><strong>It is also why the Joe Grover opener does not mention it.</strong> Writing to a man about his own event while quietly running a competing one the same evening is a bad look if he finds out later, and he would. The opener stays on the fractional-AI gap, which is the real point anyway.</li>
+      </ol>
+      <p><strong>The third option nobody has considered: ask to be part of theirs.</strong> A firm running an event about leaders in the AI era, with no fractional AI practice, is a firm that may need someone on that stage. That is a different message from the one drafted, and it should not go out the same week as the bench ask.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-thin" open>
+    <summary><h2>10. What is thin, and the one thing to paste</h2></summary>
+    <div class="sec-body">
+      <p>Recorded rather than smoothed over.</p>
+      <ul>
+        <li><strong>Jessica and Erin at RBL: first names only.</strong> No surname, no role. Joe Hanson supplies both.</li>
+        <li><strong>Michael Phillips at RBL: role not established.</strong></li>
+        <li><strong>Jacob Knight: real person, unverifiable firm.</strong> CEO title is primary from the LinkedIn notification, but JWAL-Software has no findable web presence and an independent search returned only unrelated people. He is row 4 and one of the five openers, so this matters.</li>
+        <li><strong>Ashton Jessup: COULD NOT ESTABLISH.</strong> Two different LinkedIn profiles under that name, neither showing an employer. Deliberately not guessed between them.</li>
+        <li><strong>Brendan Langen's title</strong> comes from the LinkedIn connections export, not from any Human Agency page. See the flag in section 5.</li>
+        <li><strong>Gabe Larsen at Atonom: PARTIAL.</strong> Four secondary sources agree on Chief Revenue Officer, but Atonom publishes no team page.</li>
+        <li><strong>Jordan Gunderson at Izeni: PARTIAL.</strong> "President" from a data aggregator only. The firm is real.</li>
+        <li><strong>Hugo Acosta: PARTIAL.</strong> His own site confirms sixteen years in design and building and a UVU construction-management degree, but never names Nichols Naylor. That link is snippet-level. Contact <code>hugo@techdraftaid.com</code>.</li>
+        <li><strong>Kevin at GENAIPI: first name only.</strong></li>
+        <li><strong>Zack Oates: confirmed Founder and CEO of Ovation</strong>, an AI-first guest-experience platform for restaurants. Real, but a SaaS product with no services bench. Not a fit, recorded so nobody re-researches him.</li>
+        <li><strong>Taha Salahuddin Abbasi, Technical Founder and CEO, AskFlorence.</strong> Confirmed from a LinkedIn invitation. Not a bench fit.</li>
+      </ul>
+
+      <h3>The one thing to paste</h3>
+<pre>Open Google Keep, find the note titled StartFEST 2026, select all, paste it in.
+Also paste any note where you wrote down someone asking you about working with or
+for them.</pre>
+      <p>That closes section 2 definitively and unlocks whatever else Keep is holding. It cannot be read programmatically, for the reasons proved in section 3.</p>
+
+      <h3>The one file to re-supply</h3>
+      <p><code>Connections.csv</code> from the LinkedIn data export. Only the ranked summary tables are in the system, roughly 150 rows. The full 4,346-row dataset is not. Re-supplying it allows a keyword filter across every row on company and title for <em>consult, advisory, partners, PEO, staffing, talent, search, MSP, managed services, CPA, accounting, fractional, agency, integrator</em>. On the density visible in the current slice, that is an estimated <strong>130 to 200 additional firm-side connections</strong>, a meaningful share of them principals and founders. <strong>The highest-leverage missing input in this whole exercise.</strong></p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Built 2026-08-11. Primary sources: Gmail RBL threads (2025-05 to 2025-12), Human Agency Greenhouse confirmations (2026-03-04, 2026-04-15), StartFest LinkedIn notifications (2026-06-23/24), the StartFest captured-leads note, the Mark Nyman disambiguation record, the ranked LinkedIn warm list and its per-contact decisions, a live Keep API probe against both VPS OAuth credential sets, and roughly forty firm websites loaded and read directly.
+    <br><br><strong>Nothing was sent. Nobody was contacted. No email, no DM, no form.</strong>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
