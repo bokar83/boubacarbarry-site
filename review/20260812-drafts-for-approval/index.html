@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -108,6 +108,42 @@
   .btn:hover{filter:brightness(1.08);}
   .copy-flash{color:var(--good); font-size:.8rem;}
 
+  /* ---- approve / reject / notes ---- */
+  .approve-unit{transition:border-color .15s ease, box-shadow .15s ease;}
+  .approve-unit.is-approved{border-color:var(--good); box-shadow:0 0 0 1px var(--good) inset;}
+  .approve-unit.is-rejected{border-color:var(--bad); box-shadow:0 0 0 1px var(--bad) inset;}
+  .notes-row{margin:10px 0 0;}
+  .notes-label{display:block; color:var(--text-dim); font-size:.78rem; margin:0 0 4px;}
+  .notes-box{
+    width:100%; max-width:100%; background:#11141b; color:var(--text);
+    border:1px solid var(--border); border-radius:8px; padding:9px 11px;
+    font-family:inherit; font-size:.85rem; line-height:1.5; resize:vertical;
+  }
+  .notes-box:focus{outline:2px solid var(--accent); outline-offset:-2px;}
+  .btn-decide{
+    cursor:pointer; background:transparent; border-radius:8px; padding:8px 14px;
+    font-size:.84rem; font-weight:650; min-height:38px;
+  }
+  .btn-approve{border:1.5px solid var(--good); color:var(--good);}
+  .btn-approve:hover{background:rgba(127,224,184,0.12);}
+  .btn-approve[aria-pressed="true"]{background:var(--good); color:#0b1017;}
+  .btn-reject{border:1.5px solid var(--bad); color:var(--bad);}
+  .btn-reject:hover{background:rgba(255,122,122,0.12);}
+  .btn-reject[aria-pressed="true"]{background:var(--bad); color:#0b1017;}
+  .decide-status{font-size:.78rem; font-weight:650; color:var(--text-dim); margin-left:2px;}
+  .decide-status.st-approved{color:var(--good);}
+  .decide-status.st-rejected{color:var(--bad);}
+
+  /* ---- copy my decisions button, sits in the sticky nav ---- */
+  .nav-copy-decisions{
+    cursor:pointer; background:var(--accent2); color:#0b1017; border:1px solid var(--accent2);
+    border-radius:999px; padding:6px 14px; font-size:.8rem; font-weight:700;
+    white-space:nowrap; min-height:32px;
+  }
+  .nav-copy-decisions:hover{filter:brightness(1.08);}
+  .nav-copy-flash{color:var(--accent2); font-size:.78rem; font-weight:600; margin-left:4px;
+    white-space:nowrap;}
+
   .dayblock{margin:0 0 22px; border-left:2px solid var(--border); padding-left:14px;}
   .dayhead{margin:0 0 10px; font-size:.86rem; letter-spacing:.06em; text-transform:uppercase;
     color:var(--accent2);}
@@ -143,11 +179,14 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-12-12:07:56 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-12-15:00:52 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 <nav class="nav-bar" id="navBar" aria-label="Section navigation">
   <div class="nav-inner">
     <span class="nav-title">Drafts, Aug 12</span>
+    <button type="button" class="nav-copy-decisions" id="copyDecisionsBtn">Copy My Decisions</button>
+    <span class="nav-copy-flash" id="copyDecisionsFlash" aria-live="polite"></span>
     <button type="button" class="nav-toggle" id="navToggle"
             aria-expanded="false" aria-controls="navLinks"
             aria-label="Toggle section navigation">&#9776;</button>
@@ -178,6 +217,7 @@
         <li><strong>Two decisions are open</strong> on the Tuesday 08-18 LinkedIn post, the cold email line and the Sandy line. Safe defaults are shown and they ship if you say nothing.</li>
         <li><strong>Sunday 08-16 is dark on purpose.</strong> Nothing goes out that day.</li>
         <li><strong>You can edit any block in place before copying it.</strong> Those edits are local only and are not saved anywhere, so copy your version out before you leave the page.</li>
+        <li><strong>Every item has Approve and Reject buttons and a notes field.</strong> Mark each one, add a note if you want, then click Copy My Decisions at the top and paste the result into chat. That is the only way any of it reaches the team.</li>
         <li><strong>Nothing has been sent or posted.</strong> Approvals come back through chat.</li>
       </ul>
     </div>
@@ -188,8 +228,10 @@
     <div class="sec-body">
 
       <ul>
-        <li><strong>Edits here are local only.</strong> This is a static page with no backend. Nothing you type is saved, not on this device and not anywhere else. Refreshing or leaving the page loses it. Edit, then hit Copy and paste the edited version where it is going, or back into chat.</li>
-        <li><strong>The status marker is a visual cue, not a record.</strong> Every item shows "Awaiting approval" as a label. Clicking nothing changes it and nothing on this page writes your decision anywhere. Approvals still come back through chat.</li>
+        <li><strong>Edits, approvals, rejections and notes are all local only.</strong> This is a static page with no backend. Nothing you click or type is saved, not on this device and not anywhere else. Refreshing or leaving the page loses all of it.</li>
+        <li><strong>Approve and Reject are per item.</strong> Click one to mark it, click the other to change your mind. Only one can be active at a time and the item's border changes color so the state is visible at a glance.</li>
+        <li><strong>The notes box under each item is for you.</strong> Type what should change, or why you rejected it. It is plain text, nothing formats it.</li>
+        <li><strong>Copy My Decisions, top of the page, is the only export.</strong> It builds a plain-text summary of every item's current state and its notes, copies that to your clipboard, and that is what you paste into chat. Nothing on this page reaches anyone until you do that.</li>
         <li><strong>Copy puts the block on your clipboard</strong> exactly as it reads in the box at that moment, including your edits.</li>
         <li><strong>Reset to original</strong> puts a block back to the approved wording if an edit goes sideways.</li>
         <li><strong>Nothing here has been sent or posted.</strong> This page is the only place this copy lives outside chat.</li>
@@ -200,7 +242,7 @@
     <summary><h2>Joe Hanson reactivation email</h2></summary>
     <div class="sec-body">
 
-      <article class="card" id="card1">
+      <article class="card approve-unit" id="card1" data-approve-label="Joe Hanson">
         <div class="card-head">
           <h3>Joe Hanson</h3>
           <span class="card-meta">Email, fresh thread</span>
@@ -218,7 +260,14 @@ I want real time with you, face to face, not over email, to talk about where I a
 I would drive to Provo for this. What does your calendar look like over the next few weeks?
 
 Boubacar</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card1">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card1" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
@@ -230,7 +279,7 @@ Boubacar</textarea>
     <summary><h2>Startfest workshop invites, four people</h2></summary>
     <div class="sec-body">
 
-      <article class="card" id="card2">
+      <article class="card approve-unit" id="card2" data-approve-label="Taha">
         <div class="card-head">
           <h3>Taha</h3>
           <span class="card-meta">LinkedIn or Silicon Slopes, no confirmed email</span>
@@ -244,14 +293,21 @@ Separate thing: I&#x27;m running a session Wednesday August 19, 11 to noon Mount
 catalystworks.consulting/online/
 
 Would be good to have you there if the timing works, even just to compare notes on where AskFlorence is headed.</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card2">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card2" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
         </div>
       </article>
 
-      <article class="card" id="card3">
+      <article class="card approve-unit" id="card3" data-approve-label="Andrea Stone">
         <div class="card-head">
           <h3>Andrea Stone</h3>
           <span class="card-meta">LinkedIn</span>
@@ -265,14 +321,21 @@ I&#x27;m running something August 19, Wednesday, 11 to noon Mountain, online. Pe
 catalystworks.consulting/online/
 
 No pressure, just wanted you to know it exists. You&#x27;re one of the few people I&#x27;ve met who sits at that exact intersection.</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card3">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card3" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
         </div>
       </article>
 
-      <article class="card" id="card4">
+      <article class="card approve-unit" id="card4" data-approve-label="Ashton Jessup">
         <div class="card-head">
           <h3>Ashton Jessup</h3>
           <span class="card-meta">Email</span>
@@ -286,14 +349,21 @@ In the meantime, I&#x27;m running an hour on August 19, Wednesday, 11 to noon Mo
 catalystworks.consulting/online/
 
 Given what you&#x27;re already running weekly, half of this will be familiar. Curious what you&#x27;d change about it if you sat in.</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card4">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card4" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
         </div>
       </article>
 
-      <article class="card" id="card5">
+      <article class="card approve-unit" id="card5" data-approve-label="Zack Oates">
         <div class="card-head">
           <h3>Zack Oates</h3>
           <span class="card-meta">Email</span>
@@ -307,7 +377,14 @@ Been a while. I&#x27;m running a small session August 19, Wednesday, 11 to noon 
 catalystworks.consulting/online/
 
 Mostly just wanted to put it in front of you. If anyone from your world would get something out of it, I&#x27;ll take the intro too.</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card5">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card5" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
@@ -322,7 +399,7 @@ Mostly just wanted to put it in front of you. If anyone from your world would ge
       <div class="dayblock">
         <h3 class="dayhead">Wed 08-12</h3>
         
-      <article class="card" id="card6">
+      <article class="card approve-unit" id="card6" data-approve-label="Wed 08-12 · LinkedIn">
         <div class="card-head">
           <h3>Wed 08-12 · LinkedIn</h3>
           <span class="card-meta">LinkedIn, card_a.png</span>
@@ -346,13 +423,20 @@ I ran the in person version in Sandy on July 30. People came, built it in the ro
 Wednesday August 19, eleven in the morning Mountain. Sixty minutes, and you stop starting from zero.
 
 catalystworks.consulting/w/online-li</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card6">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card6" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
         </div>
       </article>
-      <article class="card" id="card7">
+      <article class="card approve-unit" id="card7" data-approve-label="Wed 08-12 · X">
         <div class="card-head">
           <h3>Wed 08-12 · X</h3>
           <span class="card-meta">X</span>
@@ -366,7 +450,14 @@ Then it suggested the thing you already tried and killed, because you never told
 One text file fixes that. I built mine first. We build yours Aug 19, 11am MT, 60 minutes.
 
 catalystworks.consulting/w/online-x</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card7">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card7" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
@@ -377,7 +468,7 @@ catalystworks.consulting/w/online-x</textarea>
       <div class="dayblock">
         <h3 class="dayhead">Thu 08-13</h3>
         
-      <article class="card" id="card8">
+      <article class="card approve-unit" id="card8" data-approve-label="Thu 08-13 · LinkedIn">
         <div class="card-head">
           <h3>Thu 08-13 · LinkedIn</h3>
           <span class="card-meta">LinkedIn, card_b.png</span>
@@ -397,13 +488,20 @@ I built mine before I ever ran a session about it. It is still a plain text file
 You leave owning it. That is Wednesday August 19 at eleven in the morning Mountain, sixty minutes, online.
 
 catalystworks.consulting/w/online-li</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card8">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card8" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
         </div>
       </article>
-      <article class="card" id="card9">
+      <article class="card approve-unit" id="card9" data-approve-label="Thu 08-13 · X">
         <div class="card-head">
           <h3>Thu 08-13 · X</h3>
           <span class="card-meta">X</span>
@@ -417,7 +515,14 @@ What we build is a text file. What you sell, who buys it, what you charge, what 
 Nothing to renew. You own it. Aug 19, 11am MT.
 
 catalystworks.consulting/w/online-x</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card9">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card9" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
@@ -428,7 +533,7 @@ catalystworks.consulting/w/online-x</textarea>
       <div class="dayblock">
         <h3 class="dayhead">Fri 08-14</h3>
         
-      <article class="card" id="card10">
+      <article class="card approve-unit" id="card10" data-approve-label="Fri 08-14 · LinkedIn">
         <div class="card-head">
           <h3>Fri 08-14 · LinkedIn</h3>
           <span class="card-meta">LinkedIn</span>
@@ -448,13 +553,20 @@ I am one of them, and I build these things for my own week first. That is the on
 If that is you, the next one is Wednesday August 19 at eleven in the morning Mountain. Sixty minutes online, you build one thing, and you keep it.
 
 catalystworks.consulting/w/online-li</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card10">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card10" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
         </div>
       </article>
-      <article class="card" id="card11">
+      <article class="card approve-unit" id="card11" data-approve-label="Fri 08-14 · X">
         <div class="card-head">
           <h3>Fri 08-14 · X</h3>
           <span class="card-meta">X</span>
@@ -468,7 +580,14 @@ Twenty people, a payroll to clear Friday, a phone you still answer. You want the
 Aug 19, 11am MT, 60 minutes.
 
 catalystworks.consulting/w/online-x</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card11">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card11" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
@@ -479,7 +598,7 @@ catalystworks.consulting/w/online-x</textarea>
       <div class="dayblock">
         <h3 class="dayhead">Sat 08-15</h3>
         
-      <article class="card" id="card12">
+      <article class="card approve-unit" id="card12" data-approve-label="Sat 08-15 · X only, no LinkedIn Saturday">
         <div class="card-head">
           <h3>Sat 08-15 · X only, no LinkedIn Saturday</h3>
           
@@ -495,7 +614,14 @@ In the one I built it never leaves your machine. Test me on that mid session by 
 Aug 19, 11am MT.
 
 catalystworks.consulting/w/online-x</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card12">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card12" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
@@ -519,7 +645,7 @@ catalystworks.consulting/w/online-x</textarea>
       <div class="dayblock">
         <h3 class="dayhead">Mon 08-17</h3>
         
-      <article class="card" id="card14">
+      <article class="card approve-unit" id="card14" data-approve-label="Mon 08-17 · LinkedIn, strongest post in the run">
         <div class="card-head">
           <h3>Mon 08-17 · LinkedIn, strongest post in the run</h3>
           <span class="card-meta">LinkedIn</span>
@@ -539,13 +665,20 @@ That is the whole hour on Wednesday. You bring the business, we build the file, 
 August 19, eleven in the morning Mountain, sixty minutes. You get that hour back.
 
 catalystworks.consulting/w/online-li</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card14">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card14" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
         </div>
       </article>
-      <article class="card" id="card15">
+      <article class="card approve-unit" id="card15" data-approve-label="Mon 08-17 · X">
         <div class="card-head">
           <h3>Mon 08-17 · X</h3>
           <span class="card-meta">X</span>
@@ -561,7 +694,14 @@ It never knew what you sell, what you charge, or what you already ruled out. Tha
 We build it Aug 19, 11am MT, 60 min.
 
 catalystworks.consulting/w/online-x</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card15">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card15" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
@@ -572,7 +712,7 @@ catalystworks.consulting/w/online-x</textarea>
       <div class="dayblock">
         <h3 class="dayhead">Tue 08-18</h3>
         
-      <article class="card" id="card16">
+      <article class="card approve-unit" id="card16" data-approve-label="Tue 08-18 · HOLD, two decisions open, safe version shown">
         <div class="card-head">
           <h3>Tue 08-18 · HOLD, two decisions open, safe version shown</h3>
           <span class="card-meta">LinkedIn</span>
@@ -598,13 +738,20 @@ You can write the first three headings tonight on your own. The fourth goes fast
 Tomorrow, Wednesday, eleven in the morning Mountain. Sixty minutes online, and you leave with yours running.
 
 catalystworks.consulting/w/online-li</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card16">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card16" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
         </div>
       </article>
-      <article class="card" id="card17">
+      <article class="card approve-unit" id="card17" data-approve-label="Tue 08-18 · X, not on hold">
         <div class="card-head">
           <h3>Tue 08-18 · X, not on hold</h3>
           <span class="card-meta">X</span>
@@ -618,7 +765,14 @@ Most people nail the first three and skip the fourth. Those three are facts. The
 Tomorrow, 11am MT.
 
 catalystworks.consulting/w/online-x</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card17">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card17" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
@@ -629,7 +783,7 @@ catalystworks.consulting/w/online-x</textarea>
       <div class="dayblock">
         <h3 class="dayhead">Wed 08-19</h3>
         
-      <article class="card" id="card18">
+      <article class="card approve-unit" id="card18" data-approve-label="Wed 08-19 · LinkedIn, post by 7am MT">
         <div class="card-head">
           <h3>Wed 08-19 · LinkedIn, post by 7am MT</h3>
           <span class="card-meta">LinkedIn</span>
@@ -659,13 +813,20 @@ Eleven this morning Mountain, sixty minutes. Registration closes when we start.
 Come and build it with me.
 
 catalystworks.consulting/w/online-li</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card18">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card18" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
         </div>
       </article>
-      <article class="card" id="card19">
+      <article class="card approve-unit" id="card19" data-approve-label="Wed 08-19 · X">
         <div class="card-head">
           <h3>Wed 08-19 · X</h3>
           <span class="card-meta">X</span>
@@ -679,7 +840,14 @@ Blank file. What you sell in the words you say out loud. The last three who paid
 The hour is the other half. Come build it.
 
 catalystworks.consulting/w/online-x</textarea>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-card19">Notes for this item</label>
+          <textarea class="notes-box" id="notes-card19" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
         <div class="card-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
           <button type="button" class="btn copy-btn">Copy</button>
           <button type="button" class="btn btn-ghost reset-btn">Reset to original</button>
           <span class="copy-flash" aria-live="polite"></span>
@@ -692,8 +860,17 @@ catalystworks.consulting/w/online-x</textarea>
     <summary><h2>The two open decisions on 08-18</h2></summary>
     <div class="sec-body">
 <p class="note">Both lines live inside the Tuesday 08-18 LinkedIn post above. If he says nothing, the safe default on the left is what ships.</p>
-      <div class="decision">
+      <div class="decision approve-unit" data-approve-label="08-18 decision: The cold email line">
         <h3>The cold email line</h3>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-decision-1">Notes for this decision</label>
+          <textarea class="notes-box" id="notes-decision-1" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
+        <div class="card-actions decision-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
+        </div>
         <div class="cols">
           <div class="col col-safe">
             <div class="col-head"><span class="pill pill-good">Safe default</span> <span class="col-note">ships if he says nothing</span></div>
@@ -715,8 +892,17 @@ catalystworks.consulting/w/online-x</textarea>
           </div>
         </div>
       </div>
-      <div class="decision">
+      <div class="decision approve-unit" data-approve-label="08-18 decision: The Sandy line">
         <h3>The Sandy line</h3>
+        <div class="notes-row">
+          <label class="notes-label" for="notes-decision-2">Notes for this decision</label>
+          <textarea class="notes-box" id="notes-decision-2" rows="2" placeholder="notes for this item, e.g. what to change"></textarea>
+        </div>
+        <div class="card-actions decision-actions">
+          <button type="button" class="btn-decide btn-approve" data-decide="approve" aria-pressed="false">Approve</button>
+          <button type="button" class="btn-decide btn-reject" data-decide="reject" aria-pressed="false">Reject</button>
+          <span class="decide-status"></span>
+        </div>
         <div class="cols">
           <div class="col col-safe">
             <div class="col-head"><span class="pill pill-good">Safe default</span> <span class="col-note">ships if he says nothing</span></div>
@@ -742,9 +928,10 @@ catalystworks.consulting/w/online-x</textarea>
   </details>
 
   <footer class="foot">
-    Every block on this page is editable in the browser. Those edits are local only, they are
-    not saved anywhere, and they are gone on refresh. Copy what you want before you leave.
-    Nothing on this page has been sent or posted.
+    Every block on this page is editable in the browser. Approvals, rejections, and notes are all
+    local only, they are not saved anywhere, and they are gone on refresh. Click Copy My Decisions
+    at the top and paste it into chat before you leave, that is the only way any of it reaches the
+    team. Nothing on this page has been sent or posted.
   </footer>
 
 </div>
@@ -830,8 +1017,76 @@ catalystworks.consulting/w/online-x</textarea>
       }
     }
   });
+
+  // ---- approve / reject, per item, browser-local only --------------------------
+  document.addEventListener('click', function (e) {
+    var decide = e.target.closest && e.target.closest('.btn-decide');
+    if (!decide) { return; }
+    var unit = decide.closest('.approve-unit');
+    if (!unit) { return; }
+    var wantState = decide.classList.contains('btn-approve') ? 'approved' : 'rejected';
+    var current = unit.getAttribute('data-decision') || 'undecided';
+    // Clicking the already-active choice clears it back to undecided (toggle).
+    var nextState = (current === wantState) ? 'undecided' : wantState;
+    unit.setAttribute('data-decision', nextState);
+    unit.classList.remove('is-approved', 'is-rejected');
+    var approveBtn = unit.querySelector('.btn-approve');
+    var rejectBtn = unit.querySelector('.btn-reject');
+    var status = unit.querySelector('.decide-status');
+    if (approveBtn) { approveBtn.setAttribute('aria-pressed', nextState === 'approved' ? 'true' : 'false'); }
+    if (rejectBtn) { rejectBtn.setAttribute('aria-pressed', nextState === 'rejected' ? 'true' : 'false'); }
+    if (nextState === 'approved') { unit.classList.add('is-approved'); }
+    if (nextState === 'rejected') { unit.classList.add('is-rejected'); }
+    if (status) {
+      status.textContent = nextState === 'undecided' ? '' :
+        (nextState === 'approved' ? 'Marked approved' : 'Marked rejected');
+      status.className = 'decide-status' + (nextState === 'approved' ? ' st-approved' :
+        nextState === 'rejected' ? ' st-rejected' : '');
+    }
+  });
+
+  // ---- copy my decisions: builds a plain-text summary of every approve-unit's
+  // state (approved/rejected/undecided) plus its notes, and copies it. This is
+  // the ONLY export mechanism on the page -- nothing here is saved anywhere,
+  // and this is the only way a decision reaches the team, via paste into chat.
+  var copyDecisionsBtn = document.getElementById('copyDecisionsBtn');
+  var copyDecisionsFlash = document.getElementById('copyDecisionsFlash');
+  if (copyDecisionsBtn) {
+    copyDecisionsBtn.addEventListener('click', function () {
+      var units = Array.prototype.slice.call(document.querySelectorAll('.approve-unit'));
+      var lines = ['DECISIONS — 2026-08-12', ''];
+      units.forEach(function (u) {
+        var label = u.getAttribute('data-approve-label') || 'Untitled item';
+        var state = u.getAttribute('data-decision') || 'undecided';
+        var stateLabel = state === 'approved' ? 'APPROVED' :
+          state === 'rejected' ? 'REJECTED' : 'UNDECIDED';
+        var notesBox = u.querySelector('.notes-box');
+        var notes = notesBox ? notesBox.value.trim() : '';
+        lines.push(label + ': ' + stateLabel);
+        lines.push(notes ? '  notes: ' + notes : '  (no notes)');
+        lines.push('');
+      });
+      var text = lines.join('\n').replace(/\n+$/, '\n');
+      var done = function () { flash(copyDecisionsFlash, 'Copied — paste into chat'); };
+      var failCopy = function () {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        try { document.execCommand('copy'); flash(copyDecisionsFlash, 'Copied — paste into chat'); }
+        catch (err) { flash(copyDecisionsFlash, 'Copy failed, select and copy by hand'); }
+        document.body.removeChild(ta);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(failCopy);
+      } else { failCopy(); }
+    });
+  }
 })();
 </script>
+
 
 <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
 <style id="review-furniture-css">
@@ -968,5 +1223,7 @@ catalystworks.consulting/w/online-x</textarea>
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
+
 
 
