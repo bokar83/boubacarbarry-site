@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Second Brain Audit - Notion, Drive, NotebookLM</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  h3{font-size:1rem; margin:20px 0 8px; color:var(--accent2);}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  .pill{display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.03em;
+    border-radius:999px; padding:3px 9px; white-space:nowrap;}
+  .p-dead{background:rgba(255,122,122,.14); color:var(--bad); border:1px solid rgba(255,122,122,.4);}
+  .p-part{background:rgba(242,184,75,.14); color:var(--warn); border:1px solid rgba(242,184,75,.4);}
+  .p-live{background:rgba(127,224,184,.14); color:var(--good); border:1px solid rgba(127,224,184,.4);}
+  blockquote{margin:0 0 14px; padding:10px 16px; border-left:3px solid var(--accent);
+    background:var(--bg2); color:var(--text-dim); border-radius:0 8px 8px 0;}
+  blockquote p:last-child{margin-bottom:0;}
+  .callout{border:1px solid var(--warn); background:rgba(242,184,75,.07);
+    border-radius:10px; padding:12px 16px; margin:0 0 14px;}
+  .callout.good{border-color:var(--accent2); background:rgba(127,224,184,.07);}
+  .callout strong{color:var(--warn);}
+  .callout.good strong{color:var(--accent2);}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-11-18:02:06 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Second Brain Audit</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-verdict">Verdict</a>
+      <a href="#sec-notion">Notion</a>
+      <a href="#sec-drive">Drive</a>
+      <a href="#sec-nlm">NotebookLM</a>
+      <a href="#sec-retrieval">The real question</a>
+      <a href="#sec-review">Review pages</a>
+      <a href="#sec-filter">The filter</a>
+      <a href="#sec-rec">Recommendation</a>
+      <a href="#sec-sys">Errors filed</a>
+      <a href="#sec-method">How I checked</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Second Brain Audit: are Notion, Drive and NotebookLM actually being used?</h1>
+    <div class="meta">Read-only audit &middot; nothing was written to any of the three &middot; 2026-08-11</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p>Your hypothesis is right, and the reason is worse than idleness. One brain is half-alive, one is a media dump wearing a brain's name, and one has been dead since April while reporting itself healthy every single morning.</p>
+      <ul>
+        <li><strong>Notion</strong> is partly live. The content board was written yesterday. But the two databases where a playbook would actually live, Knowledge Base and Execution Tracker, return <code>404 object_not_found</code> to our own integration. Nothing we run can write to them. Revenue Log and Consulting Pipeline have not moved since early April.</li>
+        <li><strong>Drive</strong> was written to 47 times this morning, all of it generated video and images. The last strategy document written there predates the July 13 folder reorg. The playbook sitting in Drive is a March file.</li>
+        <li><strong>NotebookLM</strong> filed six documents, all on April 12 and 13, and nothing since. Its watcher has logged zero lines in 30 days. Its credential-refresh job still runs every three days and its digest still fires every morning reporting a clean zero. We are paying maintenance on a brain nobody feeds and getting a green light for it.</li>
+      </ul>
+      <p><strong>But copying files would not have fixed what you noticed.</strong> The read path is the real failure. The retrieval interface we built for exactly this, <code>second-brain-query</code>, has zero invocation sites anywhere outside its own folder. No hook calls it, no session-start step, no rule, no other skill. When a lane needs prior context today it greps the repo, every time. Three stores nobody queries would still have been re-derived from scratch.</li></p>
+      <p><strong>Recommendation: fix retrieval first, then backfill only what passes a filter, then wire the write into the one chokepoint every page already passes through.</strong> Detail in the recommendation section. Four errors filed as SYS-520 through SYS-523.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-verdict" open>
+    <summary><h2>The three-row verdict</h2></summary>
+    <div class="sec-body">
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Brain</th><th>Status</th><th>Last real write</th><th>Anything automated feeding it?</th><th>Could a lane find something in it today?</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Notion</strong></td>
+            <td><span class="pill p-part">PARTLY LIVE</span></td>
+            <td><strong>2026-08-10 21:44Z</strong> (Content Board). Ideas 2026-07-20. Consulting Pipeline 2026-04-05. Revenue Log 2026-04-07. Knowledge Base and Execution Tracker: <strong>unreachable</strong>, integration gets 404.</td>
+            <td>Yes, but pointed the wrong way. The nightly sync pulls <em>out</em> of Notion into Postgres (378 rows at 04:00 today). Only the content pipeline writes <em>in</em>. No strategy, no decision, no review page has ever been written in by an agent.</td>
+            <td>Only for content. I searched it for all five of today's strategic pages by name and topic. Zero hits.</td>
+          </tr>
+          <tr>
+            <td><strong>Google Drive</strong></td>
+            <td><span class="pill p-part">ACTIVE, WRONG JOB</span></td>
+            <td><strong>2026-08-11 06:53Z</strong>, and heavily. Every one of the 25 most recent files is generated video or image media. Last knowledge document: an automated call summary on 2026-08-06. Last hand-authored strategy doc: before the 2026-07-13 reorg.</td>
+            <td>Yes for media, from the video pipeline. No for documents. The only document-publishing helper we have is used to attach PDFs to outbound email, not to file knowledge.</td>
+            <td>No. It is an artifact dump with a stale playbook in it. The <code>catalyst-works-playbook</code> file there is a March 2026 document that the July reorg touched but did not update.</td>
+          </tr>
+          <tr>
+            <td><strong>NotebookLM</strong></td>
+            <td><span class="pill p-dead">DEAD, REPORTING GREEN</span></td>
+            <td><strong>2026-07-18</strong> on the best notebook (24 days). The routing registry that files documents into notebooks holds <strong>6 rows total, every one of them 2026-04-12 or 04-13</strong>. Nothing in four months.</td>
+            <td>Two jobs still run and neither adds anything. Credential refresh every 3 days: alive. Daily digest at 08:30: alive, fired at 14:33Z today. The watcher that would actually find and file documents: <strong>zero log lines in 30 days.</strong></td>
+            <td>No. 27 notebooks exist and several are genuinely good, but the newest source in any of them is three and a half weeks old.</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="callout">
+        <strong>The worst single finding is not that NotebookLM is empty.</strong> It is that its morning digest reports <code>Auto-filed 0, Pending 0, Pending review 0</code> and that reads as healthy. A dead pipeline and a quiet pipeline produce byte-identical output. This is the same failure class you named on August 5: a clean result has to prove the check ran, not just that nothing came back.
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-notion" open>
+    <summary><h2>Notion, in detail</h2></summary>
+    <div class="sec-body">
+      <p>Notion is the healthiest of the three and the one with the most fixable problem.</p>
+      <h3>What is alive</h3>
+      <ul>
+        <li><strong>Content Board</strong> &mdash; last edited 2026-08-10 21:44Z. The content pipeline writes here daily and the daily board review job reads it. This one works.</li>
+        <li><strong>The nightly pull</strong> &mdash; ran at 04:00 this morning, synced 310 tasks and upserted 378 rows into the memory table. This is real and it succeeded.</li>
+      </ul>
+      <h3>What is stale</h3>
+      <ul>
+        <li><strong>Ideas</strong> &mdash; 2026-07-20, three weeks.</li>
+        <li><strong>Consulting Pipeline</strong> &mdash; 2026-04-05. Four months. Every lead and every conversation since then lives somewhere else.</li>
+        <li><strong>Revenue Log</strong> &mdash; 2026-04-07. Four months, on the database whose entire job is tracking money.</li>
+      </ul>
+      <h3>What is structurally broken</h3>
+      <p>Querying <strong>Knowledge Base</strong> and <strong>Execution Tracker</strong> with our own integration token returns:</p>
+      <pre>404 object_not_found
+"Could not find database with ID: 339bcf1a-..."</pre>
+      <p>That is not a missing database. Both are visible in the workspace and both appear in the recently-viewed list. It means <strong>they were never shared with the integration</strong>, so no script we write can read or write them. The Knowledge Base is the natural home for the playbook you described. It is the one place an agent literally cannot reach. This is a two-minute fix in the Notion UI and it has to be done by a human, which is why it is filed rather than fixed.</p>
+      <div class="callout">
+        <strong>The direction of the plumbing is the deeper issue.</strong> Everything automated pulls <em>out</em> of Notion. Nothing writes strategy <em>in</em>. Notion is being used as an input source, not as a repository. That is the inverse of what you described.
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-drive" open>
+    <summary><h2>Google Drive, in detail</h2></summary>
+    <div class="sec-body">
+      <p>Drive is not idle. Drive is extremely busy doing something other than being a brain.</p>
+      <p>Every one of the 25 most recently modified files, all from this morning between 06:40 and 06:53Z, is a generated <code>.png</code>, <code>.jpg</code> or <code>.mp4</code> from the video pipeline. Filtering to actual documents changes the picture completely:</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Date</th><th>Document</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td>2026-08-06</td><td>bo-call-fc71f39...html</td><td>Automated call summary. Not authored, not filed as knowledge.</td></tr>
+          <tr><td>2026-07-30</td><td>Scanned_CatalystWorks_Costco...pdf</td><td>A scanned receipt.</td></tr>
+          <tr><td>2026-07-17</td><td>AI Agency Insiders - Upwork</td><td>A dump, not a strategy doc.</td></tr>
+          <tr><td>2026-07-13</td><td>~20 files, all identical timestamps</td><td>The folder reorganisation. These are <strong>moves, not edits</strong>. Content unchanged.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>Inside that July 13 block sit <code>catalyst-works-playbook</code>, <code>catalyst-works-playbook v1-1</code>, <code>catalyst-works-playbook v1-2</code> and <code>pipeline-playbook.pdf</code>. The playbook you mentioned <em>is</em> in Drive. It is a March 2026 document with three near-duplicate versions and no indication which is current. A lane that found it would be reading five-month-old strategy and would have no way to know.</p>
+      <div class="callout good">
+        <strong>Worth stating plainly:</strong> Drive doing media well is not a failure. The media pipeline is genuinely working. The failure is that we concluded from Drive activity graphs that Drive was in use, when the thing being used is a render bucket that happens to share a name with the knowledge store.
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-nlm" open>
+    <summary><h2>NotebookLM, in detail (and what it is actually called)</h2></summary>
+    <div class="sec-body">
+      <h3>The name</h3>
+      <p>I checked the live product rather than guessing, and I want to be exact about the limits of what I checked. The command-line tool we talk to it through, running right now on the server, identifies itself as <em>"NotebookLM Tools &mdash; Unified CLI for Google NotebookLM"</em>, and the API it calls answers to that. So the product our system talks to today is still NotebookLM. I could <strong>not</strong> independently confirm whether Google has announced a rename or a Gemini-branded successor, because this session's web-search budget was already spent before I got here. Treat "still NotebookLM as far as our integration is concerned" as verified, and "no rename has happened" as unverified.</p>
+      <h3>Reachability</h3>
+      <p>The memory note saying NotebookLM is reachable only through the server CLI is <strong>still true</strong>. Verified: the binary is installed, authenticated, and returned all 27 notebooks on request. There is no laptop path and no MCP path.</p>
+      <h3>What is in there</h3>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Last updated</th><th>Sources</th><th>Notebook</th></tr></thead>
+        <tbody>
+          <tr><td>2026-07-18</td><td>63</td><td>CW_Audience Engine</td></tr>
+          <tr><td>2026-07-12</td><td>7</td><td>CW_Frameworks and IP</td></tr>
+          <tr><td>2026-07-12</td><td>0</td><td>12 Week Year <em>(empty)</em></td></tr>
+          <tr><td>2026-07-09</td><td>61</td><td>AI Solopreneur Pain Point Research</td></tr>
+          <tr><td>2026-06-26</td><td>58</td><td>CW_Learning Lab</td></tr>
+          <tr><td>2026-06-26</td><td>21</td><td>CW_Catalyst Works Ops</td></tr>
+          <tr><td>2026-05-23</td><td>1</td><td>Ghost_PGA Library</td></tr>
+          <tr><td>2026-04-27</td><td>0</td><td>CW_Ideas <em>(empty)</em></td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>Nineteen more sit below these, mostly 2024 and 2025. The corpus is real and some of it is good. None of it is recent.</p>
+      <h3>Why it stopped</h3>
+      <p>There is a genuine pipeline built for this. It watches a Drive inbox, classifies each document, picks a notebook, files it, and logs the decision to a registry table. The registry holds <strong>six rows, all resolved, all created 2026-04-12 and 04-13</strong>. Two of those six could not even be classified and landed in <code>Unassigned</code>.</p>
+      <p>The watcher thread has produced <strong>zero log lines in the last 30 days.</strong> Meanwhile:</p>
+      <ul>
+        <li>The credential-refresh job runs every three days and keeps the login alive. It ran successfully. It is keeping the door open on a room nobody enters.</li>
+        <li>The daily digest fired at 14:33Z today and reported auto-filed 0, pending 0, review queue 0. It has almost certainly reported that same clean zero every morning for four months.</li>
+      </ul>
+      <div class="callout">
+        <strong>This is the finding that matters most and it is the one I would fix first.</strong> A silent failure would have been bad. A silent failure with a green daily report is worse, because it actively told us the thing was fine. Filed as SYS-520.
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-retrieval" open>
+    <summary><h2>The real question: does anything read from them?</h2></summary>
+    <div class="sec-body">
+      <p>You put your finger on the thing that actually matters, so I want to answer it directly rather than bury it. A perfectly synced store nobody queries fails exactly like an empty one.</p>
+      <h3>What I found</h3>
+      <p>There is a read path. It was built deliberately, it works, and it has a natural-language interface. There is a retrieval engine with semantic search over the memory corpus, fused with full-text search, with section narrowing so results point at the right part of a large file. There is a skill wrapping it so a human can just ask a question.</p>
+      <p>It has <strong>zero invocation sites.</strong></p>
+      <p>I swept the whole repo for any reference to the retrieval interface or the engine behind it. Excluding its own folder and its own test scripts, every hit is either historical (an old handoff, an absorb log, a roadmap entry) or documentation about it. There is <strong>no hook</strong> that calls it, <strong>no session-start step</strong>, <strong>no rule in any always-loaded file</strong>, and <strong>no other skill</strong> that reaches for it. The retrieval index it depends on is a gitignored local directory that is not kept in sync automatically and has to be manually refed.</p>
+      <h3>So what does a lane actually do?</h3>
+      <p>It greps the repo. That is the honest answer and it is well supported: every always-loaded instruction points a lane at <code>memory/</code>, <code>docs/</code>, the task board and the handoff files. Those are the surfaces that are named, that are enforced, and that are checked. The repo <em>is</em> the working second brain. Notion, Drive and NotebookLM are, in practice, write-only archives, and one of them is not even being written to.</p>
+      <div class="callout">
+        <strong>This reframes the diagnosis without weakening it.</strong> You are right that things get re-derived because they were never filed where they could be found. But filing them into three stores that no lane queries would not have prevented a single one of the misses. The binding constraint is the read path. The storage path is the second problem, not the first.
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-review" open>
+    <summary><h2>The review pages, specifically</h2></summary>
+    <div class="sec-body">
+      <p>There are <strong>76 pages</strong> live under the review section, 22 of them from August alone, 7 from today. Several are the strategic work you named.</p>
+      <p><strong>How many are in Notion, Drive or NotebookLM: zero.</strong></p>
+      <p>Checked directly, not assumed. I searched Notion for each of today's strategic pages by topic and name and got no hits at all. I searched Drive for every document modified since July 1 and no review page appears. The NotebookLM routing registry contains six April documents and nothing else. There is no step anywhere in the publishing flow that files a page anywhere except the website.</p>
+      <p>So the situation is exactly as you described it: today's rooms and mechanisms work, the contact list, the ghostwriting offer decision, the offer wiring, the go-to-market pack, all of it exists in precisely one place, behind a password, unsearchable by any person or agent who does not already know the URL.</p>
+      <div class="callout">
+        <strong>The irony is worth naming out loud, on this page.</strong> This audit, whose entire subject is that important work is being published somewhere nobody can search, would itself have been published only to the review section. It is the sixth strategic page today that would have gone into the same hole. That is not a joke at our expense, it is the mechanism: the default path is frictionless and the filing step does not exist, so everything lands in the one place that does not count.
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-filter" open>
+    <summary><h2>The filter: which pages, and where each one goes</h2></summary>
+    <div class="sec-body">
+      <p>You said "especially ones that are important that we are looking at and using as resources," and that is the right instinct. Bulk-syncing 76 pages would make the brain worse, because a corpus of mixed-staleness documents degrades every answer drawn from it.</p>
+      <h3>The filter, three tests</h3>
+      <ol>
+        <li><strong>Is it durable reference, or a snapshot?</strong> A page a future lane would need to re-read to act correctly qualifies: an offer definition, an ICP, a go-to-market plan, a playbook, a pricing decision. A status sweep, a dated audit, a one-time report does not. Ask: will this still be true in six weeks?</li>
+        <li><strong>Has it been decided?</strong> A page you have read and acted on is knowledge. An open proposal is noise, and worse, a brain full of undecided options will confidently answer with a path you rejected.</li>
+        <li><strong>Is it already the single source of truth somewhere queryable?</strong> If so, it does <strong>not</strong> get copied. The money map lives in its own database. Live decided facts live in one tracked file. Task state lives on the board. Copying those creates a second truth that will drift, and a drifted copy is worse than no copy.</li>
+      </ol>
+      <h3>Applied to what exists today</h3>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Page</th><th>File it?</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Rooms and mechanisms</td><td><span class="pill p-live">YES</span></td><td>Durable go-to-market reference. Exactly the class you described.</td></tr>
+          <tr><td>Right people to contact (ICP)</td><td><span class="pill p-live">YES</span></td><td>Durable ICP definition, re-read every time outreach is planned.</td></tr>
+          <tr><td>Ghostwriting offer + offer wiring</td><td><span class="pill p-live">YES</span></td><td>Decided offer definition. This is the thing that gets re-derived.</td></tr>
+          <tr><td>ER pack go-to-market</td><td><span class="pill p-live">YES</span></td><td>Durable go-to-market plan.</td></tr>
+          <tr><td>Lead engine, chamber outreach, PGA contacts</td><td><span class="pill p-part">PARTIAL</span></td><td>The mechanism is durable, the contact lists are live state and belong in a database, not a document.</td></tr>
+          <tr><td>Review layout standard, token efficiency</td><td><span class="pill p-dead">NO</span></td><td>Internal engineering. Belongs in the repo, where lanes already look.</td></tr>
+          <tr><td>Unactioned sweep, inbox cleared, status pages</td><td><span class="pill p-dead">NO</span></td><td>Snapshots. Stale within days.</td></tr>
+          <tr><td>The other ~55 pages</td><td><span class="pill p-dead">NO, for now</span></td><td>Backfill nothing until the read path works. Then revisit with the same three tests.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <h3>One job per brain, so nothing lands in two places</h3>
+      <p>The reason all three feel idle is that none of them has a job that excludes the others. Proposed division, and each page gets exactly one write to each, playing a different role:</p>
+      <ul>
+        <li><strong>Drive is the file of record.</strong> The rendered artifact you or a client would open. Immutable once filed, versioned by adding, never by editing in place.</li>
+        <li><strong>NotebookLM is the ask surface.</strong> The corpus you interrogate in plain language. Strategy, research, transcripts, competitive material. This is where "what did we decide about the ghostwriting offer" should get answered.</li>
+        <li><strong>Notion is the operational surface.</strong> One pointer row per filed page in the Knowledge Base: title, link, one line on what it decides, date, and status. Notion answers "what exists," the notebook answers "what does it say."</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-rec" open>
+    <summary><h2>Recommendation: options, context, and the one I would take</h2></summary>
+    <div class="sec-body">
+      <h3>Option A: bulk sync everything now</h3>
+      <p>Push all 76 pages into all three stores this week. Cheap to say. It puts 76 documents of wildly mixed staleness into a corpus, which measurably degrades every answer it gives, and it still would not be read, because nothing queries any of it. It also risks a wrong bulk write into a brain, which is harder to undo than an empty one.</p>
+      <h3>Option B: fix retrieval only</h3>
+      <p>Wire one query step into the session-start path and stop there. Correct about the binding constraint, but a lane that queries a shelf holding nothing from the last three weeks gets nothing back, concludes the tool is useless, and stops using it. A read path over an empty store dies on first contact.</p>
+      <h3>Option C: retrieval first, then a filtered backfill, then automate the write</h3>
+      <p>Three steps in this order:</p>
+      <ol>
+        <li><strong>Make the read path real.</strong> One step at session start, in an instruction that actually loads, that says: before claiming prior context does not exist, query the brain. Plus keep its index fed automatically instead of manually. This is the change that converts a built-and-unused tool into a used one.</li>
+        <li><strong>Backfill only what passes the three tests.</strong> Roughly six to ten pages, not 76. Small enough to be reviewed by a human before it lands.</li>
+        <li><strong>Wire the write into the chokepoint that already exists.</strong> Every review page passes through one publish script, which already refuses to ship a page that fails the layout standard. That script is the single point where filing can be made automatic rather than remembered. Same pattern as the layout gate, which worked precisely because it stopped depending on anyone remembering.</li>
+      </ol>
+      <div class="callout good">
+        <strong>Take Option C, in that order.</strong> The reason is that the two failures are different and both real: the read path is unused, and the corpus is genuinely thin. Fixing either alone leaves the other standing. Doing the write first, which is the instinct, is the one order that definitely fails, because it is what we already did in May and it produced three stores nobody opened.
+      </div>
+      <h3>One hard blocker that needs a human</h3>
+      <p>Step 3 cannot write a pointer row to the Notion Knowledge Base, because that database is not shared with our integration. No script can fix that. Someone has to open the database in Notion and connect it. Two minutes, but it gates the Notion third of the plan.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-sys" open>
+    <summary><h2>Errors found and filed</h2></summary>
+    <div class="sec-body">
+      <p>Four, all filed, none fixed here because this was scoped read-only on all three systems.</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>ID</th><th>What</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>SYS-520</strong></td>
+            <td>The NotebookLM document-routing pipeline has filed nothing since 2026-04-13. Its watcher has logged zero lines in 30 days, while its credential-refresh job runs every 3 days and its daily digest reports a clean zero every morning.</td>
+            <td>Highest priority of the four. A dead pipeline that reports green is worse than one that reports nothing, because it answers the question "is this working" with a yes. Same class as the false all-clear rule.</td>
+          </tr>
+          <tr>
+            <td><strong>SYS-521</strong></td>
+            <td>Our Notion integration cannot see the Knowledge Base or Execution Tracker databases. Both return <code>404 object_not_found</code>.</td>
+            <td>The single most natural home for durable strategy is the one place no agent can write. Needs a human to share the databases in the Notion UI.</td>
+          </tr>
+          <tr>
+            <td><strong>SYS-522</strong></td>
+            <td>The second-brain read path has zero invocation sites. No hook, no session-start step, no always-loaded rule, no other skill calls it. Its search index is also gitignored and manually fed.</td>
+            <td>This is the root cause of the pattern that prompted the audit. A retrieval tool nobody is told to use is the same as no retrieval tool.</td>
+          </tr>
+          <tr>
+            <td><strong>SYS-523</strong></td>
+            <td>76 review pages exist in exactly one location, a password-gated site, with no entry in any searchable store. The publish flow has no filing step.</td>
+            <td>Every strategic decision published this way is invisible to the next lane that needs it, including six pages written today.</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <p><strong>Honest note on the numbering:</strong> the allocator that mints these could not reach the coordination database from this machine, so it fell back to unprotected allocation and said so. I verified 520 through 523 are unused across every remote branch before claiming them, but the race the allocator normally closes was open for this run.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-method" open>
+    <summary><h2>How I checked, so you can re-run any of it</h2></summary>
+    <div class="sec-body">
+      <p>Every claim above came from querying the live system, not from reading documentation about it. Nothing was written to Notion, Drive or NotebookLM.</p>
+      <ul>
+        <li><strong>Notion</strong> &mdash; queried six databases directly for last-edited timestamps, sorted descending, using our own integration token from inside the running container. Two returned 404. Separately searched the workspace for each of today's strategic topics.</li>
+        <li><strong>Drive</strong> &mdash; listed the 25 most recently modified files, then re-queried filtered to documents, PDFs and HTML modified since July 1, to separate real writes from the media firehose. Read-only throughout; no mutation was attempted, so the by-immutable-ID rule was never in play.</li>
+        <li><strong>NotebookLM</strong> &mdash; listed all 27 notebooks with source counts and update times through the server CLI, then queried the routing registry table directly for row counts and dates, then checked 30 days of container logs for the watcher.</li>
+        <li><strong>Automation</strong> &mdash; read every scheduled job on the server, read the sync job's log tail, and confirmed which ran and when.</li>
+        <li><strong>Retrieval</strong> &mdash; swept the entire repository for any reference to the retrieval interface or engine, then excluded its own files and its own tests to see what was left.</li>
+      </ul>
+      <p>Two things I could not verify and am flagging rather than papering over: whether NotebookLM has been renamed by Google (search budget exhausted; the live API still answers to NotebookLM), and the exact date the document watcher stopped, since container logs only go back 30 days and it was already silent at the start of that window.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Read-only audit. No writes were made to Notion, Google Drive or NotebookLM. Source: <code>docs/reviews/2026-08-11-second-brain-audit.html</code> in the main repository.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
