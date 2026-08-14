@@ -111,10 +111,45 @@
     details{border:0;}
     details > summary::before{display:none;}
   }
+  #write-error-banner{display:none;position:sticky;top:60px;z-index:55;
+    background:rgba(255,122,122,.14); border:1px solid var(--bad); color:var(--bad);
+    font-size:.82rem; padding:9px 14px; margin:0 0 14px; border-radius:8px;}
+  .decision-block{margin-top:14px; padding:14px 16px; border:1px solid var(--border);
+    border-radius:10px; background:var(--bg2);}
+  .decision-block h4{margin:0 0 8px; font-size:.78rem; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--text-dim);}
+  .decision-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .decision-btn{font-weight:700; font-size:.8rem; padding:8px 16px; border-radius:999px;
+    cursor:pointer; background:var(--card); border:1px solid var(--border); color:var(--text-dim);}
+  .decision-btn[data-decision="approve"].active{background:rgba(127,224,184,.16);
+    border-color:var(--good); color:var(--good);}
+  .decision-btn[data-decision="reject"].active{background:rgba(255,122,122,.16);
+    border-color:var(--bad); color:var(--bad);}
+  .decision-status{margin-left:4px; font-size:.78rem; color:var(--text-dim);}
+  .edit-block{margin-top:12px;}
+  .edit-block label, .item-notes label{display:block; font-size:.76rem; color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:.04em; margin:0 0 6px;}
+  .edit-block textarea, .item-notes textarea{width:100%; min-height:120px; resize:vertical;
+    background:#11141b; border:1px solid var(--border); border-radius:8px; color:var(--text);
+    font-family:inherit; font-size:.88rem; padding:10px 12px; line-height:1.5; box-sizing:border-box;}
+  .item-notes textarea{min-height:60px;}
+  .edit-block .btn-row, .note-actions{margin-top:8px; display:flex; gap:8px; align-items:center;}
+  .save-edit-btn, .save-note{font-weight:700; font-size:.8rem; padding:8px 16px;
+    border-radius:999px; cursor:pointer; background:var(--accent); border:1px solid var(--accent);
+    color:#0f1115;}
+  .save-edit-btn:disabled, .save-note:disabled{opacity:.55; cursor:default;}
+  .edit-saved-note{font-size:.78rem; color:var(--text-dim);}
+  .item-notes{margin-top:14px;}
+  .notes-log{list-style:none; margin:10px 0 0; padding:0;}
+  .notes-log li{padding:8px 10px; border:1px solid var(--border); border-radius:6px;
+    margin:0 0 6px; font-size:.84rem; background:var(--card);}
+  .notes-log li.note-empty{color:var(--text-dim); border-style:dashed;}
+  .note-ts{display:block; font-size:.72rem; color:var(--text-dim); margin:0 0 3px;}
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-14-14:16:26 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-14-14:25:07 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 <nav class="nav-bar" id="navBar" aria-label="Section navigation">
   <div class="nav-inner">
@@ -137,6 +172,8 @@
 
 <div class="wrap">
 
+  <div id="write-error-banner" role="alert"></div>
+
   <header class="mast">
     <h1>What we recommend posting today, Aug 14</h1>
     <div class="meta">X + LinkedIn, personal brand &middot; 2026-08-14</div>
@@ -149,6 +186,7 @@
       <p><strong>Urgent, already fixed:</strong> both Content Board records were found sitting at Status=Queued with today's Scheduled Date and a score set, which is the Blotato auto-fire trigger, even though each record's own note claimed Ready. Corrected to Ready and re-verified &mdash; section 3b has the full finding.</p>
       <p>The Aug 15-28 calendar exists in this session's transcript, not yet saved to a durable file &mdash; that's the real gap, not that it never existed (section 4). It also needs a second pass against this pillar once it's pulled out.</p>
       <p>Deploy stall on this page filed as SYS-608, pushed [READY]. Nothing here auto-publishes to X or LinkedIn without your own manual post.</p>
+      <p><strong>New today:</strong> the two post sections below now have real Approve / Reject buttons, an inline edit box for the copy, and a notes field &mdash; every tap and every note saves straight to a Postgres table (<code>content_review_decisions_items</code>), not this browser. A failed save shows a visible red banner, it never fails silently. Backend branch is pushed and needs your own Telegram approval tap before it goes live (self-modification gate, <code>orchestrator/</code> code) &mdash; until that lands, a save attempt here will correctly show the failure banner rather than pretend to work.</p>
     </div>
   </details>
 
@@ -169,6 +207,39 @@ I have learned the real constraint is rarely the one everyone assumes is there. 
 
 Stop asking it questions. Start handing it your actual work.</pre>
       <p><strong>Scores:</strong> voice 93/100, CTQ viral 9/10, bookmarkability 12/12. Zero em-dashes, sentence case, no fabricated stories. Approved by Boubacar directly for manual posting 2026-08-14. Live on the Content Board (Status=Ready, not auto-fired &mdash; see the Notion-safety note in section 3).</p>
+
+      <div class="decision-block" data-item-id="li-2026-08-14" data-item-label="LinkedIn, Aug 14, AI-as-search-engine pillar">
+        <h4>Your call</h4>
+        <div class="decision-row">
+          <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+          <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+          <span class="decision-status"></span>
+        </div>
+        <div class="edit-block">
+          <label for="li-edit">Edit the copy (saves separately from Approve/Reject)</label>
+          <textarea id="li-edit" data-default-text="li-2026-08-14">Most people use AI like an expanded Google. Type a question, skim a generic answer, close the tab, forget it by lunch.
+
+The tool did not get smarter since last year. You are still asking it the same kind of question you would type into a search bar.
+
+Try this instead. Open the spreadsheet you actually use, the one with your real column names and your real mess in it. Do not ask &quot;how does VLOOKUP work.&quot; Paste the actual columns and ask it to write the formula that pulls the number you need from the sheet you are staring at. You will have something you can use in the next ten seconds instead of a textbook explanation you still have to translate yourself.
+
+Same move works on a process you have been doing by hand for months, or a decision you keep circling without landing on. Give it what is actually true, not a tidy paraphrase of it.
+
+I have learned the real constraint is rarely the one everyone assumes is there. That is the exact same thing AI needs from you. It cannot diagnose what you never showed it.
+
+Stop asking it questions. Start handing it your actual work.</textarea>
+          <div class="btn-row">
+            <button type="button" class="save-edit-btn">Save edit</button>
+            <span class="edit-saved-note"></span>
+          </div>
+        </div>
+        <div class="item-notes">
+          <label for="li-note">Notes (yours, timestamped, kept regardless of decision)</label>
+          <textarea id="li-note" placeholder="Add a note about this post..."></textarea>
+          <div class="note-actions"><button type="button" class="save-note">Save note</button></div>
+          <ul class="notes-log"><li class="note-empty">No notes yet.</li></ul>
+        </div>
+      </div>
     </div>
   </details>
 
@@ -185,6 +256,35 @@ Give it the actual thing instead: your real spreadsheet, your real process, the 
 
 It can't diagnose what you never showed it.</pre>
       <p><strong>Scores:</strong> voice 91/100, CTQ 90/100 (viral 8/10, bookmarkability 10/12, weakest row is concreteness of proof since it's the tightened version). Same gates, no rewrite needed.</p>
+
+      <div class="decision-block" data-item-id="x-2026-08-14" data-item-label="X, Aug 14, AI-as-search-engine pillar (tightened)">
+        <h4>Your call</h4>
+        <div class="decision-row">
+          <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+          <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+          <span class="decision-status"></span>
+        </div>
+        <div class="edit-block">
+          <label for="x-edit">Edit the copy (saves separately from Approve/Reject)</label>
+          <textarea id="x-edit" data-default-text="x-2026-08-14">Most people use AI like an expanded Google. Ask a question, skim a generic answer, close the tab.
+
+It didn't get smarter. You're still asking search-bar questions.
+
+Give it the actual thing instead: your real spreadsheet, your real process, the task you do by hand every week. Not a tidy summary of it, the real mess.
+
+It can't diagnose what you never showed it.</textarea>
+          <div class="btn-row">
+            <button type="button" class="save-edit-btn">Save edit</button>
+            <span class="edit-saved-note"></span>
+          </div>
+        </div>
+        <div class="item-notes">
+          <label for="x-note">Notes (yours, timestamped, kept regardless of decision)</label>
+          <textarea id="x-note" placeholder="Add a note about this post..."></textarea>
+          <div class="note-actions"><button type="button" class="save-note">Save note</button></div>
+          <ul class="notes-log"><li class="note-empty">No notes yet.</li></ul>
+        </div>
+      </div>
     </div>
   </details>
 
@@ -232,6 +332,7 @@ It can't diagnose what you never showed it.</pre>
       <p><strong>Corrected finding:</strong> the Aug 15-28 two-week content calendar does exist &mdash; it was reported in this session's own conversation history by a different agent's task result. The actual gap is narrower than first reported here: that plan was never saved to a durable file, memory entry, or Notion record, only produced as a result inside a live session transcript. A full-repo grep (<code>docs/</code>, <code>memory/</code>, the Notion Content Board, <code>docs/TASK_BOARD.md</code>) correctly found nothing, because there is nothing on disk to find yet, not because the plan doesn't exist.</p>
       <p>Per the standing rule against inventing missing content, nothing has been reconstructed here from a guess. <strong>Follow-up needed:</strong> someone with access to that transcript should save the actual plan durably (a dated file under <code>docs/</code> or a Notion Content Board draft), at which point it can be folded into this page as a real calendar with real scores.</p>
       <p><strong>Separately:</strong> whatever that plan contains was built <em>before</em> today's pillar correction (drop day-to-day activity reporting; teach AI-as-useful over AI-as-search-engine). It likely needs a second pass against that pillar once it's pulled out of the transcript. Not auto-fixed here &mdash; flagged for your own review once the text is durable, since swapping someone else's pending copy without your sign-off would repeat the exact mistake this correction just fixed for today's posts.</p>
+      <p><strong>Re-checked 2026-08-14, later session:</strong> a fresh grep of <code>docs/</code>, <code>memory/</code> and the Content Board found no durable copy of that Aug 15-28 calendar &mdash; only <code>docs/roadmap/content/2026-08-05-aug-sep-content-plan.md</code>, which is a different, earlier plan about the Aug 13/Aug 27 workshop push, not the two-week posting calendar this section describes. Per the standing rule against inventing missing content, nothing below has been reconstructed from a guess. This section stays a real gap until someone with that transcript saves the actual text somewhere durable.</p>
     </div>
   </details>
 
@@ -245,10 +346,203 @@ It can't diagnose what you never showed it.</pre>
   </details>
 
   <footer class="foot">
-    Built and gated 2026-08-14, corrected mid-session twice: once to drop the activity-report angle, once to remove a rejected line from the LinkedIn draft. Both records approved by Boubacar and live on the Content Board at Status=Ready, no Blotato auto-fire. Deploy stall on this page filed as SYS-608 (<code>docs/roadmap/future-enhancements.md</code>, branch <code>docs/sys608-hostinger-deploy-stall</code> @ <code>d0568ab86</code>). Sources: <code>skills/kairos/SKILL.md</code> (hard rules), <code>skills/boub_voice_mastery</code> + <code>skills/ctq-social</code> (gates applied above), <code>memory/reference_blotato_autopublish_contract_2026_07_01.md</code>, Boubacar's correction messages (this session).
+    Built and gated 2026-08-14, corrected mid-session twice: once to drop the activity-report angle, once to remove a rejected line from the LinkedIn draft. Both records approved by Boubacar and live on the Content Board at Status=Ready, no Blotato auto-fire. Deploy stall on this page filed as SYS-608 (<code>docs/roadmap/future-enhancements.md</code>, branch <code>docs/sys608-hostinger-deploy-stall</code> @ <code>d0568ab86</code>). Approve/Reject/edit/notes added 2026-08-14, backed by <code>content_review_decisions_items</code> on orc-postgres, branch <code>docs/content-board-review-db</code> (orchestrator/, needs your own Telegram approval before merge, self-modification gate). Sources: <code>skills/kairos/SKILL.md</code> (hard rules), <code>skills/boub_voice_mastery</code> + <code>skills/ctq-social</code> (gates applied above), <code>memory/reference_blotato_autopublish_contract_2026_07_01.md</code>, <code>memory/feedback_decision_pages_need_real_database_2026_07_20.md</code>, Boubacar's correction messages (this session).
   </footer>
 
 </div>
+
+<script src="/review/shared/review-save-client.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ── DB-backed approve/reject + inline edit + item-scoped notes for the
+  // two today's posts (2026-08-14 standing rule: decision pages need a real
+  // database from v1, not browser localStorage, plus a place for
+  // timestamped notes available regardless of item status). Pattern cloned
+  // from the cash-generation-recommendations review page: read failures
+  // degrade quietly (fresh page = nothing decided yet), write failures show
+  // a VISIBLE banner -- a failed save must never look like it succeeded.
+  var API = 'https://agentshq.boubacarbarry.com/api/orc/content-review-decisions';
+  var PAGE_SLUG = '20260814-social-recs';
+
+  function showWriteError(msg) {
+    var b = document.getElementById('write-error-banner');
+    if (!b) { return; }
+    b.textContent = 'SAVE FAILED: ' + msg;
+    b.style.display = 'block';
+  }
+  function showRetrying(attempt) {
+    var b = document.getElementById('write-error-banner');
+    if (!b) { return; }
+    b.textContent = 'Save delayed (server restarting) -- retrying, attempt ' + attempt + '...';
+    b.style.display = 'block';
+  }
+  function hideWriteError() {
+    var b = document.getElementById('write-error-banner');
+    if (b) { b.style.display = 'none'; }
+  }
+
+  var blocks = Array.prototype.slice.call(document.querySelectorAll('.decision-block[data-item-id]'));
+
+  function renderNotesForBlock(block, notes) {
+    var log = block.querySelector('.notes-log');
+    if (!log) { return; }
+    if (!notes || !notes.length) {
+      log.innerHTML = '<li class="note-empty">No notes yet.</li>';
+      return;
+    }
+    var items = notes.slice().reverse();
+    log.innerHTML = items.map(function (n) {
+      var ts = '';
+      try {
+        ts = new Date(n.created_at).toLocaleString('en-US', {
+          timeZone: 'America/Denver', month: 'short', day: 'numeric',
+          year: 'numeric', hour: 'numeric', minute: '2-digit',
+        }) + ' MT';
+      } catch (e) { ts = n.created_at || ''; }
+      var esc = String(n.note_text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return '<li><span class="note-ts">' + ts + '</span>' + esc + '</li>';
+    }).join('');
+  }
+
+  function applyState(items, notesByItem) {
+    blocks.forEach(function (block) {
+      var id = block.getAttribute('data-item-id');
+      var st = items && items[id];
+      var decision = st && st.decision;
+      var statusEl = block.querySelector('.decision-status');
+      block.querySelectorAll('.decision-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-decision') === decision);
+      });
+      if (statusEl) { statusEl.textContent = decision ? ('current: ' + decision) : 'undecided'; }
+
+      var editTa = block.querySelector('.edit-block textarea');
+      if (editTa && st && typeof st.edited_text === 'string' && st.edited_text.length) {
+        editTa.value = st.edited_text;
+        var savedNote = block.querySelector('.edit-saved-note');
+        if (savedNote) { savedNote.textContent = 'showing your saved edit'; }
+      }
+
+      renderNotesForBlock(block, (notesByItem && notesByItem[id]) || []);
+    });
+  }
+
+  function groupNotesByItem(notes) {
+    var out = {};
+    (notes || []).forEach(function (n) {
+      if (!out[n.item_id]) { out[n.item_id] = []; }
+      out[n.item_id].push(n);
+    });
+    return out;
+  }
+
+  function loadState() {
+    ReviewSaveClient.fetchWithRetry(API + '/state?page_slug=' + encodeURIComponent(PAGE_SLUG))
+      .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+      .then(function (r) {
+        if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+        applyState(r.body.items || {}, groupNotesByItem(r.body.notes || []));
+      })
+      .catch(function () {
+        // Read failure -- degrade quietly to a fresh/unregistered page (or
+        // the backend branch not merged yet). Not a write, so no visible
+        // banner; the page just shows everything undecided.
+      });
+  }
+
+  function registerPage() {
+    var items = blocks.map(function (block) {
+      return {
+        item_id: block.getAttribute('data-item-id'),
+        item_label: block.getAttribute('data-item-label') || '',
+      };
+    });
+    ReviewSaveClient.fetchWithRetry(API + '/run', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page_slug: PAGE_SLUG, items: items }),
+    }).then(function () { loadState(); }).catch(function () { loadState(); });
+  }
+
+  blocks.forEach(function (block) {
+    var id = block.getAttribute('data-item-id');
+
+    block.querySelectorAll('.decision-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var decision = btn.getAttribute('data-decision');
+        ReviewSaveClient.fetchWithRetry(API + '/decision', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, decision: decision }),
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            hideWriteError();
+            block.querySelectorAll('.decision-btn').forEach(function (b) {
+              b.classList.toggle('active', b === btn);
+            });
+            var statusEl = block.querySelector('.decision-status');
+            if (statusEl) { statusEl.textContent = 'current: ' + decision; }
+          })
+          .catch(function (err) {
+            showWriteError('Decision did NOT save to the database (' + err.message + '). It is only in this browser right now.');
+          });
+      });
+    });
+
+    var saveEditBtn = block.querySelector('.save-edit-btn');
+    var editTa = block.querySelector('.edit-block textarea');
+    if (saveEditBtn && editTa) {
+      saveEditBtn.addEventListener('click', function () {
+        var text = editTa.value;
+        saveEditBtn.disabled = true;
+        ReviewSaveClient.fetchWithRetry(API + '/edit-text', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, edited_text: text }),
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            hideWriteError();
+            var savedNote = block.querySelector('.edit-saved-note');
+            if (savedNote) { savedNote.textContent = 'saved just now'; }
+          })
+          .catch(function (err) {
+            showWriteError('Edit did NOT save to the database (' + err.message + '). Your text is still in the box, try again.');
+          })
+          .finally(function () { saveEditBtn.disabled = false; });
+      });
+    }
+
+    var saveNoteBtn = block.querySelector('.save-note');
+    var noteInput = block.querySelector('.item-notes textarea');
+    if (saveNoteBtn && noteInput) {
+      saveNoteBtn.addEventListener('click', function () {
+        var text = (noteInput.value || '').trim();
+        if (!text) { return; }
+        saveNoteBtn.disabled = true;
+        ReviewSaveClient.fetchWithRetry(API + '/note', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, note_text: text }),
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            hideWriteError();
+            noteInput.value = '';
+            loadState();
+          })
+          .catch(function (err) {
+            showWriteError('Note did NOT save to the database (' + err.message + '). Your text is still in the box, try again.');
+          })
+          .finally(function () { saveNoteBtn.disabled = false; });
+      });
+    }
+  });
+
+  if (blocks.length) { registerPage(); } else { loadState(); }
+})();
+</script>
 
 <script>
 (function () {
@@ -275,6 +569,7 @@ It can't diagnose what you never showed it.</pre>
   });
 })();
 </script>
+
 
 <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
 <style id="review-furniture-css">
@@ -411,5 +706,7 @@ It can't diagnose what you never showed it.</pre>
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
+
 
 
