@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mission Control, Next Level: the One-Board PRD</title>
+<style>
+:root{
+  --bg:#0b0f14; --surface:#10151c; --card:#151c26; --card2:#1a2230; --line:#243040;
+  --ink:#e8edf4; --ink2:#9fb0c3; --muted:#64748b;
+  --accent:#f97316; --accent2:#d95926;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+  --good:#34d399; --warn:#fbbf24; --crit:#f87171;
+  --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:'Cascadia Code',Consolas,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;font-size:16px}
+a{color:var(--s1);text-decoration:none}a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.85em;background:var(--card2);padding:.12em .4em;border-radius:4px;color:#ffd7b0}
+pre{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto;font-family:var(--mono);font-size:.82rem;color:#cfe3ff}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(1.7rem,4vw,2.6rem);margin:.2em 0 .1em}
+h2{font-family:var(--serif);font-size:1.35rem;margin:0;display:inline}
+h3{font-size:1.02rem;color:var(--accent);margin:1.4em 0 .5em;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:.8em 0;font-size:.9rem}
+th{color:var(--ink2);text-align:left;font-weight:600;border-bottom:2px solid var(--line);padding:8px 10px;white-space:nowrap}
+td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 80px}
+.tablewrap{overflow-x:auto}
+header.hero{padding:88px 0 28px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.kicker{color:var(--accent);text-transform:uppercase;letter-spacing:.14em;font-size:.78rem;font-weight:700}
+.sub{color:var(--ink2);max-width:760px;font-size:1.05rem}
+.meta{color:var(--muted);font-size:.82rem;margin-top:10px}
+/* nav */
+nav.nav-bar{position:fixed;top:0;left:0;right:0;background:rgba(11,15,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:50}
+nav.nav-bar .inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:10px 20px;flex-wrap:wrap}
+nav.nav-bar .brand{font-family:var(--serif);font-weight:700;color:var(--accent);margin-right:12px;white-space:nowrap}
+nav.nav-bar a{color:var(--ink2);font-size:.82rem;padding:4px 9px;border-radius:6px;white-space:nowrap}
+nav.nav-bar a:hover{background:var(--card);color:var(--ink);text-decoration:none}
+#nav-toggle{display:none;background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:1.05rem;cursor:pointer;margin-left:auto}
+@media(max-width:860px){
+  #nav-toggle{display:block}
+  nav.nav-bar .links{display:none;width:100%;flex-direction:column;align-items:stretch}
+  nav.nav-bar .links.open{display:flex}
+  nav.nav-bar .links a{padding:10px 12px;border-bottom:1px solid var(--line)}
+}
+nav.nav-bar .links{display:flex;gap:2px;flex-wrap:wrap}
+/* sections */
+details.sec{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:14px 0;overflow:hidden}
+details.sec>summary{cursor:pointer;padding:16px 20px;list-style:none;display:flex;align-items:center;gap:12px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:"+";margin-left:auto;color:var(--muted);font-size:1.3rem;font-family:var(--mono)}
+details.sec[open]>summary::after{content:"–"}
+details.sec>summary:hover{background:var(--card)}
+.secbody{padding:4px 20px 22px;border-top:1px solid var(--line)}
+.num{color:var(--muted);font-family:var(--mono);font-size:.9rem}
+details.tldr{border:1px solid var(--accent2);border-radius:12px;background:linear-gradient(180deg,#1b1410,var(--surface));margin:14px 0}
+details.tldr>summary{cursor:pointer;padding:16px 20px;font-family:var(--serif);font-size:1.2rem;color:var(--accent);list-style:none}
+details.tldr>summary::-webkit-details-marker{display:none}
+.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:2px 11px;font-size:.75rem;color:var(--ink2);margin:2px 3px 2px 0;background:var(--card)}
+.pill.go{border-color:var(--good);color:var(--good)}
+.pill.hold{border-color:var(--warn);color:var(--warn)}
+.pill.crit{border-color:var(--crit);color:var(--crit)}
+.callout{border-left:3px solid var(--accent);background:var(--card);border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:.93rem}
+.callout.warn{border-left-color:var(--warn)}
+.callout.good{border-left-color:var(--good)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+figure{margin:16px 0}
+figure img{width:100%;border-radius:10px;border:1px solid var(--line);display:block}
+figcaption{color:var(--muted);font-size:.8rem;margin-top:6px}
+.small{font-size:.85rem;color:var(--ink2)}
+/* ===== MOCKUP STYLES ===== */
+.mock{background:#0d1117;border:1px solid #2a3646;border-radius:14px;padding:18px;margin:16px 0;font-family:var(--sans)}
+.mock .mtitle{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.mock .mtitle b{font-family:var(--serif);font-size:1.1rem;color:#f4ede2}
+.mock .mtitle span{color:var(--muted);font-size:.72rem;font-family:var(--mono)}
+.hero-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:760px){.hero-strip{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;position:relative}
+.stat .lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stat .val{font-size:1.75rem;font-weight:700;font-family:var(--mono);margin:2px 0}
+.stat .src{font-size:.64rem;color:var(--muted);font-family:var(--mono)}
+.delta{font-size:.72rem;font-family:var(--mono);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+.delta.up{color:var(--good);background:rgba(52,211,153,.12)}
+.delta.dn{color:var(--crit);background:rgba(248,113,113,.12)}
+.delta.flat{color:var(--ink2);background:rgba(159,176,195,.12)}
+.spark{display:block;margin-top:6px}
+.mrow{display:grid;gap:10px;margin-top:10px}
+.mrow.c3{grid-template-columns:repeat(3,1fr)}
+.mrow.c2{grid-template-columns:2fr 1fr}
+@media(max-width:760px){.mrow.c3,.mrow.c2{grid-template-columns:1fr}}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tile h4{margin:0 0 8px;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.tile h4 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.tile ul{margin:0;padding:0;list-style:none;font-size:.82rem}
+.tile li{padding:5px 0;border-bottom:1px solid #1c2634;display:flex;justify-content:space-between;gap:8px}
+.tile li:last-child{border-bottom:none}
+.tile .foot{font-size:.62rem;color:var(--muted);font-family:var(--mono);margin-top:8px;border-top:1px dashed #223044;padding-top:6px}
+.bar{height:8px;border-radius:4px;background:#223044;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;border-radius:4px}
+.notwired{border:1px dashed var(--warn);color:var(--warn);font-family:var(--mono);font-size:.72rem;border-radius:8px;padding:8px 10px;text-align:center}
+.roster{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:760px){.roster{grid-template-columns:1fr 1fr}}
+.agentc{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.75rem}
+.agentc b{display:block;color:var(--ink);font-size:.8rem}
+.agentc span{color:var(--muted);font-size:.66rem;font-family:var(--mono)}
+.swatch{display:inline-block;width:15px;height:15px;border-radius:4px;vertical-align:-2px;margin-right:6px}
+.ok{color:var(--good)}.no{color:var(--crit)}.wa{color:var(--warn)}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-15-12:21:58 MT</div><!-- DEPLOY_STAMP_END -->
+<nav class="nav-bar">
+  <div class="inner">
+    <span class="brand">One Board</span>
+    <button id="nav-toggle" aria-label="menu">☰</button>
+    <div class="links" id="navlinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-today">What Exists</a>
+      <a href="#sec-data">The Data</a>
+      <a href="#sec-metrics">His 3 Metrics</a>
+      <a href="#sec-design">Design</a>
+      <a href="#sec-mock">Mockups</a>
+      <a href="#sec-prd">The PRD</a>
+      <a href="#sec-fork">Your Call</a>
+      <a href="#sec-plan">Weekend Plan</a>
+      <a href="#sec-review">Reviews Run</a>
+      <a href="#sec-accept">Done Means</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">PRD · Constraint-First Build Spec · 2026-08-15</div>
+  <h1>Mission Control, Next Level</h1>
+  <p class="sub">The one operations board that stays on your screen all day: how much work got done, how today compares to the last seven days, what it is costing, and what needs your hand. Built by extending what is already live, not by building dashboard number three.</p>
+  <div class="meta">Researched and written on Fable 5, at your explicit request. Skills run for real: prd, council (premortem mode), karpathy, lateral-leverage, dataviz. Every data claim below traces to a live query, a file read, or a screenshot taken today.</div>
+</header>
+
+<details class="tldr" id="tldr" open>
+  <summary>TL;DR, the whole thing in 60 seconds</summary>
+  <div class="secbody">
+    <p><span class="pill go">VERDICT: GO</span> <span class="pill">Extend Atlas Mission Control at /atlas</span> <span class="pill hold">One decision needed from you</span></p>
+    <ul>
+      <li><b>You already own the one board.</b> Atlas Mission Control is live, PIN-locked, 16 tiles, ~45 real endpoints, zero build step. Your 2026-08-10 instruction ("I want ONE dashboard") produced a full research doc that recommended extending it. That recommendation has sat unconfirmed for 5 days. This PRD carries it forward and finishes the thinking.</li>
+      <li><b>What "next level" actually is:</b> a new <b>Today's Pulse</b> hero strip answering your three named questions at a glance (work done today, today vs the 7-day median, usage cost), tiles regrouped by the question you are asking instead of by system component, 7-day sparklines on every number, the agent roster tile that was always the point, and a second-brain health tile. All of it reads tables that already exist. Zero new databases, zero new frameworks.</li>
+      <li><b>The look is already yours.</b> The Command Center monitor's visuals (count-up stat strip, activity stream, network map) and the archived codebase-galaxy renderer are the aesthetic you want. We port their DNA into Atlas's simple stack instead of inventing anything. The monitor stops pretending to be an ops board and becomes the client demo prop it was designed as.</li>
+      <li><b>A weekend ships it.</b> Phase 0 is merging work that is already 70% built and paused on a branch. Phases 1 and 2 are one endpoint, one hero strip, and four tiles. The galaxy memory-graph page is parked as the phase 3 wow.</li>
+      <li><b>Your call, options below:</b> confirm Atlas as the one board and demote the monitor to demo-only (recommended), or name anything on the monitor you actually use so it gets ported first. Everything else is ready to build.</li>
+    </ul>
+  </div>
+</details>
+
+<details class="sec" id="sec-research" open>
+  <summary><span class="num">01</span><h2>What was actually researched (receipts first)</h2></summary>
+  <div class="secbody">
+    <p>Per the house rule, claims about current UI come from looking, not assuming. Today's pass, all on 2026-08-15:</p>
+    <div class="tablewrap"><table>
+      <tr><th>Source</th><th>Method</th><th>What it settled</th></tr>
+      <tr><td><code>docs/decisions/atlas-consolidated-dashboard-goal-state-2026-08-10.md</code></td><td>Read in full, 369 lines</td><td>The complete dashboard inventory, the Option A recommendation, the 15-point done checklist. This PRD builds ON it and re-decides nothing it settled.</td></tr>
+      <tr><td><code>dashboard/backend/main.py</code> + frontend</td><td>Code read, every route</td><td>21 endpoints, what each reads. No auth on the ops path. Hand-rolled SVG charts, no chart library anywhere.</td></tr>
+      <tr><td>orc-postgres, live</td><td>Direct psql over SSH</td><td>119 tables enumerated. Column-level schema for the 9 that matter here. Row counts and date ranges proving day-over-day is buildable today.</td></tr>
+      <tr><td><code>https://agentshq.boubacarbarry.com/atlas</code></td><td>Playwright, screenshot, looked at</td><td>Live, PIN gate up, brand DNA confirmed (dark navy, compass, serif, orange).</td></tr>
+      <tr><td><code>https://boubacarbarry.com/monitor</code></td><td>Playwright, screenshot, looked at</td><td>Connects LIVE but build stamp is Jul 4, "0 done this week" against 54 total tasks, feeder table stale since 8/05. Live infra, stale build, starving data.</td></tr>
+      <tr><td>Archived graph explorer</td><td>Playwright on the archive URL, screenshot</td><td>15,165-node galaxy renderer, self-contained, beautiful, pointed at dead 7/06 code data. The renderer is reusable; the data is not.</td></tr>
+      <tr><td>PRDs: cos-data-home, cos-v2 pair, service-intelligence-layer + <code>skills/second-brain-query/SKILL.md</code>, <code>docs/roadmap/atlas.md</code>, TASK_BOARD 8/10 lane block</td><td>Read in full via research agents</td><td>The standing vetoes, the store map, the render doctrine, the settled decisions list in section 8 below.</td></tr>
+    </table></div>
+    <div class="grid2">
+      <figure><img src="./atlas-live.png" alt="Atlas Mission Control live PIN gate, 2026-08-15"><figcaption>Atlas today: live, locked, on brand. Screenshot 2026-08-15, 1440px.</figcaption></figure>
+      <figure><img src="./monitor-live.png" alt="Command Center monitor live state, 2026-08-15"><figcaption>The monitor today: connected but starving. Jul 4 build stamp, zero tasks done this week. Great bones, wrong job.</figcaption></figure>
+    </div>
+    <figure><img src="./graph-explorer.png" alt="Archived codebase galaxy explorer"><figcaption>The archived codebase galaxy: the renderer we repurpose in phase 3, pointed at the 2,917-row memory corpus instead of dead code data.</figcaption></figure>
+    <p class="small"><b>Honest gap:</b> the second-brain query tool itself was attempted through both its documented paths and transport-failed on this machine (a known, documented limitation of running it off-VPS). Prior work was found by direct repo research instead, which found more. That failure is itself evidence for the corpus-health tile proposed below.</p>
+  </div>
+</details>
+
+<details class="sec" id="sec-today" open>
+  <summary><span class="num">02</span><h2>What exists today: three surfaces, one owner, no overlap needed</h2></summary>
+  <div class="secbody">
+    <div class="tablewrap"><table>
+      <tr><th>Surface</th><th>State</th><th>Verdict</th></tr>
+      <tr><td><b>Atlas Mission Control</b> · <code>/atlas</code>, static HTML + vanilla JS + FastAPI, PIN bearer auth</td><td>LIVE. 16 tiles, ~45 endpoints, 13 routed sub-pages, test coverage, deploys with a restart</td><td><b>The one board.</b> Extend it.</td></tr>
+      <tr><td><b>Command Center monitor</b> · React/Vite, image-built service, public route, no auth</td><td>Live infra, Jul 4 build, fixture manifest (env var never set), feeder table stale since 8/05</td><td><b>Demo prop.</b> Finish it as a sales asset later, never as your ops board. Its visual components get mined for Atlas.</td></tr>
+      <tr><td><b>Codebase galaxy explorer</b> · archived review page</td><td>Static snapshot of 7/06 code</td><td><b>Parts donor.</b> The renderer is the phase 3 memory-graph sub-page.</td></tr>
+      <tr><td><b>Decision pages</b> · job board, warm-lead boards, Money Map</td><td>Live, DB-backed, canonical per purpose</td><td><b>Leave alone.</b> A decision page is where you act on one thing; the board is where you see everything. Different jobs.</td></tr>
+      <tr><td><b>Paused branch</b> · <code>feat/atlas-dashboard-gate-usage-sys-0810</code> @ <code>6b82344b7</code></td><td>[WIP], unmerged, needs rebase. Gate-queue-by-risk-tier, usage tracker, SYS backlog tiles, ~70% of the tile work</td><td><b>Phase 0.</b> Rebase, verify, merge. Do not redo.</td></tr>
+    </table></div>
+    <div class="callout warn"><b>Why the monitor died, in one line:</b> it was one surface forced to serve two masters, your private numbers and a prospect's eyes, so neither got served, and a tile that once showed fixture data lost your trust permanently. That failure is the strongest design input this PRD has. Every rule in section 5 exists so it cannot happen to Atlas.</div>
+  </div>
+</details>
+
+<details class="sec" id="sec-data" open>
+  <summary><span class="num">03</span><h2>The data reality: what a tile can truthfully show today</h2></summary>
+  <div class="secbody">
+    <p>Read from the live database today, not guessed. Every proposed tile in this PRD names its row in this table. Anything not in this table is flagged <span class="pill hold">needs new instrumentation</span> and parked.</p>
+    <div class="tablewrap"><table>
+      <tr><th>Source</th><th>Rows · range (live 8/15)</th><th>Timestamps</th><th>Powers</th></tr>
+      <tr><td><code>llm_calls</code></td><td>43,889 · since 4/21</td><td>per-call <code>ts</code>, cost, model, agent, tokens</td><td>Usage cost today, cost by model/crew, call volume sparkline, day-over-day</td></tr>
+      <tr><td><code>lane_tasks</code> (+ notes)</td><td>1,684 · since 7/13</td><td><code>created/updated/completed_at</code>, lane, priority, status</td><td>Work done today, per-lane throughput, SYS backlog by priority</td></tr>
+      <tr><td><code>task_outcomes</code></td><td>1,688 · since 4/24</td><td>start/complete, success, cost per task</td><td>Crew success rate, cost per completed task</td></tr>
+      <tr><td><code>agent_messages</code></td><td>681 · since 6/20</td><td>per message</td><td>Cross-lane bus activity stream</td></tr>
+      <tr><td><code>tasks</code> (coordination)</td><td>live claims</td><td>claim + lease expiry</td><td>Who is working what right now, contention</td></tr>
+      <tr><td><code>data/gate_log.jsonl</code></td><td>every Gate tick</td><td>per event</td><td>Merges today, held-by-risk-tier queue (the "needs a tap" list)</td></tr>
+      <tr><td><code>agent_manifest.yaml</code></td><td>full roster</td><td><code>last_worked_at</code>, function_group, status</td><td>Agent roster tile. Exists, complete, and read by nothing today</td></tr>
+      <tr><td><code>memory</code> + <code>memory_edges</code></td><td>2,917 rows</td><td>indexed-at</td><td>Second-brain corpus size + freshness; phase 3 galaxy graph</td></tr>
+      <tr><td><code>provider_health</code>, <code>alerts</code>, <code>service_errors</code>, <code>gate_errors</code></td><td>live</td><td>per event</td><td>Broken row: provider status, error stream</td></tr>
+      <tr><td><code>docs/audits/usage-health/DIGEST.md</code></td><td>weekly, laptop-written</td><td>file date</td><td>Claude Code plan usage %, always labeled a local estimate with its file age</td></tr>
+      <tr><td><code>cost_ledger</code>, <code>absorb_queue</code>, <code>leads</code>, content board</td><td>live</td><td>per row</td><td>Existing tiles, kept as-is</td></tr>
+    </table></div>
+    <h3>Proof day-over-day works, from today's pull</h3>
+    <pre>llm_calls, daily, last 8 days (queried live 2026-08-15):
+8/08: 309 calls $0.60   8/09: 315 $0.62   8/10: 563 $0.85   8/11: 309 $0.61
+8/12: 308 $0.63         8/13: 307 $0.56   8/14: 262 $0.57   8/15: 227 $0.37 (partial day)</pre>
+    <p class="small">Same shape works for <code>lane_tasks.completed_at</code> and Gate merges. The history is already there; nothing new needs to start logging before the comparison tile can ship.</p>
+  </div>
+</details>
+
+<details class="sec" id="sec-metrics" open>
+  <summary><span class="num">04</span><h2>Your three questions, made into honest numbers</h2></summary>
+  <div class="secbody">
+    <p>You named the bar yourself: "how much work is being done, how effective we are that day compared to the previous days, how you are doing on usage." Here is exactly how each becomes a number, and the one trap we refuse.</p>
+    <div class="tablewrap"><table>
+      <tr><th>Question</th><th>Metric</th><th>Source</th><th>Comparison</th></tr>
+      <tr><td><b>How much work today?</b></td><td>Tasks completed + branches merged + LLM calls executed, shown as three separate counts</td><td><code>lane_tasks</code>, <code>gate_log.jsonl</code>, <code>llm_calls</code></td><td>Each vs its own trailing 7-day median, as a signed % chip</td></tr>
+      <tr><td><b>How effective vs previous days?</b></td><td>The same three counts plus crew success rate, each with a 7-day sparkline and delta</td><td>+ <code>task_outcomes.success</code></td><td>Median, not mean, so one monster day (8/10 was 2x normal) does not poison the baseline</td></tr>
+      <tr><td><b>How is usage doing?</b></td><td>API spend today (exact, from <code>llm_calls</code>) and Claude Code plan % (labeled estimate, from the digest, with its file age shown)</td><td><code>llm_calls</code>, digest file</td><td>Spend vs daily cap; plan % vs week</td></tr>
+    </table></div>
+    <div class="callout"><b>The trap we refuse: a composite "effectiveness score."</b> Blending tasks, merges, calls and cost into one invented index would look impressive and mean nothing, and the first time it moved for a reason you could not trace, you would stop trusting the board. The whole board dies by that one tile. You get real counts with real deltas, each traceable to a query you could run yourself. This was a deliberate Council + Karpathy call, held under pressure, and it is the difference between a dashboard and a demo.</div>
+  </div>
+</details>
+
+<details class="sec" id="sec-design" open>
+  <summary><span class="num">05</span><h2>Design system and information architecture</h2></summary>
+  <div class="secbody">
+    <h3>The organizing principle: rows are questions, not components</h3>
+    <p>Today's tiles are grouped by which subsystem feeds them. Nobody thinks in subsystems at 7am. The board reorders into five rows, each one a question you actually ask, in the order you ask them, hero strip on top:</p>
+    <div class="tablewrap"><table>
+      <tr><th>Row</th><th>Question</th><th>Tiles</th></tr>
+      <tr><td>0 · Pulse</td><td>How are we doing right now?</td><td>Work today, vs 7 days, spend today, plan usage (the hero strip)</td></tr>
+      <tr><td>1 · Needs me</td><td>Is anything stuck on me?</td><td>Gate held-by-tier "needs a tap", approvals, priority queue, inbound</td></tr>
+      <tr><td>2 · Broken</td><td>Is anything on fire?</td><td>Errors, cron liveness, provider health, heartbeats (with the "a pulse is not proof of work" caveat honored)</td></tr>
+      <tr><td>3 · Money</td><td>What is it costing?</td><td>Spend + pacing, cost by crew, cost per completed task</td></tr>
+      <tr><td>4 · Moving</td><td>Is the work moving?</td><td>SYS backlog by priority, absorb, content, leads, live claims</td></tr>
+      <tr><td>5 · Roster + Brain</td><td>Who is on the field, and is the memory sharp?</td><td>Agent roster by function group (finally reading the manifest), second-brain corpus health</td></tr>
+    </table></div>
+    <h3>The truth contract, every tile, no exceptions</h3>
+    <ul>
+      <li><b>Source + age on the tile.</b> Every tile carries its table name and an "as of" timestamp in the footer, small but present.</li>
+      <li><b>Three failure states, never collapsed:</b> <i>no signal found</i> (a real zero), <i>source unreadable</i> (query failed, shown in amber), and <b>NOT WIRED</b> (never connected, shown as a labeled dashed box, never a fake zero). Adopted verbatim from your data-home doctrine. The monitor showing "0 done this week" with no hint the feed was stale is the exact lie this kills.</li>
+      <li><b>Read-only.</b> Every new endpoint is a GET. No writes ride along with this build.</li>
+      <li><b>Stale sources say so.</b> The plan-usage tile reads a laptop-written file; it renders that file's date next to the number, always.</li>
+    </ul>
+    <h3>Visual system (dataviz skill applied, validator run)</h3>
+    <p>Dark-first, matched to Atlas's live brand: near-black navy surfaces, serif display headings, the orange as the single accent. The categorical palette was <b>machine-validated</b> against Atlas's own surface with the dataviz skill's six-check validator, all checks passing (lightness band, chroma floor, colorblind separation, normal-vision floor, contrast):</p>
+    <p>
+      <span class="swatch" style="background:#3987e5"></span><code>#3987e5</code>&nbsp;
+      <span class="swatch" style="background:#d95926"></span><code>#d95926</code>&nbsp;
+      <span class="swatch" style="background:#199e70"></span><code>#199e70</code>&nbsp;
+      <span class="swatch" style="background:#c98500"></span><code>#c98500</code>&nbsp;
+      <span class="swatch" style="background:#d55181"></span><code>#d55181</code>
+    </p>
+    <ul>
+      <li>Status colors (green/amber/red) are reserved for state, never used as series colors. Series hues are assigned in fixed order, never cycled.</li>
+      <li>Sparklines are single-series 2px lines, one axis, no dual-axis charts anywhere, direct labels over legends where 4 series or fewer.</li>
+      <li>Numbers count up on load (the monitor's best trick, ported), deltas are signed chips, refresh no faster than 30s with a visible "updated Xs ago".</li>
+    </ul>
+  </div>
+</details>
+
+<details class="sec" id="sec-mock" open>
+  <summary><span class="num">06</span><h2>The mockups (live HTML, not sketches)</h2></summary>
+  <div class="secbody">
+    <p class="small">These render in this page with the validated palette and real proportions. Numbers are sample values shaped from today's live pulls (the 227 calls and $0.37 are real 8/15 figures). This is what the top of Atlas looks like after phase 1.</p>
+
+    <div class="mock">
+      <div class="mtitle"><b>Row 0 · Today's Pulse</b><span>hero strip, /atlas/pulse, new endpoint</span></div>
+      <div class="hero-strip">
+        <div class="stat"><div class="lbl">Tasks closed today</div><div class="val">14<span class="delta up">▲ +27%</span></div>
+          <svg class="spark" width="100%" height="26" viewBox="0 0 120 26" preserveAspectRatio="none"><polyline points="0,16 17,15 34,4 51,15 68,15 85,16 102,19 120,10" fill="none" stroke="#199e70" stroke-width="2"/></svg>
+          <div class="src">lane_tasks · vs 7d median 11 · as of 14:32</div></div>
+        <div class="stat"><div class="lbl">Branches merged</div><div class="val">9<span class="delta up">▲ +12%</span></div>
+          <svg class="spark" width="100%" height="26" viewBox="0 0 120 26" preserveAspectRatio="none"><polyline points="0,14 17,12 34,6 51,13 68,11 85,14 102,16 120,9" fill="none" stroke="#3987e5" stroke-width="2"/></svg>
+          <div class="src">gate_log · vs 7d median 8 · as of 14:32</div></div>
+        <div class="stat"><div class="lbl">API spend today</div><div class="val">$0.37<span class="delta dn">▼ -35%</span></div>
+          <svg class="spark" width="100%" height="26" viewBox="0 0 120 26" preserveAspectRatio="none"><polyline points="0,10 17,9 34,3 51,9 68,8 85,11 102,10 120,16" fill="none" stroke="#d95926" stroke-width="2"/></svg>
+          <div class="src">llm_calls, 227 calls · cap $2.50 · as of 14:32</div></div>
+        <div class="stat"><div class="lbl">Plan usage, week</div><div class="val">27%<span class="delta flat">● steady</span></div>
+          <div class="bar"><i style="width:27%;background:#c98500"></i></div>
+          <div class="src">usage digest · LOCAL ESTIMATE · file dated 8/15</div></div>
+      </div>
+    </div>
+
+    <div class="mock">
+      <div class="mtitle"><b>Row 1 · Needs me</b><span>gate queue by risk tier, built on the paused branch</span></div>
+      <div class="mrow c2">
+        <div class="tile"><h4><span class="dot" style="background:#f87171"></span>Held, needs your tap</h4>
+          <ul>
+            <li><span><code>fix/kie-media-retry</code> · high risk</span><span class="wa">held 2d</span></li>
+            <li><span><code>feat/lead-capture-sweep</code> · Tier C</span><span class="wa">held 4h</span></li>
+            <li><span><code>docs/model-matrix-inline</code> · Tier C</span><span>held 1h</span></li>
+          </ul>
+          <div class="foot">gate_log.jsonl · as of 14:32 · tap in Telegram, never here</div></div>
+        <div class="tile"><h4><span class="dot" style="background:#34d399"></span>Approvals</h4>
+          <ul><li><span>Pending items</span><b>2</b></li><li><span>Priority queue top</span><b>3</b></li></ul>
+          <div class="foot">approval_queue · as of 14:32</div></div>
+      </div>
+    </div>
+
+    <div class="mock">
+      <div class="mtitle"><b>Rows 2-3 · Broken / Money</b><span>status colors reserved for state only</span></div>
+      <div class="mrow c3">
+        <div class="tile"><h4><span class="dot" style="background:#34d399"></span>System health</h4>
+          <ul>
+            <li><span>Crons alive</span><span class="ok">12 / 13</span></li>
+            <li><span>Providers</span><span class="ok">all up</span></li>
+            <li><span>Errors, 24h</span><span class="wa">3 new</span></li>
+          </ul><div class="foot">cron-liveness · provider_health · error stream</div></div>
+        <div class="tile"><h4><span class="dot" style="background:#c98500"></span>Cost by crew, today</h4>
+          <ul>
+            <li><span>council</span><span>$0.14</span></li><li><span>absorb</span><span>$0.09</span></li><li><span>outreach</span><span>$0.08</span></li>
+          </ul>
+          <div class="bar"><i style="width:38%;background:#3987e5"></i></div>
+          <div class="foot">llm_calls GROUP BY crew · vs $2.50 cap</div></div>
+        <div class="tile"><h4><span class="dot" style="background:#a78bfa"></span>Second brain</h4>
+          <ul>
+            <li><span>Corpus rows</span><b>2,917</b></li>
+            <li><span>Newest entry</span><span class="ok">today</span></li>
+            <li><span>Staleness alert at</span><span>&gt; 48h</span></li>
+          </ul><div class="foot">memory table · went 9 days stale once, never silently again</div></div>
+      </div>
+    </div>
+
+    <div class="mock">
+      <div class="mtitle"><b>Row 5 · Agent roster by function</b><span>agent_manifest.yaml, read at last</span></div>
+      <div class="roster">
+        <div class="agentc"><b>Revenue</b><span>outreach · leads · demo</span><div class="bar"><i style="width:70%;background:#199e70"></i></div></div>
+        <div class="agentc"><b>Content</b><span>griot · kairos · studio</span><div class="bar"><i style="width:45%;background:#3987e5"></i></div></div>
+        <div class="agentc"><b>Systems</b><span>gate · healer · absorb</span><div class="bar"><i style="width:88%;background:#d95926"></i></div></div>
+      </div>
+      <div style="margin-top:10px" class="notwired">NOT WIRED example: a tile whose source was never connected renders exactly like this, never as a zero</div>
+    </div>
+
+    <p class="small"><b>Phase 3 teaser, parked on purpose:</b> the archived galaxy renderer re-pointed at <code>memory</code> + <code>memory_edges</code> becomes <code>/atlas/brain</code>, your second brain as a living constellation you can search. It is the single most demo-worthy screen this system could show a prospect, and it is deliberately NOT in the weekend scope, because the weekend belongs to the numbers you look at daily.</p>
+  </div>
+</details>
+
+<details class="sec" id="sec-prd">
+  <summary><span class="num">07</span><h2>The Build Contract (the 21-section PRD, condensed)</h2></summary>
+  <div class="secbody">
+    <p class="small">The full Constraint-First Build Spec is saved agent-side at <code>thepopebot/chat-ui/PRD.md</code> and registered in the PRD registry. The load-bearing sections:</p>
+    <div class="tablewrap"><table>
+      <tr><th>Section</th><th>Content</th></tr>
+      <tr><td><b>1 · One-Line Verdict</b></td><td><b>GO.</b> Extend the live Atlas board. Door 1 on the founder-weight screen: it removes the daily "ask an agent how things are going" tax from your plate and adds no fulfillment you owe anyone.</td></tr>
+      <tr><td><b>2 · The Single Problem</b></td><td>You cannot see, in one glance without asking anyone, how much work your system did today, whether that is better than yesterday, and what it cost. Answers exist but live in six places behind SSH and questions.</td></tr>
+      <tr><td><b>3 · Non-Negotiables</b></td><td>PIN auth stays. Read-only. Zero build step. No new database. Weekend-sized. The 8/10 doc's settled decisions are inputs, not debates.</td></tr>
+      <tr><td><b>4 · What We Will NOT Build</b></td><td><b>(1)</b> No third dashboard, under any name. <b>(2)</b> No React rewrite of Atlas and no chart library; the monitor's own hand-rolled SVG proves we do not need one. <b>(3)</b> No composite effectiveness score; real counts with real deltas only. <b>(4)</b> No new Postgres tables; every tile reads what exists. <b>(5)</b> No write actions in this pass. <b>(6)</b> No auto-refresh under 30s. <b>(7)</b> The galaxy page does not enter the weekend.</td></tr>
+      <tr><td><b>5 · Demand Signal</b></td><td>You, four times on record: the 8/10 "I want ONE dashboard" instruction, this 8/15 commission, the June cockpit spec, and daily status questions to agents that this board answers silently.</td></tr>
+      <tr><td><b>6 · The User Who Matters</b></td><td>Boubacar, 7:00am, coffee, board already open on the second monitor. Twelve seconds of looking answers: anything need my tap, anything broken, are we ahead of yesterday, what did it cost. Then he goes and makes asks, which is the actual job.</td></tr>
+      <tr><td><b>7 · Moment of Value</b></td><td>The pulse strip's delta chips. The instant "14 ▲ +27%" lands, the previous-days comparison he asked for is answered without a single question typed.</td></tr>
+      <tr><td><b>8 · Build Contract, v1, LOCKED</b></td><td>Rebased + merged paused branch; one new <code>/atlas/pulse</code> endpoint; hero strip with 4 stats + sparklines + deltas; tile regroup into the six question rows; roster tile reading the manifest; second-brain health tile; per-tile source + age footers; three-state failure rendering; mobile hamburger; LIVE_STATE row for the Atlas URL. Nothing else.</td></tr>
+      <tr><td><b>9-11 · Tech, Integration, Data</b></td><td>Vanilla JS + FastAPI, additive routes behind the existing bearer PIN. Sources exactly as the section 3 table. State lives where it already lives; the board owns none.</td></tr>
+      <tr><td><b>12 · Failure Modes</b></td><td>Top 3 with mitigations: a tile silently lies (three-state contract + fixture grep in acceptance), the Gate tap stalls the weekend (phase 0 flagged to you Friday), schema drift breaks a tile (per-endpoint missing-data tests, pattern already in the test file).</td></tr>
+      <tr><td><b>13-14 · Success + Ship</b></td><td>Success: you stop asking agents for daily status in week one; the board answers first. Ship condition: the 18-point checklist in section 10 below, every box machine-checkable.</td></tr>
+      <tr><td><b>16 · Monetization Angle</b></td><td>Direct: reclaims daily founder minutes for revenue asks. Adjacent: this board, demo-mode stripped, is the "watch my system run itself" screen for the how-I-built-it cohort and any stack-licensing conversation. The monitor becomes that prop; this PRD is written cleanly enough to hand a paying client as the template.</td></tr>
+      <tr><td><b>17 · Phase 2 Parking Lot</b></td><td>Galaxy memory graph at /atlas/brain; Money Map tile (Supabase); asks-made-today counter; Stripe/Plausible wiring; monitor demo-prop finishing pass; cross-provider token tracking (blocked upstream).</td></tr>
+      <tr><td><b>18 · Open Questions</b></td><td>Exactly the three in section 8 below. Build is blocked on the first only.</td></tr>
+      <tr><td><b>21 · Anti-Pattern Watch</b></td><td>Must never become: a wall of decorative tiles nobody asked for; a second scoreboard competing with the Money Map (the Money Map stays the business scoreboard, this is the machine-room board); a demo that lies politely.</td></tr>
+    </table></div>
+  </div>
+</details>
+
+<details class="sec" id="sec-fork" open>
+  <summary><span class="num">08</span><h2>The decision that is yours (options, context, recommendation)</h2></summary>
+  <div class="secbody">
+    <p><b>Context:</b> the one-canonical-page rule makes "which surface is THE board" your call, and the 8/10 research already framed it. It has waited 5 days. Two standing PRDs of yours also veto any NEW surface ("a new surface is a second place to check"). This plan honors that veto by construction: it adds zero surfaces, it extends the one you have and demotes the imposter.</p>
+    <div class="tablewrap"><table>
+      <tr><th>Option</th><th>What happens</th><th>Cost / risk</th></tr>
+      <tr><td><b>A · Extend Atlas, monitor becomes demo prop</b> <span class="pill go">RECOMMENDED</span></td><td>Everything in this PRD. One board, one URL, weekend-sized</td><td>Small, additive, reversible tile by tile</td></tr>
+      <tr><td>B · Finish the React monitor as the board</td><td>Rebuild 16 working tiles in React, add auth it never had, rebuild image per change</td><td>Large; replaces a working thing with a stalled thing; already failed once for a nameable reason</td></tr>
+      <tr><td>C · Fresh build</td><td>Dashboard number three</td><td>The exact move your 8/10 instruction exists to prevent</td></tr>
+    </table></div>
+    <p><b>Recommendation: A</b>, for the reasons the whole document is. The two things only you can answer:</p>
+    <ol>
+      <li><b>Confirm A</b>, or name anything on the monitor you actually look at so it gets ported first. (Blocks phase 1.)</li>
+      <li><b>Roster tile:</b> show not-yet-real agents greyed as "coming", or hide them? (Default if unanswered: hide.)</li>
+      <li><b>Phase 0 needs one real Telegram tap</b> when the rebased branch hits the Gate; it touches the orchestrator, which is held for your approval by design. (Schedule risk only, flagged now so the weekend does not stall silently.)</li>
+    </ol>
+  </div>
+</details>
+
+<details class="sec" id="sec-plan" open>
+  <summary><span class="num">09</span><h2>The weekend build sequence</h2></summary>
+  <div class="secbody">
+    <div class="tablewrap"><table>
+      <tr><th>Phase</th><th>Ships</th><th>Size</th></tr>
+      <tr><td><b>0 · Sat AM</b></td><td>Rebase <code>feat/atlas-dashboard-gate-usage-sys-0810</code> onto main, run the paused verification (live curls, Playwright desktop + 375, unauth 401 checks), merge via your Gate tap. Gate-by-tier, usage, SYS backlog tiles go live</td><td>Half-day, 70% pre-built</td></tr>
+      <tr><td><b>1 · Sat PM</b></td><td><code>/atlas/pulse</code> endpoint (three counts + medians + deltas from <code>lane_tasks</code>, <code>gate_log</code>, <code>llm_calls</code>), hero strip with sparklines and count-up, tile regroup into question rows, source + age footers everywhere</td><td>Half-day</td></tr>
+      <tr><td><b>2 · Sun</b></td><td>Roster tile from the manifest, second-brain health tile, three-state failure rendering swept across all tiles, cost-by-crew view, LIVE_STATE row, full acceptance run</td><td>Day</td></tr>
+      <tr><td><b>3 · Parked</b></td><td>Galaxy memory graph, Money Map tile, asks counter, monitor demo finishing</td><td>Explicitly not the weekend</td></tr>
+    </table></div>
+  </div>
+</details>
+
+<details class="sec" id="sec-review">
+  <summary><span class="num">10</span><h2>The reviews this PRD survived (run for real, results kept)</h2></summary>
+  <div class="secbody">
+    <h3>Council, premortem mode: "it shipped, and he stopped looking within a week. Why?"</h3>
+    <div class="tablewrap"><table>
+      <tr><th>Voice</th><th>Failure found</th><th>Design answer now baked in</th></tr>
+      <tr><td>Operator</td><td>Numbers do not map to what he actually cares about, so glancing stops paying</td><td>Hero strip leads with his three named questions verbatim; Money Map stays the business scoreboard, this board never competes with it</td></tr>
+      <tr><td>Skeptic</td><td><b>One tile lies once and the whole board is dead</b> (the monitor's exact cause of death)</td><td>The truth contract: three failure states, source + age on every tile, fixture grep in acceptance. Ranked the #1 risk</td></tr>
+      <tr><td>Aesthete</td><td>"Next level" fizzles into twenty gray rectangles</td><td>Validated palette, serif + orange brand carry-over, sparklines, count-up, and the mockups decided the look before any code</td></tr>
+      <tr><td>Economist</td><td>Schema drift quietly breaks tiles and it rots like the monitor</td><td>Read-only additive GETs, per-endpoint missing-data tests, zero new services or deps to maintain</td></tr>
+      <tr><td>Governor</td><td>Violates the no-new-surface veto, or stalls at the Gate tap, or redoes the paused branch</td><td>Consolidation-not-creation stated in the contract; the tap is flagged to you in advance; phase 0 folds the branch in, never redoes it</td></tr>
+    </table></div>
+    <h3>Karpathy audit, 10 principles</h3>
+    <p class="small"><b>PASS 8 / WARN 2 / FAIL 0.</b> Warns, kept visible on purpose: (P5) the day-over-day definition is the complexity magnet, held to per-metric medians with no composite index, revisit only if you ask for one number; (P2) the galaxy page is the scope-creep magnet, held out of v1 by contract. Verification (P6): every ship-condition line is a command or a screenshot, none is a judgment call.</p>
+    <h3>Lateral leverage, the reuse pass</h3>
+    <p class="small"><b>Top finding: the "next level look" was already built in-house twice.</b> The monitor's stat strip, activity stream and count-up animations, and the archived galaxy renderer, are exactly the aesthetic requested, already written, already yours. Ported patterns beat new builds. <b>Cut list:</b> chart library (hand-rolled SVG already proves out), React rewrite (stalled once already), new metrics tables (llm_calls + lane_tasks already carry the history), buying any monitoring SaaS (the data never leaves your Postgres).</p>
+  </div>
+</details>
+
+<details class="sec" id="sec-accept">
+  <summary><span class="num">11</span><h2>Done means done: the acceptance checklist</h2></summary>
+  <div class="secbody">
+    <p class="small">Extends the 8/10 doc's 15-point machine-verifiable checklist. A build task claiming completion cites each line with its command output or screenshot path. Highlights:</p>
+    <ol class="small">
+      <li>Every polled endpoint returns 200 with non-empty JSON under the PIN, and 401/403 without it. Zero exceptions.</li>
+      <li>Every tile payload carries source + timestamp, or an explicit <code>{"available": false, "reason": ...}</code>.</li>
+      <li><code>grep -r fixture</code> across the ops path returns nothing.</li>
+      <li>The pulse endpoint's median math is unit-tested against a fixed 7-day sample.</li>
+      <li>The manifest roster renders grouped by function; the manifest is read by a live endpoint (checkable by grep + curl).</li>
+      <li>Playwright screenshots at 1440 and 375, after full load, actually looked at. Hamburger present below the breakpoint.</li>
+      <li>Every new route is a GET; the diff greps clean of POST/PUT/DELETE.</li>
+      <li>First paint under 3 seconds cold, measured.</li>
+      <li><code>docs/LIVE_STATE.md</code> carries the canonical Atlas URL row (a named 5-day-old defect, fixed in this pass).</li>
+      <li>No ops question remains answerable only on the monitor; each of its six tabs is ported or declared demo-only in writing.</li>
+    </ol>
+    <p class="small">Sources and provenance: the 8/10 consolidation research doc, the live schema pull, the paused branch, the three screenshots above, and the four standing PRDs named in section 1. This document re-decides nothing they settled and cites where it builds on them.</p>
+  </div>
+</details>
+
+</div>
+<script>
+document.getElementById('nav-toggle').addEventListener('click',function(){
+  document.getElementById('navlinks').classList.toggle('open');
+});
+document.querySelectorAll('#navlinks a').forEach(function(a){a.addEventListener('click',function(){
+  document.getElementById('navlinks').classList.remove('open');
+});});
+</script>
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
