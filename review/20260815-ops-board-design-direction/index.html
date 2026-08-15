@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ops Board Design Direction &middot; 2026-08-15</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Real tokens, lifted verbatim from the live board's own stylesheet */
+  --bg:#08090C; --surface:#10131A; --surface2:#181D28;
+  --terracotta:#FF6B35; --brass:#C19A6B; --lapis:#4A8C7E;
+  --verdigris:#6F9B6E; --bronze:#B87333; --rose:#C25A6E;
+  --ink:#F4EEE0; --ink-dim:#B9B09A; --ink-muted:#76705F;
+  --green:#6F9B6E; --amber:#C19A6B; --red:#C25A6E;
+  --hairline:rgba(193,154,107,.10); --hairline-md:rgba(193,154,107,.20);
+  --radius:6px;
+  --font-body:'Atkinson Hyperlegible',system-ui,sans-serif;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:var(--terracotta);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1060px;margin:0 auto;padding:0 20px 120px}
+
+/* ---------- nav ---------- */
+nav.top{position:fixed;top:0;left:0;right:0;z-index:60;background:rgba(8,9,12,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--hairline)}
+nav.top .inner{max-width:1060px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:11px 20px}
+nav.top .brand{font-family:var(--font-display);font-weight:700;color:var(--terracotta);white-space:nowrap;margin-right:14px;font-size:.98rem}
+nav.top .links{display:flex;gap:2px;flex-wrap:wrap}
+nav.top .links a{color:var(--ink-dim);font-size:.78rem;padding:5px 9px;border-radius:var(--radius)}
+nav.top .links a:hover{background:var(--surface2);color:var(--ink);text-decoration:none}
+#navtoggle{display:none;margin-left:auto;background:var(--surface2);border:1px solid var(--hairline-md);color:var(--ink);border-radius:var(--radius);padding:6px 13px;font-size:1.05rem;cursor:pointer}
+@media(max-width:900px){
+  #navtoggle{display:block}
+  nav.top .inner{flex-wrap:wrap}
+  nav.top .links{display:none;width:100%;flex-direction:column;align-items:stretch;padding-top:6px}
+  nav.top .links.open{display:flex}
+  nav.top .links a{padding:11px 10px;border-bottom:1px solid var(--hairline);font-size:.88rem}
+}
+
+/* ---------- hero ---------- */
+header.hero{padding:96px 0 26px;border-bottom:1px solid var(--hairline);margin-bottom:22px}
+.kicker{color:var(--terracotta);text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;font-weight:700}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(1.8rem,4.4vw,2.7rem);margin:.18em 0 .18em;line-height:1.15}
+.lede{color:var(--ink-dim);max-width:740px;font-size:1.04rem}
+.meta{color:var(--ink-muted);font-size:.8rem;margin-top:12px;font-family:var(--font-mono)}
+
+/* ---------- tldr + sections ---------- */
+details.tldr{border:1px solid var(--terracotta);border-radius:10px;background:linear-gradient(180deg,#1a1009,var(--surface));margin:16px 0 26px}
+details.tldr>summary{cursor:pointer;padding:16px 20px;font-family:var(--font-display);font-size:1.18rem;color:var(--terracotta);list-style:none;display:flex;align-items:center;gap:10px}
+details.tldr>summary::-webkit-details-marker{display:none}
+details.tldr>summary::after{content:"+";margin-left:auto;font-family:var(--font-mono);color:var(--ink-muted);font-size:1.3rem}
+details.tldr[open]>summary::after{content:"\2013"}
+details.tldr .body{padding:0 20px 20px}
+details.sec{border:1px solid var(--hairline-md);border-radius:10px;background:var(--surface);margin:14px 0;overflow:hidden}
+details.sec>summary{cursor:pointer;padding:15px 20px;list-style:none;display:flex;align-items:center;gap:12px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:"+";margin-left:auto;color:var(--ink-muted);font-size:1.3rem;font-family:var(--font-mono)}
+details.sec[open]>summary::after{content:"\2013"}
+details.sec>summary:hover{background:var(--surface2)}
+details.sec h2{font-family:var(--font-display);font-size:1.22rem;margin:0;display:inline;font-weight:600}
+.num{color:var(--ink-muted);font-family:var(--font-mono);font-size:.85rem}
+.secbody{padding:6px 20px 24px;border-top:1px solid var(--hairline)}
+h3{font-size:.92rem;color:var(--terracotta);margin:1.6em 0 .5em;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+h3:first-child{margin-top:.7em}
+p{margin:.7em 0}
+ul{padding-left:1.15em;margin:.6em 0}
+li{margin:.3em 0}
+.small{font-size:.86rem;color:var(--ink-dim)}
+
+/* ---------- evidence chips + callouts ---------- */
+.why{border-left:3px solid var(--terracotta);background:var(--surface2);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0;font-size:.93rem}
+.why b{color:var(--terracotta);display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;margin-bottom:4px}
+.why.gap{border-left-color:var(--amber)}
+.why.gap b{color:var(--amber)}
+.pill{display:inline-block;border:1px solid var(--hairline-md);border-radius:99px;padding:2px 11px;font-size:.72rem;color:var(--ink-dim);margin:3px 4px 3px 0;background:var(--surface2);font-family:var(--font-mono)}
+.pill.live{border-color:var(--green);color:var(--green)}
+.pill.next{border-color:var(--terracotta);color:var(--terracotta)}
+.pill.later{border-color:var(--ink-muted);color:var(--ink-muted)}
+table{border-collapse:collapse;width:100%;margin:.9em 0;font-size:.87rem}
+th{color:var(--ink-dim);text-align:left;font-weight:700;border-bottom:2px solid var(--hairline-md);padding:8px 10px}
+td{border-bottom:1px solid var(--hairline);padding:8px 10px;vertical-align:top}
+.tablewrap{overflow-x:auto}
+
+/* ---------- MOCKUP CHROME ---------- */
+.mock{background:var(--bg);border:1px solid var(--hairline-md);border-radius:10px;padding:18px;margin:18px 0;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+.mocklabel{display:flex;align-items:center;gap:9px;margin:-4px 0 14px;font-family:var(--font-mono);font-size:.68rem;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.1em}
+.mocklabel::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--terracotta)}
+
+/* pulse strip */
+.pulse{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:760px){.pulse{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:420px){.pulse{grid-template-columns:1fr}}
+.pstat{background:var(--surface);border:1px solid var(--hairline);border-radius:8px;padding:13px 14px 11px}
+.pstat .lbl{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-muted)}
+.pstat .val{font-size:1.9rem;font-weight:700;font-family:var(--font-mono);line-height:1.1;margin:3px 0 1px;color:var(--ink)}
+.delta{font-size:.7rem;font-family:var(--font-mono);border-radius:5px;padding:2px 6px;margin-left:7px;vertical-align:6px}
+.delta.up{color:var(--green);background:rgba(111,155,110,.15)}
+.delta.dn{color:var(--rose);background:rgba(194,90,110,.15)}
+.delta.flat{color:var(--ink-dim);background:rgba(185,176,154,.12)}
+.pstat .src{font-size:.6rem;color:var(--ink-muted);font-family:var(--font-mono);margin-top:7px;border-top:1px dashed var(--hairline-md);padding-top:6px}
+svg.spark{display:block;width:100%;height:30px;margin-top:4px}
+
+/* generic tiles */
+.mrow{display:grid;gap:10px;margin-top:10px}
+.c2{grid-template-columns:1fr 1fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c21{grid-template-columns:2fr 1fr}
+@media(max-width:760px){.c2,.c3,.c21{grid-template-columns:1fr}}
+.tile{background:var(--surface);border:1px solid var(--hairline);border-radius:8px;padding:13px 15px}
+.tile h4{margin:0 0 10px;font-family:var(--font-display);font-size:1rem;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:9px}
+.tile h4 .badge{margin-left:auto;font-family:var(--font-mono);font-size:.63rem;color:var(--ink-muted);border:1px solid var(--hairline-md);border-radius:99px;padding:1px 8px;text-transform:none;letter-spacing:0}
+.foot{font-size:.6rem;color:var(--ink-muted);font-family:var(--font-mono);margin-top:11px;border-top:1px dashed var(--hairline-md);padding-top:6px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 auto}
+.d-green{background:var(--green)}.d-amber{background:var(--amber)}.d-red{background:var(--rose)}.d-grey{background:var(--ink-muted)}
+
+/* attention cards */
+.attn{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--hairline);align-items:flex-start}
+.attn:last-of-type{border-bottom:none}
+.rank{font-family:var(--font-mono);font-size:1.1rem;color:var(--terracotta);font-weight:500;width:22px;flex:0 0 auto;line-height:1.35}
+.attn .txt{flex:1;min-width:0}
+.attn .line{font-size:.94rem;color:var(--ink)}
+.attn .line b{color:var(--terracotta);font-weight:400;border-bottom:1px dotted var(--hairline-md);cursor:pointer}
+.attn .whyline{font-size:.76rem;color:var(--ink-muted);margin-top:3px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.btn{font-family:var(--font-body);font-size:.73rem;border-radius:5px;padding:5px 11px;border:1px solid var(--hairline-md);background:var(--surface2);color:var(--ink-dim);cursor:pointer}
+.btn.go{border-color:var(--green);color:var(--green);background:rgba(111,155,110,.10)}
+.btn.acc{border-color:var(--terracotta);color:var(--terracotta);background:rgba(255,107,53,.10)}
+.sev{width:3px;border-radius:2px;align-self:stretch;flex:0 0 auto}
+.sev-hi{background:var(--rose)}.sev-md{background:var(--amber)}.sev-lo{background:var(--lapis)}
+
+/* content board */
+.segbar{display:flex;gap:4px;background:var(--surface2);border-radius:7px;padding:3px;margin-bottom:11px;flex-wrap:wrap}
+.seg{font-family:var(--font-mono);font-size:.7rem;padding:5px 11px;border-radius:5px;color:var(--ink-muted);cursor:pointer;border:none;background:transparent}
+.seg.on{background:var(--terracotta);color:#0b0b0b;font-weight:500}
+.cbrow{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--hairline);font-size:.83rem}
+.cbrow:last-child{border-bottom:none}
+.cbrow .plat{font-family:var(--font-mono);font-size:.63rem;color:var(--ink-muted);width:60px;flex:0 0 auto}
+.cbrow .ttl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.cbrow .score{font-family:var(--font-mono);font-size:.7rem;color:var(--green);flex:0 0 auto}
+
+/* roster */
+.roster{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:640px){.roster{grid-template-columns:1fr 1fr}}
+.ag{background:var(--surface2);border:1px solid var(--hairline);border-radius:7px;padding:9px 10px;font-size:.75rem;display:flex;gap:8px;align-items:flex-start}
+.ag b{display:block;color:var(--ink);font-size:.8rem;font-weight:400}
+.ag span{color:var(--ink-muted);font-size:.64rem;font-family:var(--font-mono)}
+.grpname{font-family:var(--font-mono);font-size:.63rem;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.1em;margin:12px 0 6px}
+.grpname:first-child{margin-top:0}
+
+/* blocked-agent reply */
+.blocked{background:var(--surface2);border:1px solid var(--rose);border-radius:8px;padding:12px 14px}
+.blocked .q{font-size:.88rem;color:var(--ink);margin-bottom:9px}
+.replybox{display:flex;gap:7px}
+.replybox input{flex:1;background:var(--bg);border:1px solid var(--hairline-md);border-radius:5px;color:var(--ink);padding:7px 10px;font-family:var(--font-body);font-size:.8rem}
+
+/* scrubber */
+.scrub{padding:6px 2px 2px}
+.track{position:relative;height:34px;border-radius:6px;background:linear-gradient(90deg,#0d1016,#151a24);border:1px solid var(--hairline);overflow:hidden}
+.track i{position:absolute;top:6px;bottom:6px;border-radius:2px;opacity:.85}
+.playhead{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--terracotta);box-shadow:0 0 10px var(--terracotta)}
+.scrubticks{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.6rem;color:var(--ink-muted);margin-top:5px}
+.transport{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+/* digest */
+.digest{background:var(--surface2);border:1px solid var(--hairline);border-radius:8px;padding:14px 16px;font-size:.86rem}
+.digest ul{margin:.4em 0}
+.copybtn{float:right;font-family:var(--font-mono);font-size:.66rem;border:1px solid var(--hairline-md);background:var(--bg);color:var(--ink-dim);border-radius:5px;padding:4px 10px;cursor:pointer}
+
+/* canned chat */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{font-size:.73rem;border:1px solid var(--hairline-md);background:var(--surface2);color:var(--ink-dim);border-radius:99px;padding:5px 12px;cursor:pointer}
+.chip:hover{border-color:var(--terracotta);color:var(--terracotta)}
+.bubble{background:var(--surface2);border-radius:8px;padding:10px 13px;font-size:.85rem;color:var(--ink-dim);border-left:2px solid var(--lapis)}
+
+/* drawer */
+.drawer{background:var(--surface);border:1px solid var(--hairline);border-radius:8px;overflow:hidden}
+.drawer>summary{cursor:pointer;list-style:none;padding:12px 15px;display:flex;align-items:center;gap:10px;font-size:.86rem;color:var(--ink-dim)}
+.drawer>summary::-webkit-details-marker{display:none}
+.drawer>summary::after{content:"+";margin-left:auto;font-family:var(--font-mono);color:var(--ink-muted)}
+.drawer[open]>summary::after{content:"\2013"}
+.drawer .dbody{padding:2px 15px 15px;border-top:1px solid var(--hairline)}
+
+/* notwired */
+.notwired{border:1px dashed var(--amber);color:var(--amber);font-family:var(--font-mono);font-size:.7rem;border-radius:7px;padding:11px;text-align:center;background:rgba(193,154,107,.05)}
+
+/* galaxy */
+.galaxy{height:190px;border-radius:8px;border:1px solid var(--hairline);background:radial-gradient(ellipse at 42% 46%,rgba(255,107,53,.20),transparent 58%),radial-gradient(ellipse at 72% 62%,rgba(74,140,126,.18),transparent 52%),#06070a;position:relative;overflow:hidden}
+
+/* back to top */
+#totop{position:fixed;right:18px;bottom:18px;z-index:70;background:var(--surface2);border:1px solid var(--hairline-md);color:var(--ink-dim);border-radius:50%;width:44px;height:44px;font-size:1.05rem;cursor:pointer;display:none;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+#totop.show{display:block}
+#totop:hover{color:var(--terracotta);border-color:var(--terracotta)}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-15-17:43:59 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="top">
+  <div class="inner">
+    <span class="brand">Design Direction</span>
+    <button id="navtoggle" type="button" aria-label="Open menu" aria-expanded="false">&#9776;</button>
+    <div class="links" id="navlinks">
+      <a href="#s1">Sources</a>
+      <a href="#s2">Live today</a>
+      <a href="#s3">Pulse</a>
+      <a href="#s4">Needs you</a>
+      <a href="#s5">Content</a>
+      <a href="#s6">Roster</a>
+      <a href="#s7">Replay</a>
+      <a href="#s8">Digest + Ask</a>
+      <a href="#s9">Internals</a>
+      <a href="#s10">Brain</a>
+      <a href="#s11">Your call</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Design study &middot; rendering, not code</div>
+  <h1>What I think the ops board should become, and why</h1>
+  <p class="lede">You asked for a rendering, not another summary. Everything below is drawn here in the page, in the board's own colours and type, so you can look at it and say yes, no, or not like that. Nothing here has been built yet unless it is explicitly marked as already live.</p>
+  <p class="meta">2026-08-15 &middot; every mockup names the evidence behind it &middot; palette stays dark, per your instruction</p>
+</header>
+
+<details class="tldr" open>
+  <summary>TL;DR &mdash; the whole direction in six lines</summary>
+  <div class="body">
+    <ul>
+      <li><b>The board stops being a wall of tiles and becomes a ranked list of what needs you, with everything else demoted.</b> That is the single biggest change, and it is the one I would spend the weekend on.</li>
+      <li><b>Every number carries its own seven-day shape.</b> A count alone tells you nothing. A count with a sparkline and a signed delta answers your second question without you asking it.</li>
+      <li><b>Every count becomes clickable and opens the rows behind it.</b> No number on the board is a dead end.</li>
+      <li><b>The noise goes in a drawer.</b> Heartbeats, cron, errors are top-level cards today. They should be one collapsed line that turns amber only when it matters.</li>
+      <li><b>Three new things worth building</b>: a replay scrubber for the day, a one-tap daily digest you can copy, and a chat pane with the four questions you actually ask pre-loaded as buttons.</li>
+      <li><b>Palette unchanged.</b> Dark navy, serif headings, terracotta accent, exactly the tokens already in the stylesheet. Fixing what is in there and how it is presented comes first, per your own priority order.</li>
+    </ul>
+  </div>
+</details>
+
+<!-- ============ 01 SOURCES ============ -->
+<details class="sec" id="s1">
+  <summary><span class="num">01</span><h2>Where every one of these ideas came from</h2></summary>
+  <div class="secbody">
+    <p>Receipts first, and one honest gap named up front rather than dressed up.</p>
+    <div class="tablewrap">
+    <table>
+      <tr><th>Source</th><th>What it contributed</th><th>How solid</th></tr>
+      <tr>
+        <td><b>The board's own spec</b><br><span class="small">docs/prds/ops-dashboard-2026-08-15.html, on main</span></td>
+        <td>The tile inventory, the six question-rows, the truth contract (source and age on every tile, three failure states, never a fake zero), the validated dark palette, the read-only rule.</td>
+        <td><span class="pill live">read in full</span></td>
+      </tr>
+      <tr>
+        <td><b>The live code</b><br><span class="small">the board's markup, stylesheet and script, on main</span></td>
+        <td>The real baseline. Brand tokens used in this page are lifted verbatim from that stylesheet, not invented. Section 02 lists exactly what already ships.</td>
+        <td><span class="pill live">read in full</span></td>
+      </tr>
+      <tr>
+        <td><b>Your standing dashboard rule</b><br><span class="small">the frictionless-review-dashboard memory, 2026-05-18</span></td>
+        <td>Tap to act on the item itself. Decisions persist. Sticky summary bar. Green for approve, neutral grey for revert, never red as a primary action. Mobile first.</td>
+        <td><span class="pill live">your own words</span></td>
+      </tr>
+      <tr>
+        <td><b>Observability reference A</b><br><span class="small">a service-health product's application view</span></td>
+        <td>Three specific moves: a sparkline inside every KPI tile rather than beside it, a mini chart inside each table row, and a panel that turns the raw data into a short ranked list of plain-English priorities instead of leaving you to read charts.</td>
+        <td><span class="pill next">described this session</span></td>
+      </tr>
+      <tr>
+        <td><b>Observability reference B</b><br><span class="small">an agent command-centre product</span></td>
+        <td>A roster of agents each with a coloured status dot, gauge-style KPI tiles, one real trend chart rather than many small ones, and action buttons that are actually prominent instead of hiding as grey text.</td>
+        <td><span class="pill next">described this session</span></td>
+      </tr>
+      <tr>
+        <td><b>Five videos on agent dashboards</b><br><span class="small">relayed to me second-hand</span></td>
+        <td>The replay scrubber, clickable counts that open detail, a dated daily digest with a copy button, a chat pane with canned questions, inline reply to a blocked agent, an approval inbox, a cron monitor with run-now and delete, and the filter &ldquo;if it does not help me decide at 8am before coffee, cut it&rdquo;.</td>
+        <td><span class="pill later">see gap note</span></td>
+      </tr>
+    </table>
+    </div>
+    <div class="why gap">
+      <b>Honest gap, flagged rather than papered over</b>
+      I could not find a durable record of the five videos anywhere in the repo. I searched the whole tree for the presenter's name, for &ldquo;scrubber&rdquo;, &ldquo;canned question&rdquo;, and for the two product names, and the only hits were unrelated. So the patterns in that last row reached me as a relay, not as something I verified from the source. I have designed against them because they are good ideas that stand on their own merit, and each one below argues its own case from your workflow rather than from &ldquo;a video said so&rdquo;. But you should know that if one of them is a mis-remembering of what the video actually showed, I had no way to catch it. If you want that fixed, the durable record needs to be written down once.
+    </div>
+  </div>
+</details>
+
+<!-- ============ 02 WHAT IS LIVE ============ -->
+<details class="sec" id="s2">
+  <summary><span class="num">02</span><h2>What is already live, so this rendering is honest about what is new</h2></summary>
+  <div class="secbody">
+    <p>Read from the merged code today, not assumed. A design study that redraws things you already have is a waste of your time, so here is the line.</p>
+    <p><b>Already shipping:</b> the pulse strip with four stats and sparklines, an attention strip that already ranks the top three things with a reason line and action buttons, the mobile hamburger drawer, twenty-two cards including agent roster and second-brain, per-card source-and-age footers, cost by crew, the content board panel, and a chat card.</p>
+    <p><b>Not built, and what this study is actually about:</b> the ranking logic behind the attention panel is thin and only reads a few card sources; numbers on the board are not clickable; the noisy cards sit at the same visual weight as the ones that matter; there is no replay, no digest, no canned questions, no inline reply to a blocked agent; the content board has no status toggle and no tap-to-act; and the memory graph page does not exist.</p>
+    <div class="why">
+      <b>Your priority order, quoted</b>
+      &ldquo;Top of the list is fixing what is in there and how it is presented. Color palettes can be fixed and adjusted later, just keep it dark for now.&rdquo; Everything in sections 03 to 06 is presentation of what already exists. Sections 07 to 10 are genuinely new, and they are ordered after, deliberately.
+    </div>
+  </div>
+</details>
+
+<!-- ============ 03 PULSE ============ -->
+<details class="sec" id="s3" open>
+  <summary><span class="num">03</span><h2>The pulse strip, with the shape of the week inside every number</h2></summary>
+  <div class="secbody">
+
+    <div class="mock">
+      <div class="mocklabel">Row 0 &middot; Today's Pulse &middot; proposed</div>
+      <div class="pulse">
+        <div class="pstat">
+          <div class="lbl">Tasks closed today</div>
+          <div class="val">14<span class="delta up">&#9650; 27%</span></div>
+          <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF6B35" stop-opacity=".28"/><stop offset="1" stop-color="#FF6B35" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,22 L17,19 L34,24 L51,14 L69,17 L86,20 L103,16 L120,8 L120,30 L0,30 Z" fill="url(#g1)"/>
+            <polyline points="0,22 17,19 34,24 51,14 69,17 86,20 103,16 120,8" fill="none" stroke="#FF6B35" stroke-width="1.8" vector-effect="non-scaling-stroke"/>
+            <circle cx="120" cy="8" r="2.4" fill="#FF6B35"/>
+          </svg>
+          <div class="src">lane_tasks &middot; 7d median 11 &middot; as of 14:32</div>
+        </div>
+        <div class="pstat">
+          <div class="lbl">Branches merged</div>
+          <div class="val">9<span class="delta up">&#9650; 12%</span></div>
+          <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A8C7E" stop-opacity=".28"/><stop offset="1" stop-color="#4A8C7E" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,18 L17,21 L34,15 L51,20 L69,13 L86,18 L103,14 L120,11 L120,30 L0,30 Z" fill="url(#g2)"/>
+            <polyline points="0,18 17,21 34,15 51,20 69,13 86,18 103,14 120,11" fill="none" stroke="#4A8C7E" stroke-width="1.8" vector-effect="non-scaling-stroke"/>
+            <circle cx="120" cy="11" r="2.4" fill="#4A8C7E"/>
+          </svg>
+          <div class="src">gate_log &middot; 7d median 8 &middot; as of 14:32</div>
+        </div>
+        <div class="pstat">
+          <div class="lbl">API spend today</div>
+          <div class="val">$0.37<span class="delta dn">&#9660; 35%</span></div>
+          <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C19A6B" stop-opacity=".26"/><stop offset="1" stop-color="#C19A6B" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,15 L17,14 L34,5 L51,15 L69,14 L86,17 L103,16 L120,23 L120,30 L0,30 Z" fill="url(#g3)"/>
+            <polyline points="0,15 17,14 34,5 51,15 69,14 86,17 103,16 120,23" fill="none" stroke="#C19A6B" stroke-width="1.8" vector-effect="non-scaling-stroke"/>
+            <circle cx="120" cy="23" r="2.4" fill="#C19A6B"/>
+          </svg>
+          <div class="src">llm_calls, 227 calls &middot; cap $2.50 &middot; 14:32</div>
+        </div>
+        <div class="pstat">
+          <div class="lbl">Plan usage, week</div>
+          <div class="val">27%<span class="delta flat">&#9679; steady</span></div>
+          <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points="0,24 17,22 34,21 51,19 69,18 86,16 103,15 120,13" fill="none" stroke="#76705F" stroke-width="1.6" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>
+          </svg>
+          <div class="src">usage digest &middot; LOCAL ESTIMATE &middot; file dated 8/15</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>What changes versus today</h3>
+    <p>The strip already exists and already has sparklines. Three specific upgrades:</p>
+    <ul>
+      <li><b>The sparkline moves inside the tile, under the number, edge to edge.</b> Today it is an overlay fetched separately. Inside the tile it reads as one object: the number is the now, the line is the week, the delta is the verdict. Your eye takes all three in one movement.</li>
+      <li><b>The fourth tile is drawn dashed and grey on purpose.</b> Plan usage comes from a file written on this laptop, not from the database. A dashed line and a muted colour say &ldquo;estimate&rdquo; visually before you read the label. Solid line equals live query, dashed equals estimate, and that rule holds everywhere on the board.</li>
+      <li><b>The number is a click target.</b> Tapping 14 opens the fourteen tasks. That rule is section 04's, and it starts here.</li>
+    </ul>
+    <div class="why">
+      <b>Evidence</b>
+      The sparkline-inside-the-tile move is straight from observability reference A, which puts the trend inside the KPI card rather than in a separate chart. The three-question framing and the median-not-mean choice come from the spec's own section 04, which is itself built on your words: &ldquo;how much work is being done, how effective we are that day compared to the previous days, how you are doing on usage.&rdquo;
+    </div>
+  </div>
+</details>
+
+<!-- ============ 04 NEEDS YOU ============ -->
+<details class="sec" id="s4" open>
+  <summary><span class="num">04</span><h2>&ldquo;What needs you&rdquo;, the panel that should own the top of the board</h2></summary>
+  <div class="secbody">
+
+    <div class="mock">
+      <div class="mocklabel">Row 1 &middot; What needs you &middot; proposed, fuller than what ships today</div>
+      <div class="tile">
+        <h4><span class="dot d-amber"></span> What needs you <span class="badge">4 open &middot; 1 aging</span></h4>
+
+        <div class="attn">
+          <div class="sev sev-hi"></div>
+          <div class="rank">1</div>
+          <div class="txt">
+            <div class="line">A branch that touches the system's own source has been waiting on your tap for <b>2 days</b>. Nothing else can merge behind it.</div>
+            <div class="whyline">held by design &middot; only you can release it &middot; gate_log.jsonl, 14:32</div>
+            <div class="acts"><button class="btn acc">Send me the card again</button><button class="btn">Show the diff</button></div>
+          </div>
+        </div>
+
+        <div class="attn">
+          <div class="sev sev-md"></div>
+          <div class="rank">2</div>
+          <div class="txt">
+            <div class="line">Two posts are written and scored and sitting unapproved. Both were meant to go out today.</div>
+            <div class="whyline">content board &middot; oldest queued 6h ago &middot; 14:32</div>
+            <div class="acts"><button class="btn go">Read them</button><button class="btn">Push to tomorrow</button></div>
+          </div>
+        </div>
+
+        <div class="attn">
+          <div class="sev sev-md"></div>
+          <div class="rank">3</div>
+          <div class="txt">
+            <div class="line">A lead replied 19 hours ago and nobody has answered.</div>
+            <div class="whyline">inbound &middot; first reply beats every other lever &middot; 14:32</div>
+            <div class="acts"><button class="btn acc">Open the thread</button><button class="btn">Draft a reply</button></div>
+          </div>
+        </div>
+
+        <div class="attn">
+          <div class="sev sev-lo"></div>
+          <div class="rank">4</div>
+          <div class="txt">
+            <div class="line">A domain renews in 4 days and auto-renew is off. Costs nothing to check, costs the domain not to.</div>
+            <div class="whyline">manual entry &middot; no automated source &middot; expires 8/19</div>
+            <div class="acts"><button class="btn">Mark handled</button></div>
+          </div>
+        </div>
+
+        <div class="foot">ranked by: only-you-can-do-it, then age, then blast radius &middot; sources: gate_log, content board, inbound, manual</div>
+      </div>
+    </div>
+
+    <h3>Why this and not a grid of counters</h3>
+    <ul>
+      <li><b>It is written in sentences, not labels.</b> &ldquo;Gate: 3 held&rdquo; makes you do the translation. &ldquo;A branch that touches the system's own source has been waiting on your tap for 2 days&rdquo; does it for you. That is the whole point of the pattern.</li>
+      <li><b>It is ranked, and the ranking rule is printed at the bottom.</b> One ordered list, not four competing badges. The rule being visible is what makes the order trustworthy instead of arbitrary.</li>
+      <li><b>Rank 1 is defined as the thing only you can do.</b> A branch held for your approval outranks a lead reply because an agent can draft the reply and no agent may ever tap that approval. Everything an agent could have done should not be on this list at all.</li>
+      <li><b>Every row ends in a button, and the buttons are coloured.</b> Approve-shaped actions are green, the accent is used for the primary move, and nothing here is red. Red stays reserved for a state, never for something you are supposed to press.</li>
+      <li><b>Rank 4 shows a hand-entered item with no automated source, and says so.</b> Better an honest manual row than a blind spot.</li>
+    </ul>
+    <div class="why">
+      <b>Evidence</b>
+      The plain-English ranked priority panel is the strongest single idea from observability reference A, where an assistant panel turns raw signals into a short ordered list of what to fix. The coloured, prominent action buttons are reference B. The tap-to-act-on-the-item-itself rule and the green-approve / neutral-revert / never-red colour rule are yours, from the 2026-05-18 review-dashboard instruction. The &ldquo;only you can do it&rdquo; ranking rule is your standing use-him-only-for-what-only-he-can-do principle applied to a sort order.
+    </div>
+  </div>
+</details>
+
+<!-- ============ 05 CONTENT ============ -->
+<details class="sec" id="s5">
+  <summary><span class="num">05</span><h2>The content board, with a status toggle and a decision on the card</h2></summary>
+  <div class="secbody">
+
+    <div class="mock">
+      <div class="mocklabel">Content board &middot; proposed toggle plus tap-to-act</div>
+      <div class="tile">
+        <h4><span class="dot d-green"></span> Content board <span class="badge">notion &middot; 14:32</span></h4>
+        <div class="segbar">
+          <button class="seg on">Needs approval &middot; 2</button>
+          <button class="seg">Queued &middot; 5</button>
+          <button class="seg">Posted &middot; 11</button>
+          <button class="seg">Skipped &middot; 3</button>
+        </div>
+
+        <div class="cbrow">
+          <span class="plat">LINKEDIN</span>
+          <span class="ttl">The part of the build nobody sees until it breaks</span>
+          <span class="score">92</span>
+        </div>
+        <div class="acts" style="margin:0 0 12px 60px">
+          <button class="btn go">Approve</button><button class="btn">Send back</button><button class="btn">Read full</button>
+        </div>
+
+        <div class="cbrow">
+          <span class="plat">X</span>
+          <span class="ttl">Three things I stopped doing this month</span>
+          <span class="score">90</span>
+        </div>
+        <div class="acts" style="margin:0 0 4px 60px">
+          <button class="btn go">Approve</button><button class="btn">Send back</button><button class="btn">Read full</button>
+        </div>
+
+        <div class="foot">content board &middot; status filter is client-side &middot; approving writes back &middot; as of 14:32</div>
+      </div>
+    </div>
+
+    <h3>Why</h3>
+    <ul>
+      <li><b>The toggle exists because the board currently shows one blended list.</b> Four states with counts, one selected, is how you actually think about it: what needs me, what is teed up, what went out, what I killed.</li>
+      <li><b>&ldquo;Needs approval&rdquo; is the default tab, always.</b> The board opens on the only tab that can require something from you.</li>
+      <li><b>The score sits on the row.</b> You should not have to open a post to find out it passed the quality bar.</li>
+      <li><b>Send back is neutral grey, not red.</b> Your rule, and it is the right one. A rejection is a routing decision, not an alarm.</li>
+      <li><b>This is the one place I would break the read-only rule</b>, and only here, because approving a post is the exact action you would otherwise leave the board to perform. Everything else stays a GET.</li>
+    </ul>
+    <div class="why">
+      <b>Evidence</b>
+      Tap-to-act with approve / revert / edit on the item itself, decisions persisting, is your 2026-05-18 rule verbatim. The approval-inbox framing is one of the relayed video patterns and it lines up with your rule rather than competing with it. The read-only exception is flagged deliberately because the spec's section 04 says no writes ride along with this pass, so this is a proposal to amend that, not a quiet override.
+    </div>
+  </div>
+</details>
+
+<!-- ============ 06 ROSTER + BLOCKED ============ -->
+<details class="sec" id="s6">
+  <summary><span class="num">06</span><h2>The roster with real status, and answering a stuck agent without leaving the page</h2></summary>
+  <div class="secbody">
+
+    <div class="mock">
+      <div class="mocklabel">Roster plus inline reply &middot; proposed</div>
+      <div class="mrow c21">
+        <div class="tile">
+          <h4><span class="dot d-green"></span> Who is on the field <span class="badge">manifest &middot; 14:32</span></h4>
+          <div class="grpname">Revenue</div>
+          <div class="roster">
+            <div class="ag"><span class="dot d-green" style="margin-top:4px"></span><div><b>outreach</b><span>ran 41m ago</span></div></div>
+            <div class="ag"><span class="dot d-green" style="margin-top:4px"></span><div><b>leads</b><span>ran 12m ago</span></div></div>
+            <div class="ag"><span class="dot d-grey" style="margin-top:4px"></span><div><b>demo</b><span>idle 3d</span></div></div>
+          </div>
+          <div class="grpname">Content</div>
+          <div class="roster">
+            <div class="ag"><span class="dot d-green" style="margin-top:4px"></span><div><b>content board</b><span>ran 8m ago</span></div></div>
+            <div class="ag"><span class="dot d-amber" style="margin-top:4px"></span><div><b>campaigns</b><span>waiting on you</span></div></div>
+            <div class="ag"><span class="dot d-grey" style="margin-top:4px"></span><div><b>studio</b><span>idle 9d</span></div></div>
+          </div>
+          <div class="grpname">Systems</div>
+          <div class="roster">
+            <div class="ag"><span class="dot d-amber" style="margin-top:4px"></span><div><b>merge gate</b><span>holding 3</span></div></div>
+            <div class="ag"><span class="dot d-green" style="margin-top:4px"></span><div><b>healer</b><span>ran 2m ago</span></div></div>
+            <div class="ag"><span class="dot d-green" style="margin-top:4px"></span><div><b>intake</b><span>ran 30m ago</span></div></div>
+          </div>
+          <div class="foot">agent manifest &middot; green ran within the hour &middot; amber blocked on you &middot; grey idle</div>
+        </div>
+
+        <div class="tile">
+          <h4><span class="dot d-red"></span> Blocked, waiting on an answer</h4>
+          <div class="blocked">
+            <div class="q">campaigns asks: two versions of the headline passed. Do you want the short one or the specific one?</div>
+            <div class="replybox">
+              <input type="text" placeholder="the specific one" aria-label="Reply to blocked agent">
+              <button class="btn acc">Send</button>
+            </div>
+          </div>
+          <div class="foot">blocked 22m &middot; answering here unblocks it in place</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Why</h3>
+    <ul>
+      <li><b>Grey is a real state, not an omission.</b> An agent idle for nine days is information. Hiding it makes the roster look healthier than the system is, which is the exact failure that killed the last board's credibility.</li>
+      <li><b>Amber means blocked on you</b>, and it is the only bridge between this tile and the &ldquo;needs you&rdquo; panel above. Anything amber here should already be a row up there.</li>
+      <li><b>The inline reply is small and worth a lot.</b> A blocked agent today waits for you to notice a message somewhere else. One text field on the board turns a stall into twenty seconds.</li>
+      <li><b>Last-run times, not uptime.</b> A heartbeat proves a process is alive, it does not prove work happened. The spec already makes that distinction and the roster should honour it.</li>
+    </ul>
+    <div class="why">
+      <b>Evidence</b>
+      The coloured status-dot roster is observability reference B's signature layout. The inline reply-to-a-blocked-agent is a relayed video pattern, and it is the one I would build first out of that set because it maps directly onto your standing rule that a gap should arrive with a way to close it. The pulse-is-not-proof-of-work caveat is from the spec's own row 2 definition.
+    </div>
+  </div>
+</details>
+
+<!-- ============ 07 REPLAY ============ -->
+<details class="sec" id="s7">
+  <summary><span class="num">07</span><h2>Replay the day &mdash; new, and the most interesting of the three</h2></summary>
+  <div class="secbody">
+
+    <div class="mock">
+      <div class="mocklabel">Replay scrubber &middot; not built</div>
+      <div class="tile">
+        <h4><span class="dot d-grey"></span> Replay today <span class="badge">06:00 &rarr; 14:32</span></h4>
+        <div class="scrub">
+          <div class="track">
+            <i style="left:4%;width:9%;background:var(--lapis)"></i>
+            <i style="left:16%;width:5%;background:var(--terracotta)"></i>
+            <i style="left:24%;width:14%;background:var(--verdigris)"></i>
+            <i style="left:41%;width:3%;background:var(--rose)"></i>
+            <i style="left:47%;width:11%;background:var(--lapis)"></i>
+            <i style="left:61%;width:7%;background:var(--brass)"></i>
+            <i style="left:71%;width:16%;background:var(--verdigris)"></i>
+            <i style="left:90%;width:4%;background:var(--terracotta)"></i>
+            <span class="playhead" style="left:78%"></span>
+          </div>
+          <div class="scrubticks"><span>06:00</span><span>08:00</span><span>10:00</span><span>12:00</span><span>14:32</span></div>
+          <div class="transport">
+            <button class="btn">&#9664;</button><button class="btn acc">&#9654; Play the day</button><button class="btn">&#9654;&#9654;</button>
+            <span class="small" style="margin-left:auto;font-family:var(--font-mono);font-size:.7rem">at 12:40 &middot; 3 agents running &middot; $0.21 spent &middot; 8 tasks closed</span>
+          </div>
+        </div>
+        <div class="foot">llm_calls, lane_tasks, gate_log, agent_messages, all already timestamped &middot; no new instrumentation needed</div>
+      </div>
+    </div>
+
+    <h3>Why it matters for you specifically</h3>
+    <ul>
+      <li><b>You are not at the desk when the work happens.</b> A live board answers &ldquo;what is true now&rdquo;. It cannot answer &ldquo;what happened between 9 and noon while I was on a call&rdquo;, which is the question you actually have when you sit down.</li>
+      <li><b>Dragging the playhead makes the whole board show that moment.</b> Same tiles, same layout, different timestamp. Nothing new to learn.</li>
+      <li><b>It costs almost nothing to build.</b> Every table this reads is already timestamped. This is a filter over data you already have, not new plumbing.</li>
+      <li><b>It is also the single best thing to show someone.</b> Watching a day of an autonomous system replay in ten seconds is a demo. That is a side benefit, not the reason.</li>
+    </ul>
+    <div class="why gap">
+      <b>Evidence, and its limit</b>
+      This is a relayed video pattern with no durable record in the repo, so I cannot cite what the original actually showed. The case above is mine, argued from your workflow. If the reasoning does not hold for you, kill it, and nothing else in this study depends on it.
+    </div>
+  </div>
+</details>
+
+<!-- ============ 08 DIGEST + ASK ============ -->
+<details class="sec" id="s8">
+  <summary><span class="num">08</span><h2>The digest you can copy, and the four questions as buttons</h2></summary>
+  <div class="secbody">
+
+    <div class="mock">
+      <div class="mocklabel">Daily digest &middot; not built</div>
+      <div class="digest">
+        <button class="copybtn">&#9112; Copy</button>
+        <div style="font-family:var(--font-display);font-size:1.02rem;margin-bottom:2px">Friday 15 August</div>
+        <div class="small" style="font-family:var(--font-mono);font-size:.68rem;color:var(--ink-muted)">generated 14:32 &middot; every line traces to a query</div>
+        <ul>
+          <li>14 tasks closed, 27% above the seven-day median.</li>
+          <li>9 branches merged. One is still held for your tap, two days old.</li>
+          <li>$0.37 spent across 227 calls, well under the cap.</li>
+          <li>Two posts are written and waiting on your approval.</li>
+          <li>One lead replied 19 hours ago and has not been answered.</li>
+        </ul>
+      </div>
+      <div class="small" style="margin-top:8px">Copy puts exactly that text on the clipboard, plain, no formatting, ready to paste anywhere.</div>
+    </div>
+
+    <div class="mock">
+      <div class="mocklabel">Ask the board &middot; canned questions, chat pane already exists</div>
+      <div class="tile">
+        <h4><span class="dot d-green"></span> Ask</h4>
+        <div class="chips">
+          <button class="chip">What needs me today?</button>
+          <button class="chip">What broke overnight?</button>
+          <button class="chip">Are we ahead of yesterday?</button>
+          <button class="chip">What did it cost this week?</button>
+        </div>
+        <div class="bubble">Two things need you. A branch touching the system's own source has been held for two days, and two posts are written and waiting. Everything else is either moving or done.</div>
+        <div class="foot">chat card exists today &middot; the four buttons are the addition</div>
+      </div>
+    </div>
+
+    <h3>Why</h3>
+    <ul>
+      <li><b>The digest is the board's answer to a question you ask people out loud.</b> One tap, copied, pasted into a message or a note. It also means the board keeps working when you are on your phone and do not want to read tiles.</li>
+      <li><b>The canned questions exist because a blank chat box is a small tax.</b> You ask roughly the same four things. Making them buttons removes the typing and, more usefully, tells you what the board can answer.</li>
+      <li><b>The chat pane is already there.</b> This is four buttons above an existing input, which is why it is cheap and why it is in this study rather than a future one.</li>
+    </ul>
+    <div class="why gap">
+      <b>Evidence, and its limit</b>
+      Both are relayed video patterns, same caveat as section 07. The digest additionally lines up with something already true in the system: a weekly usage digest file already exists and is already read by the board, so a daily on-screen version is an extension of a habit rather than a new one.
+    </div>
+  </div>
+</details>
+
+<!-- ============ 09 INTERNALS ============ -->
+<details class="sec" id="s9">
+  <summary><span class="num">09</span><h2>The internals drawer &mdash; where the noise goes</h2></summary>
+  <div class="secbody">
+
+    <div class="mock">
+      <div class="mocklabel">Collapsed by default &middot; the whole point</div>
+      <details class="drawer">
+        <summary><span class="dot d-green"></span> System internals &middot; all clear &middot; 12 of 13 crons alive, providers up, 3 errors in 24h</summary>
+        <div class="dbody">
+          <div class="mrow c3" style="margin-top:12px">
+            <div class="tile"><h4>Cron liveness</h4><div class="small">12 / 13 alive. One missed its window at 04:00.</div><div class="acts"><button class="btn">Run now</button></div><div class="foot">cron registry &middot; 14:32</div></div>
+            <div class="tile"><h4>Providers</h4><div class="small">All up. Slowest response 1.2s.</div><div class="foot">provider_health &middot; 14:32</div></div>
+            <div class="tile"><h4>Errors, 24h</h4><div class="small">3 new, all in one component, none user-facing.</div><div class="foot">error stream &middot; 14:32</div></div>
+          </div>
+          <div class="mrow c2" style="margin-top:10px">
+            <div class="tile"><h4>Heartbeats</h4><div class="small">All processes reporting. A pulse is not proof of work, so this tile never claims work happened.</div><div class="foot">heartbeats &middot; 14:32</div></div>
+            <div class="tile"><h4>Auto-healer</h4><div class="small">2 restarts, both recovered without your involvement.</div><div class="foot">healer log &middot; 14:32</div></div>
+          </div>
+          <div class="notwired" style="margin-top:10px">NOT WIRED &mdash; a tile whose source was never connected renders exactly like this, never as a zero</div>
+        </div>
+      </details>
+      <div class="small" style="margin-top:10px">When anything in here goes wrong, the summary line turns amber and names the thing. The drawer does not open itself. It just stops being quiet.</div>
+    </div>
+
+    <h3>Why</h3>
+    <ul>
+      <li><b>Six cards of infrastructure health currently sit at the same visual weight as the things that need your decision.</b> That is backwards. When they are all green they are worth one line.</li>
+      <li><b>Collapsed does not mean hidden.</b> The summary line always states the state, so &ldquo;all clear&rdquo; is a claim the board is making, not an absence of information.</li>
+      <li><b>Run now on a cron is the one internals action worth exposing.</b> A missed window that you can retry from the board beats one that requires a terminal.</li>
+      <li><b>The not-wired box stays visible in the drawer.</b> A source that was never connected must never render as a zero. That contract is already in the spec and this is where it gets tested hardest, because a drawer is exactly where a lie hides best.</li>
+    </ul>
+    <div class="why">
+      <b>Evidence</b>
+      The demotion is the &ldquo;if it does not help me decide at 8am before coffee, cut it&rdquo; filter, relayed from the videos, applied as demote rather than delete. The three-state failure contract and the pulse-is-not-proof-of-work caveat are from the spec's own section 05. The run-now and delete controls on a cron monitor are a relayed video pattern; I kept run-now and dropped delete, because deleting a schedule from a dashboard is the kind of irreversible action that does not belong on a glance surface.
+    </div>
+  </div>
+</details>
+
+<!-- ============ 10 BRAIN ============ -->
+<details class="sec" id="s10">
+  <summary><span class="num">10</span><h2>The memory graph, parked on purpose</h2></summary>
+  <div class="secbody">
+    <div class="mock">
+      <div class="mocklabel">Second brain as a constellation &middot; parked, phase 3</div>
+      <div class="galaxy">
+        <svg viewBox="0 0 600 190" preserveAspectRatio="none" style="width:100%;height:100%;display:block" aria-hidden="true">
+          <g stroke="rgba(193,154,107,.16)" stroke-width=".6">
+            <line x1="250" y1="88" x2="180" y2="52"/><line x1="250" y1="88" x2="322" y2="60"/>
+            <line x1="250" y1="88" x2="205" y2="132"/><line x1="250" y1="88" x2="340" y2="120"/>
+            <line x1="340" y1="120" x2="420" y2="98"/><line x1="340" y1="120" x2="392" y2="152"/>
+            <line x1="180" y1="52" x2="120" y2="78"/><line x1="322" y1="60" x2="398" y2="40"/>
+            <line x1="205" y1="132" x2="140" y2="158"/><line x1="420" y1="98" x2="486" y2="70"/>
+          </g>
+          <g>
+            <circle cx="250" cy="88" r="7" fill="#FF6B35" opacity=".95"/>
+            <circle cx="340" cy="120" r="5" fill="#4A8C7E"/><circle cx="180" cy="52" r="4.4" fill="#C19A6B"/>
+            <circle cx="322" cy="60" r="4" fill="#C19A6B"/><circle cx="205" cy="132" r="3.6" fill="#6F9B6E"/>
+            <circle cx="420" cy="98" r="3.6" fill="#4A8C7E"/><circle cx="392" cy="152" r="2.8" fill="#B87333"/>
+            <circle cx="120" cy="78" r="2.6" fill="#76705F"/><circle cx="398" cy="40" r="2.6" fill="#76705F"/>
+            <circle cx="140" cy="158" r="2.4" fill="#76705F"/><circle cx="486" cy="70" r="2.4" fill="#76705F"/>
+          </g>
+          <g fill="rgba(244,238,224,.28)">
+            <circle cx="60" cy="30" r="1"/><circle cx="520" cy="150" r="1"/><circle cx="90" cy="120" r="1"/>
+            <circle cx="470" cy="20" r="1"/><circle cx="560" cy="100" r="1"/><circle cx="30" cy="170" r="1"/>
+          </g>
+        </svg>
+      </div>
+      <div class="small" style="margin-top:9px">2,917 entries, searchable, each node a memory and each line a link between two. The renderer for this already exists in an archived page, pointed at dead data. Re-pointing it is the work.</div>
+    </div>
+    <h3>Why it is parked and not proposed</h3>
+    <p>It is the most impressive screen this system could produce and it answers none of your three daily questions. The spec parks it deliberately and I agree with that call. It is here so you can see it is not forgotten, and so that when the daily numbers are solid you already know what the next thing looks like.</p>
+    <div class="why">
+      <b>Evidence</b>
+      The spec's section 06 and its phase 3 line: the renderer exists, the data is the change, and it is explicitly out of the near-term scope because the near term belongs to the numbers you look at every day.
+    </div>
+  </div>
+</details>
+
+<!-- ============ 11 YOUR CALL ============ -->
+<details class="sec" id="s11" open>
+  <summary><span class="num">11</span><h2>What I would build, in order, and what I need from you</h2></summary>
+  <div class="secbody">
+    <div class="tablewrap">
+    <table>
+      <tr><th>Order</th><th>What</th><th>Why it is in this position</th><th>Size</th></tr>
+      <tr><td><b>1</b></td><td>The &ldquo;what needs you&rdquo; panel, fully ranked, plain English, buttons on every row</td><td>It is the only thing on the board that changes what you do next. Everything else is context around it.</td><td>Half a day</td></tr>
+      <tr><td><b>2</b></td><td>Internals into a drawer, sparkline inside every pulse tile, every count clickable</td><td>Pure presentation of what already exists. This is your stated top priority.</td><td>Half a day</td></tr>
+      <tr><td><b>3</b></td><td>Content board status toggle plus approve on the card</td><td>Turns a read surface into a place you can finish something.</td><td>Half a day</td></tr>
+      <tr><td><b>4</b></td><td>Roster status dots plus inline reply to a blocked agent</td><td>Small, and it removes a stall class entirely.</td><td>Two hours</td></tr>
+      <tr><td><b>5</b></td><td>Daily digest with copy, four canned questions</td><td>Cheap, and it makes the board useful from your phone.</td><td>Two hours</td></tr>
+      <tr><td><b>6</b></td><td>Replay scrubber</td><td>The most interesting, the least urgent, and the one whose evidence is weakest. Last on purpose.</td><td>A day</td></tr>
+      <tr><td><b>7</b></td><td>Memory graph</td><td>Parked, by agreement with the spec.</td><td>Parked</td></tr>
+    </table>
+    </div>
+
+    <h3>The three things only you can answer</h3>
+    <ol>
+      <li><b>Does this direction look right at all?</b> If the ranked-list-first idea is wrong for how you use the board, say so now and the rest re-sorts around whatever is right.</li>
+      <li><b>Approving a post from the board means the board writes.</b> The spec locked this pass as read-only. I am asking for one exception, in one place. Yes or no.</li>
+      <li><b>Items 5 and 6 rest on second-hand descriptions of videos I could not verify.</b> If either one is a mis-remembering, tell me and I will drop it rather than build against a ghost.</li>
+    </ol>
+
+    <div class="why">
+      <b>My recommendation</b>
+      Build 1 and 2 first, together, and look at the board before anything else is decided. They are one day of work, they are entirely presentation of data that already exists, and they are the two changes that make the difference between a board you glance at and a board you act from. Everything below item 4 can wait for you to have seen that.
+    </div>
+  </div>
+</details>
+
+</div>
+
+<button id="totop" type="button" aria-label="Back to top">&#8593;</button>
+
+<script>
+(function(){
+  var t=document.getElementById('navtoggle'), l=document.getElementById('navlinks');
+  t.addEventListener('click',function(){
+    var open=l.classList.toggle('open');
+    t.setAttribute('aria-expanded',open?'true':'false');
+  });
+  l.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click',function(){l.classList.remove('open');t.setAttribute('aria-expanded','false');});
+  });
+  // open a collapsed section when navigated to
+  l.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click',function(){
+      var el=document.querySelector(a.getAttribute('href'));
+      if(el&&el.tagName==='DETAILS'){el.open=true;}
+    });
+  });
+  var b=document.getElementById('totop');
+  window.addEventListener('scroll',function(){
+    if(window.scrollY>500){b.classList.add('show');}else{b.classList.remove('show');}
+  });
+  b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
+})();
+</script>
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
