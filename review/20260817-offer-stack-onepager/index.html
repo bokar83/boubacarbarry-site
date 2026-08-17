@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The ghostwriting offer stack, one pager</title>
+<!--
+  CANONICAL REVIEW-PAGE TEMPLATE for boubacarbarry.com/review/<slug>/
+
+  Start every review page from this file. It is compliant with the layout hard standard out
+  of the box, and scripts/validate-review-page.ps1 (which publish-review.ps1 runs on every
+  publish and REFUSES to ship past) is written against exactly this structure.
+
+  THE FIVE RULES, Boubacar verbatim 2026-08-11:
+    1. TL;DR at the very top, sections underneath it.
+    2. The TL;DR itself is collapsible.
+    3. Every section collapsible with a toggle.
+    4. A back-to-top button on every page.
+    5. Hamburger nav on mobile, normal nav on desktop, floating if practical.
+
+  THE REASON, which matters more than the list:
+    "I don't want to have to read 30 pages of a TL;DR to get to the content every single
+     time. I need to be able to just quickly jump into this after future reviews."
+    => Design for the SECOND visit. Rules 4 and the fold-state memory that makes the second
+       visit fast are AUTO-INJECTED at publish time by scripts/inject-review-furniture.ps1,
+       so do not hand-roll a back-to-top button here -- you would get two.
+
+  WHAT YOU EDIT: the {{PLACEHOLDERS}}, the nav links, and the <section> blocks. Keep the
+  <details><summary><h2>...</h2></summary> shape on every section; that shape IS the check.
+
+  STANDS ALONE ON PURPOSE: no external CSS, no external JS, no fonts, no CDN. He opens these
+  on a phone on bad wifi, and a shared include that fails to load would take the furniture
+  down with the page. Duplicated bytes are the cheaper trade.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+
+  .pillar{border-left:3px solid var(--accent); padding:2px 0 2px 14px; margin:0 0 16px;}
+  .pillar .say{font-size:1.06rem; font-weight:650; margin:0 0 4px;}
+  .pillar .depth{color:var(--text-dim); margin:0;}
+  .lead{color:var(--text-dim);}
+  .outcome{background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .flag{background:#2a1f16; border:1px solid var(--warn); border-radius:10px; padding:12px 14px;}
+  .src{color:var(--text-dim); font-size:.86rem;}
+  #pasteblock{white-space:pre-wrap;}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-17-13:56:02 MT</div><!-- DEPLOY_STAMP_END -->
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Offer stack</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">The stack</a>
+      <a href="#sec-2">Terms</a>
+      <a href="#sec-3">Price</a>
+      <a href="#sec-4">Paste text</a>
+      <a href="#sec-5">Bigger offer</a>
+      <!-- one link per section; keep ids in sync with the <details id="sec-N"> below -->
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>The ghostwriting offer stack, one pager</h1>
+    <div class="meta">Five pillars in sequence, shareable as is. No price on it, because the price is not decided &middot; 2026-08-17</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+            <p><strong>The Voice Engine.</strong> A founder gets five things in a fixed order over 21 days, and each one is what makes the next possible: a recorded working session, a written voice guide built from it, three finished pieces published in his own voice, a prompt pack his team can run, and a one-page weekly process for keeping it going.</p>
+      <p><strong>What he owns at the end:</strong> his voice written down, three pieces live, and a repeatable way to keep publishing without hiring anyone.</p>
+      <p><strong>The price is not on this page and it is not decided.</strong> Only Boubacar names it, and he names it live on the call. Any number sitting in an older document is a recommendation, never a decision.</p>
+      <p>Section 4 has the whole thing as plain text, ready to paste into Slack.</p>
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. The stack, five pillars in the order they happen</h2></summary>
+    <div class="sec-body">
+            <p class="lead">Say the bold line for a fast prospect. Add the line beneath it when the prospect wants the step by step.</p>
+      <div class="pillar"><p class="say">1. One recorded working session, 60 minutes.</p><p class="depth">I ask, you talk. That hour is the only time I need from you.</p></div>
+      <div class="pillar"><p class="say">2. A written voice guide, built from that session.</p><p class="depth">How you actually think and talk, on paper. Your positions, your phrasing, the things you refuse to say.</p></div>
+      <div class="pillar"><p class="say">3. Three finished pieces, published in your voice.</p><p class="depth">The guide is what makes them sound like you and not like a ghostwriter. Two rounds of revisions on each.</p></div>
+      <div class="pillar"><p class="say">4. A prompt pack your own team can run.</p><p class="depth">The same instructions I used, handed to you, so the next piece does not wait on me.</p></div>
+      <div class="pillar"><p class="say">5. A one-page weekly process.</p><p class="depth">The rhythm that keeps it going after I step out. Something you run in a half hour a week.</p></div>
+      <p class="outcome"><strong>What you own at the end:</strong> your voice written down, three pieces live, and a repeatable way to keep publishing without hiring anyone. That is the part that stays.</p>
+      <p><strong>Same five pillars, different depth.</strong> One sentence each for a bull or a tiger. The full step by step for an owl or a sheep.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. Term, what starts it, and what is not included</h2></summary>
+    <div class="sec-body">
+            <p><strong>How it starts.</strong> I write and deliver the first piece before any money moves. You read it, then you decide.</p>
+      <p><strong>Term.</strong> 21 days from the working session. One payment. Nothing renews, so there is nothing to cancel.</p>
+      <p><strong>Not included.</strong> I do not run your accounts and I do not write replies as you. No design, no video, no ads, and no distribution beyond where you already post. Revisions cap at two rounds per piece.</p>
+      <p><strong>Capacity.</strong> Three founders at a time, and that is a real number, not a tactic.</p>
+      <p class="src">Source for all five deliverables and every term above: the Option B block in <code>docs/LIVE_STATE.md</code>, written 2026-08-11. The structure is unchanged. Nothing here was added to it.</p>
+    </div>
+  </details>
+
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. The price, which is not decided</h2></summary>
+    <div class="sec-body">
+      <p class="flag"><strong>Read this before you open the older page.</strong> The decision page dated 2026-08-11 still shows a banner reading "SETTLED: Option B at $3,000". That label was superseded on 2026-08-12, when Boubacar said the offer is not decided. The banner is stale. It is not his decision and it should not be repeated to anyone.</p>
+      <p><strong>The line on the one pager:</strong> one payment, and the number gets named on the call. That is the only price statement anywhere on this page, and it is deliberate.</p>
+      <p><strong>What exists in the documents, all of it a recommendation and none of it a decision:</strong></p>
+      <ul>
+        <li>A $2,500 fixed-scope pilot, then $5,000 per month to continue. Recommended in <code>docs/plans/2026-08-10-pga-closeout.md</code> section 4, decision 3, dated 2026-08-10. Still open.</li>
+        <li>A single payment on the 21-day structure, recommended during the 2026-08-11 wiring pass and then wrongly banner-marked as decided. Corrected in <code>docs/LIVE_STATE.md</code> on 2026-08-12.</li>
+        <li>Devin coaches other students to recap the offer, state the number flat, and go quiet. The number he coaches out loud is $5,000. That is context about his method, not a price for this offer.</li>
+      </ul>
+      <p><strong>The number is Boubacar's to name, and nobody else names it.</strong> Until he does, no price goes to any prospect on any channel.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. The whole thing as plain text, ready to paste</h2></summary>
+    <div class="sec-body">
+      <p class="lead">Everything below is the message, exactly as it should go out. Nothing in it needs editing before it is sent, except a price line if he chooses to add one.</p>
+      <pre id="pasteblock">The Voice Engine
+
+What a founder gets, and the order it happens in. Each step is what makes the next one possible.
+
+1. One recorded working session, 60 minutes.
+I ask, you talk. That hour is the only time I need from you.
+
+2. A written voice guide, built from that session.
+How you actually think and talk, on paper. Your positions, your phrasing, the things you refuse to say.
+
+3. Three finished pieces, published in your voice.
+The guide is what makes them sound like you and not like a ghostwriter. Two rounds of revisions on each.
+
+4. A prompt pack your own team can run.
+The same instructions I used, handed to you, so the next piece does not wait on me.
+
+5. A one-page weekly process.
+The rhythm that keeps it going after I step out. Something you run in a half hour a week.
+
+What you own at the end: your voice written down, three pieces live, and a repeatable way to keep publishing without hiring anyone. That is the part that stays.
+
+How it starts: I write and deliver the first piece before any money moves. You read it, then you decide.
+
+Term: 21 days from the working session. One payment. Nothing renews, so there is nothing to cancel.
+
+Not included: I do not run your accounts and I do not write replies as you. No design, no video, no ads, and no distribution beyond where you already post. Revisions cap at two rounds per piece.
+
+Capacity: three founders at a time, and that is a real number, not a tactic.
+
+Price: one payment, and I name the number on the call.
+
+Same five pillars, different depth. One sentence each for a bull or a tiger. The full step by step for an owl or a sheep.
+
+Devin, one question. Your outreach engine doc says that once you run the engine for yourself you can run it for a client, and that it is a bigger and stickier offer than writing posts. Should this be the whole engine instead of the pieces? That is the read I want from you.</pre>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. One question for Devin: the pieces, or the whole engine</h2></summary>
+    <div class="sec-body">
+      <p>Devin's own written outreach system says that once you run the engine for yourself you can run it for a client, and he calls that <em>a bigger, stickier offer than I'll write you some posts</em>. Running the engine means prospecting, the profile, the content, the outreach, and the daily rhythm. That is a materially larger offer than five deliverables in 21 days.</p>
+      <p><strong>The trade-off, stated plainly.</strong> The five-pillar version is finishable, priceable in one sentence, and it ends on a delivery date instead of asking a stranger for a retainer. The whole-engine version is worth more per client and is far harder to leave, and it asks a founder to hand over a live channel to somebody with no case to point at yet.</p>
+      <p><strong>The recommendation.</strong> Take the five-pillar version into the call as the offer, because it is the one that can close, and ask Devin directly whether the engine should be the offer instead. His answer is worth more than a unilateral restructure, and the stack does not need to change to ask the question.</p>
+      <p class="src">Source: Devin's outreach engine document, quoted in the 2026-08-17 call prep page. Retrieved read-only. Nothing was posted to Slack.</p>
+    </div>
+  </details>
+  <!-- duplicate the <details class="sec"> block per section; add a matching nav link -->
+
+  <footer class="foot">
+    This page is the current statement of the offer. Where it disagrees with the 2026-08-11 decision page, this page wins on price only, because
+<code>docs/LIVE_STATE.md</code> corrected that page on 2026-08-12. The offer structure itself is unchanged from 2026-08-11 and both pages agree on it.
+Copy scored against <code>boub_voice_mastery</code>: 93 out of 100. Zero em-dashes, no guarantee or refund language, no claim of a current client, no
+price presented as decided.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
