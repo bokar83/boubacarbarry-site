@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Daily Targets</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff;
+    --ok:#3ddc97; --warn:#ffc857; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 110px;}
+  .wrap{max-width:900px; margin:0 auto; padding:0 20px;}
+  .nav-bar{position:sticky; top:0; z-index:50; background:rgba(15,17,21,0.93);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border); padding:10px 0;}
+  .nav-inner{max-width:900px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim); margin-right:auto;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px; padding:6px 12px;
+    background:var(--bg2); white-space:nowrap;}
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.8rem; line-height:1.2; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  details.sec, details.tldr{background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;}
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.card{border-color:var(--ok);}
+  details.sec > summary, details.tldr > summary{cursor:pointer; list-style:none;
+    padding:14px 18px; display:flex; align-items:center; gap:10px; user-select:none;}
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;}
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);}
+  details.sec > summary h2, details.tldr > summary h2{margin:0; font-size:1.12rem;
+    font-weight:650; border:0; padding:0;}
+  details.tldr > summary h2{color:var(--accent);}
+  details.card > summary h2{color:var(--ok);}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  p{margin:0 0 12px;}
+  h3{font-size:.98rem; margin:20px 0 8px; color:var(--accent);}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  .lead{color:var(--text-dim);}
+  .callout{background:var(--bg2); border:1px solid var(--border);
+    border-radius:10px; padding:12px 14px; margin:0 0 14px;}
+  .callout.hard{border-color:var(--bad);}
+  .callout.good{border-color:var(--ok);}
+  .callout.warn{border-color:var(--warn);}
+  blockquote{margin:0 0 14px; padding:2px 0 2px 14px; border-left:3px solid var(--accent);
+    color:var(--text);}
+  .target{background:var(--bg2); border:1px solid var(--border); border-radius:10px;
+    padding:12px 14px; margin:0 0 12px;}
+  .target .t-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:0 0 8px;}
+  .target .t-num{font-weight:700; color:var(--ok); font-size:.8rem;
+    border:1px solid var(--ok); border-radius:999px; padding:2px 9px; flex:none;}
+  .target .t-name{font-weight:650;}
+  .target .t-why{color:var(--text-dim); font-size:.86rem; margin:6px 0 0;}
+  .ticks{display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 0;}
+  .ticks label{display:inline-flex; align-items:center; justify-content:center;
+    min-width:40px; min-height:40px; border:1px solid var(--border); border-radius:9px;
+    background:var(--card); cursor:pointer; font-size:.82rem; padding:0 6px;}
+  .ticks input{margin:0 5px 0 0;}
+  .ticks label.floor{border-color:var(--warn);}
+  textarea, input[type=text], input[type=date], select{
+    width:100%; background:var(--card); color:var(--text); border:1px solid var(--border);
+    border-radius:9px; padding:10px 12px; font-size:.92rem; font-family:inherit;
+    line-height:1.5; min-height:44px;}
+  textarea{resize:vertical; overflow:hidden;}
+  select{cursor:pointer;}
+  label.fl{display:block; font-size:.83rem; color:var(--text-dim); margin:12px 0 5px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .btn{appearance:none; cursor:pointer; background:var(--bg2); color:var(--text);
+    border:1px solid var(--border); border-radius:10px; padding:11px 16px;
+    font-size:.88rem; font-family:inherit; min-height:44px;}
+  .btn:hover{border-color:var(--accent); color:var(--accent);}
+  .btn.primary{border-color:var(--ok); color:var(--ok);}
+  .btns{display:flex; flex-wrap:wrap; gap:10px; margin:16px 0 0;}
+  .ws-pill{display:inline-block; font-size:.78rem; border-radius:999px;
+    padding:5px 12px; border:1px solid var(--border); background:var(--card);
+    color:var(--text-dim);}
+  .ws-pill.st-local{border-color:var(--warn); color:var(--warn);}
+  .ws-pill.st-db{border-color:var(--ok); color:var(--ok);}
+  .ws-pill.st-fail{border-color:var(--bad); color:var(--bad); background:#2a1618;
+    font-weight:650;}
+  .tbl-scroll{overflow-x:auto; margin:0 0 14px;}
+  table{border-collapse:collapse; width:100%; font-size:.88rem; min-width:520px;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left;
+    vertical-align:top;}
+  th{background:var(--bg2); font-weight:650; color:var(--text-dim);}
+  .pc{border:1px solid var(--border); border-radius:10px; padding:12px 14px;
+    margin:0 0 12px; background:var(--bg2);}
+  .pc .pc-head{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;}
+  .pc .pc-name{font-weight:650;}
+  .pc .pc-role{color:var(--text-dim); font-size:.84rem;}
+  .pc .pc-tag{font-size:.74rem; border:1px solid var(--border); border-radius:999px;
+    padding:2px 8px; color:var(--text-dim);}
+  .foot{color:var(--text-dim); font-size:.86rem; padding:26px 0 0;
+    border-top:1px solid var(--border); margin-top:26px;}
+  #toTop{position:fixed; right:18px; bottom:18px; z-index:60; background:var(--bg2);
+    color:var(--text); border:1px solid var(--border); border-radius:999px;
+    padding:10px 16px; font-size:.85rem; cursor:pointer; text-decoration:none;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; width:100%; flex-direction:column; gap:6px; padding-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{width:100%;}
+    header.mast h1{font-size:1.45rem;}
+    .row2{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav-bar" id="navBar">
+  <div class="nav-inner">
+    <span class="nav-title">Daily Targets</span>
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">Summary</a>
+      <a href="#card">Today</a>
+      <a href="#week">The week</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#calls">Forward calls</a>
+      <a href="#sequence">The sequence</a>
+      <a href="#screen">Re-screen</a>
+      <a href="#offer">Open decisions</a>
+      <a href="#notmine">Not on this list</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Daily Targets</h1>
+    <div class="meta">Built from the 2026-08-17 coaching call &middot; one screen a morning &middot; saves to the database</div>
+    <div style="margin-top:10px"><span class="ws-pill" id="dtSave">Loading</span></div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>The short version</h2></summary>
+    <div class="sec-body">
+      <p>Every target on this page is something only Boubacar can do. A comment, a
+      connection request, a message, a call. Nothing on the list can be handed to
+      software, and that is deliberate.</p>
+      <p><strong>Tomorrow, 2026-08-18:</strong> five genuine comments, five connection
+      requests behind those comments, every thanks-and-seed message that has come due,
+      one forward call written down, and thirty minutes of staying present after the
+      batch goes out.</p>
+      <p><strong>The thing this page is designed against:</strong> a ranked list of twenty
+      contacts sat untouched for eleven days while something shipped every single day.
+      Building is not the constraint. Conversations are.</p>
+    </div>
+  </details>
+
+  <!-- ============================ TODAY ============================ -->
+  <details class="sec card" id="card" open>
+    <summary><h2>Today's card</h2></summary>
+    <div class="sec-body">
+      <p class="lead">Five targets. Tick as you go. Nothing here needs a decision first,
+      so it can start tomorrow morning without waiting on anything else on this page.</p>
+
+      <label class="fl" for="dt-date">Date I am running</label>
+      <input type="date" id="dt-date" data-item="today-date">
+
+      <div class="target">
+        <div class="t-head"><span class="t-num">1</span>
+          <span class="t-name">Five genuine comments on prospect posts</span></div>
+        <div class="ticks">
+          <label><input type="checkbox" data-item="today-comment-1">1</label>
+          <label><input type="checkbox" data-item="today-comment-2">2</label>
+          <label><input type="checkbox" data-item="today-comment-3">3</label>
+          <label><input type="checkbox" data-item="today-comment-4">4</label>
+          <label><input type="checkbox" data-item="today-comment-5">5</label>
+        </div>
+        <p class="t-why">Devin calls this the highest-leverage item on the whole list.
+        Comment on their posts and on their comments. Value, not congratulations. A
+        comment that agrees is invisible; a comment that adds the thing they left out
+        is not.</p>
+        <label class="fl" for="dt-cwho">Who I commented on, and what I actually added</label>
+        <textarea id="dt-cwho" rows="3" data-item="today-comment-log"></textarea>
+      </div>
+
+      <div class="target">
+        <div class="t-head"><span class="t-num">2</span>
+          <span class="t-name">Connection requests, no note, after the comment</span></div>
+        <div class="ticks">
+          <label class="floor"><input type="checkbox" data-item="today-conn-1">1</label>
+          <label class="floor"><input type="checkbox" data-item="today-conn-2">2</label>
+          <label class="floor"><input type="checkbox" data-item="today-conn-3">3</label>
+          <label class="floor"><input type="checkbox" data-item="today-conn-4">4</label>
+          <label class="floor"><input type="checkbox" data-item="today-conn-5">5</label>
+          <label><input type="checkbox" data-item="today-conn-6">6</label>
+          <label><input type="checkbox" data-item="today-conn-7">7</label>
+          <label><input type="checkbox" data-item="today-conn-8">8</label>
+          <label><input type="checkbox" data-item="today-conn-9">9</label>
+          <label><input type="checkbox" data-item="today-conn-10">10</label>
+        </div>
+        <p class="t-why">The first five are the floor, in amber. Six through ten are the
+        stretch. Order matters and it is the whole trick: the comment lands first, so the
+        request arrives from a name they have already read rather than a stranger. No note
+        attached. A note turns a free yes into a decision.</p>
+      </div>
+
+      <div class="target">
+        <div class="t-head"><span class="t-num">3</span>
+          <span class="t-name">Every thanks-for-connecting that has come due</span></div>
+        <p class="t-why">Fires the moment an invite is accepted, not on a schedule. Check
+        the pipeline below for anyone sitting at Connected with no message sent. This is
+        step 3 of the sequence and it is the one that quietly decides whether any of the
+        earlier work turns into a conversation.</p>
+        <label class="fl" for="dt-thanks">Who I thanked today</label>
+        <textarea id="dt-thanks" rows="2" data-item="today-thanks-log"></textarea>
+      </div>
+
+      <div class="target">
+        <div class="t-head"><span class="t-num">4</span>
+          <span class="t-name">The seeding question, to anyone already thanked</span></div>
+        <p class="t-why">Why are they not posting more, and what is blocking it. Their
+        answer is the whole opening for everything after, because it is the only thing on
+        this page you cannot research in advance. Target a real conversation inside three
+        to four messages, then stop counting messages and start listening.</p>
+        <label class="fl" for="dt-seed">Who I seeded, and what they said was in the way</label>
+        <textarea id="dt-seed" rows="3" data-item="today-seed-log"></textarea>
+      </div>
+
+      <div class="target">
+        <div class="t-head"><span class="t-num">5</span>
+          <span class="t-name">One forward call, written down and dated</span></div>
+        <p class="t-why">One line. What is set today, and where it goes in two or three
+        months. This is the only target on the list that is not an ask, and it earns its
+        place because the proof only accrues if the call is timestamped before the event.
+        Every day it is skipped is credibility that cannot be recovered later.</p>
+        <label class="fl" for="dt-call">The call I am making today</label>
+        <textarea id="dt-call" rows="2" data-item="today-forward-call"></textarea>
+      </div>
+
+      <div class="callout warn">
+        <label style="display:flex; gap:10px; align-items:flex-start; cursor:pointer">
+          <input type="checkbox" data-item="today-window" style="margin-top:4px; flex:none">
+          <span><strong>The thirty-minute window.</strong> After the batch goes out, stay
+          present for half an hour. Replies arrive fastest in the minutes right after, and
+          a reply answered in two minutes is a different conversation from the same reply
+          answered tomorrow.</span>
+        </label>
+      </div>
+
+      <label class="fl" for="dt-notes">Anything else about today</label>
+      <textarea id="dt-notes" rows="3" data-item="today-notes"></textarea>
+
+      <div class="btns">
+        <button class="btn primary" id="dtClose">Close out the day</button>
+        <button class="btn" id="dtCopy">Copy today's card</button>
+      </div>
+      <p class="lead" style="margin-top:10px; font-size:.84rem">Closing out writes a dated
+      row to the database and clears the ticks and the logs for tomorrow. The dated row
+      stays, so the history builds itself.</p>
+      <div id="dtHistory"></div>
+    </div>
+  </details>
+
+  <!-- ============================ WEEK ============================ -->
+  <details class="sec" id="week">
+    <summary><h2>The week around it</h2></summary>
+    <div class="sec-body">
+      <p class="lead">The daily card is the same five things every weekday. The week adds
+      three things the day cannot hold.</p>
+      <div class="tbl-scroll">
+      <table>
+        <tr><th>When</th><th>What</th><th>Why it is not a daily item</th></tr>
+        <tr><td><strong>Monday to Friday</strong></td>
+          <td>The card above. Five comments, five to ten requests, follow-ups due, one forward call, thirty-minute window.</td>
+          <td>It is the daily item.</td></tr>
+        <tr><td><strong>Wednesday</strong></td>
+          <td>Read the pipeline below top to bottom. Anything at Connection Sent for more than a week goes to Nurture rather than sitting.</td>
+          <td>A stalled row looks identical to a live one until someone looks. Once a week is enough; every day is fiddling.</td></tr>
+        <tr><td><strong>Friday</strong></td>
+          <td>Count the week. Comments, requests, replies, conversations, calls booked. Write the number down even when it is zero.</td>
+          <td>A zero written down is data. A zero not written down is a story about being busy.</td></tr>
+        <tr><td><strong>Sunday, the sitting</strong></td>
+          <td>Build next week's list. Devin prescribes this and it is the load-bearing hour of the week. Twenty-five to fifty names screened against the disqualifier, so Monday morning has nothing to decide.</td>
+          <td>List-building and outreach compete for the same attention, and outreach loses every time. Separating them is the point.</td></tr>
+      </table>
+      </div>
+      <div class="callout">
+        <p style="margin:0"><strong>Why Sunday matters more than it looks.</strong> Every
+        morning that starts with "who do I talk to today" is a morning that starts with a
+        decision, and a decision is where the day leaks. The sitting moves all of the
+        week's deciding into one hour where it is cheap.</p>
+      </div>
+      <h3>Weekly count</h3>
+      <div class="row2">
+        <div><label class="fl" for="wk-of">Week of</label>
+          <input type="date" id="wk-of" data-item="week-of"></div>
+        <div><label class="fl" for="wk-conv">Real conversations this week</label>
+          <input type="text" id="wk-conv" data-item="week-conversations"></div>
+      </div>
+      <div class="row2">
+        <div><label class="fl" for="wk-comm">Comments</label>
+          <input type="text" id="wk-comm" data-item="week-comments"></div>
+        <div><label class="fl" for="wk-req">Requests sent</label>
+          <input type="text" id="wk-req" data-item="week-requests"></div>
+      </div>
+      <div class="row2">
+        <div><label class="fl" for="wk-rep">Replies</label>
+          <input type="text" id="wk-rep" data-item="week-replies"></div>
+        <div><label class="fl" for="wk-call">Calls booked</label>
+          <input type="text" id="wk-call" data-item="week-calls"></div>
+      </div>
+      <label class="fl" for="wk-sun">Sunday sitting: names screened, and who got cut for not posting</label>
+      <textarea id="wk-sun" rows="3" data-item="week-sunday"></textarea>
+    </div>
+  </details>
+
+  <!-- ============================ PIPELINE ============================ -->
+  <details class="sec" id="pipeline">
+    <summary><h2>Pipeline</h2></summary>
+    <div class="sec-body">
+      <p class="lead">Devin's eight stages, plus two states that come before them:
+      <em>Not screened</em> for anyone whose posting has not been checked, and
+      <em>Disqualified</em> for anyone who fails the posting test. Every change here
+      saves to the database. If a save fails, the pill at the top of the page turns red
+      and says so.</p>
+      <div class="callout">
+        <p style="margin:0"><strong>Stages, in order:</strong> Qualified &middot;
+        Connection Sent &middot; Connected &middot; DM Sent &middot; Replied &middot;
+        Resource Sent &middot; Call Booked &middot; Nurture. Nurture is not a failure
+        state and it is not last in time; it is where anyone goes who is real but not now.</p>
+      </div>
+
+      <h3>The five faucets</h3>
+      <p class="lead">Publication and podcast operators. They publish contact routes
+      because that is how they source material, which makes them the reachable half of
+      the list. Devin's logic: one of them connects you to ten founders.</p>
+      <div id="pipe-faucets"></div>
+
+      <h3>The fifteen founders</h3>
+      <p class="lead">Every one of these needs the posting test run before anything else
+      happens. See the re-screen section below.</p>
+      <div id="pipe-founders"></div>
+    </div>
+  </details>
+
+  <!-- ============================ FORWARD CALLS ============================ -->
+  <details class="sec" id="calls">
+    <summary><h2>The forward-call log</h2></summary>
+    <div class="sec-body">
+      <div class="callout good">
+        <p style="margin:0 0 8px"><strong>This is the cheapest credibility asset available
+        and it only works if it starts now.</strong> A forward call is worth something
+        exactly because it was written down before the thing happened. Written down
+        afterwards it is worth nothing, and no amount of later effort can fix that.</p>
+        <p style="margin:0">Ten weeks of one call a week is ten dated calls and a hit rate
+        that is a number instead of a claim. A prospect who watches one call land is
+        closer to buying than any case study would put them.</p>
+      </div>
+      <p class="lead">One row a day from the card above, or a longer one here when the call
+      deserves it. Keep the date, the call, and what would prove it wrong.</p>
+      <label class="fl" for="fc-log">The log</label>
+      <textarea id="fc-log" rows="10" data-item="forward-call-log"
+        placeholder="2026-08-18 | The call | What has to happen for this to be right | What would prove it wrong"></textarea>
+      <div class="callout warn">
+        <p style="margin:0"><strong>One decision belongs to Boubacar and nobody else can
+        make it: where these get published.</strong> A log kept privately proves nothing
+        to a buyer. A log posted publicly is the differentiator working in the open, and it
+        is also the version that can be wrong in public. That trade is his to take, and it
+        is the single open question on this whole page.</p>
+      </div>
+    </div>
+  </details>
+
+  <!-- ============================ SEQUENCE ============================ -->
+  <details class="sec" id="sequence">
+    <summary><h2>The sequence, as Devin gave it</h2></summary>
+    <div class="sec-body">
+      <p class="lead">Five steps, in order. The order is the method, not a suggestion.</p>
+      <ol>
+        <li><strong>Comment on their posts and on their comments.</strong> Genuine value.
+        Not congratulations.</li>
+        <li><strong>Connection request after the comment, with no note.</strong> The
+        comment is the note.</li>
+        <li><strong>Thanks for connecting</strong>, once accepted.</li>
+        <li><strong>Seed it:</strong> why are they not posting more, what is blocking it.</li>
+        <li><strong>Lead with the value</strong>, which is being current on the tech.
+        Target a real conversation inside three to four messages.</li>
+      </ol>
+      <div class="callout hard">
+        <p style="margin:0 0 8px"><strong>The hard disqualifier, in Devin's words: if they
+        are not posting on LinkedIn, they are not a lead.</strong> That is a filter, not a
+        preference. It runs before anything else and it does not get argued with.</p>
+        <p style="margin:0">It may cut names already on the list. Cutting them is the
+        system working.</p>
+      </div>
+      <h3>Volume, and an honest conflict</h3>
+      <p><strong>What he said live today: five to ten connection requests a day.</strong>
+      That is the number in force and it is what the card above implements.</p>
+      <p>Devin's written outreach engine document is reported to say twenty-five a day full
+      time and ten part time. Both numbers are written here on purpose, so that nobody
+      silently reverts to the higher one later and calls it the plan. <strong>The live
+      instruction wins.</strong></p>
+      <p class="lead" style="font-size:.85rem"><em>Stated plainly: that written document is
+      not in any repository I can read. The twenty-five and ten figures come from the brief
+      I was given, not from a file I opened. The five to ten is what he was told live today
+      and is the number to run.</em></p>
+      <h3>What is deliberately not on this page</h3>
+      <p>No comment drafts. No message drafts. No seeding lines. The entire method is
+      specificity to one person, and a template is the fastest way to destroy it. What is
+      here is the shape and the count. The words are his, every time, written in front of
+      the actual post.</p>
+    </div>
+  </details>
+
+  <!-- ============================ RE-SCREEN ============================ -->
+  <details class="sec" id="screen">
+    <summary><h2>The twenty need re-screening</h2></summary>
+    <div class="sec-body">
+      <div class="callout hard">
+        <p style="margin:0"><strong>Not one of the twenty has been screened against the
+        posting disqualifier, and not one has a verified route to reach them.</strong> Both
+        columns, email and profile URL, are empty for all twenty. Every profile URL in the
+        source research came from a search-result title, and no profile was ever opened.</p>
+      </div>
+      <p>That makes the honest count twenty identified by name and zero qualified. The
+      disqualifier turns the Sunday sitting into the most important hour of the week,
+      because until it runs, the pipeline is a list of names rather than a pipeline.</p>
+      <h3>Apurv Bansal, named specifically</h3>
+      <p>He is the founder Boubacar put in writing to Devin as the one he most wants to
+      land, and the whole call today was built around him. He is also the one whose feed no
+      agent has been able to read. <strong>He has to be screened by a human eye, and if he
+      is not posting, he is not a lead either.</strong> Being the anchor of the plan does
+      not exempt him from the filter. If he fails it, the plan changes rather than the
+      filter.</p>
+      <h3>Where the ranking still holds, and where it does not</h3>
+      <p>The reachability argument for putting the faucets first survives the
+      disqualifier untouched, because publication operators post by definition. The founder
+      ranking does not survive it: it was built on company fit and freshness, and posting
+      activity was never a factor. <strong>Re-rank the founders by posting activity first
+      and fit second, not the other way round.</strong></p>
+    </div>
+  </details>
+
+  <!-- ============================ OFFER ============================ -->
+  <details class="sec" id="offer">
+    <summary><h2>Six decisions, due 2026-08-11, still open</h2></summary>
+    <div class="sec-body">
+      <div class="callout warn">
+        <p style="margin:0">These were due six days ago and they are the only thing on this
+        page that can block a good outcome. A founder cannot say yes to something with no
+        price. The daily targets do not wait on them, because commenting and connecting
+        need no offer. Step five does.</p>
+      </div>
+      <div class="tbl-scroll">
+      <table>
+        <tr><th>#</th><th>Decision</th><th>Standing recommendation</th></tr>
+        <tr><td>1</td><td>Entry point</td><td>A small fixed-scope paid pilot. Not a retainer, not free.</td></tr>
+        <tr><td>2</td><td>Scope</td><td>Four published pieces in 30 days, in his voice, from interviews he runs.</td></tr>
+        <tr><td>3</td><td>Price</td><td>$2,500 for the pilot, then $5,000 a month to continue.</td></tr>
+        <tr><td>4</td><td>Term</td><td>30 days, then month to month, 30 days notice.</td></tr>
+        <tr><td>5</td><td>Risk reversal</td><td>The first piece is delivered before any money moves.</td></tr>
+        <tr><td>6</td><td>Explicitly excluded</td><td>Running accounts, replying as him, design, video, ads, distribution. Two revision rounds per piece.</td></tr>
+      </table>
+      </div>
+      <p class="lead">Full reasoning behind each one is in the plan these came from. The
+      recommendations have not changed since they were written; only the date has.</p>
+      <label class="fl" for="of-note">Decisions made, and when</label>
+      <textarea id="of-note" rows="4" data-item="offer-decisions"></textarea>
+    </div>
+  </details>
+
+  <!-- ============================ NOT MINE ============================ -->
+  <details class="sec" id="notmine">
+    <summary><h2>What is deliberately not on his list</h2></summary>
+    <div class="sec-body">
+      <p class="lead">The rule this page is built on: if software could do it, it does not
+      belong on a founder's daily targets. These are real work and they still do not
+      qualify.</p>
+      <ul>
+        <li>Finding contact routes for the twenty.</li>
+        <li>Assembling what a prospect has said publicly, before he writes anything.</li>
+        <li>Tracking replies across channels so nothing depends on memory.</li>
+        <li>Arming follow-ups.</li>
+        <li>Keeping this page and the pipeline current.</li>
+        <li>Drafting anything for review.</li>
+      </ul>
+      <div class="callout hard">
+        <p style="margin:0"><strong>Why the list is this short on purpose.</strong> A ranked
+        list of twenty contacts sat untouched for eleven days while something shipped every
+        single day. The output was never the problem. Five targets that only he can do,
+        every morning, is the correction, and the moment this page grows a sixth thing that
+        an agent could have done, it has stopped working.</p>
+      </div>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Boubacar Barry &middot; Salt Lake City, Utah &middot; working document, not a sales page.
+    Nothing on this page has been sent to anyone.
+  </footer>
+
+</div>
+
+<a href="#" id="toTop">Back to top</a>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var id = a.getAttribute('href').slice(1);
+    if (!id) { return; }
+    var t = document.getElementById(id);
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- ===== PIPELINE ROWS ===== -->
+<script>
+(function(){
+  var STAGES = ['Not screened','Disqualified, not posting','Qualified','Connection Sent',
+                'Connected','DM Sent','Replied','Resource Sent','Call Booked','Nurture'];
+  var FAUCETS = [
+    ['alex-johnson','Alex Johnson','Founder and writer, Fintech Takes','Rank 1'],
+    ['nik-milanovic','Nik Milanovic','Founder, This Week in Fintech','Rank 2'],
+    ['simon-taylor','Simon Taylor','Co-founder 11FS, Fintech Brainfood','Rank 3'],
+    ['jason-mikula','Jason Mikula','Publisher, Fintech Business Weekly','Rank 4'],
+    ['reggie-young','Reggie Young','Host, Fintech Layer Cake','Rank 5']
+  ];
+  var FOUNDERS = [
+    ['apurv-bansal','Apurv Bansal','Co-founder and CEO, Zenskar','Named anchor'],
+    ['eric-rosenthal','Eric Rosenthal','Co-founder and CEO, Cordant','Core'],
+    ['caitlin-leksana','Caitlin Leksana','Co-founder and CEO, Fazeshift','Core'],
+    ['pranjal-daga','Pranjal Daga','Co-founder and Co-CEO, Accend','Core'],
+    ['george-kurdin','George Kurdin','Co-founder and CEO, Monk','Core'],
+    ['sean-mullaney','Sean Mullaney','Founder and CEO, Seapoint','Highest bar'],
+    ['lukas-haffer','Lukas Haffer','Co-founder and CEO, Casca','Core'],
+    ['mikkel-skarnager','Mikkel Skarnager','Co-founder and CEO, Spektr','EU time zone'],
+    ['hayyaan-ahmad','Hayyaan Ahmad','Co-founder, Round','London'],
+    ['timmy-galvin','Timmy Galvin','Co-founder and CTO, Fazeshift','Second door'],
+    ['saurabh-agrawal','Saurabh Agrawal','Co-founder, CTO and CFO, Zenskar','Second door'],
+    ['joe-zhou','Joe Zhou','Co-founder, Monk','Second door'],
+    ['alice-deng','Alice Deng','Co-founder and CPO, Slope','Second door'],
+    ['snir-kodesh','Snir Kodesh','Founder and CEO, Petual','Off ICP'],
+    ['lawrence-lin-murata','Lawrence Lin Murata','Co-founder and CEO, Slope','Off ICP']
+  ];
+  function render(list, host){
+    var el = document.getElementById(host);
+    if (!el) { return; }
+    var html = '';
+    list.forEach(function(c){
+      var opts = STAGES.map(function(s){
+        return '<option value="' + s + '">' + s + '</option>'; }).join('');
+      html += '<div class="pc">' +
+        '<div class="pc-head"><span class="pc-name">' + c[1] + '</span>' +
+        '<span class="pc-tag">' + c[3] + '</span></div>' +
+        '<div class="pc-role">' + c[2] + '</div>' +
+        '<label class="fl" for="st-' + c[0] + '">Stage</label>' +
+        '<select id="st-' + c[0] + '" data-item="stage-' + c[0] + '">' + opts + '</select>' +
+        '<label class="fl" for="nt-' + c[0] + '">My notes: what I saw, what I said, what I decided and why</label>' +
+        '<textarea id="nt-' + c[0] + '" rows="2" data-item="note-' + c[0] + '"></textarea>' +
+        '</div>';
+    });
+    el.innerHTML = html;
+  }
+  render(FAUCETS, 'pipe-faucets');
+  render(FOUNDERS, 'pipe-founders');
+})();
+</script>
+
+<!-- ===== DATABASE PERSISTENCE ===== -->
+<script>
+(function(){
+  // Real database: the same Supabase Postgres project the money map board runs on.
+  // Publishable (anon) key only, never a service key. The board token gates the
+  // write RPC so a random visitor cannot touch these notes.
+  var SB_URL = 'https://jscucboftaoaphticqci.supabase.co';
+  var SB_ANON = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
+  var BOARD   = 'pga-daily';
+  var TOKEN   = 'pgd_R7mYq3XbN8vTkL2wHs5Ze';
+  var LS      = 'pgadaily-';
+
+  var pill = document.getElementById('dtSave');
+  var fields = Array.prototype.slice.call(document.querySelectorAll('[data-item]'));
+  if (!fields.length) { return; }
+
+  function lsGet(k){ try { return localStorage.getItem(LS + k); } catch(e){ return null; } }
+  function lsSet(k,v){ try { localStorage.setItem(LS + k, v); } catch(e){} }
+  function hhmmss(){ var d = new Date();
+    return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2); }
+
+  // Three honest states. Never say "saved to the database" unless the database said so.
+  function setState(kind, msg){
+    if (!pill) { return; }
+    pill.className = 'ws-pill ' + kind;
+    pill.textContent = msg;
+  }
+  function sayLocal(){ setState('st-local', 'Saved on this device, syncing'); }
+  function sayDb(){ setState('st-db', 'Saved to the database ' + hhmmss()); }
+  function sayFail(reason){
+    setState('st-fail', 'DATABASE SAVE FAILED: ' + reason + '. Still saved on this device. Use Copy today’s card.');
+  }
+
+  function val(el){
+    if (el.type === 'checkbox') { return el.checked ? '1' : '0'; }
+    return el.value || '';
+  }
+  function apply(el, v){
+    if (el.type === 'checkbox') { el.checked = (v === '1'); return; }
+    el.value = (v === null || v === undefined) ? '' : v;
+    grow(el);
+  }
+  function grow(el){
+    if (el.tagName !== 'TEXTAREA') { return; }
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight + 2) + 'px';
+  }
+
+  // ---- paint from localStorage first: instant, offline, never waits on a network ----
+  fields.forEach(function(el){
+    var k = el.getAttribute('data-item');
+    var cached = lsGet(k);
+    if (cached !== null) { apply(el, cached); }
+    else { grow(el); }
+  });
+
+  // ---- dirty queue -> debounced database write ----
+  var dirty = {};
+  var timer = null;
+
+  function writeOne(k, v){
+    return fetch(SB_URL + '/rest/v1/rpc/y0_upsert', {
+      method: 'POST',
+      headers: { 'apikey': SB_ANON, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_board: BOARD, p_item: k, p_value: v, p_token: TOKEN })
+    }).then(function(r){
+      if (!r.ok) { throw new Error('HTTP ' + r.status); }
+    });
+  }
+
+  function flush(){
+    var keys = Object.keys(dirty);
+    if (!keys.length) { return; }
+    var batch = dirty; dirty = {};
+    var pending = keys.length, failed = null;
+    keys.forEach(function(k){
+      writeOne(k, batch[k]).catch(function(e){
+        failed = (e && e.message) ? e.message : 'network unreachable';
+      }).then(function(){
+        pending--;
+        if (pending === 0) { if (failed) { sayFail(failed); } else { sayDb(); } }
+      });
+    });
+  }
+
+  function queue(el){
+    var k = el.getAttribute('data-item');
+    var v = val(el);
+    lsSet(k, v);            // hard requirement: local write happens first, always
+    dirty[k] = v;
+    sayLocal();
+    if (timer) { clearTimeout(timer); }
+    timer = setTimeout(flush, 1100);
+  }
+
+  fields.forEach(function(el){
+    var ev = (el.type === 'checkbox' || el.type === 'date' || el.tagName === 'SELECT')
+      ? 'change' : 'input';
+    el.addEventListener(ev, function(){ grow(el); queue(el); });
+    el.addEventListener('blur', function(){ if (timer) { clearTimeout(timer); timer = null; } flush(); });
+  });
+
+  // ---- hydrate from the database, without ever clobbering fresher local text ----
+  var landed = false;
+  fetch(SB_URL + '/rest/v1/y0_money_map_state?board_id=eq.' + BOARD + '&select=item_id,value,updated_at',
+        { headers: { 'apikey': SB_ANON } })
+    .then(function(r){
+      if (!r.ok) { throw new Error('HTTP ' + r.status); }
+      return r.json();
+    })
+    .then(function(rows){
+      landed = true;
+      (rows || []).forEach(function(row){
+        var el = document.querySelector('[data-item="' + row.item_id + '"]');
+        if (!el) { return; }
+        var localVal = lsGet(row.item_id);
+        if (localVal === null || localVal === '' || localVal === '0') {
+          apply(el, row.value);
+          lsSet(row.item_id, row.value);
+        } else if (localVal !== row.value) {
+          // This device has something the database does not. Keep it and push it.
+          dirty[row.item_id] = localVal;
+        }
+      });
+      renderHistory(rows || []);
+      if (Object.keys(dirty).length) { flush(); }
+      else { setState('st-db', 'Database connected, ready'); }
+    })
+    .catch(function(e){
+      landed = true;
+      sayFail((e && e.message) ? e.message : 'could not reach the database');
+    });
+
+  // A read that never resolves at all resolves neither handler. Do not leave the pill lying.
+  setTimeout(function(){ if (!landed) { sayFail('database did not answer in 10 seconds'); } }, 10000);
+
+  // ---- the dated history the close-out writes ----
+  function renderHistory(rows){
+    var host = document.getElementById('dtHistory');
+    if (!host) { return; }
+    var days = rows.filter(function(r){ return /^day-\d{4}-\d{2}-\d{2}$/.test(r.item_id); })
+                   .sort(function(a,b){ return a.item_id < b.item_id ? 1 : -1; });
+    if (!days.length) { host.innerHTML = ''; return; }
+    var html = '<h3>Days closed out</h3><div class="tbl-scroll"><table>' +
+      '<tr><th>Date</th><th>What was logged</th></tr>';
+    days.slice(0,30).forEach(function(d){
+      var esc = String(d.value || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      html += '<tr><td>' + d.item_id.slice(4) + '</td><td>' + esc + '</td></tr>';
+    });
+    host.innerHTML = html + '</table></div>';
+  }
+
+  // ---- digest, copy, and close out ----
+  function fieldVal(item){
+    var el = document.querySelector('[data-item="' + item + '"]');
+    if (!el) { return ''; }
+    return val(el);
+  }
+  function countTicks(prefix, n){
+    var c = 0;
+    for (var i = 1; i <= n; i++) { if (fieldVal(prefix + i) === '1') { c++; } }
+    return c;
+  }
+  function digest(){
+    var d = fieldVal('today-date') || new Date().toISOString().slice(0,10);
+    return [
+      'Daily targets, ' + d,
+      'Comments: ' + countTicks('today-comment-', 5) + ' of 5',
+      'Connection requests: ' + countTicks('today-conn-', 10) + ' (floor 5)',
+      'Thirty-minute window: ' + (fieldVal('today-window') === '1' ? 'yes' : 'no'),
+      'Commented on: ' + (fieldVal('today-comment-log') || '(blank)'),
+      'Thanked: ' + (fieldVal('today-thanks-log') || '(blank)'),
+      'Seeded: ' + (fieldVal('today-seed-log') || '(blank)'),
+      'Forward call: ' + (fieldVal('today-forward-call') || '(blank)'),
+      'Notes: ' + (fieldVal('today-notes') || '(blank)')
+    ].join('\n');
+  }
+  var copyBtn = document.getElementById('dtCopy');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function(){
+      var text = digest();
+      var done = function(){ copyBtn.textContent = 'Copied';
+        setTimeout(function(){ copyBtn.textContent = 'Copy today’s card'; }, 1800); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function(){ window.prompt('Copy this', text); });
+      } else { window.prompt('Copy this', text); }
+    });
+  }
+  var closeBtn = document.getElementById('dtClose');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function(){
+      var d = fieldVal('today-date') || new Date().toISOString().slice(0,10);
+      var text = digest();
+      closeBtn.disabled = true;
+      closeBtn.textContent = 'Writing';
+      writeOne('day-' + d, text).then(function(){
+        // Only clear AFTER the database confirms the day is stored.
+        ['today-comment-','today-conn-'].forEach(function(p){
+          var n = (p === 'today-conn-') ? 10 : 5;
+          for (var i = 1; i <= n; i++) {
+            var el = document.querySelector('[data-item="' + p + i + '"]');
+            if (el) { el.checked = false; lsSet(p + i, '0'); dirty[p + i] = '0'; }
+          }
+        });
+        ['today-comment-log','today-thanks-log','today-seed-log','today-forward-call',
+         'today-notes','today-window'].forEach(function(k){
+          var el = document.querySelector('[data-item="' + k + '"]');
+          if (!el) { return; }
+          if (el.type === 'checkbox') { el.checked = false; lsSet(k, '0'); dirty[k] = '0'; }
+          else { el.value = ''; grow(el); lsSet(k, ''); dirty[k] = ''; }
+        });
+        flush();
+        closeBtn.textContent = 'Day ' + d + ' stored';
+        setTimeout(function(){ closeBtn.disabled = false;
+          closeBtn.textContent = 'Close out the day'; }, 2500);
+      }).catch(function(e){
+        // Never clear on a failed write. The day would vanish.
+        sayFail((e && e.message) ? e.message : 'close-out write failed');
+        closeBtn.disabled = false;
+        closeBtn.textContent = 'Close-out FAILED, nothing cleared';
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
