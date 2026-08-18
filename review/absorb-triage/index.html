@@ -267,6 +267,82 @@ const NOTES_KEY = "absorb_triage_notes_v1";
 const SECTIONS_KEY = "absorb_triage_sections_v1";
 const ORC_BASE = "https://agentshq.boubacarbarry.com/api/orc";
 
+// --- AUTH (SYS-651, 2026-08-18) -------------------------------------------
+// These 8 absorb-triage endpoints used to be the only /atlas routes with NO
+// server-side auth -- 4 of them unauthenticated PUT writes. They now require
+// a token like the other 62, so this page has to send one.
+// Two paths, in this order:
+//  1. ?token= in the URL. This page is cross-origin from the dashboard, so the
+//     dashboard's localStorage is invisible here; atlas.js::wireAbsorbTriageLinks()
+//     appends the live token to the "Absorb" link for exactly this handoff.
+//  2. atlas_token in localStorage (30-day TTL, same key/TTL as atlas.js and the
+//     other sub-pages -- do not switch to sessionStorage, that caused the
+//     2026-08-18 sub-page logout loop).
+// Neither present -> render a banner telling him to open it from the dashboard,
+// instead of silently showing an empty board.
+const TOKEN_KEY = "atlas_token";
+const TOKEN_TS_KEY = "atlas_token_ts";
+const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+let _TOKEN = null;
+(function bootToken() {
+  let urlToken = null;
+  try { urlToken = new URLSearchParams(location.search).get("token"); } catch (e) { urlToken = null; }
+  if (urlToken) {
+    _TOKEN = urlToken;
+    try {
+      localStorage.setItem(TOKEN_KEY, urlToken);
+      localStorage.setItem(TOKEN_TS_KEY, String(Date.now()));
+    } catch (e) { /* storage blocked; in-memory token still works this load */ }
+    try {
+      const u = new URL(location.href);
+      u.searchParams.delete("token");
+      const qs = u.searchParams.toString();
+      history.replaceState(null, "", u.pathname + (qs ? "?" + qs : "") + u.hash);
+    } catch (e) { /* non-fatal */ }
+    return;
+  }
+  try {
+    const t = localStorage.getItem(TOKEN_KEY);
+    const ts = parseInt(localStorage.getItem(TOKEN_TS_KEY) || "0", 10);
+    if (t && ts && (Date.now() - ts) < TOKEN_TTL_MS) _TOKEN = t;
+  } catch (e) { /* storage blocked */ }
+})();
+
+let _authBannerShown = false;
+function showAuthNeeded(msg) {
+  if (_authBannerShown) return;
+  _authBannerShown = true;
+  const div = document.createElement("div");
+  div.style.cssText = "position:sticky;top:0;z-index:9999;padding:12px 16px;background:#7f1d1d;color:#fff;font:600 14px/1.4 system-ui,sans-serif;text-align:center;";
+  div.innerHTML = (msg || "Not signed in.") +
+    ' Open this board from the dashboard so it can pass a token: ' +
+    '<a href="https://agentshq.boubacarbarry.com/atlas" style="color:#fff;text-decoration:underline;">go to the dashboard</a>.';
+  document.body.insertBefore(div, document.body.firstChild);
+}
+
+// Every call to the 8 triage endpoints goes through this. Adds the bearer
+// token and turns a 401/403 into a visible banner instead of a silent empty
+// board (a signal that lies is worse than a crash).
+function authFetch(url, opts) {
+  const o = Object.assign({}, opts || {});
+  o.headers = Object.assign({}, o.headers || {});
+  if (_TOKEN) o.headers["Authorization"] = "Bearer " + _TOKEN;
+  return fetch(url, o).then(function (r) {
+    if (r.status === 401 || r.status === 403) {
+      try {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(TOKEN_TS_KEY);
+      } catch (e) { /* ignore */ }
+      _TOKEN = null;
+      showAuthNeeded("Session expired.");
+    }
+    return r;
+  });
+}
+document.addEventListener("DOMContentLoaded", function () {
+  if (!_TOKEN) showAuthNeeded("Not signed in.");
+});
+
 let ITEMS = [];        // Active items
 let ARCHIVED = [];     // Archived reference items
 let ARCHIVED_TOTAL = 0;
@@ -325,7 +401,7 @@ function saveState() {
 const BUCKET_TO_STATUS = { today: "TODAY", later: "LATER", skip: "SKIP" };
 function pushTriage(itemId, bucket) {
   const status = BUCKET_TO_STATUS[bucket] || null;
-  fetch(ORC_BASE + "/atlas/absorb-triage-items/" + itemId + "/triage", {
+  authFetch(ORC_BASE + "/atlas/absorb-triage-items/" + itemId + "/triage", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status: status }),
@@ -340,7 +416,7 @@ const _noteTimers = {};
 function pushNote(itemId, note) {
   clearTimeout(_noteTimers[itemId]);
   _noteTimers[itemId] = setTimeout(() => {
-    fetch(ORC_BASE + "/atlas/absorb-triage-items/" + itemId + "/note", {
+    authFetch(ORC_BASE + "/atlas/absorb-triage-items/" + itemId + "/note", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ note: note || null }),
@@ -349,7 +425,7 @@ function pushNote(itemId, note) {
 }
 
 function pushArchive(itemId, reason) {
-  return fetch(ORC_BASE + "/atlas/absorb-triage-items/" + itemId + "/archive", {
+  return authFetch(ORC_BASE + "/atlas/absorb-triage-items/" + itemId + "/archive", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ reason: reason || null }),
@@ -357,7 +433,7 @@ function pushArchive(itemId, reason) {
 }
 
 function pushUnarchive(itemId) {
-  return fetch(ORC_BASE + "/atlas/absorb-triage-items/" + itemId + "/unarchive", { method: "PUT" });
+  return authFetch(ORC_BASE + "/atlas/absorb-triage-items/" + itemId + "/unarchive", { method: "PUT" });
 }
 
 function showToast(msg) {
@@ -842,7 +918,7 @@ function loadItems() {
   const meta = document.getElementById("meta-line");
   meta.textContent = "Loading...";
 
-  fetch(ORC_BASE + "/atlas/absorb-triage-board")
+  authFetch(ORC_BASE + "/atlas/absorb-triage-board")
     .then(r => {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
@@ -864,7 +940,7 @@ function loadItems() {
       // Board endpoint not deployed yet (Gate hasn't merged/pulled it) --
       // fall back to the Active-only endpoint so the page still works.
       console.warn("board endpoint unavailable, falling back to active-only:", err);
-      fetch(ORC_BASE + "/atlas/absorb-triage-items")
+      authFetch(ORC_BASE + "/atlas/absorb-triage-items")
         .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(data => {
           applyActive(data.items || []);
@@ -940,7 +1016,7 @@ function setArchivedSkippedOnly(skippedOnly) {
   document.getElementById("sf-archived-all").classList.toggle("on", !skippedOnly);
   document.getElementById("sf-archived-skipped").classList.toggle("on", skippedOnly);
   document.getElementById("archived-load-status").textContent = "Loading...";
-  fetch(ORC_BASE + "/atlas/absorb-triage-archived?offset=0&limit=150&skipped_only=" + (skippedOnly ? "true" : "false"))
+  authFetch(ORC_BASE + "/atlas/absorb-triage-archived?offset=0&limit=150&skipped_only=" + (skippedOnly ? "true" : "false"))
     .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(data => {
       ARCHIVED = data.items || [];
@@ -973,7 +1049,7 @@ function loadMore(kind) {
     ? "/atlas/absorb-triage-archived?offset=" + arr.length + "&limit=150&skipped_only=" + (ARCHIVED_SKIPPED_ONLY ? "true" : "false")
     : "/atlas/absorb-triage-done?offset=" + arr.length + "&limit=150";
   statusEl.textContent = "Loading " + arr.length + "-" + Math.min(arr.length + 150, total) + " of " + total + "...";
-  return fetch(ORC_BASE + path)
+  return authFetch(ORC_BASE + path)
     .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(data => {
       const newItems = data.items || [];
