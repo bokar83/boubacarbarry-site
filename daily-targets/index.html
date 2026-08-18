@@ -59,6 +59,18 @@
   ul,ol{margin:0 0 12px; padding-left:22px;}
   li{margin:0 0 6px;}
   .lead{color:var(--text-dim);}
+  .micro{font-size:12px;color:var(--text-dim);margin-top:12px;}
+  .eng-summary{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 18px;}
+  .eng-chip{border:1px solid var(--line,#333);border-radius:999px;padding:6px 12px;font-size:13px;}
+  .eng-chip b{font-size:15px;}
+  .eng-day{margin:18px 0 8px;font-weight:700;}
+  .eng-row{border:1px solid var(--line,#333);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+  .eng-row .who{font-weight:700;}
+  .eng-row .meta{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .eng-row .body{font-size:13px;margin-top:6px;}
+  .eng-tag{font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-radius:4px;padding:1px 6px;border:1px solid var(--line,#333);}
+  .eng-bad{border-color:#c2410c;color:#fb923c;}
+  .eng-scroll{overflow-x:auto;}
   .callout{background:var(--bg2); border:1px solid var(--border);
     border-radius:10px; padding:12px 14px; margin:0 0 14px;}
   .callout.hard{border-color:var(--bad);}
@@ -138,6 +150,7 @@
       <a href="#card">Today</a>
       <a href="#week">The week</a>
       <a href="#pipeline">Pipeline</a>
+      <a href="#engagement">What went out</a>
       <a href="#calls">Forward calls</a>
       <a href="#sequence">The sequence</a>
       <a href="#screen">Re-screen</a>
@@ -327,6 +340,19 @@
       </div>
       <label class="fl" for="wk-sun">Sunday sitting: names screened, and who got cut for not posting</label>
       <textarea id="wk-sun" rows="3" data-item="week-sunday"></textarea>
+    </div>
+  </details>
+
+  <!-- ======================= WHAT ACTUALLY WENT OUT ======================= -->
+  <details class="sec" id="engagement" open>
+    <summary><h2>What actually went out</h2></summary>
+    <div class="sec-body">
+      <p class="lead">Every comment, connection request, follow and message, read live
+      from the database. This is the record, not a memory of one. If it is not here it
+      did not happen, and a row that failed says so instead of quietly disappearing.</p>
+      <div id="engSummary" class="eng-summary">Loading from the database</div>
+      <div id="engRows"></div>
+      <p class="micro" id="engStamp"></p>
     </div>
   </details>
 
@@ -823,6 +849,99 @@
       });
     });
   }
+})();
+</script>
+
+<!-- ===== ENGAGEMENT LOG: reads linkedin_engagement, never writes ===== -->
+<script>
+(function(){
+  var SB_URL  = 'https://jscucboftaoaphticqci.supabase.co';
+  var SB_ANON = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
+  var sumEl   = document.getElementById('engSummary');
+  var rowsEl  = document.getElementById('engRows');
+  var stampEl = document.getElementById('engStamp');
+  if (!sumEl || !rowsEl) { return; }
+
+  var ACTION_LABEL = {
+    comment: 'comment', connect_request: 'request sent', follow: 'followed',
+    connection_accepted: 'accepted', thanks_message: 'thanks sent',
+    dm: 'message', seed_question: 'seed question'
+  };
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+  // An outcome that is not a clean success has to LOOK different. A failure that
+  // renders identically to a success is the thing this whole log exists to prevent.
+  function isBad(o){
+    return o && o !== 'posted' && o !== 'sent' && o !== 'accepted';
+  }
+
+  function render(rows){
+    if (!rows.length) {
+      sumEl.textContent = 'Nothing logged in the last 14 days.';
+      return;
+    }
+    var days = {};
+    rows.forEach(function(r){ (days[r.acted_on] = days[r.acted_on] || []).push(r); });
+
+    var today = rows.filter(function(r){ return r.acted_on === rows[0].acted_on; });
+    function count(list, a){ return list.filter(function(r){ return r.action === a; }).length; }
+    sumEl.innerHTML =
+      '<span class="eng-chip"><b>' + count(today,'comment') + '</b> comments</span>' +
+      '<span class="eng-chip"><b>' + count(today,'connect_request') + '</b> requests</span>' +
+      '<span class="eng-chip"><b>' + count(today,'connection_accepted') + '</b> accepted</span>' +
+      '<span class="eng-chip"><b>' + count(today,'thanks_message') + '</b> thanks sent</span>' +
+      '<span class="eng-chip"><b>' + rows.length + '</b> actions, 14 days</span>';
+
+    var html = '';
+    Object.keys(days).sort().reverse().forEach(function(d){
+      html += '<div class="eng-day">' + esc(d) + '</div>';
+      days[d].forEach(function(r){
+        var bad = isBad(r.outcome);
+        html += '<div class="eng-row' + (bad ? ' eng-bad' : '') + '">' +
+          '<div class="who">' + esc(r.person_name) +
+            ' <span class="eng-tag' + (bad ? ' eng-bad' : '') + '">' +
+            esc(ACTION_LABEL[r.action] || r.action) + '</span>' +
+            ' <span class="eng-tag">' + esc(r.lane) + '</span>' +
+            (bad ? ' <span class="eng-tag eng-bad">' + esc(r.outcome) + '</span>' : '') +
+          '</div>' +
+          (r.post_summary ? '<div class="meta">' + esc(r.post_summary) + '</div>' : '') +
+          (r.body ? '<div class="body">' + esc(r.body) + '</div>' : '') +
+          (r.notes ? '<div class="meta">' + esc(r.notes) + '</div>' : '') +
+          '<div class="meta">' +
+            (r.post_url ? '<a href="' + esc(r.post_url) + '" target="_blank" rel="noopener">the post</a> &middot; ' : '') +
+            '<a href="' + esc(r.profile_url) + '" target="_blank" rel="noopener">profile</a>' +
+          '</div>' +
+        '</div>';
+      });
+    });
+    rowsEl.innerHTML = html;
+  }
+
+  var since = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  var url = SB_URL + '/rest/v1/linkedin_engagement' +
+            '?select=*&acted_on=gte.' + since +
+            '&order=acted_on.desc,created_at.asc';
+
+  fetch(url, { headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON } })
+    .then(function(r){
+      if (!r.ok) { throw new Error('HTTP ' + r.status); }
+      return r.json();
+    })
+    .then(function(rows){
+      render(rows);
+      var d = new Date();
+      stampEl.textContent = 'Read live from the database at ' +
+        ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2) + '.';
+    })
+    .catch(function(e){
+      // Never let an empty list read as "nothing happened" when the read broke.
+      sumEl.innerHTML = '<span class="eng-chip eng-bad">DATABASE READ FAILED: ' +
+        esc(e.message) + '. This list is NOT the record right now.</span>';
+    });
 })();
 </script>
 </body>
