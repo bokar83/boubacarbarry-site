@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Roads Plan</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-19-13:24:10 MT</div><!-- DEPLOY_STAMP_END -->
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Roads plan</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">The finding</a>
+      <a href="#sec-2">The mechanism</a>
+      <a href="#sec-3">The eight roads</a>
+      <a href="#sec-4">Automatable vs him</a>
+      <a href="#sec-5">Cadence</a>
+      <a href="#sec-6">Measurement</a>
+      <a href="#sec-7">First week</a>
+      <a href="#sec-8">Open questions</a>
+      <!-- one link per section; keep ids in sync with the <details id="sec-N"> below -->
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>The Roads Plan</h1>
+    <div class="meta">Distribution and traffic go-to-market across every URL asset &middot; Aug 19, 2026</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><b>The infrastructure is real and the roads to it do not exist.</b> Six lead-magnet pages
+are live on humanatwork.ai with working email capture. Five of the six are linked from
+<b>zero</b> other pages on their own website. None of the six are in the sitemap. Two carry an
+explicit <code>noindex</code> tag. There is no way for a stranger to reach them. That is not a
+capture problem, it is a distribution problem, and it is the whole finding.</p>
+
+<p><b>The recommendation in one line: build one Front Door, then point every road at it.</b>
+A single page, <code>humanatwork.ai/start/</code>, that holds all six magnets behind one email
+field, reusing the capture pattern already proven live on the investigation pack. One URL to
+put in every bio, every footer, every post, every profile. Six competing URLs is why none of
+them get linked.</p>
+
+<p><b>Eight roads, ranked by leverage per hour.</b> Four of them are one-time builds that then
+run forever with nobody touching them: a shared footer link across the five brand sites,
+the sitemap and indexability fix, the UTM convention, and the Front Door itself. Three need
+his voice and should never be automated: LinkedIn comments, post approval, the newsletter.
+One is deliberately excluded: the faceless channels are anonymous by design and pointing them
+at his list would break that firewall permanently.</p>
+
+<p><b>Cost to him in week one: about 35 minutes.</b> Everything else is agent work on rails that
+already exist. This is deliberately not a new content operation. The north star is fractional
+engagements, not a media business.</p>
+
+<p><b>One thing to know before reading further:</b> analytics have been locked for non-payment
+since Aug 17, so every site is currently blind. The plan works around that with UTM-tagged
+capture rows, which cost nothing and work today, but the blindness is real and it is named
+in its own section below.</p>
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1" open>
+    <summary><h2>The finding, measured rather than asserted</h2></summary>
+    <div class="sec-body">
+<p>Every number in this section was read off the files on this machine on Aug 19, not
+estimated. Where something could not be verified it says so.</p>
+
+<h3>The six magnet pages are orphans</h3>
+<div class="table-scroll">
+<table>
+<tr><th>Page</th><th>Capture works</th><th>Linked from any other page on its own site</th><th>In sitemap.xml</th><th>Indexable</th></tr>
+<tr><td>humanatwork.ai/ai-exposure-scan/</td><td>Yes</td><td><b>No</b></td><td><b>No</b></td><td><b>No, noindex</b></td></tr>
+<tr><td>humanatwork.ai/ai-policy-checklist/</td><td>Yes</td><td><b>No</b></td><td><b>No</b></td><td><b>No, noindex</b></td></tr>
+<tr><td>humanatwork.ai/ai-workflow-finder/</td><td>Yes</td><td><b>No</b></td><td><b>No</b></td><td>Yes, but unreachable</td></tr>
+<tr><td>humanatwork.ai/review-loop/</td><td>Yes</td><td><b>No</b></td><td><b>No</b></td><td>Yes, but unreachable</td></tr>
+<tr><td>humanatwork.ai/atlas-sample/</td><td>Yes</td><td>Only from /dfy/ and /store/</td><td><b>No</b></td><td>Yes</td></tr>
+<tr><td>humanatwork.ai/cleanup/</td><td>Yes</td><td>Only from /cleanup-dwy/</td><td><b>No</b></td><td>Yes</td></tr>
+</table>
+</div>
+
+<p>The whole sitemap for humanatwork.ai contains <b>seven URLs</b>: the homepage, the
+investigation pack, the archive, and four dated brief pages. Not one magnet. So the only
+human who can reach five of these six pages is a human who was handed the exact URL by
+someone. Nobody is handing them out.</p>
+
+<h3>What this costs</h3>
+<p>Six finished products, each with a working persistence path into the real store, each
+solving one narrow problem, sitting behind a door with no street attached to it. The work is
+done. The distribution was never built. That is the exact shape of the complaint, and it is
+correct.</p>
+
+<h3>The other assets, honestly assessed</h3>
+<ul>
+<li><b>225 published pages under boubacarbarry.com/review/.</b> These are internal review
+surfaces. They are not a traffic asset and should not be turned into one. Counting them as
+distribution would be flattering and wrong.</li>
+<li><b>Five brand domains that do not link to each other.</b> humanatwork.ai,
+catalystworks.consulting, geolisted.co, hrexposed.net, boubacarbarry.com. Each has its own
+deploy webhook, each ships independently, none of them sends a visitor to any of the others.
+Whatever traffic each one earns dead-ends there.</li>
+<li><b>A proven tripwire that nothing points at.</b> The $19 investigation pack has email
+capture before the payment step, verified on the live page with the row read back out of the
+store. It is the qualification purchase this plan needs and it already exists.</li>
+<li><b>A working automated publish rail.</b> A content-board row set to Queued with a numeric
+quality score at or above the threshold and a mapped platform auto-posts to LinkedIn and X at
+07:00 MT, one per tick, Sunday skipped. Built, wired, and firing. What it lacks is a
+consistent destination in the posts it publishes.</li>
+</ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>The mechanism: one Front Door, every road ends there</h2></summary>
+    <div class="sec-body">
+<p>The teardown that started this thread is worth copying for its <em>shape</em>, not its
+niche or its volume. The shape is: one high-volume top-of-funnel channel, feeding one owned
+surface, feeding a cheap qualification purchase, feeding the real offer. Four stages, one
+path, no branching.</p>
+
+<p>The current setup is the inverse. Six capture surfaces, five domains, no top-of-funnel
+road at all, and a tripwire nobody can find. The missing piece is not more capture and it is
+not another product. It is <b>one destination</b>.</p>
+
+<h3>The Front Door</h3>
+<p>Build one page at <code>humanatwork.ai/start/</code>. It presents all six existing magnets,
+takes an email once, persists it through the endpoint already proven on the investigation
+pack, and delivers whichever magnet the visitor picked. Every road in this plan terminates
+there. It is the one URL that goes in his bio, in every site footer, at the end of every post,
+and in his profile fields.</p>
+
+<p><b>Why one and not six.</b> Six URLs cannot be promoted. One can. The six stop being six
+competing offers and become the contents of a single offer. This also removes the
+which-one-do-I-link decision that is part of why none of them ever got linked.</p>
+
+<p><b>Why humanatwork.ai and not the personal site.</b> Three reasons, all concrete. The
+magnets already live there. The capture endpoint is already proven there against a real row
+read back out of the store. And the personal site's newsletter form currently posts to a
+contact webhook rather than a real subscribe, so building a front door on it would mean
+building on a broken form. Do not put the main entrance on the side of the building that
+does not work yet.</p>
+
+<h3>The full path, named</h3>
+<pre>stranger
+  -&gt; a road (footer link, post CTA, profile field, search result)
+     -&gt; humanatwork.ai/start/          the Front Door, one email field
+        -&gt; the magnet they chose        delivered, and they are on the list
+           -&gt; the $19 investigation pack  the qualification purchase, already built
+              -&gt; the fractional conversation  the actual objective</pre>
+
+<p>Everything below this line is roads. The destination does not change.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>The eight roads, ranked by leverage per hour</h2></summary>
+    <div class="sec-body">
+<p>Ranked deliberately. The top four cost his time once and then run without him forever.
+The next three cost his time every week and cannot be automated without lying about who is
+speaking. The last one is a road we are choosing not to build, and the reason matters.</p>
+
+<h3>Road 1. The shared cross-site footer. One-time build, permanent.</h3>
+<p>Five owned domains, none linking to each other. Add one shared footer block on every page
+of every brand site carrying a single line and the Front Door link. Ships through the
+GitHub-to-Hostinger auto-deploy each of those repos already has, so it goes live on push and
+then never needs touching again. Highest leverage per hour in the entire plan because the
+denominator is one hour, once.</p>
+<p><b>Scope note:</b> the four brand sites plus the personal site. Never the faceless
+channels or their email backbone, for the reason in Road 8.</p>
+
+<h3>Road 2. Make the six pages findable at all. One-time config.</h3>
+<p>Remove the <code>noindex</code> from the two magnet pages that carry it, add all six to
+humanatwork.ai/sitemap.xml, and link them from the site's own navigation as well as from the
+Front Door. Today this is the difference between invisible to every search engine and every
+AI answer engine, and merely reachable.</p>
+<p><b>Honest limit:</b> this makes them reachable, it does not make them rank. They are thin
+pages in a crowded topic and search is slow. The real value is that internal links plus a
+sitemap are what let the Front Door itself get indexed, and the Front Door is the page worth
+ranking.</p>
+
+<h3>Road 3. The publish rail, retargeted. Already built, needs a destination.</h3>
+<p>The content-board-to-auto-publish rail is the one genuinely automated distribution
+mechanism that exists and works today. The rail is fine. The posts it carries have no
+consistent call to action, so the traffic they earn goes nowhere.</p>
+<p>The change is a standing rule, not a new system: every post on the board carries one
+closing line pointing at the Front Door, rotating which magnet it names. The board is already
+under a standing rule to be reviewed weekly and refilled every two weeks with two to three
+weeks of approved content, so this rides on a cadence that already exists rather than adding
+one.</p>
+<p><b>Split clearly:</b> the publishing is automatic. The writing and the approval are not,
+and must not be. Every post is shown to him inline and approved before it touches the board's
+queue state.</p>
+
+<h3>Road 4. The UTM convention. One-time, and it is what makes the rest falsifiable.</h3>
+<p>Every road gets a distinguishable tag so that a new row in the capture store can be traced
+back to the road that produced it. This works whether or not the analytics subscription comes
+back, because the capture endpoints already persist and already accept the tag. Without it,
+week two is a guess.</p>
+
+<h3>Road 5. LinkedIn comments. His voice, daily, already a standing obligation.</h3>
+<p>Three to five voice-gated comments a day is already a standing daily rule, so this road
+costs no new time. Two adjustments make it a road instead of just reputation work:</p>
+<ul>
+<li><b>No links in the comments, ever.</b> A link in a comment suppresses reach and reads as
+promotion, which is the opposite of the ally posture the rule is built on. The road is his
+<em>profile</em>: the website field and the featured section point at the Front Door, so every
+profile visit a good comment earns converts with zero extra work per comment.</li>
+<li><b>Concentrate the target list</b> on the AI-and-work voices, so the profile visits that
+result are the right audience rather than a general one.</li>
+</ul>
+<p>This cannot be automated on the writing side and should not be. An automated comment on a
+well-known practitioner's post is a reputational liability, not a road.</p>
+
+<h3>Road 6. The newsletter, as a road and not only a destination.</h3>
+<p>Currently weak, and the only working broadcast path is a manual paste-and-send. Two moves.
+Each issue carries the Front Door link and names one specific magnet. And the issue archive
+is published as indexable pages, which makes the newsletter the only compounding organic
+asset in this plan: every issue is a page that can be found later by someone who was never on
+the list.</p>
+
+<h3>Road 7. Directories and communities. Small, one-time, worth two hours once.</h3>
+<p>Legitimate placements only: his own company pages, relevant newsletter directories, and
+the professional communities he is already a member of, where the rule is participate first
+and link only where the community explicitly permits it. Bounded to a single push, never an
+ongoing chore. <b>Stated plainly so it is not oversold: this is the smallest road here.</b>
+Two hours once, not two hours a week.</p>
+
+<h3>Road 8. The faceless channels. Deliberately NOT a road.</h3>
+<p>The faceless channel family is anonymous by construction. There is a separate neutral email
+backbone that exists specifically so those channels do not trace back to his identity.
+Pointing any of them at humanatwork.ai, or at any capture surface carrying his name, breaks
+that firewall permanently and cannot be undone once a viewer makes the connection.</p>
+<p>They remain an adjacent revenue line. They are not top-of-funnel for his list. Any plan
+that counts them as traffic for the Front Door is wrong, and this one does not.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>What genuinely runs without him, and what never will</h2></summary>
+    <div class="sec-body">
+<p>This section exists because the ask was explicitly for things that run without him. Some
+of it does. Some of it cannot, and claiming otherwise would produce content that reads as a
+bot writing in his name, which is a rule violation and a reputational cost, not a shortcut.</p>
+
+<h3>Runs today, on rails that already exist, no human per instance</h3>
+<ul>
+<li>Auto-publishing an already-approved, already-scored post to LinkedIn and X on schedule.</li>
+<li>The per-magnet welcome and nurture that fires when someone captures. Already wired.</li>
+<li>Site deploys. Every brand repo auto-deploys on push, so a footer change ships itself.</li>
+</ul>
+
+<h3>One-time build, then runs forever with nobody touching it</h3>
+<ul>
+<li>The shared cross-site footer link.</li>
+<li>The sitemap, noindex and internal-linking fixes.</li>
+<li>The Front Door page itself.</li>
+<li>The UTM convention.</li>
+</ul>
+
+<h3>Needs him, and should not be automated</h3>
+<ul>
+<li><b>LinkedIn comments.</b> Judgment about what a specific post left out. Not automatable
+without producing exactly the generic filler the standing rule bans.</li>
+<li><b>Post approval.</b> A standing hard rule: every post is shown to him inline and approved
+before it is scheduled. An auto-published post he never read is a defect, not efficiency.</li>
+<li><b>The newsletter send.</b> The only working broadcast path is manual today.</li>
+<li><b>Anything at all that speaks in his name.</b> Every piece runs the voice battery and
+scores at or above the bar before it goes anywhere.</li>
+</ul>
+
+<h3>An illustrative post ending, so the shape is concrete</h3>
+<p>This is a sketch of the closing line the standing CTA rule would add, written here only to
+show the shape. <b>It has not been through the voice or social-quality gates and must not ship
+until it has.</b></p>
+<pre>I wrote the checklist I wish someone had handed me. It is free
+and it takes about ten minutes: humanatwork.ai/start/</pre>
+<p>One line, one URL, no stacking, no urgency language, no invented numbers. The point of a
+standing rule is that the line is boring and identical every time, so it never has to be
+re-decided and never has to be re-approved as a separate thing.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>The weekly cadence, sized against the hours that already exist</h2></summary>
+    <div class="sec-body">
+<p>Sized to fit alongside the daily ask discipline and the twenty selling hours, not to
+compete with them. If this plan eats selling hours it has failed on its own terms, because
+the objective behind all of it is fractional engagements, not an audience.</p>
+
+<div class="table-scroll">
+<table>
+<tr><th>When</th><th>What</th><th>His time</th><th>New time?</th></tr>
+<tr><td>Daily</td><td>Post the prepared comment batch</td><td>~15 min</td><td>No, already a standing obligation</td></tr>
+<tr><td>Monday</td><td>Approve the week's posts, in one inline batch</td><td>~20 min</td><td>Yes, and it is the only real addition</td></tr>
+<tr><td>Every two weeks</td><td>Content board refill, already a standing rule</td><td>Folded into Monday</td><td>No</td></tr>
+<tr><td>Friday</td><td>One line added to the review that already happens: did the roads move, and which one</td><td>~5 min</td><td>Marginal</td></tr>
+<tr><td>Continuous</td><td>Footer, sitemap, publish rail, capture, deploys</td><td>None</td><td>None</td></tr>
+</table>
+</div>
+
+<p><b>Total new time: roughly 25 minutes a week.</b> Everything else either already happens or
+runs without him.</p>
+
+<h3>What is deliberately not in the cadence</h3>
+<p>A new content operation. The teardown's 464 videos are a full-time media business built
+over two years, and copying that volume would consume exactly the selling hours the dual-track
+plan just allocated. The cadence above is the smallest thing that turns finished
+infrastructure into reachable infrastructure. It is not a growth engine and it is not
+presented as one.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>Measurement, and the blind spot that has to be named</h2></summary>
+    <div class="sec-body">
+<p><b>Analytics on every site have been locked for non-payment since Aug 17.</b> Every query
+returns a subscription error, so all eight sites are currently blind. Separately, and
+confirmed earlier, the workshop funnel pages never carried a tracking token at all, so
+restoring the subscription alone would not have measured that funnel either.</p>
+
+<p>That means today there is no way to tell which road works. A distribution plan you cannot
+measure is a plan you cannot correct, so this is not a footnote.</p>
+
+<h3>Two options, and the recommendation</h3>
+<ul>
+<li><b>Option A, restore the subscription.</b> Gives page-level traffic back across all sites.
+Costs money and does not measure the funnel pages that were never instrumented.</li>
+<li><b>Option B, count captures by UTM tag.</b> Cruder, free, and works today, because every
+capture endpoint already persists a row and the tagging helper already exists. It measures the
+only number that actually matters here, which is people on the list, and it attributes them to
+the road that produced them.</li>
+</ul>
+<p><b>Recommendation: do Option B regardless, this week, and decide Option A separately on its
+own merits.</b> Option B is the one that makes the plan falsifiable, it costs nothing, and it
+does not depend on a billing decision. Option A is a nice-to-have on top of it, not a
+prerequisite.</p>
+
+<h3>The number to watch</h3>
+<p>New capture rows per week, split by road. Not impressions, not followers, not page views.
+If that number does not move in three weeks, the roads are wrong and the plan gets rebuilt
+rather than repeated louder.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>The first week, stated as concrete actions</h2></summary>
+    <div class="sec-body">
+<p>Ordered so the free structural wins land before anything that needs his attention.</p>
+
+<div class="table-scroll">
+<table>
+<tr><th>Day</th><th>Action</th><th>Who</th><th>His time</th></tr>
+<tr><td>1</td><td>Fix the invisibility: remove the two noindex tags, add all six magnets to
+the sitemap, link them from the site's own navigation. Pure config, no copy, nothing to
+approve.</td><td>Agent</td><td>None</td></tr>
+<tr><td>1 to 2</td><td>Build the Front Door at humanatwork.ai/start/, cloning the capture
+pattern already proven live on the investigation pack. Copy runs the full battery before he
+sees it.</td><td>Agent builds, he approves the copy once</td><td>~15 min</td></tr>
+<tr><td>3</td><td>Ship the shared footer link across the brand sites. Auto-deploys on
+push.</td><td>Agent</td><td>None</td></tr>
+<tr><td>4</td><td>Add the standing CTA rule to the content board and refill the two-week
+queue, every post carrying the Front Door line. He approves the batch inline.</td><td>Agent
+drafts, he approves</td><td>~20 min</td></tr>
+<tr><td>5</td><td>Apply the UTM convention to every road so week two can be
+measured.</td><td>Agent</td><td>None</td></tr>
+<tr><td>Every day</td><td>The comment batch continues unchanged, with his profile fields now
+pointing at the Front Door.</td><td>Him, already standing</td><td>No change</td></tr>
+</table>
+</div>
+
+<p><b>Total new time in week one: about 35 minutes.</b></p>
+
+<h3>The one decision that has to come from him</h3>
+<p>The Front Door needs a name and a promise on it, and that is copy in his name, so it is
+his call rather than an agent's. Everything else in week one is either config or already
+governed by a standing rule.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>What is not verified, and what is still open</h2></summary>
+    <div class="sec-body">
+<p>Kept separate on purpose so nothing above has to hedge.</p>
+
+<ul>
+<li><b>No audience numbers are quoted anywhere in this plan.</b> No follower counts, no
+subscriber counts, no traffic figures. Not because they do not exist, but because analytics
+are locked and nothing could be verified today. A number that cannot be traced to a primary
+read does not belong in a plan that will be used to make decisions.</li>
+<li><b>The newsletter's current list size and send cadence are unverified here.</b> They
+affect how much Road 6 is worth and should be read off the platform before that road is
+sized.</li>
+<li><b>Whether the personal site's newsletter form has been fixed</b> is a separate open item
+that another lane may already be on. This plan routes around it rather than depending on it.</li>
+<li><b>The Front Door's exact promise and name</b> are open, per the decision above.</li>
+<li><b>The analytics subscription</b> is a money decision and therefore his, not an agent's.
+Named here rather than assumed either way.</li>
+<li><b>Directory placements were not enumerated.</b> Road 7 is scoped as a bounded two-hour
+push, and the specific list should be built at the time it is done rather than guessed now.</li>
+</ul>
+
+<h3>What this plan deliberately does not do</h3>
+<ul>
+<li>It does not build another capture page. Six work already.</li>
+<li>It does not build another product. The tripwire exists and is proven.</li>
+<li>It does not start a content operation. That is the wrong model for this objective.</li>
+<li>It does not touch the faceless channels.</li>
+<li>It does not automate anything that speaks in his name.</li>
+</ul>
+    </div>
+  </details>
+
+  <!-- duplicate the <details class="sec"> block per section; add a matching nav link -->
+
+  <footer class="foot">
+    Internal planning document. Every factual claim about page state was read off the site repositories on Aug 19, 2026. No audience or traffic numbers are quoted because analytics were locked and none could be verified. Illustrative copy in this document has not passed the voice and social-quality gates and must do so before it ships.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
