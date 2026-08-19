@@ -2109,7 +2109,7 @@
         </a>
         <div class="newsletter-form">
           <h3>Get the newsletter</h3>
-          <p>Join the waitlist for the launch edition. Short, practical, worth your time.</p>
+          <p>Short, practical, worth your time. No spam, unsubscribe anytime.</p>
           <form id="subscribe-form" novalidate aria-label="Newsletter signup form">
             <div class="input-row">
               <input type="email" id="sub-email" name="email" placeholder="your@email.com" autocomplete="email" required aria-label="Your email address" />
@@ -2582,26 +2582,55 @@
     var email = document.getElementById('sub-email').value.trim();
     if (!email) return;
 
-    fetch('https://n8n.srv1040886.hstgr.cloud/webhook/formspree-contact', {
+    /* Real subscribe endpoint (agentsHQ -> Beehiiv). This form used to POST at the
+       n8n contact webhook with a hardcoded fake name, which added nobody to any list.
+       The endpoint answers {ok:true} on a real subscribe, {ok:false,error:...} with a
+       200 for invalid_email/duplicate, 429 for rate_limited, 502 upstream. So we read
+       the JSON body -- never claim success off r.ok alone. */
+    var subBtn = subForm.querySelector('button[type="submit"]');
+    var subBtnLabel = subBtn ? subBtn.textContent : '';
+    if (subBtn) { subBtn.disabled = true; subBtn.textContent = 'Subscribing…'; }
+
+    var showSub = function (text, kind) {
+      subMsg.textContent = text;
+      subMsg.className = 'form-msg ' + kind;
+      subMsg.style.display = 'block';
+      if (subBtn) { subBtn.disabled = false; subBtn.textContent = subBtnLabel; }
+    };
+
+    fetch('https://agentshq.boubacarbarry.com/api/orc/beehiiv-subscribe', {
       method: 'POST',
-      body: JSON.stringify({ body: { email: email, name: 'Newsletter Signup', message: 'Newsletter signup from boubacarbarry.com', organization: '' } }),
+      body: JSON.stringify({
+        email: email,
+        utm_source: 'bb_site',
+        utm_content: (window.location.search || '').replace(/^\?/, ''),
+        form_location: 'bb_root_follow'
+      }),
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
     })
     .then(function (r) {
-      if (r.ok || r.status === 200) {
-        subMsg.textContent = "You're on the list. I'll reach out when the newsletter launches.";
-        subMsg.className = 'form-msg success';
+      return r.json().catch(function () { return { ok: false, error: 'bad_response' }; });
+    })
+    .then(function (data) {
+      if (data && data.ok === true) {
+        showSub("You're subscribed. The next edition lands in your inbox.", 'success');
         subForm.reset();
-      } else {
-        subMsg.textContent = 'Could not save. Try again or email me directly.';
-        subMsg.className = 'form-msg error';
+        return;
       }
-      subMsg.style.display = 'block';
+      var err = (data && data.error) || 'api_error';
+      if (err === 'duplicate') {
+        showSub("You're already subscribed. Nothing else to do.", 'success');
+        subForm.reset();
+      } else if (err === 'invalid_email') {
+        showSub('That email address does not look right. Check it and try again.', 'error');
+      } else if (err === 'rate_limited') {
+        showSub('Too many attempts. Give it a minute and try again.', 'error');
+      } else {
+        showSub('Could not subscribe you right now. Try again, or email me directly.', 'error');
+      }
     })
     .catch(function () {
-      subMsg.textContent = 'Network error. Please try again.';
-      subMsg.className = 'form-msg error';
-      subMsg.style.display = 'block';
+      showSub('Network error. Please try again.', 'error');
     });
   });
 
