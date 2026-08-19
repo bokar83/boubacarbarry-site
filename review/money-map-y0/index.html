@@ -78,6 +78,37 @@
     .ta-count { font-size: 0.7rem; font-weight: 800; color: var(--faint); }
     .ta-sub { font-size: 0.75rem; color: var(--faint); margin: 0 0 0.7rem; line-height: 1.5; }
     .ta-empty { font-size: 0.82rem; color: var(--faint); padding: 0.5rem 0; line-height: 1.55; }
+    /* COLLAPSIBLE DATED GROUPS + a foldable Today's actions (2026-08-19).
+       Same fold contract as every other section on this page, and the same
+       rf-fold memory, so what he shuts stays shut across reloads. Today ships
+       OPEN, everything that is not today ships CLOSED, so the page lands on
+       today's work instead of a scroll. The done count stays on the closed
+       header, so folding a group never hides that something exists. */
+    details.todayact > summary { list-style: none; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; align-items: center; }
+    details.todayact > summary::-webkit-details-marker { display: none; }
+    details.todayact > summary::marker { content: ""; }
+    details.todayact > summary:focus-visible { outline: 2px solid var(--ember-bright); outline-offset: -2px; }
+    details.todayact > summary .toggle-hint { margin-left: auto; flex-shrink: 0; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0.2rem 0.5rem; }
+    details.todayact > summary .toggle-hint::after { content: "Open"; }
+    details.todayact[open] > summary .toggle-hint::after { content: "Close"; }
+    details.ta-grp { margin: 0 0 0.5rem; }
+    details.ta-grp > summary { list-style: none; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.6rem; border: 1px solid var(--line); border-radius: 10px; background: var(--card-2); }
+    details.ta-grp > summary::-webkit-details-marker { display: none; }
+    details.ta-grp > summary::marker { content: ""; }
+    details.ta-grp > summary:focus-visible { outline: 2px solid var(--ember-bright); outline-offset: -2px; }
+    details.ta-grp > summary .fold-chev { width: 1.25rem; height: 1.25rem; min-width: 1.25rem; font-size: 0.62rem; }
+    details.ta-grp .grp-lbl { flex: 1; min-width: 0; font-size: 0.68rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+    details.ta-grp[open] .grp-lbl { color: var(--ink-strong); }
+    details.ta-grp.grp-today .grp-lbl { color: var(--ember-bright); }
+    details.ta-grp .grp-hint { flex-shrink: 0; font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.45rem; }
+    details.ta-grp .grp-hint::after { content: "Open"; }
+    details.ta-grp[open] .grp-hint::after { content: "Close"; }
+    details.ta-grp > .grp-body { padding-top: 0.55rem; }
+    @media (max-width: 520px) {
+      details.ta-grp > summary { padding: 0.5rem 0.45rem; gap: 0.4rem; }
+      details.ta-grp .grp-lbl { font-size: 0.62rem; letter-spacing: 0.04em; }
+      details.ta-grp .grp-hint { display: none; }
+    }
     /* an actionable dated row (used in Today and in the lanes list below) */
     .lane-row.act-row .lr-head { align-items: flex-start; flex-wrap: wrap; }
     .lr-check { appearance: none; -webkit-appearance: none; width: 1.35rem; height: 1.35rem; min-width: 1.35rem; border-radius: 6px; border: 2px solid var(--line); background: var(--card-2); cursor: pointer; position: relative; margin: 0; flex-shrink: 0; }
@@ -480,7 +511,8 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v13 · 2026-08-11-14:53:21 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v14 · 2026-08-19-14:27:31 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -522,18 +554,20 @@
 
   <!-- TODAY'S ACTIONS -- the dated rows from the money map, clickable.
        Above every other block on purpose: this is what the page is for. -->
-  <section class="todayact" id="todayact" aria-labelledby="taTitle">
-    <div class="ta-head">
+  <details class="todayact" id="todayact" open>
+    <summary class="ta-head">
+      <span class="fold-chev" aria-hidden="true">&#9656;</span>
       <h2 id="taTitle">Today's actions</h2>
       <span class="ta-date" id="taDate">&nbsp;</span>
       <span class="ta-count" id="taCount"></span>
-    </div>
+      <span class="toggle-hint"></span>
+    </summary>
     <p class="ta-sub">Every dated action on the money map, grouped by its own day: today first, then what is coming, then what is behind you. Tick one off and it saves to the database and shows on your phone. Open Notes on any of them to write down what happened, including on the ones you skip.</p>
     <p class="ta-sub">Every row below names a person, a date, what you expect back, and what happens on <b>both</b> branches: if they answer, and if they go quiet. Nothing here has been sent. The two detail packs sit one click away: <a href="/review/20260819-morning-packet/">the full call sheet for today</a> and <a href="/review/20260819-podcast-circuit/">the podcast circuit, with the fourteen shows and the written pitches</a>. The five podcast pitches and the two follow-ups only leave after you tap Send it on their rows on that page.</p>
     <div id="todayact-body" class="rl"><div class="ta-empty">Loading today's actions&hellip;</div></div>
     <div class="callout amber" style="margin:0 0 0.7rem;"><span class="lbl">Booking latency is six to twelve weeks, so these go as one block</span>The old rule of one pitch at a time gave about four shots a year. The five below send together, then it holds until one books or thirty days pass. Every draft is written for its own show and voice-gated, scores 91 to 94. <b>Nothing leaves until you tap Send it on each row</b> at <a href="/review/20260819-podcast-circuit/">the podcast circuit page</a>.</div>
     <div class="callout green" style="margin:0.8rem 0 0.2rem;"><span class="lbl">The standing rule this section exists to hold</span>Every pitch gets a reminder at day seven. Two hosts read pitches and both went cold because nothing came after them. On a read receipt, follow up once at day seven and once at day twenty-one, then stop. That single habit is worth more than any new list.</div>
-  </section>
+  </details>
   <!-- SEEDED ACTIONS -- the hand-written dated rows. Content lives here as
        HTML; the renderer below lifts each one into its own date group inside
        the single "Today's actions" block. The tick persists to the SAME
@@ -589,7 +623,7 @@
     <summary class="daily-head">
       <span class="fold-chev" aria-hidden="true">&#9656;</span>
       <h2>Today</h2>
-      <span class="dh-date" id="dhDate">Wed Jul 1 &middot; Week 1 of 12</span>
+      <span class="dh-date" id="dhDate">&nbsp;</span>
       <span class="toggle-hint"></span>
     </summary>
     <div class="daily-body">
@@ -664,10 +698,10 @@
 
   <!-- 12-WEEK YEAR -->
   <details class="panel" id="weeks" open>
-    <summary class="panel-head"><span class="fold-chev" aria-hidden="true">&#9656;</span><h2>The 12-week year</h2><span class="ph-date">Tap a week &middot; Week 1 is now</span><span class="toggle-hint"></span></summary>
+    <summary class="panel-head"><span class="fold-chev" aria-hidden="true">&#9656;</span><h2>The 12-week year</h2><span class="ph-date">Tap a week</span><span class="toggle-hint"></span></summary>
     <div class="panel-body">
       <div class="wy-strip" id="wyStrip">
-        <div class="wy-cell now active" data-week="1"><div class="wy-n">W1 now</div><div class="wy-d">Jun 29 - Jul 5</div></div>
+        <div class="wy-cell now active" data-week="1"><div class="wy-n">W1</div><div class="wy-d">Jun 29 - Jul 5</div></div>
         <div class="wy-cell" data-week="2"><div class="wy-n">W2</div><div class="wy-d">Jul 6 - 12</div></div>
         <div class="wy-cell" data-week="3"><div class="wy-n">W3</div><div class="wy-d">Jul 13 - 19</div></div>
         <div class="wy-cell" data-week="4"><div class="wy-n">W4</div><div class="wy-d">Jul 20 - 26</div></div>
@@ -1225,19 +1259,44 @@
   })();
   function getAsk(dateStr){ var v = state['ask-'+dateStr]; if (v === undefined) v = lsGet('ask-'+dateStr); var n = parseInt(v,10); return isNaN(n) ? 0 : n; }
   var ASK_MIN = 5, WEEK_ASK_TARGET = 25;
-  var activeWeek = 1;   // declared up front: render functions run before the week-strip block
 
-  // ---- live header date + week number (Week 1 Monday = Jun 29, 2026). Fixes the
-  // hard-coded date that went stale daily; clamped to 1..12 for the block. ----
+  // ---- ONE source of truth for the block week (v7 fix, 2026-08-19) --------
+  // Week 1 Monday = Mon Jun 29, 2026. The block ends Sun Sep 20, 2026.
+  // Until today the page carried FOUR copies of this number: one live copy in
+  // the Today header, and three hard-coded "Week 1" markers that never moved
+  // (the now badge on the week strip, the sub-head on the 12-week panel, and
+  // the activeWeek default that drove the scorecard and which week pane
+  // opened). So the header said Week 8 while the rest of the page said Week 1.
+  // Every one of them is derived from this block now. Nothing is hard-coded.
+  //
+  // ?weektest=YYYY-MM-DD re-renders the week number as of that date so the
+  // roll-forward can be proved without waiting a week. It deliberately does
+  // NOT touch dkey() or any date used for saving, so it can never write a row
+  // to the wrong day.
+  var BLOCK_W1_MON = new Date(2026, 5, 29);   // local midnight Mon Jun 29 2026
+  var BLOCK_END    = new Date(2026, 8, 20);   // Sun Sep 20 2026
+  function weekFor(d){
+    var wk = Math.floor((d - BLOCK_W1_MON) / 604800000) + 1;
+    if (wk < 1) wk = 1; if (wk > 12) wk = 12;
+    return wk;
+  }
+  function weekTestDate(){
+    var m = /[?&]weektest=(\d{4})-(\d{2})-(\d{2})/.exec(location.search);
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+  var WEEK_NOW_DATE = weekTestDate() || new Date();
+  var CURRENT_WEEK  = weekFor(WEEK_NOW_DATE);
+  window.__y0_weekFor = function(s){ var a = String(s).split('-'); return weekFor(new Date(+a[0], +a[1] - 1, +a[2])); };
+
+  var activeWeek = CURRENT_WEEK;   // declared up front: render functions run before the week-strip block
+
+  // ---- live header date + week number, from the single source above ----
   (function(){
     var el = document.getElementById('dhDate'); if (!el) return;
-    var now = new Date();
-    var w1mon = new Date(2026, 5, 29); // local midnight Mon Jun 29 2026
-    var wk = Math.floor((now - w1mon) / 604800000) + 1;
-    if (wk < 1) wk = 1; if (wk > 12) wk = 12;
+    var now = WEEK_NOW_DATE;
     var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
         mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    el.textContent = days[now.getDay()] + ' ' + mos[now.getMonth()] + ' ' + now.getDate() + ' · Week ' + wk + ' of 12';
+    el.textContent = days[now.getDay()] + ' ' + mos[now.getMonth()] + ' ' + now.getDate() + ' · Week ' + CURRENT_WEEK + ' of 12';
   })();
 
   // Apply a value to the DOM for a given item_id
@@ -1425,6 +1484,29 @@
       recomputeScorecard();
     });
   });
+
+  // ---- open the CURRENT week on load, derived, never hard-coded -----------
+  // Drives the "now" badge on the strip, which cell and pane are active, the
+  // panel sub-head, and the scorecard week. All from CURRENT_WEEK.
+  (function(){
+    document.querySelectorAll('.wy-cell').forEach(function(c){
+      var w = parseInt(c.getAttribute('data-week'), 10);
+      var on = (w === CURRENT_WEEK);
+      c.classList.toggle('active', on);
+      c.classList.toggle('now', on);
+      var n = c.querySelector('.wy-n');
+      if (n) n.textContent = 'W' + w + (on ? ' now' : '');
+    });
+    document.querySelectorAll('.week-pane').forEach(function(p){
+      p.classList.toggle('active', parseInt(p.getAttribute('data-week'), 10) === CURRENT_WEEK);
+    });
+    var ph = document.querySelector('#weeks .ph-date');
+    if (ph){
+      var left = Math.max(0, Math.ceil((BLOCK_END - WEEK_NOW_DATE) / 86400000));
+      ph.innerHTML = 'Tap a week &middot; Week ' + CURRENT_WEEK + ' of 12 is now &middot; ' + left + ' days to Sep 20';
+    }
+    recomputeScorecard();
+  })();
 
   // ---- goal-edit note (logs an intent flag; the real number lives in Boubacar's head/edit) ----
   (function(){
@@ -1877,17 +1959,33 @@
       var futureD = dates.filter(function(d){ return d > today; });
       var pastD   = dates.filter(function(d){ return d < today; }).reverse();
       var thtml   = '';
+
+      // Each dated group is its own <details> so it folds on its own. The id is
+      // stable (the date, or "today"), which is what the shared rf-fold memory
+      // keys on, so what he shuts stays shut on the next load. The count rides
+      // on the summary, so a shut group still says how much is in it.
+      function grpHtml(gid, isOpen, base, dn, total, body, extraCls){
+        return '<details class="ta-grp' + (extraCls ? ' ' + extraCls : '') + '" id="' + gid + '"' + (isOpen ? ' open' : '') + '>' +
+                 '<summary class="grp-sum" data-base="' + rlEsc(base) + '">' +
+                   '<span class="fold-chev" aria-hidden="true">&#9656;</span>' +
+                   '<span class="grp-lbl">' + rlEsc(base) + ' · ' + dn + ' of ' + total + ' done</span>' +
+                   '<span class="grp-hint"></span>' +
+                 '</summary>' +
+                 '<div class="grp-body">' + body + '</div>' +
+               '</details>';
+      }
+
       if (!mine.length){
         thtml += '<div class="ta-empty">Nothing dated ' + rlEsc(prettyDate(today)) + ' is on the board yet. Actions show up here the moment they are written to the money map, and the count above tracks them.</div>';
       } else {
         var rolledN = mine.filter(function(r){ return r.rolledFrom; }).length;
-        var lbl0 = 'Today &middot; ' + prettyDate(today);
-        thtml += '<div class="rl-group-h" data-base="' + rlEsc(lbl0.replace(/&middot;/g, '·')) + '">' + lbl0 + ' &middot; ' + doneN + ' of ' + mine.length + ' done</div>';
+        var body0 = '';
         if (rolledN){
-          thtml += '<div class="ta-sub" style="margin:0 0 0.55rem;font-size:0.76rem;">' +
+          body0 += '<div class="ta-sub" style="margin:0 0 0.55rem;font-size:0.76rem;">' +
                    '<b>' + rolledN + ' of these rolled over</b> because they were not ticked on the day they were due. They will keep coming back here every day, with the count of days climbing, until you either do them or write a note saying why you will not. Nothing gets to go quiet on its own.</div>';
         }
-        thtml += mine.map(function(r){ return rlActRow(r.id, r.v, r.kind, r.rolledFrom); }).join('');
+        body0 += mine.map(function(r){ return rlActRow(r.id, r.v, r.kind, r.rolledFrom); }).join('');
+        thtml += grpHtml('ta-grp-today', true, 'Today · ' + prettyDate(today), doneN, mine.length, body0, 'grp-today');
       }
       futureD.concat(pastD).forEach(function(d){
         // Earlier days keep only what was actually finished. Anything still
@@ -1897,12 +1995,19 @@
         if (d < today) rows = rows.filter(function(r){ return isDone(r.id); });
         if (!rows.length) return;
         var dn = rows.filter(function(r){ return isDone(r.id); }).length;
-        var lbl = (d > today) ? ('Coming up &middot; ' + prettyDate(d))
-                              : ('Earlier &middot; ' + prettyDate(d) + ' &middot; done');
-        thtml += '<div class="rl-group-h" data-base="' + rlEsc(lbl.replace(/&middot;/g, '·')) + '">' + lbl + ' &middot; ' + dn + ' of ' + rows.length + ' done</div>';
-        thtml += rows.map(function(r){ return rlActRow(r.id, r.v, r.kind); }).join('');
+        var lbl = (d > today) ? ('Coming up · ' + prettyDate(d))
+                              : ('Earlier · ' + prettyDate(d));
+        // Not today -> ships CLOSED. That is the whole point: he lands on today.
+        thtml += grpHtml('ta-grp-' + d, false, lbl, dn, rows.length,
+                         rows.map(function(r){ return rlActRow(r.id, r.v, r.kind); }).join(''));
       });
       todayHost.innerHTML = thtml;
+      // Hand the freshly rendered groups to the SAME fold-memory mechanism the
+      // rest of the page uses, so Collapse all reaches them and what he shut
+      // last visit comes back shut. One mechanism, not two.
+      if (window.__rf_register){
+        Array.prototype.forEach.call(todayHost.querySelectorAll('details.ta-grp'), window.__rf_register);
+      }
     }
 
     // ---- undated switches + KPIs, below ----
@@ -1953,15 +2058,16 @@
   // Keep each date header's "n of m done" honest after a tick, without a full
   // re-render (a re-render would blow away a half-typed note).
   function refreshGroupCounts(){
-    var heads = document.querySelectorAll('#todayact-body .rl-group-h[data-base]');
-    Array.prototype.forEach.call(heads, function(h){
-      var total = 0, dn = 0, n = h.nextElementSibling;
-      while (n && !n.classList.contains('rl-group-h')){
-        if (n.classList.contains('act-row')){ total++; if (n.classList.contains('done')) dn++; }
-        n = n.nextElementSibling;
-      }
+    // Groups are <details> now, so the rows live inside .grp-body instead of
+    // being flat siblings. The count still has to be right on a SHUT group.
+    var grps = document.querySelectorAll('#todayact-body details.ta-grp');
+    Array.prototype.forEach.call(grps, function(g){
+      var sum = g.querySelector('.grp-sum'), lbl = g.querySelector('.grp-lbl');
+      if (!sum || !lbl) return;
+      var rows = g.querySelectorAll('.act-row'), total = rows.length, dn = 0;
+      Array.prototype.forEach.call(rows, function(r){ if (r.classList.contains('done')) dn++; });
       if (!total) return;
-      h.textContent = h.getAttribute('data-base') + ' · ' + dn + ' of ' + total + ' done';
+      lbl.textContent = sum.getAttribute('data-base') + ' · ' + dn + ' of ' + total + ' done';
     });
   }
 
@@ -2308,6 +2414,27 @@
     });
   });
 
+  // Dynamically rendered <details> (the dated action groups) join the SAME
+  // memory and the SAME Collapse all button instead of inventing a second
+  // mechanism. Idempotent: a re-render registers the new nodes and the
+  // detached old ones are dropped.
+  window.__rf_register = function (el) {
+    if (!el || !el.id || el.hasAttribute('data-rf-key')) { return; }
+    var k = 'id:' + el.id;
+    el.setAttribute('data-rf-key', k);
+    var s0 = readState();
+    if (Object.prototype.hasOwnProperty.call(s0, k)) { el.open = !!s0[k]; }
+    details = details.filter(function (d) { return d.isConnected; });
+    details.push(el);
+    el.addEventListener('toggle', function () {
+      var s = readState();
+      s[k] = el.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  };
+
   // ---- expand all / collapse all -----------------------------------------------
   var foldBtn = document.getElementById('rf-foldall');
   function anyOpen() {
@@ -2339,6 +2466,7 @@
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
 
 
 
