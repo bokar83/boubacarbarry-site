@@ -1,0 +1,1509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Board Drafts, Aug 19</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:96px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border); padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; white-space:pre-wrap; word-wrap:break-word;
+    margin:0 0 12px; font-size:.92rem; line-height:1.6;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .badge{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.03em;
+    padding:3px 9px; border-radius:999px; text-transform:uppercase;}
+  .badge-score{background:rgba(127,224,184,.15); color:var(--good); border:1px solid var(--good);}
+  .badge-thread{background:rgba(95,179,255,.15); color:var(--accent); border:1px solid var(--accent);}
+  .badge-frozen{background:rgba(242,184,75,.15); color:var(--warn); border:1px solid var(--warn);}
+
+  /* Running counter, sticky under the nav so he can stop and resume. */
+  .counter-bar{position:sticky; top:57px; z-index:48; background:rgba(15,17,21,0.95);
+    border-bottom:1px solid var(--border); padding:9px 0;}
+  .counter-inner{max-width:960px; margin:0 auto; padding:0 20px; display:flex;
+    gap:14px; flex-wrap:wrap; align-items:center; font-size:.84rem; color:var(--text-dim);}
+  .counter-inner strong{color:var(--accent2); font-size:.95rem;}
+  .counter-sub{font-size:.78rem;}
+
+  #write-error-banner{display:none; position:sticky; top:104px; z-index:55;
+    background:rgba(255,122,122,.14); border:1px solid var(--bad); color:var(--bad);
+    font-size:.82rem; padding:9px 14px; margin:14px 0; border-radius:8px; font-weight:600;}
+
+  .post-card{border:1px solid var(--border); border-radius:12px; background:var(--bg2);
+    padding:16px 18px; margin:0 0 20px;}
+  .post-head{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap;
+    margin:0 0 12px; padding:0 0 10px; border-bottom:1px solid var(--border);}
+  .post-num{font-weight:700; font-size:.9rem; color:var(--accent);}
+  .post-slot{font-size:.84rem; color:var(--text-dim);}
+  .tweet-label{font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--text-dim); margin:0 0 5px; font-weight:700;}
+  .score-line{font-size:.82rem; color:var(--text-dim); margin:12px 0 0;}
+
+  .decision-block{margin-top:14px; padding:14px 16px; border:1px solid var(--border);
+    border-radius:10px; background:var(--card);}
+  .decision-block h4{margin:0 0 8px; font-size:.78rem; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--text-dim);}
+  .decision-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .decision-btn{font-weight:700; font-size:.8rem; padding:9px 18px; border-radius:999px;
+    cursor:pointer; background:var(--bg2); border:1px solid var(--border); color:var(--text-dim);
+    min-height:40px;}
+  .decision-btn[data-decision="approve"].active{background:rgba(127,224,184,.16);
+    border-color:var(--good); color:var(--good);}
+  .decision-btn[data-decision="reject"].active{background:rgba(255,122,122,.16);
+    border-color:var(--bad); color:var(--bad);}
+  .decision-status{margin-left:4px; font-size:.78rem; color:var(--text-dim);}
+  .item-notes{margin-top:14px;}
+  .item-notes label{display:block; font-size:.74rem; color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:.04em; margin:0 0 6px;}
+  .reason-input{width:100%; background:#11141b; border:1px solid var(--border);
+    border-radius:8px; color:var(--text); font-family:inherit; font-size:.88rem;
+    padding:10px 12px; min-height:42px;}
+  .note-actions{margin-top:8px; display:flex; gap:8px; align-items:center;}
+  .save-note{font-weight:700; font-size:.8rem; padding:9px 18px; border-radius:999px;
+    cursor:pointer; background:var(--accent); border:1px solid var(--accent); color:#0f1115;
+    min-height:40px;}
+  .save-note:disabled{opacity:.55; cursor:default;}
+  .notes-log{list-style:none; margin:10px 0 0; padding:0;}
+  .notes-log li{padding:8px 10px; border:1px solid var(--border); border-radius:6px;
+    margin:0 0 6px; font-size:.84rem; background:var(--bg2);}
+  .notes-log li.note-empty{color:var(--text-dim); border-style:dashed;}
+  .note-ts{display:block; font-size:.72rem; color:var(--text-dim); margin:0 0 3px;}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+    .counter-inner{padding:0 14px;}
+    .post-card{padding:14px;}
+    .sec-body{padding:2px 12px 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar, .counter-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-19-17:32:35 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Content Board Drafts</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-linkedin">LinkedIn, 11</a>
+      <a href="#sec-x">X, 17</a>
+      <a href="#sec-how">How this works</a>
+    </div>
+  </div>
+</nav>
+
+<div class="counter-bar">
+  <div class="counter-inner">
+    <strong id="counter-main">0 of 28 decided</strong>
+    <span class="counter-sub" id="counter-sub">0 approved, 0 rejected, 28 still open</span>
+    <span class="counter-sub">Saved to the database as you click. Stop and come back any time.</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div id="write-error-banner" role="alert"></div>
+
+  <header class="mast">
+    <h1>Content board drafts, 28 posts awaiting your approval</h1>
+    <div class="meta">11 LinkedIn posts and 17 X posts, covering 2026-08-19 through 2026-09-16.
+    Every one is rendered exactly as it was written and gated. Nothing here is rewritten or re-scored on this page.</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><span class="badge badge-frozen">frozen until you decide</span></p>
+      <p>28 finished posts are staged and going nowhere until you approve them one at a time.
+      Nothing has touched the content board, a schedule, or any publishing tool.</p>
+      <p><strong>What to do:</strong> read a post, hit Approve or Reject. On a reject, type one line
+      saying why, so the next batch does not repeat it. LinkedIn is grouped first, then X, so you
+      stay in one context at a time.</p>
+      <p><strong>Your clicks save to the database immediately.</strong> The counter at the top tracks
+      how far you got, so you can stop mid-run and pick it back up. If a save ever fails you will see
+      a red banner, never a silent loss.</p>
+      <p><strong>The real cost of leaving this undecided is an empty queue,</strong> not a missed date.
+      Nothing external is waiting on a deadline here. The posting slots start 2026-08-19 and run
+      three a week, so every day this sits, slots pass with nothing in them.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-linkedin" open>
+    <summary><h2>LinkedIn &middot; 11 posts</h2></summary>
+    <div class="sec-body">
+      <p>Mon / Wed / Fri cadence, weekends never. Post 4 is the one that carries the Aug 27 paid session.</p>
+      
+      <article class="post-card" id="li-post-1">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 1</span>
+          <span class="post-slot">Wed 2026-08-19</span>
+          
+        </div>
+        <pre>I caught myself writing a correction into a comment on somebody else&#x27;s post.
+
+A polite one. Helpful-sounding, even. The thing they missed, the nuance they got slightly wrong, all delivered in a reasonable tone.
+
+I read it back before posting and heard what it actually was. Me, scoring a point, with a helpful voice on top of it.
+
+So I gave myself a rule. Add the thing they left out, and only when it makes their point bigger. Everything else stays in my drafts.
+
+The difference shows up in one word. A comment that opens with &quot;actually&quot; is a comment about me. A comment that opens with &quot;the part people miss here&quot; is a comment about them.
+
+I spent a day working that rule through other people&#x27;s posts instead of writing my own. Ten of them. It cost me about what one post would have cost. My post would have reached my audience. The comments reached theirs.
+
+The person whose work I am reading should see an ally, not somebody who showed up in their thread to win an exchange.
+
+What is the last comment someone left on your work that you still remember?</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 93 / CTQ 93. Bookmarkability 9/12. Evergreen bars 90 / 93, both cleared.</p>
+        <div class="decision-block" data-item-id="li-post-1" data-item-label="LinkedIn post 1: Wed 2026-08-19">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-1-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-1-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="li-post-2">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 2</span>
+          <span class="post-slot">Fri 2026-08-21</span>
+          
+        </div>
+        <pre>A subscription lapsed recently and my first instinct was to renew it.
+
+I let it stay lapsed and asked a different question. Can the system I already run do this job? It could, so I let the tool go, and that is money back every month for the price of one question.
+
+The better find came ten minutes later.
+
+I went back to check a call I had made a few weeks earlier, when I cancelled my analytics. I had been telling myself I lost my numbers the day I cancelled, and I wanted to know whether that had been a mistake.
+
+I had not lost them. I never had them. The tracking was installed on my home page and on none of the pages I was actually paying to send people to. The tool was measuring the one page that did not need it and reporting nothing on the pages that did.
+
+So cancelling was never the thing to worry about. The thing that was never installed was.
+
+Most software audits look outward, at what a vendor is charging you. The half worth doing looks backward, at a call you made and never checked.
+
+Go find one decision you made this quarter and ask it out loud.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 92 / CTQ 93. Bookmarkability 10/12. Evergreen bars cleared.</p>
+        <div class="decision-block" data-item-id="li-post-2" data-item-label="LinkedIn post 2: Fri 2026-08-21">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-2-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-2-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="li-post-3">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 3</span>
+          <span class="post-slot">Mon 2026-08-24</span>
+          
+        </div>
+        <pre>I used to think flexibility was generous. Here is everything I could do for you, pick whichever one fits.
+
+It reads as desperate. I did not see that until I heard myself doing it.
+
+A menu tells the other person you do not know which of those things they need. Which means you have not diagnosed anything. Which means the list is really a request for them to do the diagnosis for you. On a first call, with somebody who has never thought about their own problem in those terms, that is work you just handed them.
+
+So I changed the shape of the first conversation. I bring no offer to it. I bring one question about the thing I suspect hurts, and then I stay quiet for longer than is comfortable.
+
+Something like: review season is coming, how is your team handling it, are people already underwater.
+
+If nothing hurts, that is a real answer, the call is short, and nobody wasted anything.
+
+If something does hurt, they describe it in their own words. Their words are better than my list. Then I offer one thing. The one thing.
+
+Arriving with one says I already know what you need. Arriving with five says I am hoping one of them lands.
+
+The hardest part is the silence after the question. I am still working on that one.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 93 / CTQ 94. Bookmarkability 10/12. Evergreen bars cleared.</p>
+        <div class="decision-block" data-item-id="li-post-3" data-item-label="LinkedIn post 3: Mon 2026-08-24">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-3-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-3-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="li-post-4">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 4</span>
+          <span class="post-slot">Wed 2026-08-26 · CARRIES THE AUG 27 OFFER</span>
+          
+        </div>
+        <pre>There are two kinds of people talking about AI right now, and the gap between them is invisible from the outside.
+
+One has used a chat window well. Fluent, current, quotes the right things, holds a room.
+
+The other has had their own thing break at an hour when nobody was watching, and had to go find out why.
+
+I did not understand how wide that gap was until I built the back end that runs my own business. The part that keeps working when I am not looking, and the part that tells me when it stops.
+
+That second kind learns things the first kind cannot. What fails silently. What a workflow does on the day the input shows up in the wrong format. How much of a process is genuinely written down, and how much of it lives in one person&#x27;s head and walks out the door when they do.
+
+You cannot read your way to that. You get it by having to fix your own thing before anybody else notices it broke.
+
+That is what I am bringing into a room on Thursday night. What to use, what to skip, and how to tell the difference before you spend money finding out. The mistakes are mine, so they do not have to be made on your budget.
+
+Thursday August 27, 7:00 to 8:30pm, Salt Lake Community College Miller Campus in Sandy. $50.
+
+catalystworks.consulting/w/li</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 93 / CTQ 93. Bookmarkability 10/12. Promo bars 88 / 92, both cleared with room.</p>
+        <div class="decision-block" data-item-id="li-post-4" data-item-label="LinkedIn post 4: Wed 2026-08-26 · CARRIES THE AUG 27 OFFER">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-4-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-4-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="li-post-5">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 5</span>
+          <span class="post-slot">Fri 2026-08-28</span>
+          
+        </div>
+        <pre>People keep applying to more jobs for a reason that has almost nothing to do with whether it works. You can count it.
+
+Twelve applications on a Tuesday is a number. It goes up. In a week where nothing else is moving, a number that goes up is worth a great deal to a person.
+
+I stopped playing that game, and the first thing I noticed was the silence where the counting used to be. Nothing to tally, no confirmations landing, no way to say I did eleven of something today.
+
+What replaced it does not produce a number for weeks. Be specific enough, in public, often enough, that when somebody sits down with a problem, a person comes to mind before a posting does.
+
+That is the whole trade. You give up the scoreboard to get the outcome, and there is a long stretch in the middle where you have neither one and have to hold your nerve anyway.
+
+The counting is the trap. It feels like progress because it is measurable. It is measurable because it is easy. And the things that are easy to count are usually the things everybody else is doing too.
+
+I would rather three people know exactly what I do than a thousand skim my resume and forget it.
+
+Which game are you playing right now, and be honest with yourself about why.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 92 / CTQ 93. Bookmarkability 9/12. Evergreen bars cleared.</p>
+        <div class="decision-block" data-item-id="li-post-5" data-item-label="LinkedIn post 5: Fri 2026-08-28">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-5-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-5-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="li-post-6">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 6</span>
+          <span class="post-slot">Mon 2026-08-31</span>
+          
+        </div>
+        <pre>The program that finally worked started me at sixty seconds.
+
+Sixty seconds of running, then walk. That is the whole first week. It reads as insulting the first time you see it, and that is the entire design. It is small enough that you cannot fail it, and it is aimed at week six instead of at day one.
+
+Everybody&#x27;s first attempt goes the other way. You decide to get in shape, you go out and do four miles because that is what running looks like in your head, and by day nine you have quit and you have a story about how you are just not a runner.
+
+I built a plan a few weeks ago for the part of my business I had been putting off longest, which is picking up the phone and asking people directly. The first version had five contacts a day in it. Five a day is what the work looks like in my head.
+
+I cut it to two.
+
+Two is beneath what I can do on a good day. Two is also the only number I will still be doing in October, and October is the only thing that matters.
+
+The plan you can run on a bad day is the plan. Everything else is a plan built for the version of you that is having a good week.
+
+What did you set too high, and what would the two-a-day version of it look like?</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 94 / CTQ 95. Bookmarkability 11/12. Highest in the set. Evergreen bars cleared.</p>
+        <div class="decision-block" data-item-id="li-post-6" data-item-label="LinkedIn post 6: Mon 2026-08-31">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-6-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-6-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="li-post-7">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 7</span>
+          <span class="post-slot">Wed 2026-09-02</span>
+          
+        </div>
+        <pre>Annual review season lands in the fall. In a company under a hundred people, there is usually nobody whose job it is to be ready for it.
+
+In August nobody&#x27;s title says this is mine. The person who ends up running it is an operations lead or an office manager who finds out in October that it is theirs, on top of the job they already have.
+
+Then it goes the way it always goes. A form gets sent around. Managers write the reviews the night before. People read a paragraph about themselves that took almost no time to write, and they can tell.
+
+The whole thing costs a month of the company&#x27;s attention and returns close to nothing, because it was designed in a hurry by somebody who did not have time to design it.
+
+It is fixable now in a way it will not be fixable in October. Somebody decides what the cycle is for. Somebody writes the manager guidance before the manager needs it. Somebody sequences it so it does not all land in one week on top of quarter close.
+
+That is not software you buy. It is a handful of decisions somebody has to make on purpose, early.
+
+If your company has no HR function and review season is about to become somebody&#x27;s surprise, this is the door I built for exactly that:
+catalystworks.consulting/fx/hr-li
+
+And if it is not your season, no pitch. Tell me what October looks like where you work. If the honest answer is that nobody has thought about it yet, you are earlier than most people are, and that is worth knowing before it is October.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 91 / CTQ 93. Bookmarkability 10/12. Promo bars 88 / 92, both cleared.</p>
+        <div class="decision-block" data-item-id="li-post-7" data-item-label="LinkedIn post 7: Wed 2026-09-02">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-7-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-7-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="li-post-8">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 8</span>
+          <span class="post-slot">Wed 2026-09-09</span>
+          
+        </div>
+        <pre>Earlier in my career I got handed a hiring process that everybody hated and nobody owned.
+
+Not broken in a dramatic way. Broken in the ordinary way. Too many steps, most of them added by somebody solving a real problem years earlier, none of them ever removed. Every hiring manager had a private workaround. The official process and the actual process had stopped being the same thing long before I arrived.
+
+We ran it as a continuous improvement effort. Got the managers who actually did the work into a room. Mapped what really happened instead of what the document said. Then cut.
+
+Here is the lesson I still use, and it is the unglamorous one. Almost nothing needed to be invented. The gain came from removal.
+
+I think about that constantly now, because AI arrives into companies as an accumulation story. Add a tool. Add an assistant. Add a layer. The part nobody says out loud is that most processes are slow because of steps that should not exist, and putting AI on top of those steps only makes the wrong thing happen faster.
+
+The same is true of the review cycle a lot of companies are about to run this fall. Before anybody automates a piece of it, somebody should ask which parts exist because they are useful and which parts exist because they existed last year.
+
+That question costs nothing. It is also the one that usually saves the most.
+
+If reviews are landing on someone at your company who did not sign up for them, this is what I do:
+catalystworks.consulting/fx/hr-li</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 94 / CTQ 94. Bookmarkability 11/12. Promo bars 88 / 92, both cleared.</p>
+        <div class="decision-block" data-item-id="li-post-8" data-item-label="LinkedIn post 8: Wed 2026-09-09">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-8-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-8-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="li-post-9">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 9</span>
+          <span class="post-slot">Fri 2026-09-11</span>
+          
+        </div>
+        <pre>I can usually tell how much thought a company has put into a job before I finish reading the description.
+
+The requirements are the least useful part of it. What matters is what the description is describing. Some of them describe a person. Most of them describe a tool.
+
+A company I used to work for opened an AI enablement role a few weeks ago. Build agents. Own the platform. Partner with stakeholders. Every line was about the thing being built, and none of them were about what happens to a department after it lands.
+
+That gap is a tell. A job description is the first artifact a company produces about a piece of work, and it gets written by whoever has thought about that work the most. When the whole document is tooling, the person who thought hardest about the role was thinking about tooling. That decides who gets hired. It also decides what they spend year one doing.
+
+I spent years inside HR reading these and rewriting these. The good ones always have a sentence somewhere that only makes sense if a real person sat down and pictured the job going wrong.
+
+If your company is about to open one of these, read the draft back and go looking for that sentence. If it is not in there, the role is not ready to post yet.
+
+Read the last job description your company put out. Which was it describing, a person or a tool?</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 92 / CTQ 93. Bookmarkability 9/12. Evergreen bars cleared.</p>
+        <div class="decision-block" data-item-id="li-post-9" data-item-label="LinkedIn post 9: Fri 2026-09-11">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-9-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-9-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="li-post-10">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 10</span>
+          <span class="post-slot">Mon 2026-09-14 · CARRIES THE SEP 17 ONLINE OFFER · ADDED 2026-08-19</span>
+          
+        </div>
+        <pre>The question lands in a meeting. &quot;So what are we actually doing about AI?&quot; And then everybody looks at one person.
+
+That person usually knows no more than anybody else in the room. What they have is a title close enough to the question that it rolled downhill and stopped on them.
+
+So they go read. They open a tab at ten at night, get a third of the way in, and come back with a shorter, tidier version of the uncertainty they started with. Then somebody books a vendor call, because a vendor is at least a person who will give you an answer.
+
+Nowhere in that sequence did anybody get one uninterrupted hour to think about it. That is the real gap, and it is not budget and it is not talent. It is an hour on a question that has been sitting in the room getting louder every month.
+
+So I put the hour on a calendar. I am charging $25 for it, and I picked that number on purpose. A decision this size should not cost somebody a day off work and a budget request before they are allowed to think about it clearly.
+
+One hour. You leave able to tell which of the things being pitched to you is worth the money, and which one is going to sit unopened in November.
+
+Thursday September 17, 11:00am to 12:00pm Mountain. Online. $25.
+
+catalystworks.consulting/w/online-li</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 90 / 100, CTQ 93 / 100. Promo bars are 88 voice and 92 CTQ; the instruction set a 90 voice bar for this post specifically and it clears at exactly 90. Stated rather than rounded: voice sits ON its bar, not above it.</p>
+        <div class="decision-block" data-item-id="li-post-10" data-item-label="LinkedIn post 10: Mon 2026-09-14 · CARRIES THE SEP 17 ONLINE OFFER · ADDED 2026-08-19">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-10-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-10-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="li-post-11">
+        <div class="post-head">
+          <span class="post-num">LinkedIn 11</span>
+          <span class="post-slot">Wed 2026-09-16</span>
+          
+        </div>
+        <pre>Here is what I actually do, said plainly, because I have spent too long assuming people could work it out by watching.
+
+If your company is somewhere between ten and fifty people, you probably have no HR function and you do not need a full one. What you have is a founder or an operations lead doing HR in the cracks of their real job. That works until it does not.
+
+Review season is one of the moments it stops working. So is a first HR hire. So is the week somebody resigns and you find out nobody ever wrote down how any of this runs.
+
+I come in for that. Not full time, not a hire, not a recruiting process and six weeks of interviews. A day a week, on the thing that is breaking.
+
+That might be the people side. It might be the AI question everyone is pressuring you about, where my honest job is helping you work out whether you even need it, where it fits, and how to start. It might turn out to be something the role has to become once we look at it together, and I would rather find that out with you than guess at it now.
+
+I know it works because I run my own business on it, on a system I built myself.
+
+If review season is about to become somebody&#x27;s surprise where you work, start here:
+catalystworks.consulting/fx/hr-li
+
+And if it is not your season, no pitch. Tell me who owns reviews at your company. Most people cannot answer that, and that is usually the finding.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 91 / CTQ 92. Bookmarkability 9/12. Promo bars 88 / 92. Lowest scoring post in the set, and its CTQ sits exactly on the promo bar. It clears, and it is honest about why: it is the most directly commercial piece in the run, so it gives up ground on Anti-Professorial and Viral Worthiness by design. If he wants it stronger, the lever is a concrete scene in place of the &quot;week somebody resigns&quot; hypothetical, and only he can supply one.</p>
+        <div class="decision-block" data-item-id="li-post-11" data-item-label="LinkedIn post 11: Wed 2026-09-16">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="li-post-11-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="li-post-11-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-x" open>
+    <summary><h2>X &middot; 17 posts</h2></summary>
+    <div class="sec-body">
+      <p>Threads show every tweet in order. Approve or reject the thread as one unit.</p>
+      
+      <article class="post-card" id="x-post-1">
+        <div class="post-head">
+          <span class="post-num">X 1</span>
+          <span class="post-slot">Wednesday 2026-08-19 | THREAD (5) | evergreen</span>
+          <span class="badge badge-thread">thread, 5 tweets</span>
+        </div>
+        <div class="tweet-label">Tweet 1</div><pre>A company I used to work for has an AI enablement role. Sits in technology, serves the whole company.
+
+First thing I thought was, I could have done that one.</pre><div class="tweet-label">Tweet 2</div><pre>Here is the part that keeps going wrong.
+
+The role gets parked in technology because it has the word AI in it. Then it spends its first year building things nobody asked for.</pre><div class="tweet-label">Tweet 3</div><pre>The job is not building.
+
+The job is walking into a department, finding where the work actually jams, and deciding whether AI belongs there at all.
+
+Often it does not. Saying so out loud is most of the value.</pre><div class="tweet-label">Tweet 4</div><pre>That is a people problem wearing a technology badge.
+
+You need somebody who can sit with a person about their own work and then go build the thing. Not one or the other.</pre><div class="tweet-label">Tweet 5</div><pre>I spent my career inside HR and I build the back end of my own business now. Both halves.
+
+Companies are writing this job description right now. Most of them are about to hand it to one half and then wonder why it stalls.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 93/100 - CTQ 94/100 - Hormozi not run (craft post)</p>
+        <div class="decision-block" data-item-id="x-post-1" data-item-label="X post 1: Wednesday 2026-08-19 | THREAD (5) | evergreen">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-1-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-1-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-15">
+        <div class="post-head">
+          <span class="post-num">X 15</span>
+          <span class="post-slot">Thursday 2026-08-20 | single | governance / AI strategy | MOVED from Fri Sep 12</span>
+          
+        </div>
+        <pre>Give an AI your structure. Never your data.
+
+Column headers, not the spreadsheet. The steps in your process, not the customer records. The decision logic, not the real numbers.
+
+You get the same answer back, and none of it left your building.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 90/100 - CTQ 96/100</p>
+        <div class="decision-block" data-item-id="x-post-15" data-item-label="X post 15: Thursday 2026-08-20 | single | governance / AI strategy | MOVED from Fri Sep 12">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-15-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-15-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-3">
+        <div class="post-head">
+          <span class="post-num">X 3</span>
+          <span class="post-slot">Friday 2026-08-21 | single | evergreen</span>
+          
+        </div>
+        <pre>I have to ask to get a yes.
+
+Simple sentence. Took me months to say it out loud.
+
+Before that I was building and waiting to be found. Pages, trackers, campaigns. All of it real. None of it a conversation with a human being who could say yes.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 94/100 - CTQ 94/100</p>
+        <div class="decision-block" data-item-id="x-post-3" data-item-label="X post 3: Friday 2026-08-21 | single | evergreen">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-3-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-3-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-2">
+        <div class="post-head">
+          <span class="post-num">X 2</span>
+          <span class="post-slot">Monday 2026-08-24 | single | evergreen | MOVED from Thu Aug 20</span>
+          
+        </div>
+        <pre>The advice is always apply to more jobs. Get in more piles.
+
+I spent years inside HR watching how roles actually get created. Nobody writes a job description in a vacuum. They write it around a person they already have in mind.
+
+Be that person instead.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 93/100 - CTQ 93/100</p>
+        <div class="decision-block" data-item-id="x-post-2" data-item-label="X post 2: Monday 2026-08-24 | single | evergreen | MOVED from Thu Aug 20">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-2-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-2-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-5">
+        <div class="post-head">
+          <span class="post-num">X 5</span>
+          <span class="post-slot">Tuesday 2026-08-25 | single | PROMO (Aug 27 in person)</span>
+          
+        </div>
+        <pre>Thursday night in Sandy I am running the session I wish somebody had run for me before I started.
+
+AI at work without getting burned. What to use, what to skip, and how to tell the difference before you spend money on it.
+
+7 to 8:30pm, SLCC Miller Campus. $50. Link in the reply.</pre><div class="tweet-label">First reply (link goes here, not in the post)</div><pre>catalystworks.consulting/w/x</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 91/100 - CTQ 92/100 - Hormozi Value Equation 8.0/10 (dream outcome 8, perceived likelihood 7, time delay 9, effort 8)</p>
+        <div class="decision-block" data-item-id="x-post-5" data-item-label="X post 5: Tuesday 2026-08-25 | single | PROMO (Aug 27 in person)">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-5-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-5-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-17">
+        <div class="post-head">
+          <span class="post-num">X 17</span>
+          <span class="post-slot">Wednesday 2026-08-26 | single | PROMO (Aug 27 in person) | NEW</span>
+          
+        </div>
+        <pre>Tomorrow night in Sandy, the thing I want you to leave with is a no.
+
+A short list of the AI tools you can stop paying attention to, and why. That is most of the value in an hour and nobody sells it that way.
+
+7 to 8:30pm, SLCC Miller Campus. $50. Link in the reply.</pre><div class="tweet-label">First reply (link goes here, not in the post)</div><pre>catalystworks.consulting/w/x</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 92/100 - CTQ 93/100 - Hormozi Value Equation 8.3/10 (dream outcome 8, perceived likelihood 8, time delay 9, effort 8)</p>
+        <div class="decision-block" data-item-id="x-post-17" data-item-label="X post 17: Wednesday 2026-08-26 | single | PROMO (Aug 27 in person) | NEW">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-17-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-17-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-7">
+        <div class="post-head">
+          <span class="post-num">X 7</span>
+          <span class="post-slot">Friday 2026-08-28 | single | PROMO (fractional door)</span>
+          
+        </div>
+        <pre>Most retainers are built to grow. Mine is built to shrink.
+
+Months one to three I carry the heavy part. Four to six your own people run it. Month seven you drop a tier, hand it to a permanent hire, or stop.
+
+If I am still necessary in a year, I did the job wrong.</pre><div class="tweet-label">First reply (link goes here, not in the post)</div><pre>catalystworks.consulting/fx/x</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 93/100 - CTQ 94/100 - Hormozi Value Equation 8.5/10 (dream outcome 9, perceived likelihood 8, time delay 8, effort 9)</p>
+        <div class="decision-block" data-item-id="x-post-7" data-item-label="X post 7: Friday 2026-08-28 | single | PROMO (fractional door)">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-7-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-7-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-4">
+        <div class="post-head">
+          <span class="post-num">X 4</span>
+          <span class="post-slot">Monday 2026-08-31 | THREAD (5) | evergreen | MOVED from Mon Aug 24</span>
+          <span class="badge badge-thread">thread, 5 tweets</span>
+        </div>
+        <div class="tweet-label">Tweet 1</div><pre>I wrote a plan to start reaching out to people. Five contacts a day.
+
+Then I had it reviewed four times. One of those came back 3 out of 10.</pre><div class="tweet-label">Tweet 2</div><pre>The sharpest note was not that the plan was wrong.
+
+It was that the plan was heavier than the idea deserved, and I was about to build the plan instead of doing the thing.</pre><div class="tweet-label">Tweet 3</div><pre>I run. Couch to 5K, None to Run, that whole family of programs.
+
+You do not open with a marathon. You get around the track one time.</pre><div class="tweet-label">Tweet 4</div><pre>So I cut it.
+
+I reset it low enough that skipping it takes more effort than doing it. One door instead of two. Everything else parked until the habit holds.</pre><div class="tweet-label">Tweet 5</div><pre>Writing a big plan is easy. Running a small one every day is not.
+
+What did you have to cut yours down to before it survived a real week?</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 92/100 - CTQ 93/100. Both bars cleared, and CTQ now sits EXACTLY on the 93 evergreen bar rather than three points above it. Stated rather than rounded. Previous scores were voice 93 / CTQ 95; the drop is the honest cost of the collision fix below, because the removed line was the thread&#x27;s most concrete proof and concreteness is what the Bookmarkability proof row and Viral Worthiness were paying for. Voice loses one point for the same reason, and gets nothing back for the added first person because a mechanism line is less lived than a real ramp number. If it drops further on any future edit it goes below bar and should be cut rather than re-scored.</p>
+        <div class="decision-block" data-item-id="x-post-4" data-item-label="X post 4: Monday 2026-08-31 | THREAD (5) | evergreen | MOVED from Mon Aug 24">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-4-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-4-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-8">
+        <div class="post-head">
+          <span class="post-num">X 8</span>
+          <span class="post-slot">Tuesday 2026-09-01 | THREAD (3, cut from 5) | evergreen | MOVED from Mon Aug 31</span>
+          <span class="badge badge-thread">thread, 3 tweets</span>
+        </div>
+        <div class="tweet-label">Tweet 1</div><pre>I spent a day leaving comments on other people&#x27;s posts.
+
+Not one of them corrected the author.</pre><div class="tweet-label">Tweet 2</div><pre>The instinct when you know a subject is to show that you know it. You spot the gap and you fill it in public.
+
+It reads as expertise to you. It reads as a correction to them.</pre><div class="tweet-label">Tweet 3</div><pre>What I do instead: add the thing they left out as an extension of their point, never as a fix to it.
+
+Half the reason is selfish. People remember who made them look good.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 92/100 - CTQ 93/100</p>
+        <div class="decision-block" data-item-id="x-post-8" data-item-label="X post 8: Tuesday 2026-09-01 | THREAD (3, cut from 5) | evergreen | MOVED from Mon Aug 31">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-8-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-8-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-9">
+        <div class="post-head">
+          <span class="post-num">X 9</span>
+          <span class="post-slot">Wednesday 2026-09-02 | single | evergreen</span>
+          
+        </div>
+        <pre>Some of the conversations I am having right now will not turn into anything for months. A few might not for years.
+
+I am fine with that.
+
+Everything sold to operators right now promises this week. I am not building for this week.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 92/100 - CTQ 92/100</p>
+        <div class="decision-block" data-item-id="x-post-9" data-item-label="X post 9: Wednesday 2026-09-02 | single | evergreen">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-9-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-9-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-18">
+        <div class="post-head">
+          <span class="post-num">X 18</span>
+          <span class="post-slot">Thursday 2026-09-03 | single | PROMO (Sep 17 virtual) | NEW</span>
+          
+        </div>
+        <pre>I spent hours fixing the hard half of a problem. The answer was a stale setting on my phone.
+
+Most AI spending has that shape. Expensive work aimed at the wrong half.
+
+One hour on the cheap questions. Thursday September 17, 11am Mountain, online. $25. Link in the reply.</pre><div class="tweet-label">First reply (link goes here, not in the post)</div><pre>catalystworks.consulting/w/online-x</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 91/100 - CTQ 92/100 - Hormozi Value Equation 8.0/10 (dream outcome 8, perceived likelihood 7, time delay 9, effort 8)</p>
+        <div class="decision-block" data-item-id="x-post-18" data-item-label="X post 18: Thursday 2026-09-03 | single | PROMO (Sep 17 virtual) | NEW">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-18-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-18-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-11">
+        <div class="post-head">
+          <span class="post-num">X 11</span>
+          <span class="post-slot">Friday 2026-09-04 | single | evergreen</span>
+          
+        </div>
+        <pre>I count the asks, not the yeses.
+
+Fifteen minutes. Three names. Friendliest one first. Nothing improvised.
+
+I cannot control who says yes. I can control whether I asked. So that is the number I write down.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 94/100 - CTQ 93/100</p>
+        <div class="decision-block" data-item-id="x-post-11" data-item-label="X post 11: Friday 2026-09-04 | single | evergreen">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-11-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-11-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-19">
+        <div class="post-head">
+          <span class="post-num">X 19</span>
+          <span class="post-slot">Monday 2026-09-08 | single | PROMO (Sep 17 virtual) | NEW</span>
+          
+        </div>
+        <pre>You do not need to be technical to come to this one.
+
+If your job is deciding whether a tool is worth the money, that is the seat I built it for. No setup, no code, no homework.
+
+Thursday September 17, 11am Mountain, one hour, online. $25. Link in the reply.</pre><div class="tweet-label">First reply (link goes here, not in the post)</div><pre>catalystworks.consulting/w/online-x</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 90/100 - CTQ 92/100 - Hormozi Value Equation 8.5/10 (dream outcome 8, perceived likelihood 8, time delay 9, effort 9)</p>
+        <div class="decision-block" data-item-id="x-post-19" data-item-label="X post 19: Monday 2026-09-08 | single | PROMO (Sep 17 virtual) | NEW">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-19-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-19-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-13">
+        <div class="post-head">
+          <span class="post-num">X 13</span>
+          <span class="post-slot">Wednesday 2026-09-10 | single | PROMO (Sep 17 virtual)</span>
+          
+        </div>
+        <pre>I run these in a room in Sandy, which only works if you can drive to it. This one you join from your desk.
+
+Thursday September 17, 11am Mountain, one hour, online.
+
+AI at work without getting burned. What to use, what to skip. $25. Link in the reply.</pre><div class="tweet-label">First reply (link goes here, not in the post)</div><pre>catalystworks.consulting/w/online-x</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 90/100 - CTQ 92/100 - Hormozi Value Equation 7.8/10 (dream outcome 8, perceived likelihood 7, time delay 8, effort 8)</p>
+        <div class="decision-block" data-item-id="x-post-13" data-item-label="X post 13: Wednesday 2026-09-10 | single | PROMO (Sep 17 virtual)">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-13-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-13-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-14">
+        <div class="post-head">
+          <span class="post-num">X 14</span>
+          <span class="post-slot">Thursday 2026-09-11 | single | evergreen</span>
+          
+        </div>
+        <pre>There are a lot of people who can talk about AI fluently after a month in a chat window.
+
+The question I would ask is simpler than that. Is anything you built still running after you close the tab?
+
+Mine is. That is the whole difference and it is hard to fake.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 94/100 - CTQ 94/100</p>
+        <div class="decision-block" data-item-id="x-post-14" data-item-label="X post 14: Thursday 2026-09-11 | single | evergreen">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-14-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-14-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-6">
+        <div class="post-head">
+          <span class="post-num">X 6</span>
+          <span class="post-slot">Friday 2026-09-12 | single | governance / AI strategy | MOVED from Wed Aug 26</span>
+          
+        </div>
+        <pre>Ask me where an AI rollout goes wrong and I will not start with the tool.
+
+I spent my career inside HR. The part nobody staffs for is sitting with the person whose job is about to change.
+
+Skip that and the best tool in the building still stalls.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 91/100 - CTQ 93/100</p>
+        <div class="decision-block" data-item-id="x-post-6" data-item-label="X post 6: Friday 2026-09-12 | single | governance / AI strategy | MOVED from Wed Aug 26">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-6-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-6-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card" id="x-post-20">
+        <div class="post-head">
+          <span class="post-num">X 20</span>
+          <span class="post-slot">Monday 2026-09-15 | single | evergreen | NEW</span>
+          
+        </div>
+        <pre>A trial ran out on a marketing tool and my first instinct was to just subscribe.
+
+I asked something else. Do we truly need this, or can what we already have do the job?
+
+Then I went back to one I cancelled earlier that month and asked if that call was wrong too.</pre>
+        <p class="score-line"><span class="badge badge-score">gate scores</span> voice 92/100 - CTQ 93/100</p>
+        <div class="decision-block" data-item-id="x-post-20" data-item-label="X post 20: Monday 2026-09-15 | single | evergreen | NEW">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Approve</button>
+            <button type="button" class="decision-btn" data-decision="reject">Reject</button>
+            <span class="decision-status"></span>
+          </div>
+          <div class="item-notes">
+            <label for="x-post-20-note">Reason, one line, on a reject (timestamped, kept whatever you decide)</label>
+            <input type="text" id="x-post-20-note" class="reason-input" placeholder="One line is enough...">
+            <div class="note-actions"><button type="button" class="save-note">Save reason</button></div>
+            <ul class="notes-log"><li class="note-empty">No reason logged yet.</li></ul>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-how">
+    <summary><h2>How this works</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><strong>Nothing publishes from this page.</strong> Approving records your decision. Moving an
+        approved post to the board or a scheduler is a separate, later step that a human runs.</li>
+        <li><strong>Where your decisions live.</strong> orc-postgres, table
+        <code>content_review_decisions_items</code>, page <code>20260819-content-board-drafts</code>, with an append-only
+        history table so every change of mind stays answerable, and an append-only notes table for your
+        reasons. Migration <code>orchestrator/migrations/061_content_review_decisions.sql</code>.</li>
+        <li><strong>Your reason is kept whatever you decide.</strong> Approve, reject or leave it open, the
+        note is timestamped and stored either way.</li>
+        <li><strong>Source of the copy.</strong>
+        <code>docs/content/2026-08-19-board-refill-LINKEDIN-DRAFTS.md</code> and
+        <code>docs/content/2026-08-19-board-refill-X-DRAFTS.md</code>, read off origin/main and rendered
+        verbatim. The gate scores shown under each post are the ones recorded in those files.</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Built 2026-08-19. 28 posts staged, zero published. Decisions persist to orc-postgres under page
+    slug <code>20260819-content-board-drafts</code>. Generated by <code>scripts/gen_content_board_review_page.py</code>.
+  </footer>
+</div>
+
+<script src="/review/shared/review-save-client.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // DB-backed approve/reject + one-line reject reason for all 28 staged posts.
+  // Standing rule (2026-07-20): a decision page needs a real database from v1,
+  // never browser localStorage, plus a place for his own timestamped notes
+  // available regardless of status. Same stack the other /review/ decision
+  // pages already run on: content_review_decisions_items + _history + _notes
+  // (orchestrator/migrations/061_content_review_decisions.sql).
+  //
+  // Read failures degrade quietly (a fresh page shows everything undecided).
+  // WRITE failures show a VISIBLE banner -- a failed save must never look like
+  // it succeeded.
+  var API = 'https://agentshq.boubacarbarry.com/api/orc/content-review-decisions';
+  var PAGE_SLUG = '20260819-content-board-drafts';
+
+  function banner() { return document.getElementById('write-error-banner'); }
+  function showWriteError(msg) {
+    var b = banner(); if (!b) { return; }
+    b.textContent = 'SAVE FAILED: ' + msg;
+    b.style.display = 'block';
+  }
+  function showRetrying(attempt) {
+    var b = banner(); if (!b) { return; }
+    b.textContent = 'Save delayed (server restarting), retrying, attempt ' + attempt + '...';
+    b.style.display = 'block';
+  }
+  function hideWriteError() {
+    var b = banner(); if (b) { b.style.display = 'none'; }
+  }
+
+  var blocks = Array.prototype.slice.call(document.querySelectorAll('.decision-block[data-item-id]'));
+  var decided = {};
+
+  function updateCounter() {
+    var total = blocks.length, n = 0, approved = 0, rejected = 0;
+    blocks.forEach(function (b) {
+      var d = decided[b.getAttribute('data-item-id')];
+      if (d) { n++; if (d === 'approve') { approved++; } else { rejected++; } }
+    });
+    var el = document.getElementById('counter-main');
+    if (el) { el.textContent = n + ' of ' + total + ' decided'; }
+    var sub = document.getElementById('counter-sub');
+    if (sub) { sub.textContent = approved + ' approved, ' + rejected + ' rejected, ' + (total - n) + ' still open'; }
+  }
+
+  function renderNotesForBlock(block, notes) {
+    var log = block.querySelector('.notes-log');
+    if (!log) { return; }
+    if (!notes || !notes.length) {
+      log.innerHTML = '<li class="note-empty">No reason logged yet.</li>';
+      return;
+    }
+    log.innerHTML = notes.slice().reverse().map(function (n) {
+      var ts = '';
+      try {
+        ts = new Date(n.created_at).toLocaleString('en-US', {
+          timeZone: 'America/Denver', month: 'short', day: 'numeric',
+          year: 'numeric', hour: 'numeric', minute: '2-digit'
+        }) + ' MT';
+      } catch (e) { ts = n.created_at || ''; }
+      var esc = String(n.note_text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return '<li><span class="note-ts">' + ts + '</span>' + esc + '</li>';
+    }).join('');
+  }
+
+  function applyState(items, notesByItem) {
+    blocks.forEach(function (block) {
+      var id = block.getAttribute('data-item-id');
+      var st = items && items[id];
+      var decision = (st && st.decision) || null;
+      decided[id] = decision;
+      block.querySelectorAll('.decision-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-decision') === decision);
+      });
+      var statusEl = block.querySelector('.decision-status');
+      if (statusEl) { statusEl.textContent = decision ? ('current: ' + decision) : 'undecided'; }
+      renderNotesForBlock(block, (notesByItem && notesByItem[id]) || []);
+    });
+    updateCounter();
+  }
+
+  function groupNotesByItem(notes) {
+    var out = {};
+    (notes || []).forEach(function (n) {
+      if (!out[n.item_id]) { out[n.item_id] = []; }
+      out[n.item_id].push(n);
+    });
+    return out;
+  }
+
+  function loadState() {
+    ReviewSaveClient.fetchWithRetry(API + '/state?page_slug=' + encodeURIComponent(PAGE_SLUG))
+      .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+      .then(function (r) {
+        if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+        applyState(r.body.items || {}, groupNotesByItem(r.body.notes || []));
+      })
+      .catch(function () { updateCounter(); });
+  }
+
+  function registerPage() {
+    var items = blocks.map(function (block) {
+      return {
+        item_id: block.getAttribute('data-item-id'),
+        item_label: block.getAttribute('data-item-label') || ''
+      };
+    });
+    ReviewSaveClient.fetchWithRetry(API + '/run', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page_slug: PAGE_SLUG, items: items })
+    }).then(function () { loadState(); }).catch(function () { loadState(); });
+  }
+
+  blocks.forEach(function (block) {
+    var id = block.getAttribute('data-item-id');
+
+    block.querySelectorAll('.decision-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var decision = btn.getAttribute('data-decision');
+        ReviewSaveClient.fetchWithRetry(API + '/decision', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, decision: decision })
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            hideWriteError();
+            block.querySelectorAll('.decision-btn').forEach(function (b) {
+              b.classList.toggle('active', b === btn);
+            });
+            var statusEl = block.querySelector('.decision-status');
+            if (statusEl) { statusEl.textContent = 'current: ' + decision; }
+            decided[id] = decision;
+            updateCounter();
+          })
+          .catch(function (err) {
+            showWriteError('Post ' + id + ' did NOT save to the database (' + err.message + '). It is only in this browser right now.');
+          });
+      });
+    });
+
+    var saveNoteBtn = block.querySelector('.save-note');
+    var noteInput = block.querySelector('.reason-input');
+    if (saveNoteBtn && noteInput) {
+      var submitNote = function () {
+        var text = (noteInput.value || '').trim();
+        if (!text) { return; }
+        saveNoteBtn.disabled = true;
+        ReviewSaveClient.fetchWithRetry(API + '/note', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, note_text: text })
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            hideWriteError();
+            noteInput.value = '';
+            loadState();
+          })
+          .catch(function (err) {
+            showWriteError('Reason for ' + id + ' did NOT save to the database (' + err.message + '). Your text is still in the box, try again.');
+          })
+          .finally(function () { saveNoteBtn.disabled = false; });
+      };
+      saveNoteBtn.addEventListener('click', submitNote);
+      noteInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); submitNote(); }
+      });
+    }
+  });
+
+  updateCounter();
+  if (blocks.length) { registerPage(); } else { loadState(); }
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var open = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    navBar.querySelectorAll('.nav-links a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+})();
+</script>
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
