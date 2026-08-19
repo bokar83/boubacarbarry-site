@@ -85,6 +85,21 @@
     .lr-check:checked::after { content: ''; position: absolute; left: 0.4rem; top: 0.1rem; width: 0.3rem; height: 0.62rem; border: solid #06210f; border-width: 0 3px 3px 0; transform: rotate(45deg); }
     .lane-row.act-row.done { opacity: 0.5; }
     .lane-row.act-row.done .lr-name { text-decoration: line-through; }
+    .lane-row .act-top { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.25rem; }
+    .lane-row .lane { font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.1rem 0.4rem; border-radius: 4px; background: var(--card-2); border: 1px solid var(--line); color: var(--muted); }
+    .lane-row .lane.cw { background: rgba(227,98,47,0.16); color: var(--ember-bright); border-color: transparent; }
+    .lane-row .lane.sw { background: var(--green-soft); color: var(--green); border-color: transparent; }
+    .lane-row .lane.ic { background: var(--amber-soft); color: var(--amber); border-color: transparent; }
+    .lane-row .lane.pga { background: var(--purple-soft); color: var(--purple); border-color: transparent; }
+    .lane-row .lane.key { background: var(--red-soft); color: var(--red); border-color: transparent; }
+    .lane-row .owner { font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.1rem 0.4rem; border-radius: 4px; }
+    .lane-row .owner.bou { background: var(--ember); color: #fff; }
+    .lane-row .owner.agent { background: var(--card-2); color: var(--muted); border: 1px solid var(--line); }
+    .lane-row .act-text { font-size: 0.88rem; color: var(--ink); line-height: 1.55; overflow-wrap: anywhere; }
+    .lane-row .act-text strong { color: var(--ink-strong); }
+    .lane-row .dep { display: block; font-size: 0.77rem; color: var(--muted); margin-top: 0.3rem; line-height: 1.55; }
+    .lane-row.act-row.done .act-text { text-decoration: line-through; text-decoration-color: var(--faint); }
+    .todayact .callout { margin: 0.8rem 0 0; }
     .lr-notebtn { font-size: 0.6rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.22rem 0.5rem; border-radius: 5px; border: 1px solid var(--line); background: var(--card-2); color: var(--muted); cursor: pointer; margin-left: auto; }
     .lr-notebtn:hover { color: var(--ink-strong); border-color: var(--ember-bright); }
     .lr-notebtn.has { color: var(--ember-bright); border-color: var(--ember-bright); }
@@ -481,8 +496,8 @@
       <span class="bars" aria-hidden="true"></span><span>Sections</span>
     </button>
     <div class="nav-links" id="navLinks">
-      <a href="#today">Today</a>
-      <a href="#dated">Dated actions</a>
+      <a href="#todayact">Today's actions</a>
+      <a href="#today">Ask counter</a>
       <a href="#vision">Vision + goal</a>
       <a href="#weeks">12-week year</a>
       <a href="#week">This week by lane</a>
@@ -501,9 +516,30 @@
       <span class="ta-date" id="taDate">&nbsp;</span>
       <span class="ta-count" id="taCount"></span>
     </div>
-    <p class="ta-sub">Every action dated today, pulled live from the money map. Tick one off and it saves to the database and shows on your phone. Open Notes on any of them to write down what happened, including on the ones you skip.</p>
+    <p class="ta-sub">Every dated action on the money map, grouped by its own day: today first, then what is coming, then what is behind you. Tick one off and it saves to the database and shows on your phone. Open Notes on any of them to write down what happened, including on the ones you skip.</p>
+    <p class="ta-sub">Every row below names a person, a date, what you expect back, and what happens on <b>both</b> branches: if they answer, and if they go quiet. Nothing here has been sent. The two detail packs sit one click away: <a href="/review/20260819-morning-packet/">the full call sheet for today</a> and <a href="/review/20260819-podcast-circuit/">the podcast circuit, with the fourteen shows and the written pitches</a>. The five podcast pitches and the two follow-ups only leave after you tap Send it on their rows on that page.</p>
     <div id="todayact-body" class="rl"><div class="ta-empty">Loading today's actions&hellip;</div></div>
+    <div class="callout amber" style="margin:0 0 0.7rem;"><span class="lbl">Booking latency is six to twelve weeks, so these go as one block</span>The old rule of one pitch at a time gave about four shots a year. The five below send together, then it holds until one books or thirty days pass. Every draft is written for its own show and voice-gated, scores 91 to 94. <b>Nothing leaves until you tap Send it on each row</b> at <a href="/review/20260819-podcast-circuit/">the podcast circuit page</a>.</div>
+    <div class="callout green" style="margin:0.8rem 0 0.2rem;"><span class="lbl">The standing rule this section exists to hold</span>Every pitch gets a reminder at day seven. Two hosts read pitches and both went cold because nothing came after them. On a read receipt, follow up once at day seven and once at day twenty-one, then stop. That single habit is worth more than any new list.</div>
   </section>
+  <!-- SEEDED ACTIONS -- the hand-written dated rows. Content lives here as
+       HTML; the renderer below lifts each one into its own date group inside
+       the single "Today's actions" block. The tick persists to the SAME
+       y0_money_map_state key the row already owns (act-YYYY-MM-DD-slug), so
+       nothing in the database moves. -->
+  <template id="actSeed">
+    <div class="act-seed" data-id="act-2026-08-19-norm" data-date="2026-08-19" data-name="Call Norm Smallwood at The RBL Group"><div class="act-top"><span class="lane key">09:00 &middot; call</span><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Call Norm Smallwood at The RBL Group. Dial (801) 373-4238 and ask for Norm.</strong> The real reason to call: on 2025-12-11 Dave Ulrich replied to you directly and asked you a question about GE Power, and it was never answered. Eight months. It is still answerable, and you are closing your own loop, not his. <span class="dep"><b>Expected outcome:</b> a live conversation, or a message left in your own words. <b>If he picks up:</b> answer the GE Power question first, then ask what they see companies doing with AI inside people work, and only then whether they ever bring in outside capacity. Log the outcome the same morning. <b>If he is not in:</b> do not read a scripted voicemail, leave the three-beat message in your own words, then dial backup CoDev on (801) 331-8770 and ask for Landon Essig. <b>If no callback by Mon Aug 24:</b> send the GE Power answer as a reply on the original Ulrich thread. <b>If still silent by Fri Aug 28:</b> close the phone route and keep the relationship warm through the thread only. Number verified against rbl.net/contact. Card and script: <a href="/review/20260819-morning-packet/">morning packet</a>.</span></div></div>
+    <div class="act-seed" data-id="act-2026-08-19-alf" data-date="2026-08-19" data-name="Message Alf Carles&auml;ter at GROW HR Consulting"><div class="act-top"><span class="lane key">By 10:30 &middot; message</span><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Message Alf Carles&auml;ter, founder and fractional CHRO at GROW HR Consulting.</strong> Open his LinkedIn profile, click Contact info. Address there, send it as an email. Nothing there, send the identical text as a LinkedIn message. He is a first-degree connection, so there is no dead end. <span class="dep"><b>Expected outcome:</b> one line back, or fifteen minutes on the phone. <b>If he replies:</b> answer inside 24 hours and let it run toward a partner or subcontract conversation, since he is capacity-bound by definition and cannot build the AI half himself. <b>If silent by Tue Aug 26:</b> one short follow-up line, nothing new added. <b>If still silent by Tue Sep 09:</b> close it and move the slot to Jeremy Webb at Consult Dean, same grade, same copy fits. Copy is ready to paste in <a href="/review/20260819-morning-packet/">the morning packet</a>.</span></div></div>
+    <div class="act-seed" data-id="act-2026-08-19-grover" data-date="2026-08-19" data-name="Reach Joe Grover at Ampl&#233;o"><div class="act-top"><span class="lane key">Today &middot; message</span><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Reach Joe Grover, Chief Growth Officer at Ampl&#233;o, at linkedin.com/in/joelgrover/.</strong> You met him at StartFest and saw his go-to-market talk. His firm already sells fractional finance, marketing and HR and has no AI line at all, so adding one is literally his job. <span class="dep"><b>Verified channel:</b> the LinkedIn profile only. <b>There is no verified phone or email for him anywhere in the record</b>, and three different directory numbers exist for Ampl&#233;o with no primary source behind any of them, so none of them get dialled. <b>First step is the number:</b> open his profile, click Contact info, and use whatever is there. Empty, send the LinkedIn message instead, which is always open. <b>Expected outcome:</b> a reply inside a week. <b>If he replies:</b> answer inside 24 hours and steer to fifteen minutes about where an AI line would sit next to what they already sell. <b>If silent by Tue Aug 26:</b> one follow-up. <b>If still silent by Tue Sep 09:</b> close it and stop working the channel.</span></div></div>
+    <div class="act-seed" data-id="act-2026-08-19-log" data-date="2026-08-19" data-name="Log both outcomes, objection quoted verbatim"><div class="act-top"><span class="lane key">After both touches</span><span class="owner bou">You</span></div><div class="act-text"><strong>Log both outcomes the same morning, objection quoted verbatim.</strong> One insert, two rows, nothing else. The statement is written out for you in section 7 of <a href="/review/20260819-morning-packet/">the morning packet</a>. <span class="dep"><b>Expected outcome:</b> the day is recorded whether or not anyone said yes. <b>If both said no:</b> the day is still complete, two people saying no is a finished day. <b>If it is not logged by end of day:</b> it gets reconstructed from memory tomorrow, which is how the real objection gets lost.</span></div></div>
+    <div class="act-seed" data-id="act-2026-08-20-everydayai" data-date="2026-08-20" data-name="Book the Everyday AI slot with Jordan Wilson"><div class="act-top"><span class="lane key">Highest priority</span><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Thu Aug 20: book a weekday slot on Everyday AI with Jordan Wilson. This one is not a pitch, it is a booking.</strong> The show runs an open weekday calendar at youreverydayai.com/guest/ plus a pitch form at youreverydayai.com/pitch/. You picked this show in June and nothing was ever sent. <span class="dep"><b>Expected outcome:</b> a booked recording slot inside three weeks. <b>If they confirm a slot:</b> block the morning, paste the intake copy exactly as written, and do not pitch shows six through fourteen until it airs. <b>If no confirmation by Wed Sep 03:</b> submit the pitch form path once instead of the calendar path. <b>If still silent by Wed Sep 17:</b> drop the show and move Small Business Big AI up in its place.</span></div></div>
+    <div class="act-seed" data-id="act-2026-08-20-digitalhr" data-date="2026-08-20" data-name="Pitch Digital HR Leaders, David Green"><div class="act-top"><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Thu Aug 20: send the Digital HR Leaders pitch to David Green at support@myhrfuture.com.</strong> Sharpest wedge on the list. His listeners are HR leaders with budget who are being sold AI and cannot tell a process problem from a technology one. <span class="dep"><b>Expected outcome:</b> a reply within two weeks, a booking six to twelve weeks out. <b>If he replies:</b> answer inside 24 hours, hold the same angle, do not widen the topic to please him. <b>If silent by Wed Sep 03:</b> one follow-up, three sentences, adding only the specific episode idea. <b>If still silent by Wed Sep 24:</b> close it and pitch HR Data Labs instead.</span></div></div>
+    <div class="act-seed" data-id="act-2026-08-20-turchin" data-date="2026-08-20" data-name="Pitch AI and the Future of Work, Dan Turchin"><div class="act-top"><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Thu Aug 20: send the AI and the Future of Work pitch to Dan Turchin at info@peoplereign.io.</strong> His guests either study this or sell software for it. You did neither, which is the whole opening. <span class="dep"><b>Expected outcome:</b> a reply within two weeks. <b>If he replies:</b> offer two recording windows in the same message so scheduling never becomes the delay. <b>If silent by Wed Sep 03:</b> one follow-up. <b>If still silent by Wed Sep 24:</b> close it and pitch Directionally Correct instead.</span></div></div>
+    <div class="act-seed" data-id="act-2026-08-21-hrleaders" data-date="2026-08-21" data-name="Pitch HR Leaders, Chris Rainey"><div class="act-top"><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Fri Aug 21: send the HR Leaders pitch to Chris Rainey at hello@hrleaders.co.</strong> He books chief people officers at global brands. The pitch opens by saying you are not one, which is the strongest move into that room. <span class="dep"><b>Expected outcome:</b> a reply within three weeks. This is the hardest room on the list, so a slow no is the base case. <b>If he replies:</b> lead with the three questions an HR leader should ask before approving any AI tool, do not improvise a broader topic. <b>If silent by Thu Sep 11:</b> one follow-up. <b>If still silent by Thu Oct 02:</b> close it and re-pitch only after one HR episode has aired somewhere else.</span></div></div>
+    <div class="act-seed" data-id="act-2026-08-21-pmp" data-date="2026-08-21" data-name="Pitch People Managing People, David Rice"><div class="act-top"><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Fri Aug 21: submit the People Managing People pitch to David Rice through their guest form</strong> at peoplemanagingpeople.com/be-a-guest-on-our-podcast/. It opens on their own August episode about digital adoption. <span class="dep"><b>Expected outcome:</b> a reply within three weeks. <b>If he replies:</b> confirm format and length in the first reply, then send two windows. <b>If silent by Thu Sep 11:</b> one follow-up through the same form. <b>If still silent by Thu Oct 02:</b> close it and pitch Early Adoptr instead.</span></div></div>
+    <div class="act-seed" data-id="act-2026-08-20-bernzweig" data-date="2026-08-20" data-name="Follow up: Consulting Spotlight, Michael Bernzweig"><div class="act-top"><span class="lane key">Read, never answered</span><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Thu Aug 20: follow up with Michael Bernzweig of the Consulting Spotlight Podcast, through the same platform you pitched on.</strong> He read your pitch on 2026-07-14 and the read receipt came back. Nothing followed it from either side. Five weeks stale, which is late but not gone. <span class="dep"><b>Expected outcome:</b> a yes or a clean no. Either one closes the loop. <b>If he replies:</b> answer inside 24 hours with two recording windows attached. <b>If silent by Wed Sep 10:</b> close it. No second follow-up on a five-week-old read receipt. Draft is three sentences, ready on <a href="/review/20260819-podcast-circuit/">the podcast circuit page</a>.</span></div></div>
+    <div class="act-seed" data-id="act-2026-08-20-norton" data-date="2026-08-20" data-name="Follow up: HR for Humans, Kaiti Norton"><div class="act-top"><span class="lane key">Read, never answered</span><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Thu Aug 20: follow up with Kaiti Norton of HR for Humans, through the same platform.</strong> She read a pitch of yours on 2026-08-05 and it went the same way. Two weeks old, so this is the warmer of the two. <span class="dep"><b>Expected outcome:</b> a reply within two weeks. <b>If she replies:</b> answer inside 24 hours and offer two windows. <b>If silent by Wed Sep 10:</b> one more line. <b>If still silent by Wed Sep 24:</b> close it. Draft ready on <a href="/review/20260819-podcast-circuit/">the podcast circuit page</a>.</span></div></div>
+  </template>
 
   <!-- TL;DR -- collapsible, ships open (standing rule for every /review/ page) -->
   <details class="tldr" id="tldr" open>
@@ -573,48 +609,6 @@
         <span class="br-copy" id="brandonCopy">Copy</span>
       </div>
 
-    </div>
-  </details>
-
-  <!-- DATED ACTIONS (added 2026-08-19). Every outreach with a date, an expected outcome,
-       and BOTH branches. Detail lives one click away: the full call sheet at
-       /review/20260819-morning-packet/ and the podcast research + drafts at
-       /review/20260819-podcast-circuit/. Rows persist to the board like every other
-       checkbox on this page. -->
-  <details class="panel" id="dated" open>
-    <summary class="panel-head"><span class="fold-chev" aria-hidden="true">&#9656;</span><h2>Dated actions: who you contact, and when</h2><span class="ph-date">Added Aug 19 &middot; tick a row when it is done</span><span class="toggle-hint"></span></summary>
-    <div class="panel-body">
-      <p class="lede" style="margin-bottom:0.7rem;">Every row below names a person, a date, what you expect back, and what happens on <b>both</b> branches: if they answer, and if they go quiet. Nothing here has been sent. The two detail packs sit one click away: <a href="/review/20260819-morning-packet/">the full call sheet for today</a> and <a href="/review/20260819-podcast-circuit/">the podcast circuit, with the fourteen shows and the written pitches</a>. The five podcast pitches and the two follow-ups only leave after you tap Send it on their rows on that page.</p>
-
-      <h3 style="font-size:0.82rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin:0.9rem 0 0.5rem;">Today, Wednesday Aug 19</h3>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-19-norm"><div class="act-body"><div class="act-top"><span class="lane key">09:00 &middot; call</span><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Call Norm Smallwood at The RBL Group. Dial (801) 373-4238 and ask for Norm.</strong> The real reason to call: on 2025-12-11 Dave Ulrich replied to you directly and asked you a question about GE Power, and it was never answered. Eight months. It is still answerable, and you are closing your own loop, not his. <span class="dep"><b>Expected outcome:</b> a live conversation, or a message left in your own words. <b>If he picks up:</b> answer the GE Power question first, then ask what they see companies doing with AI inside people work, and only then whether they ever bring in outside capacity. Log the outcome the same morning. <b>If he is not in:</b> do not read a scripted voicemail, leave the three-beat message in your own words, then dial backup CoDev on (801) 331-8770 and ask for Landon Essig. <b>If no callback by Mon Aug 24:</b> send the GE Power answer as a reply on the original Ulrich thread. <b>If still silent by Fri Aug 28:</b> close the phone route and keep the relationship warm through the thread only. Number verified against rbl.net/contact. Card and script: <a href="/review/20260819-morning-packet/">morning packet</a>.</span></div></div></label>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-19-alf"><div class="act-body"><div class="act-top"><span class="lane key">By 10:30 &middot; message</span><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Message Alf Carles&auml;ter, founder and fractional CHRO at GROW HR Consulting.</strong> Open his LinkedIn profile, click Contact info. Address there, send it as an email. Nothing there, send the identical text as a LinkedIn message. He is a first-degree connection, so there is no dead end. <span class="dep"><b>Expected outcome:</b> one line back, or fifteen minutes on the phone. <b>If he replies:</b> answer inside 24 hours and let it run toward a partner or subcontract conversation, since he is capacity-bound by definition and cannot build the AI half himself. <b>If silent by Tue Aug 26:</b> one short follow-up line, nothing new added. <b>If still silent by Tue Sep 09:</b> close it and move the slot to Jeremy Webb at Consult Dean, same grade, same copy fits. Copy is ready to paste in <a href="/review/20260819-morning-packet/">the morning packet</a>.</span></div></div></label>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-19-grover"><div class="act-body"><div class="act-top"><span class="lane key">Today &middot; message</span><span class="lane cw">CW</span><span class="owner bou">You</span></div><div class="act-text"><strong>Reach Joe Grover, Chief Growth Officer at Ampl&#233;o, at linkedin.com/in/joelgrover/.</strong> You met him at StartFest and saw his go-to-market talk. His firm already sells fractional finance, marketing and HR and has no AI line at all, so adding one is literally his job. <span class="dep"><b>Verified channel:</b> the LinkedIn profile only. <b>There is no verified phone or email for him anywhere in the record</b>, and three different directory numbers exist for Ampl&#233;o with no primary source behind any of them, so none of them get dialled. <b>First step is the number:</b> open his profile, click Contact info, and use whatever is there. Empty, send the LinkedIn message instead, which is always open. <b>Expected outcome:</b> a reply inside a week. <b>If he replies:</b> answer inside 24 hours and steer to fifteen minutes about where an AI line would sit next to what they already sell. <b>If silent by Tue Aug 26:</b> one follow-up. <b>If still silent by Tue Sep 09:</b> close it and stop working the channel.</span></div></div></label>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-19-log"><div class="act-body"><div class="act-top"><span class="lane key">After both touches</span><span class="owner bou">You</span></div><div class="act-text"><strong>Log both outcomes the same morning, objection quoted verbatim.</strong> One insert, two rows, nothing else. The statement is written out for you in section 7 of <a href="/review/20260819-morning-packet/">the morning packet</a>. <span class="dep"><b>Expected outcome:</b> the day is recorded whether or not anyone said yes. <b>If both said no:</b> the day is still complete, two people saying no is a finished day. <b>If it is not logged by end of day:</b> it gets reconstructed from memory tomorrow, which is how the real objection gets lost.</span></div></div></label>
-
-      <h3 style="font-size:0.82rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin:1.1rem 0 0.5rem;">The podcast circuit &middot; five pitches and two follow-ups, all awaiting your approval</h3>
-
-      <div class="callout amber" style="margin:0 0 0.7rem;"><span class="lbl">Booking latency is six to twelve weeks, so these go as one block</span>The old rule of one pitch at a time gave about four shots a year. The five below send together, then it holds until one books or thirty days pass. Every draft is written for its own show and voice-gated, scores 91 to 94. <b>Nothing leaves until you tap Send it on each row</b> at <a href="/review/20260819-podcast-circuit/">the podcast circuit page</a>.</div>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-20-everydayai"><div class="act-body"><div class="act-top"><span class="lane key">Highest priority</span><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Thu Aug 20: book a weekday slot on Everyday AI with Jordan Wilson. This one is not a pitch, it is a booking.</strong> The show runs an open weekday calendar at youreverydayai.com/guest/ plus a pitch form at youreverydayai.com/pitch/. You picked this show in June and nothing was ever sent. <span class="dep"><b>Expected outcome:</b> a booked recording slot inside three weeks. <b>If they confirm a slot:</b> block the morning, paste the intake copy exactly as written, and do not pitch shows six through fourteen until it airs. <b>If no confirmation by Wed Sep 03:</b> submit the pitch form path once instead of the calendar path. <b>If still silent by Wed Sep 17:</b> drop the show and move Small Business Big AI up in its place.</span></div></div></label>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-20-digitalhr"><div class="act-body"><div class="act-top"><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Thu Aug 20: send the Digital HR Leaders pitch to David Green at support@myhrfuture.com.</strong> Sharpest wedge on the list. His listeners are HR leaders with budget who are being sold AI and cannot tell a process problem from a technology one. <span class="dep"><b>Expected outcome:</b> a reply within two weeks, a booking six to twelve weeks out. <b>If he replies:</b> answer inside 24 hours, hold the same angle, do not widen the topic to please him. <b>If silent by Wed Sep 03:</b> one follow-up, three sentences, adding only the specific episode idea. <b>If still silent by Wed Sep 24:</b> close it and pitch HR Data Labs instead.</span></div></div></label>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-20-turchin"><div class="act-body"><div class="act-top"><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Thu Aug 20: send the AI and the Future of Work pitch to Dan Turchin at info@peoplereign.io.</strong> His guests either study this or sell software for it. You did neither, which is the whole opening. <span class="dep"><b>Expected outcome:</b> a reply within two weeks. <b>If he replies:</b> offer two recording windows in the same message so scheduling never becomes the delay. <b>If silent by Wed Sep 03:</b> one follow-up. <b>If still silent by Wed Sep 24:</b> close it and pitch Directionally Correct instead.</span></div></div></label>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-21-hrleaders"><div class="act-body"><div class="act-top"><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Fri Aug 21: send the HR Leaders pitch to Chris Rainey at hello@hrleaders.co.</strong> He books chief people officers at global brands. The pitch opens by saying you are not one, which is the strongest move into that room. <span class="dep"><b>Expected outcome:</b> a reply within three weeks. This is the hardest room on the list, so a slow no is the base case. <b>If he replies:</b> lead with the three questions an HR leader should ask before approving any AI tool, do not improvise a broader topic. <b>If silent by Thu Sep 11:</b> one follow-up. <b>If still silent by Thu Oct 02:</b> close it and re-pitch only after one HR episode has aired somewhere else.</span></div></div></label>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-21-pmp"><div class="act-body"><div class="act-top"><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Fri Aug 21: submit the People Managing People pitch to David Rice through their guest form</strong> at peoplemanagingpeople.com/be-a-guest-on-our-podcast/. It opens on their own August episode about digital adoption. <span class="dep"><b>Expected outcome:</b> a reply within three weeks. <b>If he replies:</b> confirm format and length in the first reply, then send two windows. <b>If silent by Thu Sep 11:</b> one follow-up through the same form. <b>If still silent by Thu Oct 02:</b> close it and pitch Early Adoptr instead.</span></div></div></label>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-20-bernzweig"><div class="act-body"><div class="act-top"><span class="lane key">Read, never answered</span><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Thu Aug 20: follow up with Michael Bernzweig of the Consulting Spotlight Podcast, through the same platform you pitched on.</strong> He read your pitch on 2026-07-14 and the read receipt came back. Nothing followed it from either side. Five weeks stale, which is late but not gone. <span class="dep"><b>Expected outcome:</b> a yes or a clean no. Either one closes the loop. <b>If he replies:</b> answer inside 24 hours with two recording windows attached. <b>If silent by Wed Sep 10:</b> close it. No second follow-up on a five-week-old read receipt. Draft is three sentences, ready on <a href="/review/20260819-podcast-circuit/">the podcast circuit page</a>.</span></div></div></label>
-
-      <label class="act"><input type="checkbox" data-item="act-2026-08-20-norton"><div class="act-body"><div class="act-top"><span class="lane key">Read, never answered</span><span class="lane ic">Visibility</span><span class="owner bou">You</span></div><div class="act-text"><strong>Thu Aug 20: follow up with Kaiti Norton of HR for Humans, through the same platform.</strong> She read a pitch of yours on 2026-08-05 and it went the same way. Two weeks old, so this is the warmer of the two. <span class="dep"><b>Expected outcome:</b> a reply within two weeks. <b>If she replies:</b> answer inside 24 hours and offer two windows. <b>If silent by Wed Sep 10:</b> one more line. <b>If still silent by Wed Sep 24:</b> close it. Draft ready on <a href="/review/20260819-podcast-circuit/">the podcast circuit page</a>.</span></div></div></label>
-
-      <div class="callout green" style="margin:0.8rem 0 0.2rem;"><span class="lbl">The standing rule this section exists to hold</span>Every pitch gets a reminder at day seven. Two hosts read pitches and both went cold because nothing came after them. On a read receipt, follow up once at day seven and once at day twenty-one, then stop. That single habit is worth more than any new list.</div>
     </div>
   </details>
 
@@ -1434,8 +1428,29 @@
   // and y0_upsert path every other control on this page already uses. No new
   // storage, no new write path, no localStorage-only state.
   var Y0_DATE_RE = /-(\d{4}-\d{2}-\d{2})$/;
-  function itemDate(id){ var m = Y0_DATE_RE.exec(id); return m ? m[1] : null; }
-  function doneKey(id){ return 'done-' + id; }
+
+  // Seeded rows: hand-written dated actions carried in the #actSeed template.
+  // They already own a board key of their own (act-YYYY-MM-DD-slug) and their
+  // tick has always been stored under that exact key, so they keep using it
+  // instead of the done-<id> convention. Nothing in the database moves.
+  var SEEDS = [], SEED_BY_ID = {}, SEED_LABEL = {};
+  (function loadSeeds(){
+    var tpl = document.getElementById('actSeed');
+    if (!tpl) return;
+    var nodes = tpl.content ? tpl.content.querySelectorAll('.act-seed')
+                            : tpl.querySelectorAll('.act-seed');
+    Array.prototype.forEach.call(nodes, function(n){
+      var rec = { id: n.getAttribute('data-id'), date: n.getAttribute('data-date'),
+                  name: n.getAttribute('data-name'), html: n.innerHTML, seeded: true };
+      SEEDS.push(rec); SEED_BY_ID[rec.id] = rec; SEED_LABEL[rec.id] = rec.name;
+    });
+  })();
+
+  function itemDate(id){
+    if (SEED_BY_ID[id]) return SEED_BY_ID[id].date;
+    var m = Y0_DATE_RE.exec(id); return m ? m[1] : null;
+  }
+  function doneKey(id){ return SEED_BY_ID[id] ? id : ('done-' + id); }
   function isDone(id){
     var v = state[doneKey(id)];
     if (v === undefined || v === null) v = lsGet(doneKey(id));
@@ -1485,7 +1500,7 @@
     fetch(NOTES_API + '/run', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ page_slug: NOTES_SLUG, items: fresh.map(function(id){
-        return { item_id: id, item_label: rlLabel(id, id.indexOf('kpi-') === 0 ? 'kpi-' : 'status-') };
+        return { item_id: id, item_label: SEED_LABEL[id] || rlLabel(id, id.indexOf('kpi-') === 0 ? 'kpi-' : 'status-') };
       }) })
     }).catch(function(){});
   }
@@ -1510,21 +1525,24 @@
   }
 
   function rlActRow(id, value, kind){
+    var seed  = SEED_BY_ID[id];
     var isKpi = (kind === 'kpi');
-    var name  = rlLabel(id, isKpi ? 'kpi-' : 'status-').replace(/\s+\d{4} \d{2} \d{2}$/, '');
-    var tag   = isKpi ? '<span class="lr-tag t-kpi">KPI</span>' : '<span class="lr-tag t-status">LANE</span>';
+    var name  = seed ? seed.name
+                     : rlLabel(id, isKpi ? 'kpi-' : 'status-').replace(/\s+\d{4} \d{2} \d{2}$/, '');
+    var tag   = seed ? '<span class="lr-tag t-status">ACTION</span>'
+                     : (isKpi ? '<span class="lr-tag t-kpi">KPI</span>' : '<span class="lr-tag t-status">LANE</span>');
     var done  = isDone(id);
     var n     = (NOTES[id] || []).length;
     var open  = !!NOTES_OPEN[id];
     return '<div class="lane-row act-row' + (done ? ' done' : '') + '" data-act="' + rlEsc(id) + '">' +
       '<div class="lr-head">' +
         '<input type="checkbox" class="lr-check" data-done="' + rlEsc(id) + '"' + (done ? ' checked' : '') +
-          ' aria-label="Mark done: ' + rlEsc(name) + '">' +
-        tag + '<span class="lr-name">' + rlEsc(name) + '</span>' +
+          ' aria-label="Mark done: ' + rlEsc(name.replace(/&[a-z#0-9]+;/gi, '')) + '">' +
+        tag + '<span class="lr-name">' + (seed ? name : rlEsc(name)) + '</span>' +
         '<button type="button" class="lr-notebtn' + (n ? ' has' : '') + '" data-notes="' + rlEsc(id) + '">Notes' + (n ? ' (' + n + ')' : '') + '</button>' +
       '</div>' +
       '<div class="lr-body">' +
-        '<div class="lr-next">' + rlEsc(value) + '</div>' +
+        (seed ? seed.html : '<div class="lr-next">' + rlEsc(value) + '</div>') +
         '<div class="lr-notes" data-noteswrap="' + rlEsc(id) + '"' + (open ? '' : ' hidden') + '>' + (open ? notesHtml(id) : '') + '</div>' +
       '</div></div>';
   }
@@ -1538,17 +1556,16 @@
     return false;
   }
 
-  function renderRevLanes(){
-    if (noteEditInProgress()){ renderPending = true; return; }
-    renderPending = false;
-
-    var host      = document.getElementById('revlanes-body');
-    var todayHost = document.getElementById('todayact-body');
-    var today     = dkey(new Date());
-
+  // Single source for every dated row on this page: the board's own
+  // status-/kpi- rows that end in a date, plus the seeded rows above. Both the
+  // rendering and the "N of M done" counter read from here, so they can never
+  // disagree.
+  function collectActs(){
     var undatedStatus = [], undatedKpi = [], byDay = {};
     for (var k in state){
       if (!Object.prototype.hasOwnProperty.call(state, k)) continue;
+      if (SEED_BY_ID[k]) continue;                    // seeded rows are added below
+      if (k.indexOf('done-') === 0) continue;         // tick flags are not rows
       var val = state[k];
       if (val == null || String(val).indexOf('superseded-by-per-channel-rows') === 0) continue; // hide tombstones
       var kind = (k.indexOf('status-') === 0) ? 'status' : (k.indexOf('kpi-') === 0 ? 'kpi' : null);
@@ -1558,41 +1575,65 @@
       else if (kind === 'status') undatedStatus.push(k);
       else undatedKpi.push(k);
     }
+    SEEDS.forEach(function(sd){
+      (byDay[sd.date] = byDay[sd.date] || []).push({ id: sd.id, v: '', kind: 'status', seeded: true });
+    });
     undatedStatus.sort(); undatedKpi.sort();
+    return { undatedStatus: undatedStatus, undatedKpi: undatedKpi, byDay: byDay };
+  }
+
+  function renderRevLanes(){
+    if (noteEditInProgress()){ renderPending = true; return; }
+    renderPending = false;
+
+    var host      = document.getElementById('revlanes-body');
+    var todayHost = document.getElementById('todayact-body');
+    var today     = dkey(new Date());
+
+    var c = collectActs();
+    var undatedStatus = c.undatedStatus, undatedKpi = c.undatedKpi, byDay = c.byDay;
     function byId(a, b){ return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0); }
 
-    // ---- TODAY, at the top of the page ----
-    var mine = (byDay[today] || []).slice().sort(byId);
+    // ---- ONE dated block: Today, then Coming up, then Earlier ----
+    // Merged 2026-08-19. Until today the dated rows rendered in two places (a
+    // today-only box up here and a second grouped copy inside Revenue lanes)
+    // and a third hand-written panel sat between them. Everything dated now
+    // renders exactly once, here. Revenue lanes below keeps only the undated
+    // switches and KPIs, which is what it was for before the duplication.
+    var mine  = (byDay[today] || []).slice().sort(byId);
+    var dates = Object.keys(byDay).sort();
     if (todayHost){
       var doneN = mine.filter(function(r){ return isDone(r.id); }).length;
       var dEl = document.getElementById('taDate'), cEl = document.getElementById('taCount');
       if (dEl) dEl.textContent = prettyDate(today);
       if (cEl) cEl.textContent = mine.length ? (doneN + ' of ' + mine.length + ' done') : '';
-      todayHost.innerHTML = mine.length
-        ? mine.map(function(r){ return rlActRow(r.id, r.v, r.kind); }).join('')
-        : '<div class="ta-empty">Nothing dated ' + rlEsc(prettyDate(today)) + ' is on the board yet. Actions show up here the moment they are written to the money map, and the count above tracks them.</div>';
+
+      var futureD = dates.filter(function(d){ return d > today; });
+      var pastD   = dates.filter(function(d){ return d < today; }).reverse();
+      var orderD  = (byDay[today] ? [today] : []).concat(futureD, pastD);
+      var thtml   = '';
+      if (!mine.length){
+        thtml += '<div class="ta-empty">Nothing dated ' + rlEsc(prettyDate(today)) + ' is on the board yet. Actions show up here the moment they are written to the money map, and the count above tracks them.</div>';
+      }
+      orderD.forEach(function(d){
+        var rows = byDay[d].slice().sort(byId);
+        var dn = rows.filter(function(r){ return isDone(r.id); }).length;
+        var lbl = (d === today) ? ('Today &middot; ' + prettyDate(d))
+                : (d > today)   ? ('Coming up &middot; ' + prettyDate(d))
+                                : ('Earlier &middot; ' + prettyDate(d));
+        thtml += '<div class="rl-group-h" data-base="' + rlEsc(lbl.replace(/&middot;/g, '·')) + '">' + lbl + ' &middot; ' + dn + ' of ' + rows.length + ' done</div>';
+        thtml += rows.map(function(r){ return rlActRow(r.id, r.v, r.kind); }).join('');
+      });
+      todayHost.innerHTML = thtml;
     }
 
-    // ---- everything, grouped, below ----
+    // ---- undated switches + KPIs, below ----
     if (!host) return;
-    var dates = Object.keys(byDay).sort();
     if (!undatedStatus.length && !undatedKpi.length && !dates.length){
       host.innerHTML = '<div class="rl-empty">No lanes loaded yet. If this persists, the board is offline.</div>';
       return;
     }
-    var future = dates.filter(function(d){ return d > today; });
-    var past   = dates.filter(function(d){ return d < today; }).reverse();
-    var order  = (byDay[today] ? [today] : []).concat(future, past);
     var html = '';
-    order.forEach(function(d){
-      var rows = byDay[d].slice().sort(byId);
-      var dn = rows.filter(function(r){ return isDone(r.id); }).length;
-      var lbl = (d === today) ? ('Today &middot; ' + prettyDate(d))
-              : (d > today)   ? ('Coming up &middot; ' + prettyDate(d))
-                              : ('Earlier &middot; ' + prettyDate(d));
-      html += '<div class="rl-group-h">' + lbl + ' &middot; ' + dn + ' of ' + rows.length + ' done</div>';
-      html += rows.map(function(r){ return rlActRow(r.id, r.v, r.kind); }).join('');
-    });
     if (undatedStatus.length){
       html += '<div class="rl-group-h">Motion switches (' + undatedStatus.length + ')</div>';
       html += undatedStatus.map(function(k){ return rlRow(k, state[k], 'status'); }).join('');
@@ -1603,7 +1644,9 @@
     }
     host.innerHTML = html;
 
-    registerNoteItems(mine.map(function(r){ return r.id; }));
+    var allDated = [];
+    dates.forEach(function(d){ byDay[d].forEach(function(r){ allDated.push(r.id); }); });
+    registerNoteItems(allDated);
   }
   window.__y0_renderRevLanes = renderRevLanes;
 
@@ -1621,17 +1664,27 @@
   window.__y0_applyDone = applyDone;
 
   function updateActCounts(){
-    var today = dkey(new Date()), total = 0, done = 0;
-    for (var k in state){
-      if (!Object.prototype.hasOwnProperty.call(state, k)) continue;
-      if (k.indexOf('status-') !== 0 && k.indexOf('kpi-') !== 0) continue;
-      if (itemDate(k) !== today) continue;
-      var v = state[k];
-      if (v == null || String(v).indexOf('superseded-by-per-channel-rows') === 0) continue;
-      total++; if (isDone(k)) done++;
-    }
+    var today = dkey(new Date());
+    var rows = collectActs().byDay[today] || [];
+    var done = rows.filter(function(r){ return isDone(r.id); }).length;
     var cEl = document.getElementById('taCount');
-    if (cEl) cEl.textContent = total ? (done + ' of ' + total + ' done') : '';
+    if (cEl) cEl.textContent = rows.length ? (done + ' of ' + rows.length + ' done') : '';
+    refreshGroupCounts();
+  }
+
+  // Keep each date header's "n of m done" honest after a tick, without a full
+  // re-render (a re-render would blow away a half-typed note).
+  function refreshGroupCounts(){
+    var heads = document.querySelectorAll('#todayact-body .rl-group-h[data-base]');
+    Array.prototype.forEach.call(heads, function(h){
+      var total = 0, dn = 0, n = h.nextElementSibling;
+      while (n && !n.classList.contains('rl-group-h')){
+        if (n.classList.contains('act-row')){ total++; if (n.classList.contains('done')) dn++; }
+        n = n.nextElementSibling;
+      }
+      if (!total) return;
+      h.textContent = h.getAttribute('data-base') + ' · ' + dn + ' of ' + total + ' done';
+    });
   }
 
   // ---- one delegated listener each, so dynamically rendered rows keep working
