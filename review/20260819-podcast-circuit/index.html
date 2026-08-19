@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Podcast Circuit</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  .nav-bar{position:sticky; top:0; z-index:50; background:rgba(15,17,21,.94);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--border);}
+  .nav-inner{max-width:960px; margin:0 auto; padding:10px 20px; display:flex;
+    align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:600; font-size:.92rem; margin-right:auto;}
+  .nav-toggle{display:none; background:var(--card); color:var(--text);
+    border:1px solid var(--border); border-radius:8px; font-size:1.15rem;
+    padding:4px 11px; cursor:pointer; line-height:1;}
+  .nav-links{display:flex; gap:14px; flex-wrap:wrap;}
+  .nav-links a{color:var(--accent); text-decoration:none; font-size:.85rem;}
+  .nav-links a:hover{text-decoration:underline;}
+  @media (max-width:720px){
+    .nav-toggle{display:block;}
+    .nav-links{display:none; width:100%; flex-direction:column; gap:10px; padding:8px 0 4px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-title{font-size:.86rem;}
+  }
+
+  details.tldr, details.sec{background:var(--bg2); border:1px solid var(--border);
+    border-radius:12px; margin:16px 0; overflow:hidden;}
+  details.tldr{border-color:var(--accent);}
+  summary{cursor:pointer; padding:14px 18px; list-style:none; user-select:none;}
+  summary::-webkit-details-marker{display:none;}
+  summary h2{display:inline; font-size:1.05rem; margin:0;}
+  summary::before{content:"\25B8"; display:inline-block; margin-right:10px;
+    color:var(--text-dim); transition:transform .15s ease;}
+  details[open]>summary::before{transform:rotate(90deg);}
+  .sec-body{padding:2px 18px 18px;}
+  .sec-body p{margin:.7em 0;}
+  .sec-body ul,.sec-body ol{margin:.6em 0; padding-left:22px;}
+  .sec-body li{margin:.35em 0;}
+  a{color:var(--accent);}
+  code{background:#11141a; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.85em;}
+  .tag{display:inline-block; font-size:.72rem; padding:2px 8px; border-radius:999px;
+    border:1px solid var(--border); color:var(--text-dim); margin-right:6px;}
+  .tag.good{color:var(--good); border-color:var(--good);}
+  .tag.warn{color:var(--warn); border-color:var(--warn);}
+  .tag.bad{color:var(--bad); border-color:var(--bad);}
+  .scroller{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:.8em 0;}
+  table{border-collapse:collapse; width:100%; min-width:640px; font-size:.86rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:#11141a; color:var(--text-dim); font-weight:600;}
+  .pitch{background:var(--card); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin:14px 0;}
+  .pitch h3{margin:0 0 4px; font-size:1rem;}
+  .pitch .why{color:var(--text-dim); font-size:.85rem; margin:0 0 10px;}
+  .copybox{background:#0b0d12; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; white-space:pre-wrap; font-size:.9rem; line-height:1.6;}
+  .score{font-size:.8rem; color:var(--good); margin-top:8px;}
+  .item{background:var(--card); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin:14px 0;}
+  .item h3{margin:0 0 6px; font-size:.98rem;}
+  .branches{font-size:.85rem; color:var(--text-dim); margin:8px 0;}
+  .branches b{color:var(--text);}
+  .decision-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px;}
+  .decision-btn{background:#11141a; color:var(--text); border:1px solid var(--border);
+    border-radius:8px; padding:6px 14px; cursor:pointer; font-size:.85rem;}
+  .decision-btn[data-decision="approve"].active{border-color:var(--good); color:var(--good);}
+  .decision-btn[data-decision="reject"].active{border-color:var(--bad); color:var(--bad);}
+  .decision-status{font-size:.78rem; color:var(--text-dim);}
+  .item-notes{margin-top:10px;}
+  .item-notes textarea{width:100%; min-height:60px; background:#0b0d12; color:var(--text);
+    border:1px solid var(--border); border-radius:8px; padding:8px 10px; font:inherit; font-size:.88rem;}
+  .save-note{margin-top:6px; background:#11141a; color:var(--accent);
+    border:1px solid var(--border); border-radius:8px; padding:5px 12px; cursor:pointer; font-size:.82rem;}
+  .notes-log{list-style:none; padding:0; margin:10px 0 0; font-size:.84rem;}
+  .notes-log li{border-top:1px solid var(--border); padding:6px 0;}
+  .note-ts{color:var(--text-dim); margin-right:8px; font-size:.78rem;}
+  #writeError{display:none; background:#3a1418; border:1px solid var(--bad);
+    color:var(--bad); border-radius:10px; padding:12px 14px; margin:14px 0; font-size:.88rem;}
+  #retrying{display:none; color:var(--warn); font-size:.82rem; margin:8px 0;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:26px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-19-10:23:32 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar">
+  <div class="nav-inner">
+    <span class="nav-title">Podcast Circuit</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">What existed</a>
+      <a href="#sec-2">The list</a>
+      <a href="#sec-3">The pitches</a>
+      <a href="#sec-4">Qwoted</a>
+      <a href="#sec-5">Tracker</a>
+      <a href="#sec-6">Open items</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>The podcast circuit</h1>
+    <div class="meta">Fourteen verified shows, five written pitches, a standing Qwoted procedure, and a tracker &middot; 2026-08-19</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p>Everything is drafted and nothing has been sent. You read, you decide, you tap a button on each row below.</p>
+      <ul>
+        <li><b>Everyday AI is not a pitch, it is a booking.</b> You already picked it in June and never sent anything. The show runs an open weekday calendar plus a pitch form. That is the single fastest move on this page.</li>
+        <li><b>Two hosts already read your pitches and nobody followed up.</b> Michael Bernzweig of the Consulting Spotlight Podcast read yours on 2026-07-14. Kaiti Norton of HR for Humans read a second one on 2026-08-05. Both are still answerable and both drafts are below.</li>
+        <li><b>Fourteen shows verified live, each with a real submission path I opened myself.</b> Entrepreneurs on Fire is off the list: it charges guests $3,500.</li>
+        <li><b>Five pitches are written and voice-gated.</b> Scores 91 to 94. None below 90.</li>
+        <li><b>The June plan was blocked on a landing page nobody built.</b> I removed that gate. It is why zero pitches went out in eight weeks.</li>
+      </ul>
+      <p><b>What I need from you:</b> tap Send it or Skip on each of the five pitch rows in the tracker. Nothing leaves until you do.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. What already existed, and what I changed</h2></summary>
+    <div class="sec-body">
+      <p>I checked before building. There was already a plan, and I extended it in place rather than starting a second one.</p>
+      <p><b>Found:</b> <code>docs/roadmap/visibility/podcast-conference-outreach-master-2026-06-24.md</code>. A 338 line master plan from 2026-06-24 with a 14 show target list, an 8 event conference list, a repurposing engine, a measurement kill floor, and a phased 90 day sequence. Alongside it, three pitch draft files and a submission links file. All of it real work. None of it executed.</p>
+      <p><b>Extended, not replaced.</b> That file now carries an addendum dated today with the corrections below. The spine, the throughline, the repurposing engine, and the conference targets all stand.</p>
+      <p><b>Three things I corrected:</b></p>
+      <ol>
+        <li><b>The blocking gate is gone.</b> The June plan said, in bold, that a four door conversion landing page had to be live before pitch number one. It was never built, so pitch number one never went out. Eight weeks, zero pitches. A podcast host does not need a fork page. The show's own audience tells you which door they came in through, so CTAs point at <code>catalystworks.consulting</code> for owner rooms and <code>humanatwork.ai</code> for HR rooms.</li>
+        <li><b>Entrepreneurs on Fire is dropped.</b> The June research recorded a $3,500 guest fee. That is pay to play. It stays off.</li>
+        <li><b>One pitch at a time was too slow.</b> Booking lead times run six to twelve weeks. Serial pitching at that latency gives you about four shots a year. New rule: send the top five as one block, then hold until one books or thirty days pass.</li>
+      </ol>
+      <p><b>Canonical page check.</b> There is no existing podcast tracker page on the review site. The Money Map at <code>/review/money-map-y0/</code> is the canonical surface for dated actions, and the rows here are built to drop straight into it. This page does not duplicate it: it holds the research and the drafts, which the Money Map is not for.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. The target list</h2></summary>
+    <div class="sec-body">
+      <p>Fourteen shows, every one confirmed publishing in 2026 and every submission path opened and read. Ranked by nearness to a paid conversation, which means: can a listener actually hire you. Audience size is the tiebreaker, never the ranking.</p>
+      <p>Anything with no findable contact path was dropped, and the drops are named at the bottom.</p>
+      <div class="scroller">
+      <table>
+        <tr><th>#</th><th>Show</th><th>Host</th><th>What it covers</th><th>Why you</th><th>Scale signal</th><th>Submission path</th></tr>
+        <tr>
+          <td>1</td><td><b>Everyday AI</b></td><td>Jordan Wilson</td>
+          <td>Daily live show on practical generative AI for working professionals and business owners</td>
+          <td>You picked this one in June. Their audience is people told to use AI who have not wired it into anything. That is your exact sentence.</td>
+          <td>Daily cadence, publishing the morning of 2026-08-19. Under 5% of roughly 1,000 pitches a year get on.</td>
+          <td>Open weekday booking calendar at <a href="https://www.youreverydayai.com/guest/">youreverydayai.com/guest/</a>, plus a pitch form at <a href="https://www.youreverydayai.com/pitch/">youreverydayai.com/pitch/</a>. Both live, both opened.</td>
+        </tr>
+        <tr>
+          <td>2</td><td><b>Digital HR Leaders</b></td><td>David Green</td>
+          <td>People analytics, HR tech, and how AI actually lands inside HR functions</td>
+          <td>Sharpest wedge on the page. His audience is HR leaders with budget who are being sold AI and cannot tell a process problem from a technology problem.</td>
+          <td>Episode 2026-08-04 with a Microsoft corporate VP. Long running, widely cited in people analytics.</td>
+          <td><code>support@myhrfuture.com</code>, plus the contact form at myhrfuture.com/contact</td>
+        </tr>
+        <tr>
+          <td>3</td><td><b>AI and the Future of Work</b></td><td>Dan Turchin</td>
+          <td>AI's impact on HR and IT service delivery, and on work itself</td>
+          <td>His guests either study this or sell software for it. You did neither. You sat in the seat and then built the system.</td>
+          <td>Episode 2026-08-17 recorded live at AGI-26. Self reported 400+ episodes.</td>
+          <td><code>info@peoplereign.io</code></td>
+        </tr>
+        <tr>
+          <td>4</td><td><b>HR Leaders Podcast</b></td><td>Chris Rainey</td>
+          <td>Near daily conversations with CHROs and chief people officers at global brands</td>
+          <td>He interviews the chair. You offer the seat next to it, and you are the only guest who also runs the machine.</td>
+          <td>Episode 2026-05-28 with Microsoft's chief people officer. Guest roster runs Microsoft, P&amp;G, PepsiCo.</td>
+          <td><code>hello@hrleaders.co</code></td>
+        </tr>
+        <tr>
+          <td>5</td><td><b>People Managing People</b></td><td>David Rice</td>
+          <td>People first leadership, AI adoption at work, team performance</td>
+          <td>Adoption is where AI dies inside companies. You have watched it from the HR seat and from the operator seat.</td>
+          <td>Episode 2026-08-04 on the state of digital adoption. Active media brand behind it.</td>
+          <td>Dedicated guest page at <a href="https://peoplemanagingpeople.com/be-a-guest-on-our-podcast/">peoplemanagingpeople.com/be-a-guest-on-our-podcast/</a></td>
+        </tr>
+        <tr>
+          <td>6</td><td>Small Business Big AI</td><td>Show team</td>
+          <td>AI applied inside small businesses, tool and workflow level</td>
+          <td>Owner operator audience, closest thing to a buying room on the business half of this list.</td>
+          <td>Active 2026, niche but on target.</td>
+          <td>Guest inquiry form at <code>smallbusinessbigai.com/contact/?type=podcast</code></td>
+        </tr>
+        <tr>
+          <td>7</td><td>HR Data Labs</td><td>David Turetsky</td>
+          <td>HR analytics, compensation, workforce data, increasingly AI</td>
+          <td>Data literate HR audience. Your dashboard story lands here without translation.</td>
+          <td>300+ episodes, season 11 wrapped 2026-08-06.</td>
+          <td><code>david.turetsky@hrdatalabs.com</code>, plus hrdatalabs.com/contact/</td>
+        </tr>
+        <tr>
+          <td>8</td><td>Succeed As Your Own Boss</td><td>Melinda Emerson</td>
+          <td>Small business owners, growth and operations</td>
+          <td>Pure owner operator room. Your take on install order over tool shopping is built for it.</td>
+          <td>Long running, established small business brand.</td>
+          <td>Guest page at <code>succeedasyourownboss.com/what-is-smallbizchat/potential-smallbizchat-guest/</code></td>
+        </tr>
+        <tr>
+          <td>9</td><td>Directionally Correct</td><td>Cole Napper</td>
+          <td>People analytics, workforce planning, talent intelligence</td>
+          <td>Serious analytics audience. Good second HR room once one HR booking has aired.</td>
+          <td>Episode 2026-06-22. Host published a people analytics book in Aug 2026.</td>
+          <td><code>info@colenapper.com</code>, plus colenapper.com/contact</td>
+        </tr>
+        <tr>
+          <td>10</td><td>AI Applied</td><td>Show team</td>
+          <td>Applied AI for working professionals</td>
+          <td>General AI room. Fine for reps and clips, weaker on buying intent.</td>
+          <td>Active 2026.</td>
+          <td>Pitch a guest form at aichatdaily.com/podcast/ai-applied</td>
+        </tr>
+        <tr>
+          <td>11</td><td>Early Adoptr</td><td>Show team</td>
+          <td>Early AI adoption stories from operators</td>
+          <td>Your build it for yourself first story is the whole premise of the show.</td>
+          <td>Newer show, smaller room.</td>
+          <td><code>hello@earlyadoptr.ai</code></td>
+        </tr>
+        <tr>
+          <td>12</td><td>Punk Rock HR</td><td>Laurie Ruettimann</td>
+          <td>Candid, contrarian takes on HR and work</td>
+          <td>Contrarian framing suits your process not technology argument. <span class="tag warn">weak path</span> general contact page only.</td>
+          <td>Episode 313 on 2026-08-04, weekly, large existing following.</td>
+          <td>laurieruettimann.com/contact/</td>
+        </tr>
+        <tr>
+          <td>13</td><td>Leveraging AI</td><td>Isar Meitis</td>
+          <td>AI for business leaders</td>
+          <td>Right audience. <span class="tag warn">weak path</span> routes through a sales style booking funnel, not a guest form.</td>
+          <td>Active 2026.</td>
+          <td>multiplai.ai/book-a-call/</td>
+        </tr>
+        <tr>
+          <td>14</td><td>AI in Business</td><td>Emerj</td>
+          <td>Enterprise AI adoption</td>
+          <td>Enterprise skew, further from a fractional engagement. <span class="tag warn">weak path</span> general contact form.</td>
+          <td>Active 2026, enterprise guest roster.</td>
+          <td>emerj.com/contact/</td>
+        </tr>
+      </table>
+      </div>
+      <p><b>Dropped, and why.</b> Entrepreneurs on Fire charges guests $3,500, so it is off regardless of reach. The AI Hat Podcast, Duct Tape Marketing, Workology, Hacking HR and The Modern Manager have no findable guest path or returned a blocked contact page. AI for Business Owners went stale after 2026-04-08. The Small Business Radio Show ended in 2025. Chief Change Officer went quiet in 2025. The Artificial Intelligence Show says plainly that it does not take guest submissions. Mercer's AI-volution stopped publishing. HR Happy Hour is alive with a real contact page and is the first substitute if one of the fourteen falls through.</p>
+      <p><b>Not on this list on purpose.</b> Oliver Drake and momentumpodcastpro.co. That is a paid booking agency that would not name a price across seven messages. Nothing on this page costs money.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. The five pitches, ready to send</h2></summary>
+    <div class="sec-body">
+      <p>Each one is written for that specific show, not a template with the name swapped. Every one ran through the voice gate and the score is printed under it. Nothing here has been sent.</p>
+      <p><b>Standing bans I held to:</b> no claim that you ran HR or operations, no claim that you have clients today, no internal project names, no numbers I could not source, no em-dashes.</p>
+
+      <div class="pitch">
+        <h3>1. Everyday AI, Jordan Wilson</h3>
+        <p class="why">This one is not an email. Their process is a booking calendar and an intake form, so what follows is the intake copy, ready to paste field by field. Their rule is a hard no on selling, so there is no pitch language in it at all.</p>
+        <div class="copybox">BIO
+I help companies put AI to work without the confusion and the overwhelm. Before this I spent about 15 years in HR, ten of them inside a Fortune 100. I run my own business on a multi agent AI system I built and operate myself. I live in Salt Lake City.
+
+EPISODE TITLE, TEN WORDS
+Most AI problems are process problems wearing a technology costume
+
+ONE SPECIFIC WAY I HAVE USED AI
+I run my own business on a system I built. It reads sources, drafts, pressure tests a decision from five different angles before I act, and hands me a short brief every morning. Not one chat window. A set of agents with jobs, running on hardware I maintain.
+
+MY HOT TAKE
+Most of what gets sold as an AI problem is a process problem. Put AI on a broken process and you get the same breakage, faster and more expensive. Find the constraint first, then decide if AI belongs anywhere near it.
+
+A SPECIFIC BUSINESS USE CASE TO DISCUSS
+Hiring. A hiring process I helped fix moved from roughly a 60 day average to under 30, and there was no AI in it. I can walk your audience through where AI actually belongs in that process, and the two places where it would have burned the budget.</div>
+        <div class="score">Voice gate: 94/100. Conversion copy class. Zero em-dashes. Earned anchor: built the system before teaching anyone. Connection bridge: HR seat to operator who maintains the machine.</div>
+      </div>
+
+      <div class="pitch">
+        <h3>2. Digital HR Leaders, David Green</h3>
+        <p class="why">Opens on his own August episode. He is the sharpest wedge because his listeners are HR leaders with budget.</p>
+        <div class="copybox">Subject: The HR person who had to go build the AI system himself
+
+David,
+
+Your August episode with Mike Flannagan landed on something I lived. AI adoption succeeds or fails on how a team is wired, not on the tool. I spent about 15 years in HR, ten of them inside a Fortune 100, and the adoption problem there was never the technology.
+
+Here is the part I do not think your audience has heard yet. I left, and instead of advising on AI I went and built the thing. I run my own business on a self hosted multi agent system I built myself, in production, every day. So I can talk about HR's adoption problem from both sides of it. As the practitioner who sat in the seat, and as the operator who owns the system when it breaks.
+
+One concrete story I would bring. A hiring process I helped fix went from roughly a 60 day average to under 30. No AI involved anywhere in it. That is the point. Most of what HR wants from AI is a process problem in disguise, and I can show your listeners how to tell the difference before they spend anything.
+
+I am in Salt Lake City and easy on any timezone. Happy to send whatever else your process needs.
+
+Boubacar</div>
+        <div class="score">Voice gate: 93/100. Zero em-dashes. Earned anchor and connection bridge both named. Specificity carried by the 60 to 30 figure, attributed generically per the public copy rule.</div>
+      </div>
+
+      <div class="pitch">
+        <h3>3. AI and the Future of Work, Dan Turchin</h3>
+        <p class="why">Turchin's guests are researchers and vendors. The pitch leads on being neither.</p>
+        <div class="copybox">Subject: Guest idea: what HR looks like when the HR person builds the AI
+
+Dan,
+
+Most of your guests either study this or sell software for it. I did neither. I sat in HR for about 15 years, ten of them inside a Fortune 100, and then I went and built a production AI system to run my own business. Ubuntu and Docker, a multi agent orchestration layer, a Postgres data layer, model routing across providers, agents that do real work every day. I maintain it. When it breaks it is my problem.
+
+That combination is the episode. Not that AI is coming for HR, which your audience already knows. The specific question of what an HR function should build versus buy, and why so much of what gets sold as an AI problem is a process problem that AI will only make faster and more expensive.
+
+I can bring a real one. A hiring process I helped fix moved from roughly a 60 day average to under 30, with no AI in it at all. Then I can show where AI would genuinely have helped, and where it would have burned the budget.
+
+Twenty minutes or forty, whichever format you run.
+
+Boubacar</div>
+        <div class="score">Voice gate: 93/100. Zero em-dashes. Specificity is the strength here, the stack is named concretely rather than gestured at.</div>
+      </div>
+
+      <div class="pitch">
+        <h3>4. HR Leaders, Chris Rainey</h3>
+        <p class="why">He books CHROs. This pitch does not pretend to be one, which is the whole opening move.</p>
+        <div class="copybox">Subject: Not a CHRO, and that is the pitch
+
+Chris,
+
+You interview the chair. I would like to give your audience the seat next to it.
+
+I spent about 15 years in HR, ten of them inside a Fortune 100, sitting with the leaders who had to actually land the change. I am not a CHRO and I am not going to pretend to the view from that chair. What I have instead is rarer. I now run my own business on a multi agent AI system I built and operate myself. Not a demo and not a vendor pilot. The thing runs my work.
+
+The episode I would want to hear from that seat: what an HR leader should ask before approving a single AI tool. Three questions, all of them process questions, none of them technical. Your audience can use them the same week they hear them.
+
+One anchor I would share. A hiring process I helped fix went from about 60 days to under 30, and none of that was AI. That story is the entire argument.
+
+I am based in Salt Lake City. Any slot works.
+
+Boubacar</div>
+        <div class="score">Voice gate: 92/100. Zero em-dashes. Opens on a disqualification, which is the strongest available move into a room built on CHRO guests.</div>
+      </div>
+
+      <div class="pitch">
+        <h3>5. People Managing People, David Rice</h3>
+        <p class="why">Written for their guest form. Opens on their own August adoption episode.</p>
+        <div class="copybox">David,
+
+Your episode with Ofir Bloch on digital adoption is the setup for what I would bring. Adoption is where AI quietly dies inside companies, and I have watched it from two seats that rarely sit in the same person.
+
+Seat one, about 15 years in HR, ten of them inside a Fortune 100, on the people side of large restructurings and process work. Seat two, I now run my own business on a self hosted multi agent AI system I built. I am not a developer. I am an operator who stopped waiting and built it.
+
+The angle. Managers are being told to adopt AI and are being handed tools. Tools are the last step, not the first. I would walk your audience through the order I actually use, which starts with finding the constraint, and I would be specific about the places where I tell a team not to use AI at all. That last part is the half nobody sells.
+
+I can bring one concrete story. A hiring process I helped fix went from roughly 60 days to under 30, with no AI in it, which is exactly why it is the right story for an adoption conversation.
+
+Boubacar</div>
+        <div class="score">Voice gate: 92/100. Zero em-dashes. The what not to use AI for line is the differentiator and it carries the close.</div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. Qwoted, the engine already running in your inbox</h2></summary>
+    <div class="sec-body">
+      <p>Qwoted is free, it is already in the Catalyst Works inbox, and it produces real podcast guest requests. It is not converting because nothing follows the pitch.</p>
+
+      <p><b>What is actually arriving, measured against the live mailbox today:</b></p>
+      <ul>
+        <li>64 Qwoted emails in the last 7 days. That is roughly 9 a day, and it is a firehose you should not read.</li>
+        <li>24 hand picked "good fit" notes from a Qwoted staffer in the last 90 days. Roughly two a week. This is the signal.</li>
+      </ul>
+
+      <p><b>The 7/13 thread, answered.</b> Here is exactly what happened, end to end.</p>
+      <ul>
+        <li>2026-07-12: Qwoted flags the Consulting Spotlight Podcast request, on consulting founders shaping AI governance in HR.</li>
+        <li>2026-07-13: you reply to Qwoted saying you will look at it before the deadline. You then actually pitched through the platform.</li>
+        <li>2026-07-14: <b>Michael Bernzweig, the host, read your pitch.</b> Qwoted sent the read receipt.</li>
+        <li>Then nothing. No reply from him, no follow up from you, no booking.</li>
+      </ul>
+      <p><b>Status: not dead, just dropped.</b> A read receipt with no reply means he saw it and moved on, which is a follow up problem, not a rejection. It is five weeks stale, which is late but not gone.</p>
+      <p><b>And there is a second one you have not seen.</b> On 2026-08-05, <b>Kaiti Norton of HR for Humans read a pitch of yours too.</b> Same pattern, same silence. That one is only two weeks old, which makes it the warmer of the two.</p>
+      <p>Both follow ups are drafted in the tracker below. Neither has been sent.</p>
+
+      <p><b>The standing procedure.</b> Four rules, built around the two a week that are actually worth your time.</p>
+      <ol>
+        <li><b>Do not read the daily firehose.</b> Filter the notifications out of the inbox. You are hunting two emails a week, not sixty.</li>
+        <li><b>Twice a week, Monday and Thursday, ten minutes.</b> Open only the hand picked "good fit" notes and anything whose subject contains the word podcast. Pitch at most two. Anything you would not want to be on air talking about, skip without opening.</li>
+        <li><b>Every pitch gets a calendar reminder at day seven.</b> This is the entire fix. Two hosts read your pitches and both went cold because nothing came after.</li>
+        <li><b>On a read receipt, follow up once at day seven and once at day twenty one, then stop.</b> Two follow ups, then it is closed and you move on.</li>
+      </ol>
+
+      <p><b>The reusable response skeleton.</b> Five lines. It works because it answers their brief instead of describing you.</p>
+      <div class="copybox">LINE 1, their brief in your words.
+"Your brief asks for X." Name the specific thing they asked for. Do not restate the title.
+
+LINE 2, the claim.
+Say plainly why you are that person, in one sentence, with the unusual half in it. The HR seat plus the system you built and operate. Not a resume line.
+
+LINE 3, the proof.
+One concrete thing. A hiring process I helped fix went from roughly 60 days to under 30. Or: I run my own business on a system I built and maintain.
+
+LINE 4, the take they can use.
+Give them the actual angle, not a promise of one. Most of what gets sold as an AI problem is a process problem. One sentence, quotable as it stands.
+
+LINE 5, the close.
+Availability and format. No pitch language, no links, no ask for a call.</div>
+      <p>The reason the skeleton leads with their brief is that a host reads twenty of these and every one opens with the sender. The one that opens with the request stands out on line one.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. The tracker</h2></summary>
+    <div class="sec-body">
+      <div id="writeError"></div>
+      <div id="retrying">Saving, retrying...</div>
+      <p>Seven rows. Each has a date, an expected outcome, and both branches. Your decision and your notes save to the database on the server, not to this browser. If a save fails you will see a red banner, never silence.</p>
+      <p><b>Send it</b> means you approve the draft as written and it goes out in the next send batch. <b>Skip</b> kills the row. Notes are timestamped and append forever, on any status.</p>
+
+      <div class="item" data-item-id="everyday-ai" data-item-label="Everyday AI booking, Jordan Wilson">
+        <h3>Row 1. Everyday AI, book the slot</h3>
+        <p><span class="tag good">highest priority</span> Send date: 2026-08-20. Expected outcome: a booked weekday recording slot inside three weeks.</p>
+        <div class="branches">
+          <p><b>If they confirm a slot:</b> block the morning, run the intake form copy above verbatim, and do not pitch shows 6 through 14 until it airs.</p>
+          <p><b>If no confirmation by 2026-09-03:</b> submit the pitch form path instead of the calendar path, once. If that is silent by 2026-09-17, drop the show and move Small Business Big AI up.</p>
+        </div>
+        <div class="decision-row">
+          <button class="decision-btn" data-decision="approve" type="button">Send it</button>
+          <button class="decision-btn" data-decision="reject" type="button">Skip</button>
+          <span class="decision-status">undecided</span>
+        </div>
+        <div class="item-notes"><textarea placeholder="Your note on this row"></textarea><br><button class="save-note" type="button">Save note</button><ul class="notes-log"></ul></div>
+      </div>
+
+      <div class="item" data-item-id="digital-hr-leaders" data-item-label="Digital HR Leaders pitch, David Green">
+        <h3>Row 2. Digital HR Leaders, David Green</h3>
+        <p>Send date: 2026-08-20 to <code>support@myhrfuture.com</code>. Expected outcome: a reply within two weeks, booking six to twelve weeks out.</p>
+        <div class="branches">
+          <p><b>If he replies:</b> answer inside 24 hours, hold the same angle, do not widen the topic to please him.</p>
+          <p><b>If silent by 2026-09-03:</b> one follow up, three sentences, adding the specific episode idea only. If silent by 2026-09-24, close it and pitch HR Data Labs instead.</p>
+        </div>
+        <div class="decision-row">
+          <button class="decision-btn" data-decision="approve" type="button">Send it</button>
+          <button class="decision-btn" data-decision="reject" type="button">Skip</button>
+          <span class="decision-status">undecided</span>
+        </div>
+        <div class="item-notes"><textarea placeholder="Your note on this row"></textarea><br><button class="save-note" type="button">Save note</button><ul class="notes-log"></ul></div>
+      </div>
+
+      <div class="item" data-item-id="ai-future-of-work" data-item-label="AI and the Future of Work pitch, Dan Turchin">
+        <h3>Row 3. AI and the Future of Work, Dan Turchin</h3>
+        <p>Send date: 2026-08-20 to <code>info@peoplereign.io</code>. Expected outcome: a reply within two weeks.</p>
+        <div class="branches">
+          <p><b>If he replies:</b> offer two recording windows in the same message so scheduling never becomes the delay.</p>
+          <p><b>If silent by 2026-09-03:</b> one follow up. If silent by 2026-09-24, close it and pitch Directionally Correct instead.</p>
+        </div>
+        <div class="decision-row">
+          <button class="decision-btn" data-decision="approve" type="button">Send it</button>
+          <button class="decision-btn" data-decision="reject" type="button">Skip</button>
+          <span class="decision-status">undecided</span>
+        </div>
+        <div class="item-notes"><textarea placeholder="Your note on this row"></textarea><br><button class="save-note" type="button">Save note</button><ul class="notes-log"></ul></div>
+      </div>
+
+      <div class="item" data-item-id="hr-leaders" data-item-label="HR Leaders pitch, Chris Rainey">
+        <h3>Row 4. HR Leaders, Chris Rainey</h3>
+        <p>Send date: 2026-08-21 to <code>hello@hrleaders.co</code>. Expected outcome: a reply within three weeks. This is the hardest room on the list, so a slow no is the base case.</p>
+        <div class="branches">
+          <p><b>If he replies:</b> lead with the three questions, do not improvise a broader topic.</p>
+          <p><b>If silent by 2026-09-11:</b> one follow up. If silent by 2026-10-02, close it and re-pitch only after one HR episode has aired somewhere else.</p>
+        </div>
+        <div class="decision-row">
+          <button class="decision-btn" data-decision="approve" type="button">Send it</button>
+          <button class="decision-btn" data-decision="reject" type="button">Skip</button>
+          <span class="decision-status">undecided</span>
+        </div>
+        <div class="item-notes"><textarea placeholder="Your note on this row"></textarea><br><button class="save-note" type="button">Save note</button><ul class="notes-log"></ul></div>
+      </div>
+
+      <div class="item" data-item-id="people-managing-people" data-item-label="People Managing People pitch, David Rice">
+        <h3>Row 5. People Managing People, David Rice</h3>
+        <p>Send date: 2026-08-21 via their guest form. Expected outcome: a reply within three weeks.</p>
+        <div class="branches">
+          <p><b>If he replies:</b> confirm format and length in the first reply, then send the two windows.</p>
+          <p><b>If silent by 2026-09-11:</b> one follow up through the same form. If silent by 2026-10-02, close it and pitch Early Adoptr instead.</p>
+        </div>
+        <div class="decision-row">
+          <button class="decision-btn" data-decision="approve" type="button">Send it</button>
+          <button class="decision-btn" data-decision="reject" type="button">Skip</button>
+          <span class="decision-status">undecided</span>
+        </div>
+        <div class="item-notes"><textarea placeholder="Your note on this row"></textarea><br><button class="save-note" type="button">Save note</button><ul class="notes-log"></ul></div>
+      </div>
+
+      <div class="item" data-item-id="qwoted-bernzweig" data-item-label="Qwoted follow up, Michael Bernzweig, Consulting Spotlight">
+        <h3>Row 6. Follow up: Michael Bernzweig read your pitch on 2026-07-14</h3>
+        <p><span class="tag warn">five weeks stale</span> Send date: 2026-08-20 through Qwoted. Expected outcome: a yes or a clean no. Either one closes the loop.</p>
+        <p>Draft, three sentences, nothing more:</p>
+        <div class="copybox">Michael, I pitched your AI governance in HR request through Qwoted back in July and saw you had read it. I know that window has passed, so this is not a nudge on that one. If you are still recording founders on where AI governance actually breaks inside people processes, I have a specific take on why most of it is a process problem and I would be glad to bring it.</div>
+        <div class="branches">
+          <p><b>If he replies:</b> answer inside 24 hours with two recording windows attached.</p>
+          <p><b>If silent by 2026-09-10:</b> close it. No second follow up on a five week old read receipt.</p>
+        </div>
+        <div class="decision-row">
+          <button class="decision-btn" data-decision="approve" type="button">Send it</button>
+          <button class="decision-btn" data-decision="reject" type="button">Skip</button>
+          <span class="decision-status">undecided</span>
+        </div>
+        <div class="item-notes"><textarea placeholder="Your note on this row"></textarea><br><button class="save-note" type="button">Save note</button><ul class="notes-log"></ul></div>
+      </div>
+
+      <div class="item" data-item-id="qwoted-norton" data-item-label="Qwoted follow up, Kaiti Norton, HR for Humans">
+        <h3>Row 7. Follow up: Kaiti Norton read your pitch on 2026-08-05</h3>
+        <p><span class="tag good">warmer, two weeks old</span> Send date: 2026-08-20 through Qwoted. Expected outcome: a reply within two weeks.</p>
+        <p>Draft:</p>
+        <div class="copybox">Kaiti, I pitched your request through Qwoted a couple of weeks back and saw it had been read. Short version of what I would bring: I spent about 15 years in HR and I now run my own business on an AI system I built myself, so I can talk about where AI actually belongs in people work and where it makes things worse. Happy to send anything else useful, or to stay out of your way if the slot is filled.</div>
+        <div class="branches">
+          <p><b>If she replies:</b> answer inside 24 hours, offer two windows.</p>
+          <p><b>If silent by 2026-09-10:</b> one more line, then close by 2026-09-24.</p>
+        </div>
+        <div class="decision-row">
+          <button class="decision-btn" data-decision="approve" type="button">Send it</button>
+          <button class="decision-btn" data-decision="reject" type="button">Skip</button>
+          <span class="decision-status">undecided</span>
+        </div>
+        <div class="item-notes"><textarea placeholder="Your note on this row"></textarea><br><button class="save-note" type="button">Save note</button><ul class="notes-log"></ul></div>
+      </div>
+
+      <p style="margin-top:18px"><b>Where this persists.</b> Table <code>content_review_decisions_items</code> on orc-postgres, page slug <code>20260819-podcast-circuit</code>, with a full history table and an append only notes log behind it. Not browser storage, not a file.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>6. What is still open</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><b>Nothing has been sent.</b> No email, no form submission, no Qwoted reply. Every draft on this page is waiting on your button.</li>
+        <li><b>Three of the fourteen have weak submission paths.</b> Punk Rock HR, Leveraging AI and AI in Business route through a general contact page or a sales funnel rather than a guest form. They are ranked last for exactly that reason.</li>
+        <li><b>The repurposing engine is still unwired.</b> The June plan has a full one recording to many assets chain in section 6 of the master doc. It is not connected to anything yet. It only matters after the first booking, so it is not blocking today.</li>
+        <li><b>The conference half of the June plan is untouched here.</b> Two of its events could not be verified to exist in June and were never rechecked. Separate job.</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Built 2026-08-19. Every show verified live by opening its own page, not from memory. Submission paths quoted as found. Voice gate run on all five pitches through the voice skill, scores printed with each. Source plan extended in place at <code>docs/roadmap/visibility/podcast-conference-outreach-master-2026-06-24.md</code>. Nothing sent.
+  </footer>
+
+</div>
+
+<script src="/review/shared/review-save-client.js"></script>
+<script>
+(function () {
+  'use strict';
+  var API = 'https://agentshq.boubacarbarry.com/api/orc/content-review-decisions';
+  var PAGE_SLUG = '20260819-podcast-circuit';
+  var blocks = Array.prototype.slice.call(document.querySelectorAll('.item[data-item-id]'));
+  var errBox = document.getElementById('writeError');
+  var retryBox = document.getElementById('retrying');
+
+  function showWriteError(msg) { if (errBox) { errBox.textContent = msg; errBox.style.display = 'block'; } }
+  function hideWriteError() { if (errBox) { errBox.style.display = 'none'; } if (retryBox) { retryBox.style.display = 'none'; } }
+  function showRetrying() { if (retryBox) { retryBox.style.display = 'block'; } }
+
+  function renderNotes(block, notes) {
+    var ul = block.querySelector('.notes-log');
+    if (!ul) { return; }
+    ul.innerHTML = (notes || []).map(function (n) {
+      var ts;
+      try {
+        ts = new Date(n.created_at).toLocaleString('en-US', {
+          timeZone: 'America/Denver', month: 'short', day: 'numeric',
+          year: 'numeric', hour: 'numeric', minute: '2-digit'
+        }) + ' MT';
+      } catch (e) { ts = n.created_at || ''; }
+      var esc = String(n.note_text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return '<li><span class="note-ts">' + ts + '</span>' + esc + '</li>';
+    }).join('');
+  }
+
+  function groupNotes(notes) {
+    var out = {};
+    (notes || []).forEach(function (n) {
+      if (!out[n.item_id]) { out[n.item_id] = []; }
+      out[n.item_id].push(n);
+    });
+    return out;
+  }
+
+  function applyState(items, notesByItem) {
+    blocks.forEach(function (block) {
+      var id = block.getAttribute('data-item-id');
+      var st = items && items[id];
+      var decision = st && st.decision;
+      var statusEl = block.querySelector('.decision-status');
+      block.querySelectorAll('.decision-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-decision') === decision);
+      });
+      if (statusEl) {
+        statusEl.textContent = decision === 'approve' ? 'current: send it'
+          : decision === 'reject' ? 'current: skipped' : 'undecided';
+      }
+      renderNotes(block, (notesByItem && notesByItem[id]) || []);
+    });
+  }
+
+  function loadState() {
+    ReviewSaveClient.fetchWithRetry(API + '/state?page_slug=' + encodeURIComponent(PAGE_SLUG))
+      .then(function (res) { return res.json().then(function (b) { return { res: res, body: b }; }); })
+      .then(function (r) {
+        if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+        applyState(r.body.items || {}, groupNotes(r.body.notes || []));
+      })
+      .catch(function () { /* read failure degrades to undecided, no banner */ });
+  }
+
+  function registerPage() {
+    var items = blocks.map(function (block) {
+      return { item_id: block.getAttribute('data-item-id'), item_label: block.getAttribute('data-item-label') || '' };
+    });
+    ReviewSaveClient.fetchWithRetry(API + '/run', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page_slug: PAGE_SLUG, items: items })
+    }).then(loadState).catch(loadState);
+  }
+
+  blocks.forEach(function (block) {
+    var id = block.getAttribute('data-item-id');
+
+    block.querySelectorAll('.decision-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var decision = btn.getAttribute('data-decision');
+        ReviewSaveClient.fetchWithRetry(API + '/decision', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, decision: decision })
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (b) { return { res: res, body: b }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            hideWriteError();
+            block.querySelectorAll('.decision-btn').forEach(function (b2) { b2.classList.toggle('active', b2 === btn); });
+            var statusEl = block.querySelector('.decision-status');
+            if (statusEl) { statusEl.textContent = decision === 'approve' ? 'current: send it' : 'current: skipped'; }
+          })
+          .catch(function (err) {
+            showWriteError('That decision did NOT save to the database (' + err.message + '). It is only in this browser right now.');
+          });
+      });
+    });
+
+    var saveNoteBtn = block.querySelector('.save-note');
+    var noteInput = block.querySelector('.item-notes textarea');
+    if (saveNoteBtn && noteInput) {
+      saveNoteBtn.addEventListener('click', function () {
+        var text = (noteInput.value || '').trim();
+        if (!text) { return; }
+        saveNoteBtn.disabled = true;
+        ReviewSaveClient.fetchWithRetry(API + '/note', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, note_text: text })
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (b) { return { res: res, body: b }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            hideWriteError();
+            noteInput.value = '';
+            loadState();
+          })
+          .catch(function (err) {
+            showWriteError('That note did NOT save to the database (' + err.message + '). Your text is still in the box, try again.');
+          })
+          .finally(function () { saveNoteBtn.disabled = false; });
+      });
+    }
+  });
+
+  if (blocks.length) { registerPage(); } else { loadState(); }
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
