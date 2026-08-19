@@ -91,6 +91,8 @@
     details.todayact > summary .toggle-hint { margin-left: auto; flex-shrink: 0; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0.2rem 0.5rem; }
     details.todayact > summary .toggle-hint::after { content: "Open"; }
     details.todayact[open] > summary .toggle-hint::after { content: "Close"; }
+    .ta-todayhead { font-size: 0.76rem; line-height: 1.5; color: var(--faint); margin: 0 0 0.6rem; border-left: 3px solid var(--ember-bright); padding-left: 0.55rem; }
+    .ta-todayhead b { color: var(--ember-bright); }
     details.ta-grp { margin: 0 0 0.5rem; }
     details.ta-grp > summary { list-style: none; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.6rem; border: 1px solid var(--line); border-radius: 10px; background: var(--card-2); }
     details.ta-grp > summary::-webkit-details-marker { display: none; }
@@ -511,7 +513,8 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v14 · 2026-08-19-14:27:31 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v15 · 2026-08-19-17:35:01 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -1961,6 +1964,55 @@
     rolled.sort(function(a, b){ return a.rolledFrom < b.rolledFrom ? -1 : (a.rolledFrom > b.rolledFrom ? 1 : (a.id < b.id ? -1 : 1)); });
     return rolled.concat(rows);
   }
+  // ---- TODAY GROUPED BY KIND OF WORK (2026-08-19) -----------------------
+  // His instruction, in his words: "Tasks and items that fit together and are
+  // similar should be put in the same section, all bundled together one after
+  // the other. I'm not jumping back and forth and doing a LinkedIn item and
+  // then jumping over to doing something on PGA and then coming back."
+  //
+  // So today's rows no longer render as one date-ordered pile. They render as
+  // one section per KIND of work, in the order the day actually runs: the asks
+  // first, then the desk work that feeds them, then the visibility work, then
+  // the lanes, then admin, then the close-out. He does one type at a time.
+  //
+  // The groups are DERIVED from the row's own id and text, not hand-assigned,
+  // so a row written tomorrow lands in the right section without anybody
+  // editing this file. Order inside a group is unchanged: rolled-over rows
+  // first, oldest first, exactly as todayRows() already sorts them.
+  //
+  // Nothing about persistence, ticks, notes, rollover or age badges changes.
+  // This is a reordering of the same rows through the same renderer.
+  var ACT_GROUPS = [
+    { key:'outreach', label:'Outreach and calls' },
+    { key:'prep',     label:'Desk work that feeds the outreach' },
+    { key:'linkedin', label:'LinkedIn commenting' },
+    { key:'pga',      label:'Ghostwriting lane' },
+    { key:'content',  label:'Content and posts' },
+    { key:'channels', label:'Channels and warm-up' },
+    { key:'workshop', label:'Workshop and venue' },
+    { key:'admin',    label:'Admin and money' },
+    { key:'close',    label:'End of day' },
+    { key:'other',    label:'Everything else' }
+  ];
+  // First rule that matches wins, so the order of this list IS the taxonomy.
+  var ACT_RULES = [
+    { key:'close',    re:/act-daily-brandon|-log$/ },
+    { key:'linkedin', re:/act-daily-li-/ },
+    { key:'pga',      re:/pga|ghostwrit/i },
+    { key:'channels', re:/warmup|warm-up|tiktok|instagram|x-youtube|youtube-handles|branding-mismatch|brand1/i },
+    { key:'content',  re:/content-board|posts-approval|pitch-approve|newsletter|blotato|griot/i },
+    { key:'workshop', re:/slcc|insurance|room105|workshop|venue|seat|dotter/i },
+    { key:'prep',     re:/hr-questions|ge-alumni|pick-asset|magnet|list-build/i },
+    { key:'admin',    re:/namecheap|stripe|domain|plausible|billing|invoice|analytics|recording-check|subscription/i },
+    { key:'outreach', re:/act-daily-outreach|direct-offer|next-action|^act-\d{4}-\d{2}-\d{2}-/ }
+  ];
+  function actGroup(id){
+    for (var i = 0; i < ACT_RULES.length; i++){
+      if (ACT_RULES[i].re.test(id)) return ACT_RULES[i].key;
+    }
+    return 'other';
+  }
+
   function openDays(fromDate, today){
     var a = fromDate.split('-'), b = today.split('-');
     var d1 = new Date(+a[0], +a[1] - 1, +a[2]), d2 = new Date(+b[0], +b[1] - 1, +b[2]);
@@ -2018,13 +2070,26 @@
         thtml += '<div class="ta-empty">Nothing dated ' + rlEsc(prettyDate(today)) + ' is on the board yet. Actions show up here the moment they are written to the money map, and the count above tracks them.</div>';
       } else {
         var rolledN = mine.filter(function(r){ return r.rolledFrom; }).length;
-        var body0 = '';
+        thtml += '<div class="ta-todayhead">Today &middot; ' + rlEsc(prettyDate(today)) +
+                 ' &middot; <b>' + doneN + ' of ' + mine.length + ' done</b>, in ' +
+                 'sections by the kind of work, so you do one type at a time instead of jumping between them.</div>';
         if (rolledN){
-          body0 += '<div class="ta-sub" style="margin:0 0 0.55rem;font-size:0.76rem;">' +
+          thtml += '<div class="ta-sub" style="margin:0 0 0.55rem;font-size:0.76rem;">' +
                    '<b>' + rolledN + ' of these rolled over</b> because they were not ticked on the day they were due. They will keep coming back here every day, with the count of days climbing, until you either do them or write a note saying why you will not. Nothing gets to go quiet on its own.</div>';
         }
-        body0 += mine.map(function(r){ return rlActRow(r.id, r.v, r.kind, r.rolledFrom); }).join('');
-        thtml += grpHtml('ta-grp-today', true, 'Today · ' + prettyDate(today), doneN, mine.length, body0, 'grp-today');
+        // One section per kind of work. Sections with nothing in them today do
+        // not render at all, so the page never shows an empty header.
+        var buckets = {};
+        mine.forEach(function(r){ (buckets[actGroup(r.id)] = buckets[actGroup(r.id)] || []).push(r); });
+        ACT_GROUPS.forEach(function(g){
+          var rows = buckets[g.key];
+          if (!rows || !rows.length) return;
+          var gdone = rows.filter(function(r){ return isDone(r.id); }).length;
+          var gbody = rows.map(function(r){ return rlActRow(r.id, r.v, r.kind, r.rolledFrom); }).join('');
+          // Today's sections ship OPEN. Everything that is not today still
+          // ships closed, below.
+          thtml += grpHtml('ta-grp-today-' + g.key, true, g.label, gdone, rows.length, gbody, 'grp-today');
+        });
       }
       futureD.concat(pastD).forEach(function(d){
         // Earlier days keep only what was actually finished. Anything still
@@ -2349,6 +2414,7 @@
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape') setOpen(false); });
   })();
 </script>
+
 <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
 <style id="review-furniture-css">
   /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
@@ -2453,27 +2519,6 @@
     });
   });
 
-  // Dynamically rendered <details> (the dated action groups) join the SAME
-  // memory and the SAME Collapse all button instead of inventing a second
-  // mechanism. Idempotent: a re-render registers the new nodes and the
-  // detached old ones are dropped.
-  window.__rf_register = function (el) {
-    if (!el || !el.id || el.hasAttribute('data-rf-key')) { return; }
-    var k = 'id:' + el.id;
-    el.setAttribute('data-rf-key', k);
-    var s0 = readState();
-    if (Object.prototype.hasOwnProperty.call(s0, k)) { el.open = !!s0[k]; }
-    details = details.filter(function (d) { return d.isConnected; });
-    details.push(el);
-    el.addEventListener('toggle', function () {
-      var s = readState();
-      s[k] = el.open;
-      writeState(s);
-      syncFoldLabel();
-    });
-    syncFoldLabel();
-  };
-
   // ---- expand all / collapse all -----------------------------------------------
   var foldBtn = document.getElementById('rf-foldall');
   function anyOpen() {
@@ -2505,6 +2550,8 @@
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
+
 
 
 
