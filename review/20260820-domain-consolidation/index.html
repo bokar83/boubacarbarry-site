@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One home for the domains</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px; overflow-x:hidden;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px; overflow-x:hidden; -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  h3{font-size:1rem; margin:18px 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  table{width:100%; border-collapse:collapse; margin:0 0 6px; font-size:.9rem; min-width:640px;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim); white-space:nowrap;}
+  td:first-child{font-weight:600;}
+  .table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; margin:0 0 10px;}
+  .hint{font-size:.8rem; color:var(--text-dim); margin:0 0 14px;}
+  .good{color:var(--good); font-weight:600;}
+  .bad{color:var(--bad); font-weight:600;}
+  .warn{color:var(--warn); font-weight:600;}
+  .unk{color:var(--text-dim); font-weight:600; letter-spacing:.03em;}
+  .src{display:block; font-size:.72rem; color:var(--text-dim); margin-top:3px; word-break:break-word;}
+  a{color:var(--accent);}
+  .box{border:1px solid var(--border); border-left:4px solid var(--accent);
+    background:var(--bg2); border-radius:10px; padding:14px 16px; margin:0 0 14px;}
+  .box.flag{border-left-color:var(--bad);}
+  .box.note{border-left-color:var(--warn);}
+  .box h3{margin-top:0;}
+  .lead{font-size:1.05rem; font-weight:650;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+    .sec-body{padding:2px 14px 16px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-20-09:54:15 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Domain consolidation</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-question">The question</a>
+      <a href="#sec-inventory">What the sweep found</a>
+      <a href="#sec-options">Options</a>
+      <a href="#sec-cost">Cost per year</a>
+      <a href="#sec-godaddy">GoDaddy</a>
+      <a href="#sec-cloudflare">Cloudflare</a>
+      <a href="#sec-irreversible">Irreversible</a>
+      <a href="#sec-expiry">Expiry behaviour</a>
+      <a href="#sec-why">Why Porkbun</a>
+      <a href="#sec-plan">Order of operations</a>
+      <a href="#sec-unknown">Not verified</a>
+      <a href="#sec-sources">Sources</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>One home for the domains</h1>
+    <div class="meta">Should everything sit with one registrar, and which one &middot; 20 August 2026</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p class="lead">Recommendation: consolidate every domain you own into one Porkbun account.</p>
+      <p>The problem being solved here is scatter and control, not calendar awareness. Your domains are spread across at least five different providers, which means there is no single place that answers three basic questions: what do we own, when does each one expire, and what is each one attached to. One registrar gives you that list in one screen, on one card, on one bill. Porkbun also has an open API, so the list can check itself instead of depending on anyone remembering to look.</p>
+      <p>The second reason matters more over the next year than the money does. As you take on more client work you will start holding domains on behalf of other people. The system for tracking what is owned, what it costs, and what it points at has to exist before that happens, not after. Building the habit now, on your own eighteen domains, is cheap. Building it later, while someone else's site is on the line, is not.</p>
+      <p style="margin:0"><strong>What you are accepting:</strong> Porkbun is a small independent company. Cloudflare is a far larger and more durable business. You are trading institutional size for the lowest verified renewal price, an open API with no approval gate, and the freedom to keep pointing your DNS wherever you want.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-question" open>
+    <summary><h2>What we are actually deciding</h2></summary>
+    <div class="sec-body">
+      <p>One question, and it is a structural one: <strong>should all of the domains live with a single registrar, and if so, which one.</strong></p>
+      <p>Everything else on this page exists to answer that. Price matters, but it is the tiebreaker, not the reason. The reason is that a portfolio split across five providers cannot be seen in one place, cannot be checked by one script, and cannot be handed to anyone else without a tour of five different logins.</p>
+      <h3>Why now rather than later</h3>
+      <p>This is client-readiness infrastructure. The moment you are doing work for other companies, domains stop being a personal admin item and become something you hold on someone else's behalf. That comes with a duty to know exactly what is registered, under whose name, expiring when, pointing where, and paid on which card. A habit and a system built now, while the only portfolio at stake is your own, transfers cleanly to client work. A habit built under pressure, after the first client domain is already in your account, does not.</p>
+      <p style="margin:0">There is a second, quieter benefit. A single registrar with an open API makes the whole portfolio queryable. One list, generated on demand, showing every domain, its expiry, its auto renew state, and its nameservers. That artefact is worth more than the price difference, and it is only possible once everything is in one place.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-inventory" open>
+    <summary><h2>What the ownership sweep found today</h2></summary>
+    <div class="sec-body">
+      <p>This is the strongest argument for consolidating, so it goes near the top. Everything below was found today, and it is stated exactly as found.</p>
+      <div class="box flag">
+        <ul style="margin:0">
+          <li><strong>The portfolio spans at least five providers:</strong> Namecheap, Hostinger, Squarespace, Wix, and possibly GoDaddy.</li>
+          <li><strong>Five Squarespace domains have already expired.</strong> sidehustlediaspora.com on 12 April 2026, diasporiafusion.com on 13 May 2026, and flywheelcatalyst.com, flywheelcatalystai.com and leadershipai.net all on 16 July 2026. Only leadershipai.net has a decision on record. The other four have no recorded decision either way, so whether they were meant to go is an open question for you, not a settled one.</li>
+          <li><strong>touchofclassconakry.com sits at Wix and appeared in no record at all.</strong> It was found by looking, not by reading a list.</li>
+          <li><strong>GoDaddy is unresolved.</strong> The only trace is a support ticket from 27 April 2024 titled "Transfer 4 domains fdrom GoDaddy to NameCheap". Whether that transfer ever completed is UNKNOWN. A full inbox search returns no GoDaddy domain or billing mail, which is not proof either way. Only logging into the GoDaddy account settles it.</li>
+        </ul>
+      </div>
+      <p style="margin:0">Read that as an inventory problem. Four domains lapsed with no recorded decision, one domain existed in no record at all, and one provider relationship cannot be confirmed or ruled out from the outside. That is what scatter costs, and no amount of attention fixes it while the portfolio lives in five places.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-options" open>
+    <summary><h2>The options</h2></summary>
+    <div class="sec-body">
+      <p><strong>Option A. Porkbun.</strong> Move everything into one Porkbun account. Cheapest verified renewal of the five, free WHOIS privacy, free open API with no approval step, and your DNS stays wherever you point it.</p>
+      <p><strong>Option B. Cloudflare Registrar.</strong> Cheapest in principle, because they sell at cost with no markup. But it forces every domain onto Cloudflare nameservers permanently, and they publish no per-domain dollar price anywhere public, so you commit before you know the number.</p>
+      <p><strong>Option C. Namecheap.</strong> Consolidate onto the provider holding the largest share today. No new vendor to learn. But the renewal prices are high, and the API needs an approval step plus an IP allowlist before it will answer a single question about your own portfolio.</p>
+      <p><strong>Option D. Hostinger.</strong> Consolidate onto your hosting provider, which you already pay and already have wired up. Convenient, and the most expensive per year of the four registrars priced below. It also ties your domains to your host, which is the thing that makes changing hosts painful later.</p>
+      <p><strong>Option E. GoDaddy.</strong> Consolidate onto GoDaddy. Their standard list price is the highest of everyone here, and the first step would be establishing whether you still have an account with domains in it at all. Named as a real option because domains may already be sitting there.</p>
+      <p style="margin:0"><strong>Option F. Stay split.</strong> Do nothing, keep five providers. On the list only as the baseline the others have to beat.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-cost" open>
+    <summary><h2>True cost per year, per domain</h2></summary>
+    <div class="sec-body">
+      <p class="hint">Scroll the table sideways on a phone. The renewal number is the one that matters, not the first year promo.</p>
+      <div class="table-scroll">
+      <table>
+      <thead>
+      <tr><th>&nbsp;</th><th>Porkbun</th><th>Cloudflare</th><th>Namecheap</th><th>Hostinger</th><th>GoDaddy</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>.com renewal</td>
+        <td class="good">$11.08<span class="src">porkbun.com/products/domains</span></td>
+        <td class="unk">UNKNOWN<span class="src">No public per-domain price. Policy is at cost, see below.</span></td>
+        <td class="bad">$18.48<span class="src">namecheap.com .com registration page</span></td>
+        <td class="bad">$19.99<span class="src">Live billing catalogue on your own account</span></td>
+        <td class="bad">$22.99 standard list<span class="src">Read live off godaddy.com/domainsearch today. GoDaddy prints no explicit renewal figure, see the GoDaddy section.</span></td>
+      </tr>
+      <tr>
+        <td>.org renewal</td>
+        <td class="good">$11.84<span class="src">porkbun.com/products/domains</span></td>
+        <td class="unk">UNKNOWN</td>
+        <td class="bad">$18.98<span class="src">namecheap.com .org registration page</span></td>
+        <td class="bad">$17.99<span class="src">Live billing catalogue on your own account</span></td>
+        <td class="bad">$23.99 standard list<span class="src">Read live off godaddy.com/domainsearch today</span></td>
+      </tr>
+      <tr>
+        <td>ICANN fee</td>
+        <td class="unk">UNKNOWN whether it is inside the $11.08 or added</td>
+        <td>Charged at list, no markup on top<span class="src">developers.cloudflare.com/registrar/faq/</span></td>
+        <td class="warn">$0.20 per year, added on top<span class="src">Namecheap disclaimer, quoted verbatim below</span></td>
+        <td class="unk">UNKNOWN</td>
+        <td class="unk">UNKNOWN</td>
+      </tr>
+      <tr>
+        <td>Price jump after year one</td>
+        <td class="good">No jump on .com. Same $11.08 to register and to renew.</td>
+        <td class="good">No promo model. Same price every year by design.</td>
+        <td class="bad">Yes, and it is large. See the note below.</td>
+        <td class="bad">Yes. $9.99 first year on .com, then $19.99 every year after.</td>
+        <td class="bad">Yes, and it is the steepest here. $0.01 first year on .com, on a three year commitment, against a $22.99 list price.</td>
+      </tr>
+      <tr>
+        <td>WHOIS privacy</td>
+        <td class="good">Free</td>
+        <td class="good">Free</td>
+        <td class="good">Free for life on eligible domains</td>
+        <td class="good">Free on supported extensions</td>
+        <td class="good">Free, verified today, not assumed</td>
+      </tr>
+      <tr>
+        <td>Forces a DNS move</td>
+        <td class="good">No</td>
+        <td class="bad">Yes, permanently</td>
+        <td class="good">No</td>
+        <td class="good">No</td>
+        <td class="good">No</td>
+      </tr>
+      <tr>
+        <td>API for automation</td>
+        <td class="good">Open REST API, no approval gate, sandbox available</td>
+        <td class="unk">UNKNOWN coverage for registrar actions</td>
+        <td class="warn">Needs approval plus IPv4 allowlisting</td>
+        <td class="good">API exists and is already wired up here</td>
+        <td class="unk">UNKNOWN. Not verified today.</td>
+      </tr>
+      <tr>
+        <td>Two factor</td>
+        <td class="good">App based codes and hardware security keys</td>
+        <td class="good">Security keys, app codes, or email codes</td>
+        <td class="unk">UNKNOWN, not verified today</td>
+        <td class="unk">UNKNOWN, not verified today</td>
+        <td class="unk">UNKNOWN, not verified today</td>
+      </tr>
+      </tbody>
+      </table>
+      </div>
+
+      <div class="box note">
+        <h3>The Namecheap gap, in their own numbers</h3>
+        <p>A .com is advertised at $11.28 and renews at <strong>$18.48</strong>. A .org is advertised at $8.48 and renews at <strong>$18.98</strong>. That is more than double on the .org. The first year price is the hook. The renewal is the real price, and the renewal is what you pay for the next decade.</p>
+        <p style="margin:0">Their fee disclaimer, word for word: "ICANN (the Internet Corporation for Assigned Names and Numbers) charges a mandatory annual fee of $0.20 for each domain registration, renewal or transfer. This will be added to the listed price for some domains, at the time of purchase."</p>
+      </div>
+
+      <div class="box">
+        <h3>What eighteen domains costs a year</h3>
+        <p>Order of magnitude only, assuming all eighteen were .com renewals. The real mix of extensions is not in front of me, so treat this as a scale check rather than a quote.</p>
+        <ul style="margin-bottom:0">
+          <li>Porkbun: roughly <strong>$200 a year</strong></li>
+          <li>Namecheap: roughly <strong>$336 a year</strong>, including the ICANN fee</li>
+          <li>Hostinger: roughly <strong>$360 a year</strong></li>
+          <li>GoDaddy: roughly <strong>$414 a year</strong> at the standard list price</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-godaddy" open>
+    <summary><h2>GoDaddy, since domains may already be there</h2></summary>
+    <div class="sec-body">
+      <p>GoDaddy is on this page as a real option, not a straw man, because the 2024 support ticket means domains may still be sitting in that account today.</p>
+      <h3>What I verified today, and how</h3>
+      <p>Their pricing pages refuse automated fetches, so this was read out of a real browser session on their own live domain search results page. On <a href="https://www.godaddy.com/domainsearch/find">godaddy.com/domainsearch/find</a>, searching an available name today returned a standard list price of <strong>$22.99 per year for .com</strong> and <strong>$23.99 per year for .org</strong>. The promotional offers alongside them were $0.01 for the first year on .com, explicitly labelled "1st yr only with 3 yr term", and $9.99 for the first year on .org.</p>
+      <p><strong>What I could not verify, stated plainly:</strong> GoDaddy does not print an explicit "renews at" figure anywhere on that page. The $22.99 and $23.99 are their standard non-promotional list prices, which is what a renewal bills against, but the exact renewal line item is <span class="unk">UNKNOWN</span> until it is read inside a logged-in account. It will not be lower than list.</p>
+      <p>On that basis GoDaddy is the most expensive of the five at standard price, which matches its reputation. That reputation was checked rather than repeated.</p>
+      <h3>The privacy claim, corrected</h3>
+      <p>GoDaddy is widely said to charge for WHOIS privacy. On their own page today that is <strong>not what it says</strong>. Domain Privacy is listed under "Everything You Need, Free with a GoDaddy Domain", described as limiting the contact information shown in their public WHOIS directory. So privacy is free, and the page says so. Worth recording, because it is the kind of thing everyone repeats and nobody re-reads.</p>
+      <p style="margin:0"><strong>The action item this section produces:</strong> log into the GoDaddy account and look. That is the only thing that closes the question of whether four domains transferred out in 2024 or are still sitting there quietly renewing. It is a five minute job and it should happen before any transfer plan is finalised.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-cloudflare" open>
+    <summary><h2>The Cloudflare question, stated plainly</h2></summary>
+    <div class="sec-body">
+      <p>Cloudflare sells domains at wholesale with no markup. Their words: "Cloudflare Registrar will never charge you more than what we pay to the registry for your domain." Privacy is free. On price alone it wins.</p>
+      <p><strong>The catch is not small, and it is not reversible while you stay with them.</strong> From their own documentation: "All domains acquired via Cloudflare Registrar use Cloudflare nameservers... You will not be able to change to another DNS provider's nameservers while using Cloudflare Registrar." And from their FAQ, asked whether you can use other nameservers: "No, all domains on Cloudflare Registrar use Cloudflare nameservers."</p>
+      <p>Their transfer guide is equally direct: "Before you can transfer your registration, your domain must be active on Cloudflare." So you cannot even start the move until DNS is already switched over.</p>
+      <p style="margin:0">Some of your domains currently point at Hostinger hosting. Choosing Cloudflare means rebuilding every one of those DNS zones by hand first, getting every record right, and living with Cloudflare DNS permanently after. If you ever want different nameservers, the only exit is transferring the domain away to another registrar entirely. That is a real project with real downtime risk, in exchange for a saving of a few dollars per domain that they will not quote you in advance.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-irreversible" open>
+    <summary><h2>What is irreversible</h2></summary>
+    <div class="sec-body">
+      <div class="box flag">
+        <p style="margin:0 0 10px"><strong>Once a domain transfers, it is locked at the new registrar for 60 days. You cannot undo it, change your mind, or move it again until that window closes.</strong> Cloudflare states the requirement as: "Your domain was registered at least 60 days ago and has not been transferred in the last 60 days." Porkbun says the same: "a domain must stay at one registrar for 60 days before it can be transferred to another."</p>
+        <p style="margin:0"><strong>Changing the registrant name, organisation, or email address triggers its own separate 60 day lock.</strong> Cloudflare's documentation: "You have not changed your registrant name, organization, or email address in the last 60 days," and notes that "changes to these fields trigger a 60-day transfer lock. Some registrars let you opt out of this lock during the change, but not all do." So do not tidy up contact details right before a move. Do the transfers first, then fix contacts.</p>
+      </div>
+      <p><strong>The other irreversible thing on this page is not a transfer at all.</strong> Four expired Squarespace domains have no recorded decision. Once a lapsed domain leaves redemption and drops, it is gone and anyone can take it. If any of those four are worth keeping, that is a decision with a clock on it, separate from and faster than the consolidation itself.</p>
+      <div class="box">
+        <h3>The good news on transfers</h3>
+        <p style="margin:0">You do not lose paid time. Porkbun: "You won't lose any existing months/years of registration, and we add a year to your registration at the moment of transfer (in most cases)." So a transfer is effectively buying a year at the new registrar's price rather than throwing away the year already paid for.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-expiry" open>
+    <summary><h2>What each registrar does when a domain expires</h2></summary>
+    <div class="sec-body">
+      <p>This is here as part of knowing what you own and what happens to it, not as a reminder system. The difference between registrars is what breaks, how fast, and how much of it you can get back.</p>
+      <div class="table-scroll">
+      <table>
+      <thead><tr><th>&nbsp;</th><th>Porkbun</th><th>Namecheap</th></tr></thead>
+      <tbody>
+      <tr>
+        <td>Site keeps working after expiry</td>
+        <td>"For the first 10 days of the Renewal Grace Period, your expired domain should continue to function as normal."</td>
+        <td>Nameservers switch to a parking page at expiry. Email stops immediately and "all emails that are subsequently sent to your domain name-based email address will be lost."</td>
+      </tr>
+      <tr>
+        <td>Grace period, normal price</td>
+        <td>After day 10 the domain goes to a notice page or Client Hold and stops resolving.</td>
+        <td>"There is a grace period of around 30 days where you can still renew your domain, and at the normal rate."</td>
+      </tr>
+      <tr>
+        <td>Redemption after that</td>
+        <td>"For 30 days after deletion, expired domains are considered to reside in the Redemption Grace Period." Cost is the renewal fee plus a redemption fee that "varies by the registry."</td>
+        <td>Domain leaves your account list. Recovery needs a support ticket and "there is an additional redemption fee associated with this."</td>
+      </tr>
+      <tr>
+        <td>Redemption fee amount</td>
+        <td class="unk">UNKNOWN. Not published, varies by registry.</td>
+        <td class="unk">UNKNOWN. Not published on the page.</td>
+      </tr>
+      <tr>
+        <td>Warning emails</td>
+        <td class="unk">UNKNOWN schedule.</td>
+        <td>30 days, 15 days, 7 days, 1 day, and on the expiry date, to both the account email and the registrant email.</td>
+      </tr>
+      </tbody>
+      </table>
+      </div>
+      <p style="margin:0">The practical point for the decision: Namecheap kills email the moment a domain expires, Porkbun keeps the site up for ten more days. That is a real difference in blast radius, and it will matter more once a client domain is in the account than it does today.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-why" open>
+    <summary><h2>Why Porkbun and not the other four</h2></summary>
+    <div class="sec-body">
+      <ul style="margin-bottom:0">
+        <li><strong>Beats Namecheap on money by about $7.40 per .com per year and $7.14 per .org</strong>, every year, with no loss of function.</li>
+        <li><strong>Beats Cloudflare on freedom.</strong> Cloudflare may be a dollar or two cheaper, but it will not tell you how much cheaper before you commit, and it takes your nameservers as the price of entry. You have live sites on Hostinger hosting. Do not hand DNS to a registrar that will not give it back.</li>
+        <li><strong>Beats Hostinger on both.</strong> Hostinger is expensive at renewal, and keeping domains at your host is exactly what makes leaving a host painful later. Separating the registrar from the host is good practice on its own terms.</li>
+        <li><strong>Beats GoDaddy on price by roughly half</strong>, at $11.08 against a $22.99 standard list price on .com.</li>
+        <li><strong>No promo game.</strong> The .com price to register and the price to renew are the same number, so it can be budgeted once and never surprises you.</li>
+        <li><strong>The API is open.</strong> No approval gate, no IP allowlist, sandbox keys for safe testing. That is what turns "what do we own and when does it expire" into a query instead of a chore, which is the entire point of consolidating.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-plan" open>
+    <summary><h2>If you say yes, the order of operations</h2></summary>
+    <div class="sec-body">
+      <ol style="margin-bottom:0">
+        <li>Log into GoDaddy and settle whether any domains are still there. Nothing else is final until that is known.</li>
+        <li>Decide on the four expired Squarespace domains with no recorded decision. Keep or let go, but decide, because that clock is already running.</li>
+        <li>Open one Porkbun account. Turn on two factor with a hardware key or an authenticator app before anything else.</li>
+        <li>Put a card on file and confirm it is live.</li>
+        <li>Do not touch registrant contact details on any domain yet. Changing them starts a separate 60 day lock.</li>
+        <li>Move two domains first, ideally ones with no live site, and watch them land. Confirm the DNS records survived.</li>
+        <li>Once those two are clean, move the rest in batches. Copy every DNS record before starting each one.</li>
+        <li>Turn on auto renew on every domain as it arrives.</li>
+        <li>Wire a weekly automated check against the API that lists every domain, its expiry, its auto renew state and its nameservers, and makes noise when anything is inside 45 days or auto renew is off. This is the artefact that carries over to client domains.</li>
+        <li>After everything has settled and the 60 day locks have passed, clean up contact details.</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-unknown" open>
+    <summary><h2>Everything I could not verify</h2></summary>
+    <div class="sec-body">
+      <p>Listed plainly so no number here is trusted more than it earned.</p>
+      <ul style="margin-bottom:0">
+        <li>GoDaddy's explicit renewal figure for .com and .org. They publish a $22.99 and $23.99 standard list price but no "renews at" line outside a logged-in account.</li>
+        <li>Whether GoDaddy still holds any of your domains at all. Only the account settles it.</li>
+        <li>GoDaddy's ICANN fee treatment, two factor options, and API coverage.</li>
+        <li>Cloudflare Registrar's actual dollar price for .com and .org. They publish the policy but no public price list.</li>
+        <li>Whether Porkbun's $11.08 and $11.84 include the ICANN fee or add it.</li>
+        <li>Whether Hostinger's $19.99 and $17.99 include the ICANN fee.</li>
+        <li>The redemption fee amount at every provider here. None publish a figure.</li>
+        <li>Namecheap's exact eligibility requirements for production API access. The page says requirements exist but does not state them.</li>
+        <li>Namecheap's and Hostinger's two factor options.</li>
+        <li>Hostinger's grace period and expiry notice schedule.</li>
+        <li>Porkbun's expiry warning email schedule.</li>
+        <li>Whether the four Squarespace domains with no recorded decision were meant to lapse.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-sources" open>
+    <summary><h2>Sources read</h2></summary>
+    <div class="sec-body">
+      <ul style="margin-bottom:0; font-size:.85rem;">
+        <li><a href="https://www.godaddy.com/domainsearch/find">godaddy.com/domainsearch/find</a>, live search result read in a real browser on 20 August 2026. Their pages block automated fetching, including from a clean server, so this was the only way to read a real price.</li>
+        <li><a href="https://www.godaddy.com/domains">godaddy.com/domains</a>, for the free Domain Privacy listing and the promotional structure</li>
+        <li><a href="https://www.namecheap.com/domains/registration/gtld/com/">namecheap.com .com registration page</a> and <a href="https://www.namecheap.com/domains/registration/gtld/org/">the .org equivalent</a></li>
+        <li><a href="https://www.namecheap.com/support/knowledgebase/article.aspx/10064/2207/what-happens-to-my-domain-name-after-it-expires/">Namecheap: what happens after a domain expires</a></li>
+        <li><a href="https://www.namecheap.com/support/api/intro/">Namecheap API introduction</a></li>
+        <li><a href="https://porkbun.com/products/domains">porkbun.com/products/domains</a></li>
+        <li><a href="https://kb.porkbun.com/article/37-what-happens-after-a-domain-expires">Porkbun: what happens after a domain expires</a></li>
+        <li><a href="https://kb.porkbun.com/article/56-how-to-transfer-a-domain-to-porkbun">Porkbun: how to transfer a domain in</a></li>
+        <li><a href="https://kb.porkbun.com/article/55-lose-domain-registration-time-if-transfer-domains">Porkbun: do I lose registration time on transfer</a></li>
+        <li><a href="https://porkbun.com/api/json/v3/documentation">Porkbun API documentation</a></li>
+        <li><a href="https://kb.porkbun.com/category/20-accounts">Porkbun account security articles</a></li>
+        <li><a href="https://www.cloudflare.com/products/registrar/">cloudflare.com/products/registrar/</a></li>
+        <li><a href="https://developers.cloudflare.com/registrar/faq/">Cloudflare Registrar FAQ</a></li>
+        <li><a href="https://developers.cloudflare.com/registrar/get-started/register-domain/">Cloudflare: registering a domain</a></li>
+        <li><a href="https://developers.cloudflare.com/registrar/get-started/transfer-domain-to-cloudflare/">Cloudflare: transferring a domain in</a></li>
+        <li><a href="https://blog.cloudflare.com/using-cloudflare-registrar/">Cloudflare on at cost pricing</a></li>
+        <li><a href="https://developers.cloudflare.com/fundamentals/user-profiles/2fa/">Cloudflare two factor options</a></li>
+        <li>Hostinger prices read live from the billing catalogue on your own account, not from a marketing page</li>
+        <li>Ownership sweep across Namecheap, Hostinger, Squarespace and Wix records, plus a full inbox search for provider mail, run 20 August 2026</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Prepared 20 August 2026. Prices change. Re-check before acting if more than a few weeks have passed.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
