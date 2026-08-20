@@ -25,7 +25,7 @@
 # Pass -DryRun to run the full copy/stamp/manifest/index-rebuild pipeline without the git
 # add/commit/push step, for safe local verification against a scratch review/ tree.
 
-# LAYOUT HARD STANDARD (added 2026-08-11, SYS-472). Publishing is now GATED on the page
+# LAYOUT HARD STANDARD (added 2026-08-11, SYS-507). Publishing is now GATED on the page
 # actually having the furniture Boubacar has asked for four separate times:
 #   1. TL;DR at the very top, sections underneath it.
 #   2. The TL;DR itself is collapsible.
