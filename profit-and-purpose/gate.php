@@ -283,12 +283,23 @@ h1{
 }
 .inkrule path{ fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; opacity:.85 }
 
-/* The manifest. Four items because he asked for four things. Flex-wrap with
-   the separator bound to the item that follows it, so a wrap never strands a
-   dot at the end of a line on a narrow phone. */
-.manifest{ list-style:none; display:flex; flex-wrap:wrap; margin-top:9px }
-.manifest li{ font-family:var(--mono); font-size:12.5px; letter-spacing:.02em; color:var(--ink) }
-.manifest li + li::before{ content:"\00b7"; color:var(--rule); padding:0 .55em }
+/* The manifest. Four items because he asked for four things, in his order.
+   Set as a stacked list rather than one dotted line: the four items run past
+   396px at any readable size, so an inline version wraps at every width and
+   leaves a separator stranded on the turn. Four short lines carrying the same
+   hanging tick the page behind this one uses, which reads as a contents block,
+   which is what it is. */
+.manifest{ list-style:none; margin-top:11px }
+.manifest li{
+  position:relative; padding-left:18px; margin-bottom:5px;
+  font-family:var(--mono); font-size:12.5px; letter-spacing:.02em;
+  line-height:1.65; color:var(--ink);
+}
+.manifest li:last-child{ margin-bottom:0 }
+.manifest li::before{
+  content:""; position:absolute; left:0; top:.78em;
+  width:8px; height:1px; background:var(--accent); opacity:.7;
+}
 
 form{ margin-top:30px }
 .pwlabel{ margin-bottom:8px }
