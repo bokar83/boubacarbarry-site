@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aug 27 seat asks</title>
+<!--
+  CANONICAL REVIEW-PAGE TEMPLATE for boubacarbarry.com/review/<slug>/
+
+  Start every review page from this file. It is compliant with the layout hard standard out
+  of the box, and scripts/validate-review-page.ps1 (which publish-review.ps1 runs on every
+  publish and REFUSES to ship past) is written against exactly this structure.
+
+  THE FIVE RULES, Boubacar verbatim 2026-08-11:
+    1. TL;DR at the very top, sections underneath it.
+    2. The TL;DR itself is collapsible.
+    3. Every section collapsible with a toggle.
+    4. A back-to-top button on every page.
+    5. Hamburger nav on mobile, normal nav on desktop, floating if practical.
+
+  THE REASON, which matters more than the list:
+    "I don't want to have to read 30 pages of a TL;DR to get to the content every single
+     time. I need to be able to just quickly jump into this after future reviews."
+    => Design for the SECOND visit. Rules 4 and the fold-state memory that makes the second
+       visit fast are AUTO-INJECTED at publish time by scripts/inject-review-furniture.ps1,
+       so do not hand-roll a back-to-top button here -- you would get two.
+
+  WHAT YOU EDIT: the {{PLACEHOLDERS}}, the nav links, and the <section> blocks. Keep the
+  <details><summary><h2>...</h2></summary> shape on every section; that shape IS the check.
+
+  STANDS ALONE ON PURPOSE: no external CSS, no external JS, no fonts, no CDN. He opens these
+  on a phone on bad wifi, and a shared include that fails to load would take the furniture
+  down with the page. Duplicated bytes are the cheaper trade.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-20-18:43:01 MT</div><!-- DEPLOY_STAMP_END -->
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Aug 27 asks</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">Staged</a>
+      <a href="#sec-2">Email 1</a>
+
+      <a href="#sec-3">Email 2</a>
+      <a href="#sec-4">Email 3</a>
+      <a href="#sec-5">Email 4</a>
+      <a href="#sec-6">Alex call</a>
+      <a href="#sec-7">The post</a>
+      <a href="#sec-8">Verification</a>
+      <!-- one link per section; keep ids in sync with the <details id="sec-N"> below -->
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Aug 27 seat asks</h1>
+    <div class="meta">Twelve emails staged, one call, one post. Nothing sent &middot; 2026-08-20</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      
+<p><b>Twelve seat asks are written, gated and staged. One command sends all twelve. Nothing has been sent.</b></p>
+<p>Eleven people who registered for the July session at the Miller Campus, plus Tiffany Brady at Aspen Roofing.
+Ten of the eleven have no name anywhere in our records, so the copy is written to work without one. Two of them came
+back to the page after registering, and they get a shorter, more direct version. Alex Dotter at SLCC is a phone call
+rather than an email, and the ask there is the Miller Campus business list, not a seat. There is also a post for
+your own feed, which is the first time you would be asking the people who actually know you.</p>
+<p>Suppression re-checked against the live table this morning: <b>none of the thirteen addresses is suppressed</b>,
+and the script re-checks again at send time rather than trusting this page.</p>
+<p><b>The single action that sends it:</b></p>
+<pre style="white-space:pre-wrap;word-break:break-word;background:#f6f5f1;border:1px solid #d9d5cb;border-radius:6px;padding:14px 16px;font-size:.92rem;line-height:1.55;overflow-x:auto">ssh root@72.60.209.109 &quot;docker exec -w /app orc-crewai python3 scripts/send_staged_batch.py --batch data/staged_sends/aug27-seat-asks-2026-08-20.json --confirm-send&quot;</pre>
+<p>Say the word and I run that. Until then it is inert: running the same command without
+<code>--confirm-send</code> only prints the batch.</p>
+
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1" open>
+    <summary><h2>What is staged, and the one action that sends it</h2></summary>
+    <div class="sec-body">
+      
+<p>Every message below is already written into
+<code>data/staged_sends/aug27-seat-asks-2026-08-20.json</code> and read from there by
+<code>scripts/send_staged_batch.py</code>. The page and the sender read the same file, so what you approve here is
+literally what goes out.</p>
+<ul>
+<li><b>Send path:</b> the canonical one. Catalyst Works OAuth plus the direct Gmail API, through
+<code>orchestrator/gmail_send.py::send_html</code>, which owns the From header, the live signature append and
+verify-after-send.</li>
+<li><b>No sign-off in any of the copy.</b> The send path reads your real signature out of Gmail settings and appends it.
+That is why every draft below stops on its last sentence.</li>
+<li><b>Every link goes to the workshop page, never to the raw Stripe link.</b> The page captures and stores the email
+before the checkout redirect fires, so the capture stays in front of the control.</li>
+<li><b>Suppression is re-checked at send time</b>, against the live table, and it fails closed. If the database cannot
+be reached, nothing sends.</li>
+<li><b>Sent one at a time.</b> No shared To line, no Bcc blast.</li>
+</ul>
+<p>The one thing that is not staged is the phone call and the post. Those are yours to make and to publish.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>Email 1. The July registrants</h2></summary>
+    <div class="sec-body">
+      <p><b>To:</b> scoutent@comcast.net, alohanfranca@gmail.com, sdajhana@yahoo.com, jbmcdonald07@gmail.com, julieamcdonald@yahoo.com, harveyandersont@gmail.com, robmaxwell2@gmail.com, lanamonson.slc@gmail.com<br><b>Channel:</b> email, sent one at a time, never a shared To line<br><b>Who:</b> Eight people who registered for the July session at the Miller Campus. No name on record for any of them, so the copy never reaches for one.<br><b>Subject:</b> Thursday at the Miller Campus</p><pre style="white-space:pre-wrap;word-break:break-word;background:#f6f5f1;border:1px solid #d9d5cb;border-radius:6px;padding:14px 16px;font-size:.92rem;line-height:1.55;overflow-x:auto">You put your email down for the session I ran at the Miller Campus in July. This is the next one.
+
+Thursday, August 27. Seven to eight thirty in the evening, room opens at six thirty. Same campus in Sandy. The seat is fifty dollars.
+
+You leave with three things running on your own laptop, built in your own words, about your own business. One is a file that makes every answer you get out of AI afterwards about your business instead of some business that does not exist. One is a second opinion you can hand the thing you have been chewing on for a month, and it argues with you instead of agreeing. The third strips the clever-looking parts out of something you are about to spend money on.
+
+They are yours after. They still work on the drive home.
+
+Every one of them is a tool I built for myself first, and got wrong first. That is the only reason it is in the room.
+
+Before you pay me anything, run the free one. It is the decision tool cut down to a single prompt and it takes about five minutes:
+https://catalystworks.consulting/second-opinion/
+
+If it earns the evening, the seat is here:
+https://catalystworks.consulting/workshop/?utm_source=email&amp;utm_medium=direct&amp;utm_campaign=aug27_seat_ask&amp;utm_content=jul30_base
+
+Bring a laptop. That is the whole list.</pre><p><b>Scores:</b> voice 93 &middot; hormozi value equation 8.5/10 &middot; composite <b>92</b></p><p>Opens on the one thing that is true and specific about them, that they already put their hand up for this room. Gives before it asks: the free five-minute version is offered ahead of the paid seat. The failure line (built it for himself first and got it wrong first) is the earned anchor and it is on the live page already, so it is sourced rather than invented. No seat counts, no scarcity, no guarantee.</p>
+    </div>
+  </details>
+
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>Email 2. The two who came back</h2></summary>
+    <div class="sec-body">
+<p><b>To:</b> jc_pinto@yahoo.com, tt8_ut@yahoo.com<br><b>Channel:</b> email, sent one at a time, never a shared To line<br><b>Who:</b> The two who registered and then came back to the page afterwards. That is the strongest intent signal in the data.<br><b>Subject:</b> Thursday at the Miller Campus</p><pre style="white-space:pre-wrap;word-break:break-word;background:#f6f5f1;border:1px solid #d9d5cb;border-radius:6px;padding:14px 16px;font-size:.92rem;line-height:1.55;overflow-x:auto">You signed up for the July session at the Miller Campus, and you looked again after. So I will keep this short.
+
+The next one is Thursday, August 27. Seven to eight thirty in the evening, room opens at six thirty, same campus in Sandy, fifty dollars for the seat.
+
+You build three things on your own laptop that evening, in your own words, about your own business, and they keep working after you leave. A file that makes AI answer about your business instead of a generic one. A second opinion that argues with you about the decision you have been sitting on. And a check on whatever you are about to spend money on.
+
+Reply with a yes and I will send you the link myself. Or take it straight from here:
+https://catalystworks.consulting/workshop/?utm_source=email&amp;utm_medium=direct&amp;utm_campaign=aug27_seat_ask&amp;utm_content=jul30_returner
+
+Bring a laptop.</pre><p><b>Scores:</b> voice 92 &middot; hormozi value equation 8.75/10 &middot; composite <b>91</b></p><p>Shorter on purpose, because a second look does not need the full pitch again. It offers a reply as the lowest-friction yes, which is the micro-commitment that costs them nothing and tells you everything. The line about looking again is stated plainly rather than dressed up.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>Email 3. The builder</h2></summary>
+    <div class="sec-body">
+<p><b>To:</b> john@mailbeacon.io<br><b>Channel:</b> email, sent one at a time, never a shared To line<br><b>Who:</b> Registered for July, on his own domain. Written for somebody who does not need AI explained to him.<br><b>Subject:</b> Thursday at the Miller Campus</p><pre style="white-space:pre-wrap;word-break:break-word;background:#f6f5f1;border:1px solid #d9d5cb;border-radius:6px;padding:14px 16px;font-size:.92rem;line-height:1.55;overflow-x:auto">You signed up for the July session at the Miller Campus. You are further along than most of the room already, so let me tell you the part that is actually worth your evening.
+
+Thursday, August 27. Seven to eight thirty, room opens at six thirty, Miller Campus in Sandy. Fifty dollars.
+
+Nobody is getting a lecture on what a language model is. Everyone builds three things on their own laptop and walks out with them running. A context file that makes every later answer about their own business. A second opinion built to argue instead of agree. And a check that pulls the clever-looking parts out of a plan before the money goes.
+
+The part I think you would get the most out of is the room. Owners and operators, kept small on purpose, saying out loud what they have tried and what burned them. That is a hard thing to buy anywhere else in this valley.
+
+https://catalystworks.consulting/workshop/?utm_source=email&amp;utm_medium=direct&amp;utm_campaign=aug27_seat_ask&amp;utm_content=jul30_builder
+
+If you would rather test the thinking first, the second opinion is on the site cut down to one prompt, free, about five minutes: https://catalystworks.consulting/second-opinion/</pre><p><b>Scores:</b> voice 91 &middot; hormozi value equation 8.25/10 &middot; composite <b>90</b></p><p>The value proposition is deliberately different here: for him the room is the product, not the tools. <b>Nothing is asserted about what his company does.</b> The domain resolves and its mail is live, but the site itself does not respond, so anything specific about the product would have been a guess and was cut.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>Email 4. Tiffany Brady, Aspen Roofing</h2></summary>
+    <div class="sec-body">
+<p><b>To:</b> tiffany.brady@aspen-roofing.com<br><b>Channel:</b> email, sent one at a time, never a shared To line<br><b>Who:</b> Tiffany Brady, Aspen Roofing. Registered for July at this same campus. The only one on the list with a name and a company, and the highest-probability single yes on the board.<br><b>Subject:</b> Thursday at the Miller Campus, Tiffany</p><pre style="white-space:pre-wrap;word-break:break-word;background:#f6f5f1;border:1px solid #d9d5cb;border-radius:6px;padding:14px 16px;font-size:.92rem;line-height:1.55;overflow-x:auto">Tiffany, you put your name down for the July session at the Miller Campus. This is the next one, and I am asking you directly.
+
+Thursday, August 27. Seven to eight thirty in the evening, room opens at six thirty. Miller Campus in Sandy. Fifty dollars.
+
+You leave with three things running on your own laptop, built about Aspen Roofing, in your words. A file that makes every answer you get afterwards about your business instead of a generic one. A second opinion you can hand a decision you have been sitting on, a price, a hire, a bid, and it argues with you instead of agreeing. And a check on something you are about to spend money on, which strips out the parts that are only there because they look clever.
+
+They are yours after, and they still work on the drive home.
+
+Every one of them is a tool I built for myself first and got wrong first. That is the only reason it is in the room.
+
+Seat is here:
+https://catalystworks.consulting/workshop/?utm_source=email&amp;utm_medium=direct&amp;utm_campaign=aug27_seat_ask&amp;utm_content=tiffany_brady
+
+Bring a laptop. That is the whole list.</pre><p><b>Scores:</b> voice 94 &middot; hormozi value equation 9/10 &middot; composite <b>93</b></p><p>Uses her name and her company because both are on record, and grounds the second-opinion tool in decisions a roofing operator actually sits on: a price, a hire, a bid. The direct ask is stated as a direct ask.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>Alex Dotter at SLCC. The phone call</h2></summary>
+    <div class="sec-body">
+
+<p><b>To:</b> Alex Dotter, SLCC &middot; alex.dotter@slcc.edu &middot; 801-957-5294<br>
+<b>Channel:</b> <b>phone call, not email.</b> Nine outbound and nine inbound already on record with him, so a tenth
+email is the weakest version of this.<br>
+<b>The ask:</b> not a seat. Getting the session in front of the Miller Campus business list, which is the only ask on
+this whole board that reaches more than one person at a time.</p>
+<p>Talking points to speak from, not a script to read.</p>
+<pre style="white-space:pre-wrap;word-break:break-word;background:#f6f5f1;border:1px solid #d9d5cb;border-radius:6px;padding:14px 16px;font-size:.92rem;line-height:1.55;overflow-x:auto">Opening, once he picks up.
+
+  Alex, Boubacar. The August 27 evening at Miller is a week out.
+  I am calling about one thing and it is not a favour for me.
+
+The ask, said plainly and early.
+
+  I would like the session put in front of the Miller Campus business list.
+  Whatever that looks like on your side, an email to the list, a line in a
+  newsletter, a mention to the business programs. You know the shape better
+  than I do.
+
+Why it is not a favour.
+
+  This is a paid seat at fifty dollars and it runs in your building, so the
+  people who show up are your community coming back onto your campus for an
+  evening. If the room works, it is a reason for them to come back for the
+  next one too.
+
+What is actually in the room, if he asks.
+
+  Owners and operators of small businesses. Everybody brings a laptop and
+  builds three working things on it in ninety minutes, about their own
+  business, in their own words. Nobody leaves with notes. They leave with
+  tools that still run.
+
+Make it easy for him to say yes.
+
+  I will write the paragraph and send you the link so nothing lands on your
+  desk except a forward. Tell me the format you want it in.
+
+If the timing is too tight for the list.
+
+  Then let us talk about the next one instead, and get it on the calendar
+  early enough that the list has time to work. I would rather do this
+  properly with you than squeeze it.
+
+Close.
+
+  What is the best way to get you that paragraph today?
+
+Do not say on this call.
+  Anything about how many seats have sold. Anything that sounds like the
+  session might not run. Neither helps him say yes and neither is his
+  problem to solve.</pre>
+<p><b>Scores:</b> voice 91 &middot; composite <b>91</b>. Leads with the ask instead of burying it, gives him the reason it
+serves SLCC before it serves you, and removes the work by offering to write the paragraph.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>The post to your own feed</h2></summary>
+    <div class="sec-body">
+
+<p><b>Channel:</b> LinkedIn, your own feed. Posted by hand by you. Nothing auto-publishes and nothing has touched the
+content board.</p>
+<pre style="white-space:pre-wrap;word-break:break-word;background:#f6f5f1;border:1px solid #d9d5cb;border-radius:6px;padding:14px 16px;font-size:.92rem;line-height:1.55;overflow-x:auto">I have been talking about this workshop for weeks. I have not once turned to the people who actually know me and asked.
+
+So here is the ask.
+
+Thursday, August 27. Seven to eight thirty in the evening at the Salt Lake Community College Miller Campus in Sandy. Fifty dollars for the seat.
+
+If you own a small business here, or you run the place for somebody who does, you walk out that night with three things running on your own laptop. A file that makes AI answer about your business instead of some business that does not exist. A second opinion built to argue with you about the decision you have been sitting on. And a check that pulls the clever-looking parts out of a plan before you spend on it.
+
+I spent about fifteen years in HR, ten of them inside a Fortune 100, watching good ideas die because nobody could get them into anybody&#x27;s hands. Then I built all three of these for myself, wrong the first time, and I have been running them in my own week since.
+
+I would rather teach you to build them in ninety minutes than sell you mine.
+
+If that is your Thursday, the seat is here: https://catalystworks.consulting/workshop/
+
+And if it is not you but you know whose it is, send it to them. That helps more than a like.</pre>
+<p><b>Scores:</b> voice 92 &middot; ctq-social 91 &middot; composite <b>91</b>.</p>
+<p>The connection bridge is the one only you can draw: fifteen years watching good ideas die inside a very large company
+for want of distribution, now pointed at owners who have the opposite problem. The failure anchor is real and sourced.
+Career facts are held to the canonical record: HR since 2010, ten of those years inside a Fortune 100. No claim that you
+ran HR or operations, no claim of current clients, no attendance numbers, no scarcity.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>Verification, and the two open calls</h2></summary>
+    <div class="sec-body">
+
+<h3>Checked before a word was written</h3>
+<ul>
+<li><b>Suppression, re-run this morning against the live table.</b> Zero rows for all thirteen addresses. The three
+genuine opt-outs on file and the one widened to global today are different people; none is on this list.</li>
+<li><b>Exclusions honoured.</b> Bill Lines and Kim Floor are out, they already sat in this session. Oliver Drake, nothing
+at all. Dave Ulrich closed quietly. Zack Oates, Joe Hanson, Ashton Jessup and Taha get no agent outreach. Luke Pierce is
+your mentor. Brandon is your accountability partner. Norm Smallwood is your own RBL conversation and is nowhere on this
+board.</li>
+<li><b>The destination is live.</b> The workshop page carries Thursday, August 27, room confirmed, seven to eight thirty
+with the room open at six thirty, Miller Campus in Sandy, and a working checkout at fifty dollars.</li>
+<li><b>No names were invented.</b> Ten of the eleven registrants have no name anywhere: the leads table holds the email
+local part and the cadence display name is empty. The registration form collects email only, by your own decision, so
+this is the form working as designed. The copy is written to need no name.</li>
+</ul>
+<h3>Two things I could not settle, and they are yours</h3>
+<ol>
+<li><b>What happens to a buyer if you decide Friday not to run it.</b> None of the copy promises anything that becomes a
+lie either way, and none of it mentions cancellation. But if somebody pays on Thursday and the session comes off on
+Friday, there is no written policy for making them whole. That is a decision, not a draft.</li>
+<li><b>The room cap is still enforced nowhere.</b> Seat thirty-six is exactly as buyable as seat one. It has not
+mattered yet and it is unlikely to matter this week, so I have not touched a live checkout to fix it.</li>
+</ol>
+
+    </div>
+  </details>
+  <!-- duplicate the <details class="sec"> block per section; add a matching nav link -->
+
+  <footer class="foot">
+    Staged, not sent. Nothing leaves until Boubacar says send.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
