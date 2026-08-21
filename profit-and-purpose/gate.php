@@ -266,7 +266,10 @@ input[type=password],input[type=text]{
   font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
   font-size:17px;
 }
-input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(138,59,18,.14)}
+/* The field is autofocused, so its focus state is the first thing the reader
+   sees. A red border there reads as "you got it wrong" before anyone has typed
+   anything. The ink border says attention, the faint red ring keeps the accent. */
+input:focus{outline:none; border-color:var(--ink); box-shadow:0 0 0 3px rgba(166,27,43,.13)}
 .eye{
   position:absolute; right:6px; width:44px; height:44px;
   display:flex; align-items:center; justify-content:center;
