@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTM Activation: 1,000 Signups in 30 Days</title>
+<!--
+  Companion to review/20260819-roads-plan/ (the diagnosis). This page is the ACTIVATION:
+  what actually gets built and run between 2026-08-21 and 2026-09-20, and an honest read on
+  whether the stated target is reachable.
+
+  Built from scripts/templates/review-page-template.html so the layout hard standard passes.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .callout{border-left:3px solid var(--warn); background:#1a1712; padding:12px 16px;
+    border-radius:0 8px 8px 0; margin:0 0 14px;}
+  .callout.bad{border-left-color:var(--bad); background:#1d1315;}
+  .callout.good{border-left-color:var(--good); background:#121d18;}
+  .big{font-size:1.05rem; font-weight:650;}
+  .dim{color:var(--text-dim);}
+  .tag{display:inline-block; font-size:.72rem; letter-spacing:.03em; text-transform:uppercase;
+    border:1px solid var(--border); border-radius:999px; padding:2px 9px; color:var(--text-dim);
+    background:var(--bg2); white-space:nowrap;}
+  .tag.no{color:var(--bad); border-color:#4a2a2f;}
+  .tag.yes{color:var(--good); border-color:#25473a;}
+  .tag.part{color:var(--warn); border-color:#4a3d20;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-21-09:23:41 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">GTM activation</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-math">The math</a>
+      <a href="#sec-newsletter">Newsletter 43 to 1,000</a>
+      <a href="#sec-ceiling">Automation ceiling</a>
+      <a href="#sec-tracking">Tracking the 3 numbers</a>
+      <a href="#sec-plan">The 30 days</a>
+      <a href="#sec-pivot">Pivot point</a>
+      <a href="#sec-gaps">Gaps found today</a>
+      <a href="#sec-decisions">Your decisions</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>GTM Activation: 1,000 Signups in 30 Days</h1>
+    <div class="meta">Turning the roads plan into a dated, mostly automated 30-day run &middot; Aug 21, 2026</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p class="big">1,000 net-new signups by Sep 20 is not reachable organically. The honest
+      full-effort organic number is about 250. I would commit to 300 and treat 1,000 as a
+      90-day target, or buy the gap for roughly $3,000.</p>
+
+      <p><span class="tag no">correction</span> The newsletter is not at 36. I read the
+      platform directly this morning: <strong>43 active subscribers</strong>, 16.91% average
+      open rate. The 8/19 plan's 36 was the Aug 12 figure and is stale. Every number below
+      uses 43.</p>
+
+      <p><span class="tag yes">gap closed</span> The single most important missing number in
+      the 8/19 plan was your LinkedIn following. You gave it today:
+      <strong>4,511 connections</strong>, self-reported Aug 21. That is now the baseline the
+      spine road gets measured against.</p>
+
+      <p><strong>The automation ask has a real ceiling, and it is lower than it sounds.</strong>
+      What can genuinely run untouched: the subscriber-count tracking, the road tagging and
+      attribution reporting, the capture and welcome chain, and the weekly digest. What cannot:
+      anything that writes on your personal LinkedIn. A prior Council review already held back
+      even read-only automation against your real LinkedIn identity over ban risk, and
+      automated comments and likes are ruled out on top of that. The honest shape of this plan
+      is automated infrastructure feeding a roughly 20-minute-a-day manual publish and comment
+      step, not a zero-touch machine.</p>
+
+      <p class="callout bad"><strong>Two things I found today that you should know before
+      anything else.</strong> First: the content pipeline that has been dormant since June is
+      pointed at your <em>personal</em> LinkedIn profile, and the only thing stopping it from
+      auto-posting in your name is a status field nobody has set. It is a convention, not a
+      guard. Second: the majority of your lead-magnet pages write no row to any database we
+      control, which means road attribution cannot work on them as built. Both are fixable in
+      week one and both are named below.</p>
+
+      <p><strong>Cost to you:</strong> about 45 minutes in week one, then about 20 minutes a
+      day for the comment and post rhythm that is already a standing rule, plus 20 minutes on
+      Mondays to approve the week's posts.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-math" open>
+    <summary><h2>The honest math on 1,000 in 30 days</h2></summary>
+    <div class="sec-body">
+      <p>Stating this first rather than burying it, because the number shapes every choice
+      underneath it.</p>
+
+      <h3>What we are starting from, measured</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Input</th><th>Value</th><th>Source and date</th></tr>
+        <tr><td>LinkedIn connections</td><td>4,511</td><td>Your own count, given Aug 21. Authoritative for your own account, not independently verified.</td></tr>
+        <tr><td>LinkedIn reach per post</td><td><strong>Unmeasured</strong></td><td>No baseline exists. Still action item one.</td></tr>
+        <tr><td>Newsletter</td><td>43 active, 16.91% open</td><td>Read live off the platform Aug 21.</td></tr>
+        <tr><td>Personal X</td><td>769 followers, ~21 impressions per post</td><td>May 31. Stale, treat as unverified.</td></tr>
+        <tr><td>Posting activity</td><td>Nothing since Jul 31</td><td>The account is cold, not warm.</td></tr>
+        <tr><td>Real inbound captures, last 30 days</td><td>Effectively zero</td><td>Rows read back from the capture tables. Almost every recent row is a test address or your own.</td></tr>
+      </table>
+      </div>
+
+      <p class="callout">The last row is the one that matters most and it is the one nobody
+      has said out loud. We are not growing a trickle. We are starting from a standstill.
+      Going from a standstill to 1,000 in 30 days is a different problem from going from 200 a
+      month to 1,000.</p>
+
+      <h3>The arithmetic, with every assumption labelled</h3>
+      <p>Your account has no measured reach, so the percentages below are published benchmarks
+      for a personal account of roughly this size, not facts about you. I would rather show
+      the working than hand you a number you cannot check.</p>
+
+      <p><strong>Posts.</strong> Three a week from Aug 25 to Sep 20 is about 12 posts. A
+      reactivating personal account at ~4,500 connections typically sees 2% to 8% of the
+      network per post at first, climbing with consistency. Call it 6,000 to 12,000 total
+      impressions across the month. Because the rule is no link in the post, conversion runs
+      through your profile: roughly 1% to 2% of impressions visit the profile, and a
+      single-field front door converts a warm visitor at maybe 25% to 40%.
+      <br><strong>That is roughly 15 to 95 signups from posting.</strong></p>
+
+      <p><strong>Comments.</strong> This is the bigger lever, and it is already running. Three
+      to five a day for 26 days is 80 to 130 comments. A good comment on a well-followed post
+      earns a handful of profile visits each. At 2 to 8 visits per comment and the same front
+      door conversion, <strong>that is roughly 50 to 400 signups</strong>. Wide, because it
+      depends entirely on whose posts you land on.</p>
+
+      <p><strong>Everything else, honestly, is close to zero inside 30 days.</strong> Search
+      and the sitemap repair take 2 to 4 weeks just to index before they return anything. The
+      cross-site footer sits on low-traffic pages. X at 21 impressions per post is a rounding
+      error. The newsletter at 43 is a destination, not a source.</p>
+
+      <p class="big">Realistic full-effort organic total: <strong>roughly 150 to 350, centred
+      near 250.</strong> The target is 1,000. Organic alone gets to about a quarter of it.</p>
+
+      <h3>What it would actually take to hit 1,000</h3>
+      <p>The gap is roughly 700 to 850 signups. There are only four things that close a gap
+      that size in 30 days, and they are not equally sensible.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Lever</th><th>Realistic yield</th><th>Cost</th><th>Verdict</th></tr>
+        <tr><td>Paid social to a strong magnet (Meta or Instagram)</td><td>700 to 850 at roughly $2 to $6 per email</td><td><strong>$1,500 to $4,500, call it $3,000</strong></td><td><span class="tag yes">The only lever that actually closes it</span></td></tr>
+        <tr><td>LinkedIn ads</td><td>Same yield</td><td>$25 to $60 per lead, so $20,000 to $45,000</td><td><span class="tag no">Rule out on cost</span></td></tr>
+        <tr><td>Partner or newsletter cross-promo</td><td>50 to 250 per swap with a 5k to 10k list</td><td>Free, but needs relationships and lead time</td><td><span class="tag part">Do it, but 1 to 2 land inside 30 days at best</span></td></tr>
+        <tr><td>Podcast placement with a clean vanity URL</td><td>20 to 150 per episode</td><td>Free</td><td><span class="tag part">Pitch now, but most episodes air after day 30</span></td></tr>
+      </table>
+      </div>
+
+      <p class="callout good"><strong>The recommendation.</strong> Commit to <strong>300 by
+      Sep 20</strong>, which from a standing start is already real movement and is honestly
+      achievable. Hold <strong>600 to 900</strong> as the stretch, gated on a roughly $3,000
+      paid test that you decide on around day 15. Move the <strong>1,000</strong> flag to
+      about Nov 20 on the organic-plus-partners path. I would rather hand you a 300 we hit and
+      then beat than a 1,000 we miss by 700 and learn nothing from.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-newsletter" open>
+    <summary><h2>The newsletter target, 43 to 1,000, taken separately</h2></summary>
+    <div class="sec-body">
+      <p>This is a harder target than the signup one, and it has a structural problem
+      underneath it that has to be fixed before the number can move at all.</p>
+
+      <p class="callout bad"><strong>The structural problem, and it is the important part of
+      this section.</strong> "Email signups" and "newsletter subscribers" are currently two
+      different numbers with no reliable bridge between them. The workshop and front-door
+      style captures write rows to our own database. The newsletter lives on a separate
+      platform. Several of the magnet pages subscribe to the newsletter and write no row we
+      can read; others write a row and never subscribe anyone. <strong>So a signup does not
+      become a subscriber today unless it happens to hit the right form.</strong> If the goal
+      is newsletter subscribers specifically, then every capture has to also enrol on the
+      newsletter platform. That is a small build and it is the first item in week one, because
+      without it this target cannot move no matter how much traffic arrives.</p>
+
+      <h3>Is 43 to 1,000 in 30 days achievable?</h3>
+      <p class="big">No. Not through content, and I do not think it is achievable at all
+      inside 30 days without a budget considerably larger than the one for the signup goal.</p>
+      <p>It is a 23x jump. A newsletter growing on the back of a reactivating personal account
+      grows in the low hundreds a month at best when things go well. The honest ceiling here
+      is the same ceiling as the signup goal, because after the bridge above is built they are
+      largely the same people: <strong>roughly 300 to 400 subscribers by Sep 20</strong>, which
+      would be a 7x to 9x on 43.</p>
+
+      <h3>What actually gets a newsletter to four digits</h3>
+      <p>Steady content is not on this list, which is the point.</p>
+      <ul>
+        <li><strong>Gate the magnets behind the newsletter instead of leaving them ungated.</strong>
+        This is the highest-leverage free move available and it is currently not done. Six
+        finished magnets exist. Every one of them should enrol the reader on the list. Nothing
+        to buy, nothing to negotiate.</li>
+        <li><strong>Paid list-build.</strong> Roughly $2 to $6 per subscriber. Getting to 1,000
+        means buying about 600 of them even after everything else works, so $1,500 to $3,500
+        on top of the signup budget, or shared with it.</li>
+        <li><strong>Cross-promo swaps.</strong> The genuinely free lever, and the one that
+        compounds. Two to three swaps with newsletters in the same audience are worth more
+        than a month of posting. Needs to be started this week to land inside the window.</li>
+        <li><strong>Giveaway or contest mechanics.</strong> These do produce four-digit jumps.
+        I am recommending against it: the list you get is people who wanted the prize, the
+        open rate collapses, and a collapsed open rate on a 43-subscriber base you are trying
+        to establish is worse than a smaller real list.</li>
+      </ul>
+
+      <p class="callout good"><strong>The recommendation.</strong> Commit to <strong>400
+      subscribers by Sep 20</strong>. Get there by fixing the bridge, gating the six magnets,
+      and landing two cross-promo swaps. Hold 1,000 as a target for <strong>late
+      November</strong>, or bring it inside 30 days only if you are willing to spend on the
+      order of $4,000 to $5,000 across both goals.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-ceiling" open>
+    <summary><h2>The automation ceiling, stated plainly</h2></summary>
+    <div class="sec-body">
+      <p>You asked for this to run whether you touch it or not. Some of it can. The part that
+      matters most cannot, and I would rather flag that as a decision for you than quietly
+      build around it.</p>
+
+      <h3>The binding constraint</h3>
+      <p>A prior Council review held back <em>even read-only</em> automation against your
+      personal LinkedIn, because the platform's terms prohibit automated access and their
+      detection can restrict the account. That is your real professional identity and your
+      only channel with genuine reach. Automated comments, likes, follows and profile scraping
+      sit on the wrong side of that line. This decision stands unless you explicitly overturn
+      it, and I have not built anything against it.</p>
+
+      <p class="callout bad"><strong>A live risk I found while checking this, which is the
+      opposite of what I expected.</strong> Automated <em>posting</em> to your personal
+      LinkedIn is not blocked at all. It is fully wired, the publishing tool holds your
+      personal profile as its target, and it fires on a five-minute timer for anything marked
+      queued. The only thing standing between an agent and a post published in your name is a
+      status field. That is a convention, not a guard, and it has already failed once. Worth
+      fixing properly rather than relying on everyone remembering.</p>
+
+      <p class="callout bad"><strong>Directly related, and it answers a question that came up
+      today.</strong> The dormant content pipeline from June is a genuine end-to-end
+      automation and re-enabling it is tempting. I checked where it points:
+      <strong>your personal LinkedIn profile.</strong> Re-enabling it as built would auto-post
+      in your name without you reading the post first. My recommendation is do not re-enable
+      it unless it is first repointed at brand accounts only. Roughly 35 approved rows are
+      stranded behind it, which is a real loss, but not a reason to open that particular door.</p>
+
+      <h3>What genuinely runs without you</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Thing</th><th>Status</th><th>Note</th></tr>
+        <tr><td>Weekly subscriber-count logging</td><td><span class="tag yes">Build it, trivial</span></td><td>One authenticated call, credential already works. No identity risk.</td></tr>
+        <tr><td>Road tagging and attribution reporting</td><td><span class="tag part">Half built</span></td><td>The tagging and redirect pieces exist and are tested. The wiring to lead capture does not.</td></tr>
+        <tr><td>Capture, storage and welcome email</td><td><span class="tag part">Mostly built</span></td><td>Works on the workshop path. Broken or absent on the newsletter-only pages. One magnet has no fulfilment email at all.</td></tr>
+        <tr><td>Weekly digest of signups by road</td><td><span class="tag yes">Build it</span></td><td>Pure reporting over rows we own.</td></tr>
+        <tr><td>Publishing an already-approved post</td><td><span class="tag part">Works, but</span></td><td>The leg itself is healthy. See the personal-account risk above before leaning on it.</td></tr>
+        <tr><td>Site deploys and the cross-site footer</td><td><span class="tag yes">Already automatic</span></td><td>Ships on push.</td></tr>
+      </table>
+      </div>
+
+      <h3>What needs you, and should</h3>
+      <ul>
+        <li><strong>The comments.</strong> Three to five a day. Judgment about what a specific
+        post left out is the entire value, and an automated comment under your name is a
+        reputational liability rather than a shortcut.</li>
+        <li><strong>Your posts.</strong> What makes the profile worth following is that it is
+        you.</li>
+        <li><strong>Approving the week's batch.</strong> About 20 minutes on Monday.</li>
+        <li><strong>Reading your own LinkedIn number once a week.</strong> Two minutes, by hand,
+        for the reason in the tracking section.</li>
+      </ul>
+
+      <p class="callout"><strong>One more gap worth naming rather than assuming.</strong> The
+      daily comment page you have been working from is built by hand every session. There is
+      no harvester that goes and finds posts worth commenting on. If this plan leans on the
+      comment road as its biggest lever, and it does, then that discovery step is the single
+      most valuable safe thing to automate: it touches no LinkedIn write action and carries no
+      identity risk, because it only proposes targets and drafts. That build is in week two.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-tracking" open>
+    <summary><h2>Tracking the three numbers, ongoing rather than once</h2></summary>
+    <div class="sec-body">
+      <p>You asked for tracking, not a one-time baseline. Nothing durable exists today: there
+      is no table anywhere that holds a follower count over time, and every audience number in
+      our records is prose in a document. So all three get dated rows in a real table from the
+      first reading, with the source and the method stored alongside the number.</p>
+
+      <div class="table-scroll">
+      <table>
+        <tr><th>Number</th><th>Today</th><th>How it gets tracked</th><th>How automated, honestly</th></tr>
+        <tr>
+          <td><strong>Newsletter subscribers</strong></td>
+          <td><strong>43</strong> <span class="dim">(read live Aug 21)</span></td>
+          <td>One authenticated call to the newsletter platform, weekly. The credential already exists and works. I read the number back this morning to prove it rather than assuming it.</td>
+          <td><span class="tag yes">Fully automated</span> Weekly cron, no human step, no identity risk.</td>
+        </tr>
+        <tr>
+          <td><strong>X followers</strong></td>
+          <td>769 <span class="dim">(May 31, stale)</span></td>
+          <td>Read from your own logged-in session, which already exists and is already health-checked weekly.</td>
+          <td><span class="tag part">Automated but fragile</span> The paid API is about $200 a month to log one integer, which is indefensible. The session read is free but breaks when the site changes, so it writes a blank with a reason rather than a wrong number, and alerts after repeated failures.</td>
+        </tr>
+        <tr>
+          <td><strong>LinkedIn connections</strong></td>
+          <td><strong>4,511</strong> <span class="dim">(your count, Aug 21)</span></td>
+          <td>You read it and enter it. Two minutes, once a week, on the same page you already open.</td>
+          <td><span class="tag no">Deliberately manual</span> I am explicitly not building a scraper here, and saying so rather than doing it quietly. Automated access to your personal LinkedIn risks the account, and it is a different and larger risk class than the posting question. A two-minute weekly entry is not worth your professional identity.</td>
+        </tr>
+      </table>
+      </div>
+
+      <p>All three land in one dated, queryable table, following the append-only pattern
+      already used elsewhere in the system rather than inventing a new one. Every row stores
+      the number, the date, the source, and the method, so a scraped blank is never mistaken
+      for a real zero.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-plan" open>
+    <summary><h2>The 30 days, week by week</h2></summary>
+    <div class="sec-body">
+      <p>Ordered so the free structural work lands before anything that needs your attention,
+      and so the measurement exists before the traffic does. Anything unmarked is agent work
+      and costs you nothing.</p>
+
+      <h3>Week 1, Aug 21 to Aug 27. Make it measurable and make it connect.</h3>
+      <ul>
+        <li><strong>Bridge the capture to the newsletter.</strong> Every capture surface also
+        enrols the reader on the list. Without this the newsletter target cannot move at all.
+        Proven by reading a row back, not by a green response.</li>
+        <li><strong>Fix the pages that write no row.</strong> The newsletter-only magnet pages
+        currently leave no record we can read, so road attribution is impossible on them.
+        They get a row as well as a subscription.</li>
+        <li><strong>Wire the fulfilment email that is missing</strong> on the starter magnet.
+        A capture with no delivery is a defect, not a lead.</li>
+        <li><strong>Stand up the metrics table and log all three numbers</strong> with today's
+        readings: 43, 769 flagged stale, and 4,511.</li>
+        <li><strong>Close the personal-account posting risk.</strong> Make the guard technical
+        rather than a convention, so nothing can publish in your name unread.</li>
+        <li><strong>Sitemap, noindex and internal links</strong> for the six magnets, carried
+        over from the 8/19 plan and still the cheapest permanent win here.</li>
+        <li><span class="tag part">You, 15 min</span> <strong>Approve the front door copy.</strong>
+        Its name and promise are words in your name, so they are your call.</li>
+        <li><span class="tag part">You, 5 min</span> <strong>Point your LinkedIn website field
+        and featured section at the front door.</strong> This is what turns every comment into
+        a road. Nothing else in the plan works as well without it.</li>
+      </ul>
+
+      <h3>Week 2, Aug 28 to Sep 3. Turn on the roads and cut your per-day cost.</h3>
+      <ul>
+        <li><strong>Build the comment-target harvester.</strong> Surfaces three to five posts a
+        day worth answering, with a drafted comment for each. You still read, edit and post
+        every one by hand. This is the biggest safe automation available and it does not exist
+        today.</li>
+        <li><strong>Road tagging live on every capture surface</strong>, so a signup says
+        whether it came from a comment, a post, the footer, search or the newsletter.</li>
+        <li><strong>Ship the cross-site footer</strong> pointing at the front door.</li>
+        <li><strong>Start the cross-promo outreach.</strong> Two to three newsletters in the
+        same audience. This has the longest lead time of anything here, which is why it starts
+        now rather than at the halfway point.</li>
+        <li><span class="tag part">You, 20 min Monday</span> Approve the fortnight of posts in
+        one batch. Posting restarts Monday, Wednesday, Friday.</li>
+        <li><span class="tag part">You, ~20 min daily</span> The comment rhythm, now fed by the
+        harvester instead of assembled by hand.</li>
+      </ul>
+
+      <h3>Week 3, Sep 4 to Sep 10. First real read, and the decision point.</h3>
+      <ul>
+        <li><strong>First full week of attributed data.</strong> Signups by road, in the weekly
+        digest.</li>
+        <li><strong>Record the actual reach numbers</strong> from the first two weeks of posts.
+        This replaces every benchmark in the math section above with your real figures, and
+        the forecast gets rebuilt on them.</li>
+        <li><span class="tag part">You, day 15 or so</span> <strong>The paid decision.</strong>
+        See the pivot section. This is the one call that determines whether the stretch target
+        is live.</li>
+        <li>Pitch the podcast circuit with a clean vanity URL, accepting that most of it lands
+        after day 30 and counts toward the 90-day number.</li>
+      </ul>
+
+      <h3>Week 4, Sep 11 to Sep 20. Compound or correct.</h3>
+      <ul>
+        <li>If tracking on pace: keep the rhythm, add nothing new, let the roads compound.</li>
+        <li>If tracking under: the pre-decided pivot fires rather than being debated.</li>
+        <li><strong>Sep 20 close-out:</strong> total signups, split by road; newsletter number
+        against the 400 commitment; cost per signup on anything paid; and a plain verdict on
+        which roads were real and which were theatre.</li>
+      </ul>
+
+      <p class="callout"><strong>Your total time:</strong> about 45 minutes in week one, then
+      roughly 20 minutes a day on comments and posts, which is already a standing rule and not
+      new, plus 20 minutes on Mondays. This plan does not ask for the selling hours.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-pivot" open>
+    <summary><h2>The pivot point, decided now instead of on day 30</h2></summary>
+    <div class="sec-body">
+      <p>The failure mode worth designing against is discovering on Sep 20 that it did not
+      work. So the checkpoint is day 15, roughly <strong>Sep 4</strong>, and the thresholds
+      are set today while nobody is invested in the answer.</p>
+
+      <div class="table-scroll">
+      <table>
+        <tr><th>Signups by Sep 4</th><th>Read</th><th>What happens, automatically</th></tr>
+        <tr><td><strong>150 or more</strong></td><td>Ahead of the 300 commitment</td><td>Change nothing. Add no new roads. Let it compound and revisit the stretch target with real numbers.</td></tr>
+        <tr><td><strong>75 to 150</strong></td><td>On pace for 300, short of 1,000</td><td>Hold organic. Put roughly $1,000 into a paid test purely to learn the real cost per email, not to chase the number. Decide the full spend on that evidence.</td></tr>
+        <tr><td><strong>Under 75</strong></td><td>Organic is not converting</td><td>Stop adding traffic and fix conversion first. Under 75 at day 15 means the front door or the offer is wrong, and spending money to push more people through a door that does not open is how budgets disappear.</td></tr>
+        <tr><td><strong>Under 25</strong></td><td>Something is broken, not underperforming</td><td>Treat as a defect, not a result. Re-verify the whole chain by reading rows back before drawing any conclusion about the roads.</td></tr>
+      </table>
+      </div>
+
+      <p class="callout"><strong>The distinction that matters in that table:</strong> a low
+      number can mean the roads are wrong, or it can mean the capture is broken. Those look
+      identical from a dashboard and call for opposite responses. That is why road tagging is
+      week one work and not week three work.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-gaps" open>
+    <summary><h2>Gaps found while checking this, and what I did about them</h2></summary>
+    <div class="sec-body">
+      <p>Everything here was verified today by reading the actual source rather than trusting
+      a prior document.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Finding</th><th>Evidence</th><th>Status</th></tr>
+        <tr><td>Newsletter is at 43, not 36</td><td>Read live off the platform Aug 21. Open rate is 16.91%, not the 18% recorded.</td><td><span class="tag yes">Corrected here</span></td></tr>
+        <tr><td>Most magnet pages write no row we can read</td><td>Twelve surfaces subscribe to the newsletter only. No row means no attribution and no proof of capture.</td><td><span class="tag part">Week 1 fix</span></td></tr>
+        <tr><td>Real inbound captures are effectively zero</td><td>Rows read back from the capture tables. Recent entries are test addresses and your own.</td><td><span class="tag no">The honest baseline</span></td></tr>
+        <tr><td>One magnet has no fulfilment email</td><td>The file is handed over in the browser only. Nothing is sent.</td><td><span class="tag part">Week 1 fix</span></td></tr>
+        <tr><td>Personal LinkedIn auto-posting is wired and unguarded</td><td>The publisher targets your personal profile and fires on a five-minute timer. Only a status field stops it.</td><td><span class="tag no">Week 1, needs a real guard</span></td></tr>
+        <tr><td>The dormant content pipeline points at your personal profile</td><td>Confirmed against its configured target.</td><td><span class="tag no">Do not re-enable as built</span></td></tr>
+        <tr><td>No comment-target harvester exists</td><td>The daily comment page is hand-assembled every session. No generator, no schedule.</td><td><span class="tag part">Week 2 build</span></td></tr>
+        <tr><td>No audience-metrics table exists anywhere</td><td>Every follower number in our records is prose in a document.</td><td><span class="tag part">Week 1 build</span></td></tr>
+        <tr><td>The review hub had no search</td><td>176 pages, no filter, and a placeholder comment reading "not built yet". This is why you could not find the 8/19 plan even though it was live and linked.</td><td><span class="tag yes">Fixed today</span></td></tr>
+        <tr><td>Sixteen review titles had decayed into unreadable characters</td><td>A file-encoding bug corrupted them a little further on every index rebuild.</td><td><span class="tag yes">Fixed today, cause and titles both</span></td></tr>
+      </table>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-decisions" open>
+    <summary><h2>What I need from you</h2></summary>
+    <div class="sec-body">
+      <p>Four decisions. Everything else in this plan proceeds without you.</p>
+
+      <ol>
+        <li><strong>The target.</strong> My recommendation is to commit to 300 signups and 400
+        subscribers by Sep 20, and move the 1,000 flag to late November.
+        <em>Options:</em> accept that, or hold 1,000 and accept the roughly $4,000 to $5,000
+        it needs, or hold 1,000 with no budget and accept we will likely land near 250.
+        <em>I recommend the first.</em> It is the only one of the three where the number we
+        report on Sep 20 teaches us something.</li>
+
+        <li><strong>The paid budget, in principle.</strong> Not a spend today, just a ceiling
+        so the day-15 decision is a yes or no rather than a fresh negotiation. I recommend
+        authorising up to $1,000 for a learning test at day 15, with anything beyond that
+        coming back to you with the real cost-per-email in hand.</li>
+
+        <li><strong>The dormant content pipeline.</strong> It points at your personal LinkedIn.
+        I recommend leaving it off and repointing it at brand accounts before it ever runs
+        again, accepting that the roughly 35 stranded rows stay stranded a while longer.
+        The alternative is turning on something that publishes in your name unread.</li>
+
+        <li><strong>The front door name and promise.</strong> Still open from the 8/19 plan and
+        still blocking week one. It is copy in your name so it is your call, and it must not
+        collide with the existing event page at a similar address.</li>
+      </ol>
+
+      <p class="callout"><strong>Not asking, just telling you:</strong> I have not built and
+      will not build automated posting, commenting or scraping against your personal LinkedIn.
+      If you want that reconsidered it needs to be your explicit call with the account risk on
+      the table, not something an agent quietly enables to satisfy a request for more
+      automation.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Internal planning document. Companion to <a href="/review/20260819-roads-plan/">Distribution
+    + Go-To-Market: The Roads Plan</a> (Aug 19), which holds the diagnosis this plan acts on.
+    Every figure carries the date and method it was read by. The LinkedIn connection count is
+    Boubacar's own, self-reported Aug 21. The newsletter figure was read live off the platform
+    the same day and supersedes the 36 recorded on Aug 19. Reach and conversion percentages in
+    the math section are published benchmarks for an account of this size, explicitly labelled
+    as such, and are replaced with measured figures in week three. Illustrative copy here has
+    not passed the voice and social-quality gates and must do so before any of it ships.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+

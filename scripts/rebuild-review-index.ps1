@@ -165,8 +165,15 @@ function Replace-Block([string]$html, [string]$startMarker, [string]$endMarker, 
 }
 
 # --- Load existing manifest -------------------------------------------------
+# -Encoding UTF8 is LOAD-BEARING (fixed 2026-08-21). Without it, Windows PowerShell 5.1
+# reads this UTF-8 file as ANSI/cp1252, so every non-ASCII char (an em-dash, in practice)
+# comes back as mojibake -- and line ~296 then writes it back out as real UTF-8. That is a
+# lossy round trip that COMPOUNDS one generation per rebuild: 17 of 225 manifest titles had
+# decayed into multi-hundred-character garbage, e.g. "HR Revenue Plan <300 chars of noise>
+# Sequenced Go-To-Market". A title he cannot read is a title he cannot find, so this is a
+# findability bug, not a cosmetic one. Repaired titles were restored in the same commit.
 $manifest = if (Test-Path $ManifestPath) {
-    @(Get-Content $ManifestPath -Raw | ConvertFrom-Json)
+    @(Get-Content $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json)
 } else { @() }
 
 $bySlug = @{}
