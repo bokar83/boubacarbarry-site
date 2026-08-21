@@ -618,37 +618,21 @@ html{ scroll-behavior:smooth }
 /* ---- back to top ------------------------------------------------------- */
 
 .backtop{
-  position:fixed; right:16px; bottom:16px; z-index:50;
-  width:46px; height:46px; border-radius:50%;
+  /* It lives in the sticky bar at every width. A floating corner button sits on
+     the line the reader is on at 375. And inside this bar it could not float
+     anyway: the backdrop-filter above makes the bar the containing block for
+     anything fixed. So it docks. Always visible, covers nothing. */
+  width:34px; height:34px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  background:var(--card); color:var(--ink);
-  border:1px solid var(--rule); box-shadow:0 3px 14px rgba(0,0,0,.13);
-  text-decoration:none; cursor:pointer;
-  opacity:0; visibility:hidden; transform:translateY(9px);
-  transition:opacity .2s ease, transform .2s ease, visibility .2s;
+  flex:0 0 auto;
+  background:transparent; color:var(--mute);
+  border:1px solid var(--rule); text-decoration:none; cursor:pointer;
+  transition:color .18s ease, border-color .18s ease;
 }
-.backtop.on{ opacity:1; visibility:visible; transform:none }
 .backtop:hover{ border-color:var(--accent); color:var(--accent) }
 .backtop:focus-visible{ outline:2px solid var(--accent); outline-offset:3px }
-.backtop svg{ width:19px; height:19px }
-.backtop b{
-  position:absolute; right:56px; white-space:nowrap; font-family:var(--mono);
-  font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--mute);
-  opacity:0; transition:opacity .18s ease; pointer-events:none;
-}
-.backtop:hover b,.backtop:focus-visible b{ opacity:1 }
-@media (max-width:700px){
-  /* On a phone the text column runs the full width, so a floating button sits
-     on the line the reader is on. It docks into the bar instead, where it is
-     always visible and covers nothing. */
-  .backtop{
-    position:static; width:36px; height:36px;
-    opacity:1; visibility:visible; transform:none;
-    box-shadow:none; background:transparent; flex:0 0 auto; margin-left:auto;
-  }
-  .backtop b{ display:none }
-  .backtop svg{ width:17px; height:17px }
-}
+.backtop svg{ width:17px; height:17px }
+.backtop b{ position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%) }
 @media (prefers-reduced-motion:reduce){ .backtop{ transition:none } }
 
 /* ---- the hero ask + the open first look -------------------------------- */
@@ -715,10 +699,6 @@ html{ scroll-behavior:smooth }
 <header class="topbar">
   <div class="topbar-in">
     <span class="wordmark"><b>Profit &amp; Purpose</b><i> &nbsp;/&nbsp; the work</i></span>
-    <a class="backtop" id="backtop" href="#top" aria-label="Back to the top of the page">
-      <b>Back to top</b>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-    </a>
     <button class="burger" id="burger" aria-expanded="false" aria-controls="nav" aria-label="Open the sections menu">
       <svg class="m" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       <svg class="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
@@ -731,8 +711,12 @@ html{ scroll-behavior:smooth }
       <a href="#plan">The 30-day loop</a>
       <a href="#offer">The call</a>
     </nav>
+    <a class="backtop" id="backtop" href="#top" aria-label="Back to the top of the page">
+      <b>Back to top</b>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </a>
     <!-- VERSION MARKER: delete this one span (and the .ver rule block in the stylesheet) before this link is sent. -->
-    <span class="ver">v13</span>
+    <span class="ver">v14</span>
   </div>
 </header>
 
@@ -1591,29 +1575,8 @@ html{ scroll-behavior:smooth }
   window.addEventListener('hashchange', function () { openTarget(location.hash); });
   openTarget(location.hash);
 
-  // Back to top. Appears once the reader is past the first screen, never over content.
-  var bt = document.getElementById('backtop');
-  if (bt) {
-    // Desktop: a floating button in the empty left margin, which covers nothing
-    // there. Phone: it lives in the sticky bar, always on, handled in CSS.
-    var showAt = 600;
-    var tick = false;
-    function syncBt() {
-      var y = window.pageYOffset || document.documentElement.scrollTop;
-      bt.classList.toggle('on', y > showAt);
-      tick = false;
-    }
-    window.addEventListener('scroll', function () {
-      if (!tick) { tick = true; window.requestAnimationFrame(syncBt); }
-    }, { passive: true });
-    syncBt();
-    bt.addEventListener('click', function (e) {
-      e.preventDefault();
-      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
-      if (history.replaceState) { history.replaceState(null, '', location.pathname); }
-    });
-  }
+  // Back to top is a plain anchor to #top. Smooth scrolling is already on in
+  // CSS and prefers-reduced-motion turns it off, so it needs no script.
 
   var ids = ['samples','questions','voice','idea','plan','offer'];
   var marks = {};
