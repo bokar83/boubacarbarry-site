@@ -638,8 +638,16 @@ html{ scroll-behavior:smooth }
 }
 .backtop:hover b,.backtop:focus-visible b{ opacity:1 }
 @media (max-width:700px){
-  .backtop{ width:42px; height:42px; right:12px; bottom:12px }
+  /* On a phone the text column runs the full width, so a floating button sits
+     on the line the reader is on. It docks into the bar instead, where it is
+     always visible and covers nothing. */
+  .backtop{
+    position:static; width:36px; height:36px;
+    opacity:1; visibility:visible; transform:none;
+    box-shadow:none; background:transparent; flex:0 0 auto; margin-left:auto;
+  }
   .backtop b{ display:none }
+  .backtop svg{ width:17px; height:17px }
 }
 @media (prefers-reduced-motion:reduce){ .backtop{ transition:none } }
 
@@ -707,6 +715,10 @@ html{ scroll-behavior:smooth }
 <header class="topbar">
   <div class="topbar-in">
     <span class="wordmark"><b>Profit &amp; Purpose</b><i> &nbsp;/&nbsp; the work</i></span>
+    <a class="backtop" id="backtop" href="#top" aria-label="Back to the top of the page">
+      <b>Back to top</b>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </a>
     <button class="burger" id="burger" aria-expanded="false" aria-controls="nav" aria-label="Open the sections menu">
       <svg class="m" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       <svg class="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
@@ -720,7 +732,7 @@ html{ scroll-behavior:smooth }
       <a href="#offer">The call</a>
     </nav>
     <!-- VERSION MARKER: delete this one span (and the .ver rule block in the stylesheet) before this link is sent. -->
-    <span class="ver">v12</span>
+    <span class="ver">v13</span>
   </div>
 </header>
 
@@ -1536,11 +1548,6 @@ html{ scroll-behavior:smooth }
   </div>
 </div>
 
-<a class="backtop" id="backtop" href="#top" aria-label="Back to the top of the page">
-  <b>Back to top</b>
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-</a>
-
 <script>
 
 (function () {
@@ -1587,29 +1594,13 @@ html{ scroll-behavior:smooth }
   // Back to top. Appears once the reader is past the first screen, never over content.
   var bt = document.getElementById('backtop');
   if (bt) {
-    // At 1280 the button sits in the empty left-hand margin and covers nothing.
-    // At 375 the text column runs under it, so on narrow screens it only shows
-    // while the reader is scrolling UP, which is the only time he wants it, and
-    // it gets out of the way of the line he is actually reading.
+    // Desktop: a floating button in the empty left margin, which covers nothing
+    // there. Phone: it lives in the sticky bar, always on, handled in CSS.
     var showAt = 600;
     var tick = false;
-    var last = window.pageYOffset || 0;
-    var narrow = window.matchMedia('(max-width: 700px)');
-    var shown = false;
     function syncBt() {
       var y = window.pageYOffset || document.documentElement.scrollTop;
-      var past = y > showAt;
-      if (!narrow.matches) {
-        shown = past;
-      } else if (!past) {
-        shown = false;
-      } else if (y > last + 4) {
-        shown = false;          // reading downward, get out of the way
-      } else if (y < last - 4) {
-        shown = true;           // heading back up, this is when he wants it
-      }                          // standing still keeps whatever it was
-      bt.classList.toggle('on', shown);
-      last = y;
+      bt.classList.toggle('on', y > showAt);
       tick = false;
     }
     window.addEventListener('scroll', function () {
