@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session status &mdash; 2026-08-21: SoFi post, tripwire build, GTM activation</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#fcfcfb; --panel:#ffffff; --line:#e3e2dd; --line-2:#d2d1ca;
+  --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#78776f;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --good:#1baf7a; --warn:#eda100; --bad:#e34948;
+  --accent:#0b0b0b;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#1a1a19; --panel:#232322; --line:#333331; --line-2:#454542;
+    --ink:#ffffff; --ink-2:#c3c2b7; --ink-3:#95948a;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --good:#199e70; --warn:#c98500; --bad:#e66767;
+    --accent:#ffffff;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#1a1a19; --panel:#232322; --line:#333331; --line-2:#454542;
+  --ink:#ffffff; --ink-2:#c3c2b7; --ink-3:#95948a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --good:#199e70; --warn:#c98500; --bad:#e66767;
+  --accent:#ffffff;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:76px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+/* ---------- NAV ---------- */
+.nav{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1080px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:16px}
+.nav-brand{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+.nav-links{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.nav-links a{font-size:12.5px;color:var(--ink-2);text-decoration:none;padding:6px 7px;border-radius:6px;white-space:nowrap}
+.nav-links a:hover{background:var(--panel);color:var(--ink)}
+.burger{display:none;margin-left:auto;background:none;border:1px solid var(--line-2);border-radius:6px;padding:8px 10px;cursor:pointer;color:var(--ink)}
+.burger span{display:block;width:18px;height:2px;background:var(--ink);margin:3px 0}
+@media(max-width:860px){
+  .burger{display:block}
+  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg);border-bottom:1px solid var(--line);flex-direction:column;gap:0;padding:8px 12px 14px}
+  .nav-links.open{display:flex}
+  .nav-links a{padding:11px 8px;border-bottom:1px solid var(--line)}
+}
+
+/* ---------- HEADER ---------- */
+header.hd{padding:44px 0 26px;border-bottom:1px solid var(--line)}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin-bottom:14px}
+h1{font-size:clamp(26px,4.6vw,40px);line-height:1.15;margin:0 0 16px;letter-spacing:-.02em;font-weight:650}
+.sub{font-size:17px;color:var(--ink-2);max-width:70ch;margin:0}
+.meta{margin-top:20px;display:flex;flex-wrap:wrap;gap:8px}
+.tag{font-family:var(--mono);font-size:11px;padding:4px 9px;border:1px solid var(--line-2);border-radius:99px;color:var(--ink-2)}
+
+/* ---------- VERDICT ---------- */
+.verdict{margin:30px 0;padding:24px;border:1px solid var(--line-2);border-left:3px solid var(--s2);border-radius:10px;background:var(--panel)}
+.verdict h2{margin:0 0 12px;font-size:13px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+.verdict p{margin:0 0 12px;font-size:17px;line-height:1.55}
+.verdict p:last-child{margin-bottom:0}
+.verdict strong{font-weight:650}
+
+/* ---------- SECTIONS ---------- */
+section{padding:34px 0;border-bottom:1px solid var(--line)}
+h2.sec{font-size:22px;margin:0 0 6px;letter-spacing:-.01em;font-weight:640}
+.sec-note{color:var(--ink-3);font-size:14px;margin:0 0 22px}
+h3{font-size:16.5px;margin:26px 0 10px;font-weight:620}
+p{margin:0 0 14px;color:var(--ink-2)}
+p.lead{color:var(--ink)}
+strong{color:var(--ink);font-weight:620}
+code{font-family:var(--mono);font-size:.86em;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--ink)}
+ul,ol{margin:0 0 16px;padding-left:22px;color:var(--ink-2)}
+li{margin-bottom:7px}
+a.inline{color:var(--s1)}
+
+/* ---------- COLLAPSIBLE ---------- */
+details{border:1px solid var(--line);border-radius:10px;margin:14px 0;background:var(--panel);overflow:hidden}
+details>summary{cursor:pointer;padding:14px 18px;font-weight:600;font-size:15px;list-style:none;display:flex;align-items:center;gap:10px;color:var(--ink)}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"+";font-family:var(--mono);font-size:16px;color:var(--ink-3);width:14px;flex:none}
+details[open]>summary::before{content:"\2212"}
+details>summary:hover{background:var(--bg)}
+.det-body{padding:4px 18px 18px;border-top:1px solid var(--line)}
+.det-body>*:first-child{margin-top:14px}
+
+/* ---------- STATS ---------- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:20px 0}
+.tile{border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--panel)}
+.tile .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px;line-height:1.4}
+.tile .val{font-size:26px;font-weight:660;letter-spacing:-.02em;line-height:1.1;color:var(--ink)}
+.tile .val.up{color:var(--good)} .tile .val.dn{color:var(--bad)} .tile .val.fl{color:var(--warn)}
+.tile .cap{font-size:12.5px;color:var(--ink-3);margin-top:7px;line-height:1.45}
+
+/* ---------- CALLOUTS ---------- */
+.box{border:1px solid var(--line-2);border-radius:10px;padding:17px 19px;margin:18px 0;background:var(--panel)}
+.box.warn{border-left:3px solid var(--warn)}
+.box.bad{border-left:3px solid var(--bad)}
+.box.good{border-left:3px solid var(--good)}
+.box.neutral{border-left:3px solid var(--ink-3)}
+.box h4{margin:0 0 9px;font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+.box p:last-child,.box ul:last-child{margin-bottom:0}
+
+/* ---------- DECISION BLOCKS ---------- */
+.decision{border:2px solid var(--s2);border-radius:12px;padding:22px 22px 20px;margin:20px 0;background:var(--panel);position:relative}
+.decision .dnum{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--s2);font-weight:700;margin-bottom:10px}
+.decision h4{margin:0 0 14px;font-size:18px;font-weight:650;color:var(--ink)}
+.optrow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+@media(max-width:640px){.optrow{grid-template-columns:1fr}}
+.opt{border:1px solid var(--line);border-radius:9px;padding:13px 15px;background:var(--bg)}
+.opt .oh{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px}
+.opt p{margin:0;font-size:14.5px;color:var(--ink-2)}
+.rec{margin-top:14px;padding:12px 15px;border-radius:9px;background:rgba(235,104,52,0.09);border:1px solid var(--s2)}
+.rec .rh{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--s2);font-weight:700;margin-bottom:6px}
+.rec p{margin:0;font-size:14.5px;color:var(--ink)}
+
+/* ---------- POST TEXT BLOCK ---------- */
+.post-block{border:1px solid var(--line-2);border-radius:10px;padding:20px 22px;margin:16px 0;background:var(--panel);white-space:pre-wrap;font-size:15.5px;line-height:1.65;color:var(--ink)}
+.post-meta{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.status-pill{font-family:var(--mono);font-size:10.5px;padding:4px 10px;border-radius:99px;letter-spacing:.05em;border:1px solid;white-space:nowrap}
+.p-ready{color:var(--good);border-color:var(--good)}
+.p-blocked{color:var(--warn);border-color:var(--warn)}
+.p-progress{color:var(--s1);border-color:var(--s1)}
+
+/* ---------- TABLES ---------- */
+.tbl-scroll{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:10px;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px;background:var(--panel)}
+th,td{text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:500;background:var(--bg)}
+tbody tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);text-align:right;white-space:nowrap;color:var(--ink)}
+
+/* ---------- NEXT STEPS ---------- */
+.steps{list-style:none;margin:16px 0;padding:0;counter-reset:step}
+.steps li{counter-increment:step;position:relative;padding:14px 16px 14px 52px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink-2)}
+.steps li::before{content:counter(step);position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--s1);color:#fff;font-family:var(--mono);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.steps li strong{color:var(--ink)}
+
+/* ---------- BACK TO TOP ---------- */
+#top{position:fixed;right:18px;bottom:18px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line-2);background:var(--panel);color:var(--ink);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;font-size:17px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(0,0,0,.14)}
+#top.show{opacity:1;pointer-events:auto}
+#top:hover{border-color:var(--ink-3)}
+
+footer{padding:34px 0 60px;color:var(--ink-3);font-size:13px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <span class="nav-brand">Session Status / 2026-08-21</span>
+    <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <div class="nav-links" id="navlinks">
+      <a href="#verdict">Verdict</a>
+      <a href="#shipped">Shipped today</a>
+      <a href="#tripwire">Tripwire build</a>
+      <a href="#decisions">Decisions</a>
+      <a href="#gtm">GTM activation</a>
+      <a href="#next">What's next</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="hd">
+  <div class="kicker">Session Status &amp; Plan &middot; 2026-08-21</div>
+  <h1>Session status &mdash; 2026-08-21:<br>SoFi post, tripwire build, GTM activation</h1>
+  <p class="sub">One post ready to go out, one product build blocked correctly on two of your calls, and a list-building activation plan still running. This page is the single view of all three.</p>
+  <div class="meta">
+    <span class="tag">1 post ready, not posted</span>
+    <span class="tag">1 branch pushed, needs Telegram approval</span>
+    <span class="tag">2 decisions blocking</span>
+    <span class="tag">1 plan in progress</span>
+  </div>
+</header>
+
+<div class="verdict" id="verdict">
+  <h2>Headline</h2>
+  <p class="lead"><strong>Nothing is stuck on effort. Everything still open is stuck on a decision or an approval that only you can give.</strong></p>
+  <p>The LinkedIn post passed all three quality gates and is sitting ready &mdash; it needs you to post it, since personal LinkedIn auto-posting stays banned. The tripwire product build is functionally done (39/39 tests pass, copy gated, fulfilment staged) and correctly stopped short of touching Stripe, publishing anything public, or merging into the orchestrator without your sign-off. Two decisions below unblock the rest of that build. The list-building activation plan is still running and will update this page when it lands.</p>
+</div>
+
+<section id="shipped">
+  <h2 class="sec">1. What shipped today</h2>
+  <p class="sec-note">One piece of content, fully gated, ready for you to publish.</p>
+
+  <p>A LinkedIn post about asking for help versus applying into a black box. Sourced from a real event, genericized at your request &mdash; no name, company, or timing that would identify it. It passed all three required gates: <strong>boub_voice_mastery scored 94/100</strong>, <strong>ctq-social's Story Review passed</strong>, and <strong>hormozi-lead-gen's hook/CTA check passed</strong>.</p>
+
+  <div class="post-meta">
+    <span class="status-pill p-ready">READY on Content Board</span>
+    <span class="status-pill p-blocked">NOT POSTED &mdash; needs you</span>
+  </div>
+
+  <div class="box warn">
+    <h4>The final post text isn't reproduced here</h4>
+    <p>This page was built from a session brief that described the post but didn't hand over the exact final text, and the source-verify rule means the text does not get reconstructed or guessed here. The real, gate-passed copy lives on the Content Board where it was scored &mdash; pull it from there when you're ready to post, or ask for it to be pasted into a follow-up to this page.</p>
+  </div>
+
+  <p>Reminder on why it's not already live: personal LinkedIn auto-posting is Council-banned. You post it yourself, on your own timing.</p>
+</section>
+
+<section id="tripwire">
+  <h2 class="sec">2. The $9 tripwire build</h2>
+  <p class="sec-note">Branch <code>feat/nate-herk-tripwire</code>, agentsHQ repo, pushed <code>[WIP]</code>, 4 commits.</p>
+
+  <div class="box neutral">
+    <h4>The finding that shaped the build</h4>
+    <p>A true one-click upsell isn't possible on the current checkout stack &mdash; there are zero saved-card or <code>setup_future_usage</code> calls anywhere in the codebase. Rather than fake it, the build shipped the closest real equivalent: an immediate post-purchase page with a single click through to the $497 offer. That's a fast next click, not a one-click charge. Worth knowing before this gets described to anyone as "one-click."</p>
+  </div>
+
+  <h3>Done</h3>
+  <ul>
+    <li>Fixed the April field guide's <strong>"cannot be sold" license line</strong>, which was blocking the $9 sale outright.</li>
+    <li>Banned-phrase compliance edits made across the copy.</li>
+    <li>Sales/upsell copy passed both required gates.</li>
+    <li>Fulfilment email staged and ready.</li>
+    <li><strong>39/39 tests pass.</strong></li>
+  </ul>
+
+  <div class="box warn">
+    <h4>The one gate the copy did NOT clear cleanly</h4>
+    <p>Value Equation score: <strong>30/40</strong>. The weak lever is perceived likelihood of success, scoring <strong>5/10</strong>, and it is not copy-fixable &mdash; the honest fix is real client results, and none were invented to paper over it. Flagging this rather than quietly shipping a 30/40 as if it were a clean pass.</p>
+  </div>
+
+  <h3>Correctly blocked, not stalled</h3>
+  <p>Three things are held, and each is held on a rule, not a gap in the work:</p>
+  <ul>
+    <li><strong>No Stripe products created</strong> &mdash; touches money, your call.</li>
+    <li><strong>No test purchase run</strong> &mdash; no Stripe test key is configured, only the live key exists.</li>
+    <li><strong>No pages published</strong> &mdash; public content, your call.</li>
+  </ul>
+  <p>The branch itself needs your Telegram approval to merge, because it touches <code>orchestrator/</code>.</p>
+
+  <div class="box bad">
+    <h4>Bonus defect found, worth fixing regardless of the decisions below</h4>
+    <p>The existing $19 reference product's page never writes to the real leads database &mdash; it only goes through a Beehiiv-only proxy. Flagging this now so the new $9 page does not quietly repeat it.</p>
+  </div>
+</section>
+
+<section id="decisions">
+  <h2 class="sec">3. Two decisions only you can make</h2>
+  <p class="sec-note">These are the actual blockers. Everything else in the tripwire build is ready to move the moment these are answered.</p>
+
+  <div class="decision">
+    <div class="dnum">Decision 1 of 2</div>
+    <h4>Is the field guide already free on your LinkedIn Featured slot #3?</h4>
+    <div class="optrow">
+      <div class="opt">
+        <div class="oh">If YES, it's already free there</div>
+        <p>Selling it for $9 somewhere else is a defect &mdash; it undercuts something you're already giving away. Leave it free in Featured slot #3 and build the $9 offer around a diagnostic or audit instead.</p>
+      </div>
+      <div class="opt">
+        <div class="oh">If NO, it isn't posted there</div>
+        <p>Proceed with the $9 sale of the field guide exactly as planned. No conflict.</p>
+      </div>
+    </div>
+    <div class="rec">
+      <div class="rh">Recommendation</div>
+      <p>Check Featured slot #3 first, since it settles the whole question in one look. If it's there, sell the diagnostic instead &mdash; free-vs-paid conflicts on your own profile are the kind of thing a buyer notices and holds against the offer.</p>
+    </div>
+  </div>
+
+  <div class="decision">
+    <div class="dnum">Decision 2 of 2</div>
+    <h4>Which brand hosts this &mdash; Catalyst Works or Human at Work?</h4>
+    <div class="optrow">
+      <div class="opt">
+        <div class="oh">Catalyst Works</div>
+        <p>Keeps it inside the consulting brand's existing funnel and audience.</p>
+      </div>
+      <div class="opt">
+        <div class="oh">Human at Work</div>
+        <p>Matches the $19 reference product this is modeled on, which is already Human-at-Work-branded &mdash; but that product lives in a separate repo, so either way this isn't a pure copy-paste.</p>
+      </div>
+    </div>
+    <div class="rec">
+      <div class="rh">Note</div>
+      <p>No recommendation forced here &mdash; this is a branding call about where you want the $9 offer to live long-term, not a technical constraint. Either answer unblocks the build the same amount.</p>
+    </div>
+  </div>
+</section>
+
+<section id="gtm">
+  <h2 class="sec">4. GTM / list-building activation plan</h2>
+  <p class="sec-note">Still in progress as of this page's publish time.</p>
+
+  <div class="box neutral">
+    <h4>Status: running, not finished</h4>
+    <p>No results to report yet. This section will update on this same page, or link to a follow-up, once the plan lands.</p>
+  </div>
+
+  <p>What the build already has to work with:</p>
+  <div class="tiles">
+    <div class="tile"><div class="lbl">LinkedIn connections</div><div class="val">4,511</div><div class="cap">Self-reported by you, 2026-08-21.</div></div>
+    <div class="tile"><div class="lbl">Newsletter subscribers</div><div class="val">&asymp;36</div><div class="cap">Current count.</div></div>
+    <div class="tile"><div class="lbl">X followers</div><div class="val fl">&asymp;769</div><div class="cap">Stale &mdash; last measured May 31.</div></div>
+    <div class="tile"><div class="lbl">30-day goal</div><div class="val">1,000+</div><div class="cap">Net-new list signups by 2026-09-20.</div></div>
+  </div>
+
+  <div class="box warn">
+    <h4>The honest math on the newsletter number specifically</h4>
+    <p>Going from 36 subscribers to 1,000+ is <strong>not achievable through steady organic content alone</strong> on that timeline. It needs an injection event &mdash; a paid push, a partner swap, or gating existing lead magnets behind the signup. That's a flag for the plan to answer, not a problem this page is solving on its own.</p>
+  </div>
+</section>
+
+<section id="next">
+  <h2 class="sec">5. What happens next</h2>
+  <p class="sec-note">In order. The first two are entirely on you; the rest follow once you act.</p>
+
+  <ol class="steps">
+    <li><strong>Post the SoFi / black-box LinkedIn post yourself.</strong> It's gate-passed and ready now &mdash; pull the final text from the Content Board.</li>
+    <li><strong>Answer the two tripwire decisions above</strong> (LinkedIn Featured slot check + Catalyst Works vs. Human at Work) so the build can move to Stripe product creation and publish.</li>
+    <li><strong>Approve the <code>feat/nate-herk-tripwire</code> branch on Telegram</strong> so it can merge.</li>
+    <li><strong>The GTM activation plan lands</strong> (in progress) with the tracking mechanism for LinkedIn/X/newsletter counts and the realistic 30-day target.</li>
+  </ol>
+</section>
+
+<footer>
+  <p>Session status snapshot, published 2026-08-21. Sourced only from the session's own record &mdash; no figures or copy invented. The LinkedIn post text is intentionally not reproduced here; see the note in Section 1.</p>
+</footer>
+
+</div>
+
+<button id="top" aria-label="Back to top">&uarr;</button>
+
+<script>
+(function(){
+  var b=document.getElementById('burger'), n=document.getElementById('navlinks');
+  b.addEventListener('click',function(){
+    var o=n.classList.toggle('open');
+    b.setAttribute('aria-expanded',o?'true':'false');
+  });
+  n.addEventListener('click',function(e){ if(e.target.tagName==='A'){ n.classList.remove('open'); b.setAttribute('aria-expanded','false'); }});
+
+  var t=document.getElementById('top');
+  window.addEventListener('scroll',function(){ t.classList.toggle('show', window.scrollY>420); },{passive:true});
+  t.addEventListener('click',function(){ window.scrollTo({top:0,behavior:'smooth'}); });
+})();
+</script>
+</body>
+</html>
