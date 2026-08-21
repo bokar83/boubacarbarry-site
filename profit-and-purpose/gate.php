@@ -221,9 +221,20 @@ function render_form(string $next, string $error): void
 <title>Private page</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
+/* The same ledger stock and the same red pencil as the page behind it. This
+   screen is the first thing the reader sees, so it cannot be a different
+   house from the one it opens onto. */
 :root{
-  --paper:#F6F2EA; --ink:#1C1A17; --mute:#5F594F; --line:#D9D2C5;
-  --field:#FFFDF8; --accent:#8A3B12; --err:#8A2418;
+  --paper:#EDEFE8; --ink:#191D16; --mute:#5A6154; --line:#CBD0C2;
+  --field:#F7F8F4; --accent:#A61B2B; --err:#8A2418;
+  --errbg:#FBEAE6; --errline:#E2B7AE; --errink:#8A2418;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12160F; --ink:#E6EADD; --mute:#9AA491; --line:#2E362A;
+    --field:#1A1F17; --accent:#F0736B;
+    --errbg:#2A1614; --errline:#5C2A26; --errink:#F2B5AE;
+  }
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -277,7 +288,7 @@ button.go:hover{background:#000}
 button.go:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 .err{
   margin-top:16px; padding:11px 13px; border-radius:2px; font-size:15px;
-  background:#FBEAE6; border:1px solid #E2B7AE; color:var(--err);
+  background:var(--errbg); border:1px solid var(--errline); color:var(--errink);
   font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
 }
 .err + button.go{margin-top:12px}
