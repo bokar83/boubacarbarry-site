@@ -359,8 +359,8 @@ button.go:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
 <main>
   <p class="label house">boubacarbarry.com</p>
 
-  <h1>This one is not public.</h1>
-  <p class="sub">I built it for one reader.</p>
+  <h1>Make friends. Get rich. Together.</h1>
+  <p class="sub">The third word is the one this page is about.</p>
 
   <svg class="inkrule" viewBox="0 0 600 11" preserveAspectRatio="none" aria-hidden="true">
     <path d="M2 6.4C64 3.9 118 7.8 178 5.2 243 2.4 289 8.1 351 5.6 409 3.3 452 7.4 512 4.9 545 3.6 573 6.2 598 5.1"/>
@@ -368,8 +368,8 @@ button.go:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
 
   <p class="label">Already inside</p>
   <ul class="manifest">
-    <li>Why me</li>
     <li>The writing</li>
+    <li>The questions</li>
     <li>The ideas</li>
     <li>The first thirty days</li>
   </ul>
