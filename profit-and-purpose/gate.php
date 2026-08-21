@@ -24,7 +24,7 @@ declare(strict_types=1);
 // ---------------------------------------------------------------------------
 
 const COOKIE_NAME = 'bb_pnp';
-const SESSION_DAYS = 60;
+const SESSION_DAYS = 5;
 const PREFIX = '/profit-and-purpose/';
 
 $keyFile = dirname(__DIR__, 2) . '/.pnp-gate-key.php';
@@ -359,8 +359,8 @@ button.go:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
 <main>
   <p class="label house">boubacarbarry.com</p>
 
-  <h1>Make friends. Get rich. Together.</h1>
-  <p class="sub">The third word is the one this page is about.</p>
+  <h1>Welcome, Dino.</h1>
+  <p class="sub">You asked for a writer in one post. This is the answer, built from it.</p>
 
   <svg class="inkrule" viewBox="0 0 600 11" preserveAspectRatio="none" aria-hidden="true">
     <path d="M2 6.4C64 3.9 118 7.8 178 5.2 243 2.4 289 8.1 351 5.6 409 3.3 452 7.4 512 4.9 545 3.6 573 6.2 598 5.1"/>
@@ -405,7 +405,7 @@ button.go:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
 
   <p class="foot">
     <span>The password is in the note I sent with this link.</span>
-    <span>One unlock lasts 60 days on this browser.</span>
+    <span>One unlock lasts 5 days on this browser.</span>
   </p>
 </main>
 
