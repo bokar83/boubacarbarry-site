@@ -720,7 +720,7 @@ html{ scroll-behavior:smooth }
       <a href="#offer">The call</a>
     </nav>
     <!-- VERSION MARKER: delete this one span (and the .ver rule block in the stylesheet) before this link is sent. -->
-    <span class="ver">v10</span>
+    <span class="ver">v11</span>
   </div>
 </header>
 
@@ -1587,10 +1587,21 @@ html{ scroll-behavior:smooth }
   // Back to top. Appears once the reader is past the first screen, never over content.
   var bt = document.getElementById('backtop');
   if (bt) {
+    // At 1280 the button sits in the empty left-hand margin and covers nothing.
+    // At 375 the text column runs under it, so on narrow screens it only shows
+    // while the reader is scrolling UP, which is the only time he wants it, and
+    // it gets out of the way of the line he is actually reading.
     var showAt = 600;
     var tick = false;
+    var last = window.pageYOffset || 0;
+    var narrow = window.matchMedia('(max-width: 700px)');
     function syncBt() {
-      bt.classList.toggle('on', (window.pageYOffset || document.documentElement.scrollTop) > showAt);
+      var y = window.pageYOffset || document.documentElement.scrollTop;
+      var past = y > showAt;
+      var show = narrow.matches ? (past && y < last - 4) : past;
+      if (narrow.matches && y <= showAt) { show = false; }
+      bt.classList.toggle('on', show);
+      last = y;
       tick = false;
     }
     window.addEventListener('scroll', function () {
