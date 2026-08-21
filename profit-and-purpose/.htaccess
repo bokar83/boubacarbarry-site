@@ -1,0 +1,41 @@
+# A gate of its own, separate from /review/.
+#
+# /review/ is one shared password covering every working page on this domain.
+# This address is handed to one person outside the house, so it gets its own
+# lock and its own key file. Nothing here can be opened with the /review/
+# password, and the /review/ password is not weakened by this existing.
+#
+# Same shape as review/.htaccess: the web server serves nothing under here
+# directly. gate.php hands files over, and only to a request carrying a valid
+# signed cookie.
+
+Options -Indexes
+
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /profit-and-purpose/
+
+  # The gate must stay directly reachable or the catch-all below would rewrite
+  # it into itself.
+  RewriteRule ^gate\.php$ - [L]
+
+  # One-time key installer. Present only while the key is being set, then
+  # removed from the repo in the following commit. It refuses any caller that
+  # is not the VPS and refuses outright once a key exists.
+  RewriteRule ^_setup-gate\.php$ - [L]
+
+  RewriteRule ^ gate.php [L]
+</IfModule>
+
+# A broken gate should fail shut, not open.
+<IfModule !mod_rewrite.c>
+  Require all denied
+</IfModule>
