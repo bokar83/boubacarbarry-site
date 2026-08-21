@@ -298,7 +298,7 @@ h1{
 .manifest li:last-child{ margin-bottom:0 }
 .manifest li::before{
   content:""; position:absolute; left:0; top:.78em;
-  width:8px; height:1px; background:var(--accent); opacity:.7;
+  width:8px; height:1px; background:var(--rule);
 }
 
 form{ margin-top:30px }
