@@ -120,7 +120,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['gate_passw
         exit;
     }
 
-    $error  = 'That did not match. Tap the eye to check what you typed.';
+    $error  = 'That did not match. Use the eye to check what you typed.';
     $authed = false;
 }
 
@@ -221,96 +221,151 @@ function render_form(string $next, string $error): void
 <title>Private page</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
-/* The same ledger stock and the same red pencil as the page behind it. This
-   screen is the first thing the reader sees, so it cannot be a different
-   house from the one it opens onto. */
+/* ---------------------------------------------------------------------------
+   The same ledger stock and the same red pencil as the page behind it, and now
+   the same two faces. The old version of this screen set its labels in a UI
+   sans, which is the one thing the page it opens onto refuses to do, on the
+   grounds that serif plus mono reads printed and a sans makes it read like
+   software. A gate in a different typeface from its own house is a seam.
+
+   The reader is one named person who wrote a hiring post asking for four
+   specific things. The manifest below names his four things back to him, in
+   his order, and says they are already done. He recognises that list in a
+   second. Anybody else who finds this address learns nothing about who it is
+   for, which is deliberate: his name does not belong on a screen that answers
+   to the open internet before he has said yes to anything.
+   --------------------------------------------------------------------------- */
 :root{
-  --paper:#EDEFE8; --ink:#191D16; --mute:#5A6154; --line:#CBD0C2;
-  --field:#F7F8F4; --accent:#A61B2B; --err:#8A2418;
+  --paper:#EDEFE8; --card:#F7F8F4; --ink:#191D16; --mute:#5A6154;
+  --rule:#CBD0C2; --accent:#A61B2B;
   --errbg:#FBEAE6; --errline:#E2B7AE; --errink:#8A2418;
+
+  --serif:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,'Times New Roman',serif;
+  --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --paper:#12160F; --ink:#E6EADD; --mute:#9AA491; --line:#2E362A;
-    --field:#1A1F17; --accent:#F0736B;
+    --paper:#12160F; --card:#1A1F17; --ink:#E6EADD; --mute:#9AA491;
+    --rule:#2E362A; --accent:#F0736B;
     --errbg:#2A1614; --errline:#5C2A26; --errink:#F2B5AE;
   }
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+html{ -webkit-text-size-adjust:100% }
 body{
-  font-family:ui-serif,Georgia,'Times New Roman',serif;
+  min-height:100vh;
+  font-family:var(--serif);
   background:var(--paper); color:var(--ink);
   line-height:1.55; font-size:17px; -webkit-font-smoothing:antialiased;
-  display:flex; align-items:center; justify-content:center; padding:24px;
+  display:flex; align-items:center; justify-content:center;
+  padding:32px 24px; overflow-x:hidden;
 }
-main{width:100%; max-width:392px}
-.mark{
-  font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
-  font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
-  color:var(--mute); margin-bottom:20px;
+main{ width:100%; max-width:396px }
+
+.label{
+  display:block; font-family:var(--mono);
+  font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--mute);
 }
-h1{font-size:29px; font-weight:600; line-height:1.2; letter-spacing:-.012em; margin-bottom:10px}
-.sub{color:var(--mute); font-size:16px; margin-bottom:26px}
-label{
-  display:block;
-  font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
-  font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
-  color:var(--mute); margin-bottom:8px;
+.house{ margin-bottom:26px }
+
+h1{
+  font-size:30px; font-weight:600; line-height:1.18; letter-spacing:-.012em;
+  margin-bottom:8px; text-wrap:balance;
 }
-.field{position:relative; display:flex; align-items:center}
+.sub{ color:var(--mute); font-size:17px }
+
+/* The hand-drawn rule from the page behind this one, same path, same pencil.
+   A straight one-pixel border is the tell that nobody drew it. */
+.inkrule{
+  display:block; width:100%; height:11px; overflow:visible;
+  color:var(--accent); margin:22px 0 20px;
+}
+.inkrule path{ fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; opacity:.85 }
+
+/* The manifest. Four items because he asked for four things. Flex-wrap with
+   the separator bound to the item that follows it, so a wrap never strands a
+   dot at the end of a line on a narrow phone. */
+.manifest{ list-style:none; display:flex; flex-wrap:wrap; margin-top:9px }
+.manifest li{ font-family:var(--mono); font-size:12.5px; letter-spacing:.02em; color:var(--ink) }
+.manifest li + li::before{ content:"\00b7"; color:var(--rule); padding:0 .55em }
+
+form{ margin-top:30px }
+.pwlabel{ margin-bottom:8px }
+.field{ position:relative; display:flex; align-items:center }
 input[type=password],input[type=text]{
   width:100%; height:54px; padding:0 54px 0 15px;
-  background:var(--field); border:1px solid var(--line); border-radius:2px;
-  color:var(--ink);
-  font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
-  font-size:17px;
+  background:var(--card); border:1px solid var(--rule); border-radius:2px;
+  color:var(--ink); font-family:var(--mono); font-size:17px; letter-spacing:.04em;
 }
-/* The field is autofocused, so its focus state is the first thing the reader
-   sees. A red border there reads as "you got it wrong" before anyone has typed
-   anything. The ink border says attention, the faint red ring keeps the accent. */
-input:focus{outline:none; border-color:var(--ink); box-shadow:0 0 0 3px rgba(166,27,43,.13)}
+/* The field is autofocused, so its focus state is the first thing on screen.
+   A red border there reads as "wrong" before anything has been typed. Ink
+   border for attention, a faint red ring to keep the pencil in the picture. */
+input:focus{ outline:none; border-color:var(--ink); box-shadow:0 0 0 3px rgba(166,27,43,.13) }
 .eye{
   position:absolute; right:6px; width:44px; height:44px;
   display:flex; align-items:center; justify-content:center;
   background:none; border:0; border-radius:2px; cursor:pointer; color:var(--mute);
 }
-.eye:hover{color:var(--ink)}
-.eye:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
-.eye svg{width:21px;height:21px;display:block}
-.eye .off{display:none}
-.eye[aria-pressed=true] .on{display:none}
-.eye[aria-pressed=true] .off{display:block}
+.eye:hover{ color:var(--ink) }
+.eye:focus-visible{ outline:2px solid var(--accent); outline-offset:1px }
+.eye svg{ width:21px; height:21px; display:block }
+.eye .off{ display:none }
+.eye[aria-pressed=true] .on{ display:none }
+.eye[aria-pressed=true] .off{ display:block }
+
 button.go{
   width:100%; height:52px; margin-top:18px; cursor:pointer;
   background:var(--ink); border:0; border-radius:2px; color:var(--paper);
-  font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
-  font-weight:600; font-size:16px;
+  font-family:var(--mono); font-size:12.5px; letter-spacing:.14em; text-transform:uppercase;
 }
-button.go:hover{background:#000}
-button.go:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+button.go:hover{ opacity:.88 }
+button.go:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
+
 .err{
   margin-top:16px; padding:11px 13px; border-radius:2px; font-size:15px;
   background:var(--errbg); border:1px solid var(--errline); color:var(--errink);
-  font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-family:var(--serif);
 }
-.err + button.go{margin-top:12px}
+.err + button.go{ margin-top:12px }
+
 .foot{
-  margin-top:26px; padding-top:16px; border-top:1px solid var(--line);
-  font-size:14px; color:var(--mute);
+  margin-top:28px; padding-top:15px; border-top:1px solid var(--rule);
+  font-family:var(--mono); font-size:11.5px; letter-spacing:.03em;
+  line-height:1.7; color:var(--mute);
 }
-@media (max-width:400px){ body{padding:18px} h1{font-size:25px} }
+.foot span{ display:block }
+
+@media (max-width:400px){
+  body{ padding:26px 18px }
+  h1{ font-size:26px }
+  .sub{ font-size:16px }
+  .manifest li{ font-size:12px }
+}
 </style>
 </head>
 <body>
 <main>
-  <p class="mark">boubacarbarry.com</p>
+  <p class="label house">boubacarbarry.com</p>
+
   <h1>This one is not public.</h1>
-  <p class="sub">It was built for one reader. The password came with the link.</p>
+  <p class="sub">I built it for one reader.</p>
+
+  <svg class="inkrule" viewBox="0 0 600 11" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M2 6.4C64 3.9 118 7.8 178 5.2 243 2.4 289 8.1 351 5.6 409 3.3 452 7.4 512 4.9 545 3.6 573 6.2 598 5.1"/>
+  </svg>
+
+  <p class="label">Already inside</p>
+  <ul class="manifest">
+    <li>Why me</li>
+    <li>The writing</li>
+    <li>The ideas</li>
+    <li>The first thirty days</li>
+  </ul>
 
   <form method="post" action="<?= $nextAttr ?>" autocomplete="on">
     <input type="hidden" name="next" value="<?= $nextAttr ?>">
-    <label for="pw">Password</label>
+    <label class="label pwlabel" for="pw">Password</label>
     <div class="field">
       <input id="pw" name="gate_password" type="password" autocomplete="current-password"
              autofocus autocapitalize="off" autocorrect="off" spellcheck="false" required>
@@ -337,7 +392,10 @@ button.go:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
     <button class="go" type="submit">Open it</button>
   </form>
 
-  <p class="foot">One unlock lasts 60 days on this browser.</p>
+  <p class="foot">
+    <span>The password is in the note I sent with this link.</span>
+    <span>One unlock lasts 60 days on this browser.</span>
+  </p>
 </main>
 
 <script>
