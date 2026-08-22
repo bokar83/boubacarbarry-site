@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crucible: AI-Assisted HR Help Desk -- PIVOT</title>
+<!--
+  Crucible viability run on "an AI-assisted HR help desk giving small businesses without HR
+  direct access to Boubacar." Verdict: PIVOT. Built from
+  scripts/templates/review-page-template.html so the layout hard standard passes.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.6rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.1rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  h3{font-size:1rem; margin:18px 0 8px;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  a{color:var(--accent);}
+  a:hover{text-decoration:none;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.87rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .callout{border-left:3px solid var(--warn); background:#1a1712; padding:12px 16px;
+    border-radius:0 8px 8px 0; margin:0 0 14px;}
+  .callout.bad{border-left-color:var(--bad); background:#1d1315;}
+  .callout.good{border-left-color:var(--good); background:#121d18;}
+  .big{font-size:1.05rem; font-weight:650;}
+  .dim{color:var(--text-dim);}
+  .verdict-pill{display:inline-block; font-size:.78rem; font-weight:800; letter-spacing:.04em;
+    text-transform:uppercase; border-radius:999px; padding:5px 14px; background:var(--warn);
+    color:#241c07;}
+  .score-num{font-weight:800; font-size:1.05rem;}
+  .tag{display:inline-block; font-size:.72rem; letter-spacing:.03em; text-transform:uppercase;
+    border:1px solid var(--border); border-radius:999px; padding:2px 9px; color:var(--text-dim);
+    background:var(--bg2); white-space:nowrap;}
+  .tag.no{color:var(--bad); border-color:#4a2a2f;}
+  .tag.yes{color:var(--good); border-color:#25473a;}
+  .tag.part{color:var(--warn); border-color:#4a3d20;}
+  blockquote{border-left:3px solid var(--border); margin:0 0 12px; padding:4px 0 4px 14px;
+    color:var(--text-dim); font-style:italic;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.3rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f5f6f8; --bg2:#ffffff; --card:#ffffff; --border:#dde1ea;
+      --text:#1a1d24; --text-dim:#5b6272; --accent:#1d6fd6; --accent2:#0e8f63;
+      --warn:#a9700a; --bad:#c23a3a; --good:#0e8f63;
+    }
+    .nav-bar{background:rgba(245,246,248,0.93);}
+    code, pre{background:#eef0f5;}
+    .callout{background:#fbf3e0;}
+    .callout.bad{background:#fbecec;}
+    .callout.good{background:#e9f8f0;}
+    .verdict-pill{color:#241c07;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-22-04:41:57 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">HR help desk crucible</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-score">Score table</a>
+      <a href="#sec-demand">Demand + language</a>
+      <a href="#sec-competition">Competition + gap</a>
+      <a href="#sec-angles">The 4 niche angles</a>
+      <a href="#sec-money">Monetization</a>
+      <a href="#sec-smoke">Smoke test + MVP</a>
+      <a href="#sec-adjacency">Adjacency findings</a>
+      <a href="#sec-path">Path-to-GO plan</a>
+      <a href="#sec-weekend">The weekend build</a>
+      <a href="#sec-disclaimer">Disclaimer + liability</a>
+      <a href="#sec-evidence">Evidence trail</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Crucible: an AI-assisted HR help desk giving small businesses without HR direct access to Boubacar</h1>
+    <div class="meta">Idea type: <strong>business</strong> &middot; Verdict: <span class="verdict-pill">PIVOT</span> &middot; Aug 22, 2026</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p class="big">Verdict: <strong>PIVOT</strong>. The category has strong, proven demand
+      (Bambee runs an estimated $17.8M ARR on exactly this promise), but the idea as framed
+      loses on every other axis at once: the core function is already given away free by
+      payroll providers, his credential reads <em>weaker</em> than competitors because he holds
+      no HR certification in a market that sells on certification, and unlimited personal
+      escalation at a Bambee-anchored price is a founder-time trap that is already documented
+      in Bambee's own bad reviews.</p>
+
+      <p><strong>The pivot, specifically:</strong> change the headline from <em>HR help desk</em>
+      to <strong>&ldquo;AI in your people decisions.&rdquo;</strong> Move the buyer from the
+      4-employee shop to 20-75 employee companies already running an ATS or AI screening. Change
+      the shape from an unlimited-escalation subscription to a fixed-price first engagement
+      ($1,500-$2,500) with a capped retainer behind it. This version has a real moat, a live
+      regulatory clock, and roughly ten times the price ceiling of the generic version.</p>
+
+      <p class="callout bad"><strong>One correction to prior work that matters.</strong>
+      <code>docs/roadmap/atelier/plans/hr-go-to-market-plan.md</code> and its June-era siblings
+      lean on the EU AI Act's August 2, 2026 high-risk-employment deadline as the timing wedge.
+      That deadline <strong>moved to December 2027</strong>
+      (<a href="https://www.bynimble.com/hr-briefs/ai-hiring-compliance-small-business" target="_blank" rel="noopener">Nimble Advisors</a>).
+      Any positioning still built on &ldquo;August 2 is coming&rdquo; is now false. The live US
+      wedge that replaces it is better: <strong>California's FEHA automated-decision-system
+      regulations, effective October 1, 2025, reaching any employer with 5+ employees</strong>, and
+      <strong>NYC Local Law 144, which applies regardless of company size</strong>. This has been
+      corrected in the roadmap doc in the same pass as this report &mdash; see the callout in
+      the Path-to-GO section below.</p>
+
+      <p><strong>Why his real background helps here and hurts there.</strong> Every incumbent in
+      the generic HR-advisory slot sells on certification &mdash; SHRM, HRCI, &ldquo;certified HR
+      managers.&rdquo; He holds none of those. On the AI-in-people-decisions angle, no one holds a
+      certification at all, and his credential &mdash; fifteen years in HR, ten-plus inside a
+      Fortune 100, and the fact that he personally architects and runs a production multi-agent AI
+      system &mdash; becomes close to unique. That asymmetry is the single most important finding
+      in this run.</p>
+
+      <p><strong>What has to happen before the verdict can flip to GO:</strong> three paying
+      clients at $1,500+ within 30 days, at least two sourced outside his warm network, OR ten
+      fractional HR consultants paying for the AI module. Until that evidence exists, the verdict
+      stays PIVOT.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-score" open>
+    <summary><h2>Score table</h2></summary>
+    <div class="sec-body">
+      <div class="table-scroll">
+      <table>
+        <tr><th>Dimension</th><th>Score (1-10)</th><th>One-line reason</th></tr>
+        <tr><td>Demand</td><td class="score-num">8</td><td><strong>STRONG</strong> for the category &mdash; Bambee ~$17.8M ARR and 705% three-year growth, HR-on-demand from $50 to $497/mo, retainers $1,500-$16,000/mo, avg employment lawsuit $160K. Veto does not fire.</td></tr>
+        <tr><td>Differentiation</td><td class="score-num">4</td><td>As framed, near zero: Bambee owns the slot, payroll providers bundle it free, and he has no certification where certification is the trust signal. Rises to ~9 on the AI-in-people-decisions wedge, which no incumbent credibly owns.</td></tr>
+        <tr><td>Unit-economics</td><td class="score-num">3</td><td>Price is anchored to Bambee's $299 by a market he doesn't control, while the cost driver (his personal judgment time) is uncapped. ~$8K MRR for 40-60 hrs/month at 40 clients.</td></tr>
+        <tr><td>Fulfillment-scalability</td><td class="score-num">3</td><td>The AI layer is barred by design from taking the judgment calls, which are the entire value proposition. The scalable half is the half nobody is paying for.</td></tr>
+      </table>
+      </div>
+      <p class="dim">Demand &ge; 7, but fatal flaws in axes 2, 3 and 4 &rarr; PIVOT, per the
+      verdict rules. Not a SCRATCH: the demand is real and the fix is nameable.</p>
+
+      <h3>Step 0 &mdash; vice + ethics gate: PASS</h3>
+      <p>Legal everywhere it operates; he would put his real name on it (it <em>is</em> his
+      name); creates real value; no deception; he'd be fine with clients, kids or community
+      seeing exactly how it makes money.</p>
+
+      <h3>Step 0.5 &mdash; second brain</h3>
+      <p><code>ask.sh</code> returned zero results on the primary query and one weak hit on a
+      rephrase; the corpus's newest row was six days stale, and Notion/Drive/NotebookLM sit
+      outside it entirely. Grep found what the query missed &mdash; substantial prior work
+      already exists: <code>viability-HR-A1.md</code> (GO), <code>viability-HR-OS.md</code>
+      (PIVOT &mdash; and its pivot already moved the buyer to fractional HR consultants, which
+      this run reaches independently), <code>hr-go-to-market-plan.md</code> (a three-rung ladder
+      already designed), and a live decision to join FPP plus attend HRpreneur Denver, September
+      2026.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-demand" open>
+    <summary><h2>Demand probe + customer-language harvest</h2></summary>
+    <div class="sec-body">
+      <h3>Step 2 &mdash; demand probe: STRONG (veto does not fire)</h3>
+      <ol>
+        <li><strong>Bambee: ~$17.8M estimated ARR, $33.2M raised, 705% growth over three
+        years, &ldquo;from 10 companies to tens of thousands&rdquo;</strong>
+        (<a href="https://getlatka.com/companies/bambee" target="_blank" rel="noopener">Latka</a>,
+        <a href="https://www.jpmorgan.com/insights/banking/commercial-banking/bambee-from-startup-to-success-story" target="_blank" rel="noopener">J.P. Morgan</a>),
+        charging $299/mo (&le;4 employees), $399 (&le;19), $499 (&le;49), $1,299 (&le;70)
+        (<a href="https://www.bambee.com/plans/" target="_blank" rel="noopener">Bambee plans</a>,
+        <a href="https://www.businessnewsdaily.com/hr/bambee-review" target="_blank" rel="noopener">Business News Daily</a>).</li>
+        <li><strong>A whole priced market of workarounds:</strong> HR On-Demand from $50/mo,
+        senior HR expertise from $497/mo, on-call advisory retainers $1,500/mo rising to
+        $16,000/mo for fractional CHRO, embedded HRBP support commonly $4,000-$10,000/mo,
+        standard hourly $115/hr
+        (<a href="https://consultfees.com/use-cases/hr-consultants" target="_blank" rel="noopener">consultfees.com</a>,
+        <a href="https://www.thehrondemand.com/pricing" target="_blank" rel="noopener">thehrondemand.com</a>).</li>
+        <li><strong>The fear driving it is quantified:</strong> an employment lawsuit costs
+        firms an average of $160,000; roughly $100,000 to get a meritless suit tossed
+        pre-trial, $300,000+ if it reaches a jury
+        (<a href="https://www.business.com/articles/illegal-reason-to-fire-someone/" target="_blank" rel="noopener">Business.com</a>,
+        <a href="https://hiring.monster.com/?p=24411" target="_blank" rel="noopener">Monster</a>).</li>
+      </ol>
+      <p class="dim">Honest limitation: Reddit/forum threads could not be retrieved (WebSearch is
+      US-only and reddit.com is blocked to WebFetch here). The demand finding rests on revenue
+      and pricing evidence instead, which is money that already moved.</p>
+
+      <h3>Step 3 &mdash; customer language, all verbatim from BBB reviews of Bambee</h3>
+      <p>The best available source is people already paying and complaining:</p>
+      <blockquote>&ldquo;The policies are very general and typically do not appropriately apply
+      to our business&rdquo; (03/18/2024)</blockquote>
+      <blockquote>&ldquo;You are not able to talk with anyone when you need to &mdash; it's
+      often the following week&rdquo; (03/18/2024)</blockquote>
+      <blockquote>&ldquo;My HR administrator was always 1-3 days late getting back to
+      me&rdquo; (06/24/2024)</blockquote>
+      <blockquote>&ldquo;it has added many, many hours to my workweek&rdquo; (03/18/2024)</blockquote>
+      <blockquote>&ldquo;Big promises on the front end, but service and execution is
+      poor&rdquo; (11/07/2024)</blockquote>
+      <p>Source: <a href="https://www.bbb.org/us/ca/glendale/profile/human-resources/bambee-inc-1216-720497/customer-reviews" target="_blank" rel="noopener">BBB profile</a>.
+      Reported pattern: HR managers keep changing (one account cites 8 HR representatives in
+      two years); another reports six weeks for simple changes to HR policies; and Bambee has
+      reportedly charged clients for two years after they stopped using the service.</p>
+      <p class="callout">Read together, these say something precise: <strong>the market has
+      already bought &ldquo;access to an HR person&rdquo; and been disappointed by the generic
+      and the slow.</strong> That is a real opening for better service quality, which a solo
+      operator can deliver at 20 clients and cannot at 200 &mdash; an opening, not by itself a
+      defensible business.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-competition" open>
+    <summary><h2>Competition + the gap</h2></summary>
+    <div class="sec-body">
+      <h3>Who serves this niche now</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Player</th><th>Target</th><th>Price</th><th>Scale</th><th>Complaints</th></tr>
+        <tr><td><strong>Bambee</strong></td><td>1-500 employees, micro-SMB focus</td><td>$299-$1,299/mo + setup fee</td><td>~$17.8M ARR, thousands of clients, ~80 staff (down from 151 in 2023)</td><td>Generic policies, slow response, rep turnover, billing after cancellation</td></tr>
+        <tr><td>PEOs (Insperity, TriNet, Justworks)</td><td>5-500</td><td>Per-employee-per-month, bundled</td><td>Decades</td><td>Bundled &mdash; advisory isn't the product, it's the glue</td></tr>
+        <tr><td>Payroll bundles (ADP, Paychex, Gusto)</td><td>All SMB</td><td>Effectively free / ~$50/mo add-on</td><td>Decades</td><td>Retention feature; depth is shallow by design</td></tr>
+        <tr><td>Local fractional HR</td><td>20-200</td><td>$115/hr; $1,500-$16,000/mo</td><td>Fragmented</td><td>Availability, no systems, no AI capability</td></tr>
+        <tr><td>ConnectsUs HR</td><td>Consultants deploying to clients</td><td>~$58/mo (CAD)</td><td>Multi-year</td><td>Canada-focused, no AI layer at all</td></tr>
+        <tr><td>Fractional CAIO / AI governance</td><td>Mid-market</td><td>$2,000-$8,000/mo; $7,500 30-day sprint; $5,000-$30,000/mo senior</td><td>Emerging, 15-20% mid-market adoption, projected 40-50%</td><td>No HR or employment-law depth whatsoever</td></tr>
+      </table>
+      </div>
+      <p class="dim">Sources:
+      <a href="https://www.bambee.com/plans/" target="_blank" rel="noopener">Bambee</a>,
+      <a href="https://consultfees.com/use-cases/hr-consultants" target="_blank" rel="noopener">consultfees.com</a>,
+      <a href="https://connectsus.com/become-hr-consultant/pricing" target="_blank" rel="noopener">ConnectsUs</a>,
+      <a href="https://www.theaiconsultingnetwork.com/blog/ai-consulting-small-businesses-cost-how-it-works" target="_blank" rel="noopener">The AI Consulting Network</a>,
+      <a href="https://www.pertamapartners.com/insights/ai-consulting-pricing-guide" target="_blank" rel="noopener">Pertama Partners</a>,
+      <a href="https://cloudnsite.com/blog/fractional-chief-ai-officer-vs-ai-consultant" target="_blank" rel="noopener">CloudNSite</a>.</p>
+
+      <p class="big">The gap, stated plainly: two mature industries sit next to each other and
+      neither can cross it. SMB HR outsourcing has zero AI-governance credibility. Fractional AI
+      consulting has zero employment-law credibility &mdash; a fractional CAIO cannot tell you
+      what adverse impact is or why your four-fifths ratio matters. The intersection is genuinely
+      unowned.</p>
+
+      <h3>The live regulatory clock &mdash; this is the wedge, and it is US, not EU</h3>
+      <ul>
+        <li><strong>California FEHA automated-decision-system regulations, effective October 1,
+        2025</strong>, applying to any employer with at least five employees, with at least one
+        in California
+        (<a href="https://www.paulhastings.com/insights/client-alerts/new-california-regulations-on-employers-use-of-ai-to-make-decisions-go-into-effect-oct-1-2025" target="_blank" rel="noopener">Paul Hastings</a>,
+        <a href="https://www.jacksonlewis.com/insights/californias-new-ai-regulations-take-effect-oct-1-heres-your-compliance-checklist" target="_blank" rel="noopener">Jackson Lewis</a>).
+        Five employees &mdash; that is Bambee's entry tier.</li>
+        <li><strong>NYC Local Law 144</strong> applies regardless of company size &mdash; &ldquo;a
+        five-person startup using an AI resume screener faces the same bias audit, applicant
+        notice, and penalty structure as a multinational&rdquo;
+        (<a href="https://www.bynimble.com/hr-briefs/ai-hiring-compliance-small-business" target="_blank" rel="noopener">Nimble Advisors</a>).</li>
+        <li><strong>Colorado SB 189, signed May 14, 2026</strong> &mdash; repealed and replaced
+        the Colorado AI Act, delayed to January 1, 2027, narrowed to notice and recordkeeping
+        (<a href="https://www.skadden.com/insights/publications/2026/06/colorado-repeals-and-replaces-its-ai-act" target="_blank" rel="noopener">Skadden</a>,
+        <a href="https://www.littler.com/news-analysis/asap/colorado-amends-its-artificial-intelligence-law-substantially-reducing" target="_blank" rel="noopener">Littler</a>).
+        Weaker than earlier assumed, but a dated obligation on the calendar.</li>
+        <li>Illinois disclosure law in effect; Texas in the patchwork
+        (<a href="https://www.seyfarth.com/news-insights/artificial-intelligence-legal-roundup-colorado-postpones-implementation-of-ai-law-as-california-finalizes-new-employment-discrimination-regulations-and-illinois-disclosure-law-set-to-take-effect.html" target="_blank" rel="noopener">Seyfarth</a>).</li>
+        <li class="callout bad"><strong>EU: moved to December 2027.</strong> Do not build copy
+        on August 2026.</li>
+      </ul>
+      <p>Against exposure: <strong>47% of SMBs now use AI in HR</strong> for resume screening,
+      onboarding or engagement
+      (<a href="https://www.business.com/articles/ai-usage-smb-workplace-study/" target="_blank" rel="noopener">Business.com 2026 Small Business AI Outlook</a>);
+      <strong>73% of SMB employees use at least one AI tool at work, mostly with no governing
+      policy</strong>; <strong>63% of organizations have no AI governance policy</strong>
+      (<a href="https://layer27.com/blog/practical-ai-governance-for-small-businesses-how-to-use-ai-tools-without-creatin" target="_blank" rel="noopener">Layer27</a>,
+      <a href="https://acs.com/ai-policy/" target="_blank" rel="noopener">ACS</a>);
+      <strong>73% of SMBs say they need more training and resources for AI implementation</strong>
+      (Goldman Sachs, via
+      <a href="https://www.digitalapplied.com/blog/small-business-ai-adoption-guide-2026" target="_blank" rel="noopener">digitalapplied</a>).</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-angles" open>
+    <summary><h2>The four niche angles, scored against each other</h2></summary>
+    <div class="sec-body">
+      <p>The direct answer to &ldquo;niche it down or go broad,&rdquo; scored 1-10 on
+      differentiation, demand evidence, moat fit, and unit economics.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Angle</th><th>Diff.</th><th>Demand</th><th>Moat fit</th><th>Unit econ.</th><th>Verdict</th></tr>
+        <tr><td><strong>A. Straight policy / compliance help desk</strong> (the generic version)</td><td>2</td><td>9</td><td>4 &mdash; no certification, where certification <em>is</em> the signal</td><td>3</td><td><span class="tag no">Do not lead with this</span></td></tr>
+        <tr><td><strong>B. AI in people decisions</strong> &mdash; governance, policy, defensible records</td><td>9</td><td>7</td><td>10 &mdash; HRBP seat + built-and-runs a production multi-agent system + Gen X + learn-fast-and-teach</td><td>8</td><td><span class="tag yes">The spine</span></td></tr>
+        <tr><td><strong>C. AI adoption coaching for the owner</strong></td><td>7</td><td>7</td><td>9 &mdash; learn-fast-and-teach is a named moat; Gen X peer trust with older owners is underserved</td><td>6</td><td><span class="tag part">The delivery motion</span></td></tr>
+        <tr><td><strong>D. Owner coaching / people-decisions sounding board</strong></td><td>4</td><td>7</td><td>7 &mdash; eight years as an HRBP advising senior leaders is real and on point</td><td>5</td><td><span class="tag part">The retention layer</span></td></tr>
+      </table>
+      </div>
+      <p class="callout good"><strong>Recommendation: B as the spine, C as the delivery motion,
+      D as retention, A included but never the headline.</strong> Broad-and-generic is precisely
+      what loses to Bambee and to a free payroll bundle.</p>
+
+      <p><strong>The honest moat read.</strong> His moat is not &ldquo;HR experience&rdquo;
+      &mdash; thousands of people have that, many certified where he is not. His moat is the
+      <strong>intersection</strong>: an HR practitioner with fifteen years in the function and
+      ten-plus inside a Fortune 100, who personally architects and runs a production multi-agent
+      AI system, and who already shipped AI-assisted automation inside an HR function.
+      &ldquo;Almost nobody in HR can say both halves.&rdquo; That is defensible. &ldquo;I answer
+      your HR questions&rdquo; is not.</p>
+
+      <p class="callout"><strong>The moat has a shelf life &mdash; two to three years</strong>,
+      until Bambee ships an AI-compliance module or a fractional-CAIO firm hires an employment
+      lawyer. Move now or don't move.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-money" open>
+    <summary><h2>Monetization + messaging</h2></summary>
+    <div class="sec-body">
+      <h3>Step 5 &mdash; monetization</h3>
+      <p><strong>Price anchors, all real:</strong> Bambee $299/$399/$499/$1,299/mo &middot; HR On-Demand from
+      $50/mo &middot; senior HR advisory from $497/mo &middot; HR consultant $115/hr &middot;
+      on-call retainer $1,500/mo, embedded HRBP $4,000-$10,000/mo, fractional CHRO to
+      $16,000/mo &middot; fractional CAIO $2,000-$8,000/mo for 8-20 hrs &middot; $7,500 for a
+      30-day AI Readiness + Governance Sprint &middot; ConnectsUs $58/mo &middot; SHRM $299/yr
+      &middot; FPP $240/yr annual-only.</p>
+      <p>Against his existing ladder ($19-29 entry, $150-500 mid, $497 Signal Session, higher-ticket
+      beyond): the fixed-price <strong>AI-in-people-decisions review at $1,500-$2,500</strong> is
+      the natural next rung above the $497 Signal Session, and sits below the $7,500 sprint comp.</p>
+      <p class="callout"><strong>The founder-time load is the whole game.</strong> As framed:
+      uncapped. Fixed: a stated cap (&ldquo;up to 6 escalations a month, 2 business day
+      turnaround&rdquo;) converts an unbounded liability into a priced deliverable &mdash; and it
+      is more honest than Bambee's implied-unlimited promise that generates their worst reviews.</p>
+
+      <h3>Payer vs. user &mdash; flag it loudly</h3>
+      <p>Two separate mismatches: (1) on the AI-governance angle, the entity with the exposure (a
+      5-employee California shop) is not the entity that buys $2,000/mo advisory &mdash; the
+      regulation reaches down to five employees, the willingness to pay does not, which is exactly
+      why the pivot moves the buyer to 20-75 employees. (2) The <strong>fractional HR
+      consultant</strong> buyer resolves this: they serve the 5-employee shops, they carry the
+      professional liability, and ConnectsUs already proves they pay for deployable toolkits. One
+      sale reaches ten small businesses &mdash; the same rescue <code>viability-HR-OS.md</code>
+      landed on independently in June.</p>
+
+      <h3>Step 6 &mdash; messaging (positioning read only, no finished copy)</h3>
+      <p>Positioning, from harvested language: for a small employer already using AI to screen or
+      evaluate people, who has &ldquo;nothing that appropriately applies to our business&rdquo;
+      and no record of how those decisions got made &mdash; the before-to-after is <em>&ldquo;we
+      use AI in hiring and I have no idea what I'd show anyone&rdquo;</em> &rarr; <em>&ldquo;I have
+      a written policy, a documented human-review step, and a file I could hand over.&rdquo;</em>
+      No differentiator exists on the generic angle, and none is manufactured here. Any
+      customer-facing draft still has to clear <code>boub_voice_mastery</code> (and
+      <code>hormozi-lead-gen</code> for funnel copy) at &ge;90 before it ships &mdash; nothing
+      here is finished copy.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-smoke" open>
+    <summary><h2>Smoke test + lean MVP scope</h2></summary>
+    <div class="sec-body">
+      <h3>Step 7 &mdash; smoke test plan</h3>
+      <ul>
+        <li><strong>Surface:</strong> one page on <code>/review/</code> or a Carrd one-pager,
+        mobile-readable, collapsible sections. Email captured and persisted before any handoff to
+        checkout &mdash; proven by reading a row back and stating the count.</li>
+        <li><strong>Offer:</strong> a fixed-price <strong>AI in Your People Decisions review at
+        $1,500</strong>, first five clients, no retainer required. Real founding scarcity (five is
+        genuinely all he can deliver).</li>
+        <li><strong>One traffic source:</strong> LinkedIn, to fractional HR consultants and
+        20-75-employee owners, leading with the California five-employee threshold, which almost
+        none of them know about.</li>
+        <li><strong>Pass bar:</strong> 3 paid at $1,500+ within 14 days, or 8 booked calls. At
+        least two of the three must come from outside his warm network &mdash; the parachute test
+        is a hard rule and warm leads are a bonus, never the proof.</li>
+      </ul>
+
+      <h3>Step 8 &mdash; lean MVP scope</h3>
+      <p><strong>Core job:</strong> when I realize the tools I use to hire and evaluate people
+      are now regulated and I have no record of anything, help me get a written policy, a
+      human-review step and a defensible file, so I can answer the question if it ever gets
+      asked.</p>
+      <p><strong>Must build (5, hard cap):</strong></p>
+      <ol>
+        <li>Take payment for a named, fixed-price engagement, with email captured and persisted
+        first.</li>
+        <li>Accept a client question through one intake surface and thread it.</li>
+        <li>Draft an answer with AI, hold it for his review &mdash; never auto-send.</li>
+        <li>Let him edit that draft in place and send the edited version as-is.</li>
+        <li>Show him, and the client, the ToS and scope-exclusion list before money changes
+        hands.</li>
+      </ol>
+      <p><strong>CUT list (won't build in v1):</strong> the Slack app, the Teams app,
+      &ldquo;AI trained on his voice&rdquo; (the corpus does not exist), real-time chat,
+      subscription lifecycle, per-client document storage, e-signature, multi-seat accounts,
+      payroll integration, any autonomous answering of anything on the escalation list.</p>
+      <p><strong>&ldquo;It worked&rdquo; metric:</strong> three paying clients complete the full
+      loop &mdash; question in, his reviewed answer out, and they ask a second one. Not
+      signups.</p>
+
+      <h3>Step 9 &mdash; build-in-public plan</h3>
+      <p><strong>Public commitment:</strong> &ldquo;First paying client for this in 30 days, and
+      I'll show what I learn.&rdquo; Dated, specific. <strong>Checkpoints:</strong> (1) what the
+      first ten questions people actually ask reveal about where small employers are exposed; (2)
+      what the California five-employee threshold does to a room when you say it out loud; (3)
+      what a real AI-in-hiring evidence file looks like, redacted. <strong>Ask framing:</strong>
+      &ldquo;follow along, and tell me if this is you&rdquo; &mdash; never &ldquo;buy this.&rdquo;</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-adjacency" open>
+    <summary><h2>Adjacency findings (superpower pass)</h2></summary>
+    <div class="sec-body">
+      <div class="table-scroll">
+      <table>
+        <tr><th>#</th><th>Connection</th><th>Why non-obvious</th><th>How it makes it more viable</th></tr>
+        <tr>
+          <td>1</td>
+          <td><strong>Sell the AI module INTO fractional HR consultants</strong> rather than
+          competing with Bambee for the end client. Fuse the proven ConnectsUs model ($58/mo
+          consultant toolkit, multi-year) with the module ConnectsUs has no version of. Dated
+          anchor: <strong>HRpreneur Denver, September 2026</strong>, FPP membership already
+          decided.</td>
+          <td>The instinct is to fight Bambee for the small employer. The leverage is to arm
+          the layer that replaces Bambee.</td>
+          <td>Fixes the payer/user mismatch, fixes fulfillment scalability (serve one
+          consultant, not ten owners); two independent runs converge on this buyer.</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Port the bias audit from a legal event into a subscription artifact.</strong>
+          NYC LL144 mandates an annual bias audit; California requires four-year record retention.
+          Nobody sells &ldquo;your AI-in-hiring evidence file, kept current.&rdquo;</td>
+          <td>Compliance treats an audit as an event; SaaS treats compliance as
+          maintenance &mdash; the same shift that turned bookkeeping into a subscription.</td>
+          <td>Fixes the unit-economics hole: the deliverable is produced on his schedule, not on
+          the client's escalation whim.</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Second stakeholder nobody serves: the employment defense attorney and the
+          EPLI carrier.</strong> Both eat the $160,000 average lawsuit.</td>
+          <td>The assumed channel is marketing to owners who don't know they have the problem.
+          Attorneys and carriers know, and they have the list.</td>
+          <td>A distribution wedge with no ad spend, parachute-test compliant &mdash;
+          reproducible by anyone, not dependent on his warm network.</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>Use the escalation queue itself as the corpus engine.</strong> Every
+          question he personally answers becomes a knowledge-base row, an anonymized post, and a
+          data point on what small employers are actually confused about.</td>
+          <td>The escalation queue looks like the cost center. It is actually the corpus that
+          does not exist yet, generated and paid for by customers.</td>
+          <td>Says: do not build the AI layer first. Ship the human service, let paying
+          customers generate the training data, automate at ~50 answers.</td>
+        </tr>
+      </table>
+      </div>
+      <p class="callout"><strong>Verdict change from adjacency: none &mdash; PIVOT holds.</strong>
+      But #4 is what makes it shippable this weekend, #2 is what fixes the unit economics, and #1
+      and #3 are the two distribution wedges. Not a rescue; a sharpening.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-path" open>
+    <summary><h2>Path-to-GO plan</h2></summary>
+    <div class="sec-body">
+      <ol>
+        <li><strong>Change the headline</strong> from &ldquo;fractional HR help desk&rdquo; to
+        &ldquo;AI in your people decisions.&rdquo; Lead with the California five-employee
+        threshold, which almost nobody in the target audience knows about.
+        <span class="tag yes">EU-date correction applied</span> &mdash; every reference to the EU
+        August 2, 2026 deadline is retired; it moved to December 2027 and repeating it is now a
+        false claim. <em>This correction has been made directly in
+        <code>docs/roadmap/atelier/plans/hr-go-to-market-plan.md</code> in the same pass as this
+        report.</em></li>
+        <li><strong>Move the buyer</strong> to 20-75 employees, someone doing HR part-time,
+        actively using an ATS or AI screening, with CA / NYC / IL / CO exposure. Not the
+        4-employee shop on Bambee's $299 tier &mdash; the regulation reaches them, the budget does
+        not.</li>
+        <li><strong>Change the shape</strong> from unlimited subscription to fixed-price-first:
+        an AI in Your People Decisions review at $1,500-$2,500, with a capped retainer behind it
+        (&ldquo;up to 6 escalations a month, 2 business day turnaround&rdquo;).</li>
+        <li><strong>Ship the liability layer before the first paying client, not after.</strong>
+        Disclaimer, scope-exclusion list, honest credential statement, and E&amp;O insurance the
+        same week &mdash; $300-$1,500/yr for a solo provider, ~$62/mo average for consultants
+        (<a href="https://www.insureon.com/small-business-insurance/errors-omissions/cost" target="_blank" rel="noopener">Insureon</a>,
+        <a href="https://www.moneygeek.com/insurance/business/professional-liability/errors-and-omissions/cost/" target="_blank" rel="noopener">MoneyGeek</a>).
+        Cheap, not optional.</li>
+        <li><strong>Build the corpus from paid escalations</strong> (adjacency #4). Do not build
+        the AI answering layer until ~50 real answers exist.</li>
+        <li><strong>Open the two distribution wedges in parallel:</strong> fractional HR
+        consultants (adjacency #1, HRpreneur Denver September 2026 as the dated anchor) and the
+        employment-attorney / EPLI referral loop (adjacency #3, parachute-test compliant).</li>
+      </ol>
+      <p class="callout good"><strong>Demand evidence needed to flip the verdict to GO:</strong>
+      three paying clients at $1,500+ within 30 days, at least two sourced outside his warm
+      network, OR ten fractional HR consultants paying for the AI module. This must be money
+      received, not interest expressed. Until that evidence exists, the verdict is PIVOT.</p>
+      <p><strong>Riskiest assumption to test first:</strong> that a small employer will pay for
+      access to an HR person when their payroll provider already includes &ldquo;ask a certified
+      HR advisor&rdquo; free. The pivot's job is to make that assumption irrelevant.</p>
+      <p><strong>Cheapest first test:</strong> one <code>/review/</code> page, email captured and
+      persisted before checkout, one LinkedIn post leading with the California five-employee
+      threshold, fixed-price review at $1,500. Cost: $0. Time: one day. Pass bar: 3 paid in 14
+      days.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-weekend" open>
+    <summary><h2>The weekend build &mdash; honestly</h2></summary>
+    <div class="sec-body">
+      <p class="big">What ships this weekend: the offer and the human service. What does not:
+      the AI layer, Slack/Teams, and subscription lifecycle. None of those three are needed to
+      take the first payment.</p>
+
+      <h3>Reused, works as-is (verified by reading the code, not assumed)</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Asset</th><th>What it gives you</th></tr>
+        <tr><td><code>orchestrator/fulfilment_catalog.py</code></td><td>Add one <code>FulfilmentProduct</code> entry with the new <code>price_ids</code> tuple &rarr; welcome/onboarding email renders and sends automatically.</td></tr>
+        <tr><td><code>orchestrator/purchase_fulfilment.py</code></td><td>Idempotent per-event claim, lead resolution by email, fulfilment send, outcome recording. A Stripe subscription-mode Payment Link fires <code>checkout.session.completed</code> on its first payment, so day-one signup fulfilment reuses cleanly with zero new code.</td></tr>
+        <tr><td><code>orchestrator/stripe_alerts.py</code></td><td>Telegram WIN on signup, ABANDON with recovery URL on drop-off, FAILED on payment failure. Verified against <code>checkout.session.completed</code> / <code>.expired</code> / <code>async_payment_failed</code> / <code>payment_intent.payment_failed</code>.</td></tr>
+        <tr><td><code>orchestrator/handlers_content_review_decisions.py</code> + migration 061</td><td><strong>This is the escalation queue, already built.</strong> Verified: <code>content_review_decisions_items.edited_text</code>, append-only <code>content_review_decisions_edit_history</code>, and <code>content_review_decisions_notes</code> for his reasoning at decision time. <code>POST /api/orc/content-review-decisions/edit-text</code> exists. Exactly &ldquo;AI drafts &rarr; he edits in place &rarr; the edited version ships,&rdquo; and it satisfies the inline-editing hard rule for free. Run v1 on <code>page_slug='hr-desk'</code> and skip a new migration entirely.</td></tr>
+        <tr><td><code>/review/</code> publish workflow</td><td>The queue lives at a <code>/review/</code> URL. Default surface rule, mobile-readable, no new auth to build.</td></tr>
+        <tr><td>Email-capture-before-handoff path</td><td>Already the enforced pattern. Persist, then read the row back and state the count.</td></tr>
+      </table>
+      </div>
+
+      <h3>Net-new, and honestly scoped</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Item</th><th>Real cost</th></tr>
+        <tr><td>Client intake surface</td><td>Half a day for a form + dedicated inbox. Days for authenticated threaded chat. <strong>Take the form.</strong></td></tr>
+        <tr><td>Subscription lifecycle (<code>invoice.paid</code>, <code>invoice.payment_failed</code>, <code>customer.subscription.deleted</code>, entitlement check)</td><td>Confirmed absent by grep across <code>stripe_alerts.py</code> and <code>purchase_fulfilment.py</code>. Half a day, and not needed for the first paying client &mdash; renewal one is 30 days out.</td></tr>
+        <tr><td>ToS + disclaimer page + affirmative acceptance at checkout</td><td>Half a day, and the highest-value half-day in the plan.</td></tr>
+        <tr><td><strong>The knowledge base of his own answers</strong></td><td><strong>This is the real blocker, and it is content work, not code.</strong> It does not exist. Weeks, not a weekend &mdash; exactly why adjacency #4 says let paying customers generate it.</td></tr>
+      </table>
+      </div>
+
+      <p><strong>Three reasons a fully automated weekend build is not realistic:</strong> (1)
+      there is no corpus &mdash; &ldquo;AI trained on his knowledge and voice&rdquo; has no
+      training data behind it today; (2) Slack + Teams are OAuth, app-directory install, and
+      per-workspace token management &mdash; not a weekend, and definitely not both; (3) recurring
+      billing is genuinely absent from the existing chain.</p>
+      <p class="callout good">None of that blocks taking money on Saturday. The smallest version
+      is a page, a real disclaimer, a Stripe link, captured email, and an inbox he answers
+      personally with the review queue behind it.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-disclaimer" open>
+    <summary><h2>The disclaimer + liability layer</h2></summary>
+    <div class="sec-body">
+      <p>Adapted from what real HR-advisory firms actually publish
+      (<a href="https://experthrconsulting.com/disclaimer/" target="_blank" rel="noopener">Expert HR Consulting</a>
+      verbatim: &ldquo;Information contained on or made available through this Web site is not
+      intended to and does not constitute legal advice&rdquo; and &ldquo;does not create a
+      consultant-client relationship&rdquo;). Seven components, all required:</p>
+      <ol>
+        <li><strong>Not legal advice; no attorney-client relationship formed.</strong></li>
+        <li><strong>Not a law firm; he is not an attorney.</strong> State it affirmatively.</li>
+        <li><strong>An honest credential statement.</strong> What he can truthfully say: working
+        in HR since 2010, roughly fifteen years; ten-plus years inside a Fortune 100 (GE,
+        2015-2025); HRBP roles 2017-2025; MBA in Organizational Behavior and Human Resources, BYU
+        Marriott. What he must <strong>never</strong> say: certified in any form (no SHRM-SCP, no
+        SPHR), attorney, &ldquo;ran HR and operations,&rdquo; &ldquo;executive,&rdquo; or
+        &ldquo;fifteen years at a Fortune 100.&rdquo;
+        <p class="callout">Recommended honest framing (a selling line, not a concession):
+        <em>&ldquo;I am an HR practitioner with an MBA in organizational behavior and human
+        resources and fifteen years working in HR, ten of those inside a Fortune 100. I am not an
+        attorney and I do not hold an HR certification. What you get from me is practitioner
+        judgment, not a legal opinion.&rdquo;</em> In a market where every competitor leads with a
+        certification badge, that candor differentiates. This is copy in his name and must clear
+        <code>boub_voice_mastery</code> at &ge;90 before it goes on a page.</p></li>
+        <li><strong>A named scope-exclusion list in the ToS</strong>, always routed to counsel
+        with a referral: representation before any agency; legal opinions; exempt/non-exempt
+        classification as a legal conclusion; immigration; ERISA/benefits determinations; anything
+        involving a filed charge or active complaint; termination of an employee in a protected
+        class; ADA accommodation determinations. This list is also the escalation router's
+        config.</li>
+        <li><strong>AI disclosure, stated plainly:</strong> routine answers are drafted with AI
+        and reviewed by a human before sending, nothing goes out unreviewed &mdash; a live
+        demonstration of the exact governance he is selling.</li>
+        <li><strong>Limitation of liability capped at fees paid</strong>, plus E&amp;O /
+        professional liability insurance in force before the first client &mdash;
+        $300-$1,500/yr solo.</li>
+        <li><strong>No refund or guarantee language</strong> (standing hard rule). Month-to-month
+        cancellation is the substitute, and it must actually work.</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-evidence" open>
+    <summary><h2>Evidence trail + this run's own limits</h2></summary>
+    <div class="sec-body">
+      <p><strong>Demand signal: STRONG.</strong> Bambee ~$17.8M est. ARR, $33.2M raised, 705%
+      three-year growth, tens of thousands of SMB customers at $299-$1,299/mo; a whole priced
+      workaround market from $50/mo to $16,000/mo; avg employment lawsuit $160,000; 47% of SMBs
+      already use AI in HR; 63% of orgs have no AI governance policy. Limitation stated honestly:
+      no Reddit/forum threads retrieved, none invented.</p>
+      <p><strong>Competition + gap:</strong> Bambee owns the generic slot with real revenue and 80
+      staff; payroll bundles give the core function away free; fractional CAIOs charge
+      $2,000-$8,000/mo with zero employment-law depth. The unowned gap is HR &cap; AI &mdash;
+      regulated at five employees in California since Oct 1 2025, size-agnostic under NYC LL144,
+      Colorado Jan 1 2027.</p>
+      <p><strong>Monetization:</strong> fixed-price first engagement $1,500-$2,500, capped
+      retainer behind it; alternate/parallel: fractional-HR-consultant module at $99-$149/mo.</p>
+      <p><strong>Smoke test:</strong> <code>/review/</code> one-pager with email persisted before
+      checkout + one LinkedIn post led by the California five-employee threshold + $1,500
+      fixed-price review. Pass bar: 3 paid in 14 days, &ge;2 from outside his warm network.</p>
+
+      <p class="callout bad"><strong>Two notes on this run's own limits, so nothing here is
+      over-trusted.</strong> The second-brain corpus was six days stale and returned zero on the
+      primary query; the prior HR viability work was found by grep, not by the query path, so
+      there may be more that neither surface reached (Notion, Drive and NotebookLM are outside the
+      corpus entirely). And no durable file was written by the Crucible run itself &mdash;
+      canonical-tree writes are hook-blocked and needed a worktree. The durable home is
+      <code>docs/roadmap/atelier/viability/viability-HR-helpdesk.md</code> alongside the four
+      existing HR verdicts, and <code>docs/roadmap/atelier/plans/hr-go-to-market-plan.md</code>
+      needed a correction commit in the same pass: the EU August 2 2026 wedge it was built on has
+      moved to December 2027. <strong>That correction has been made</strong> &mdash; see the Path-to-GO
+      section above.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Crucible viability run, business-idea lens. Idea: an AI-assisted HR help desk giving small
+    businesses without HR direct access to Boubacar. Verdict: PIVOT. Every figure carries its
+    source link. Illustrative copy in the disclaimer section has not passed the voice and
+    social-quality gates and must do so before any of it ships in his name.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
