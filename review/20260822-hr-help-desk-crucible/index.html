@@ -134,6 +134,62 @@
   blockquote{border-left:3px solid var(--border); margin:0 0 12px; padding:4px 0 4px 14px;
     color:var(--text-dim); font-style:italic;}
   .stack-note{font-size:.82rem; color:var(--text-dim); margin:-6px 0 14px;}
+  /* ---- Action plan (DB-backed checklist, migration 061) --------------------
+     Opaque on purpose: a save failure must be readable, never washed over the
+     content it sits on top of. A silent failed save is the exact bug this
+     block exists to prevent. */
+  #ap-error-banner{display:none; position:sticky; top:102px; z-index:56;
+    background:#2b1416; border:1px solid var(--bad); color:#ffb3b3;
+    box-shadow:0 6px 18px rgba(0,0,0,.55);
+    font-size:.84rem; padding:11px 14px; margin:14px 0; border-radius:8px; font-weight:700;}
+  details.ap{border-color:var(--accent2);}
+  details.ap > summary h2{color:var(--accent2);}
+  .ap-counter{font-size:.82rem; color:var(--text-dim); font-weight:600; margin:0 0 14px;}
+  .ap-counter strong{color:var(--accent2);}
+  .ap-item{border:1px solid var(--border); border-radius:10px; background:var(--bg2);
+    padding:12px 14px; margin:0 0 12px;}
+  .ap-item.done{border-color:#25473a; background:#101a16;}
+  .ap-row{display:flex; align-items:flex-start; gap:12px;}
+  .ap-check{appearance:none; -webkit-appearance:none; cursor:pointer; flex:none;
+    width:24px; height:24px; margin:1px 0 0; border:2px solid var(--border);
+    border-radius:6px; background:var(--bg); position:relative;}
+  .ap-check:hover{border-color:var(--accent2);}
+  .ap-check:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .ap-check:checked{background:var(--good); border-color:var(--good);}
+  .ap-check:checked::after{content:"\2713"; position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#06251a; font-size:.95rem; font-weight:900;}
+  .ap-check:disabled{opacity:.45; cursor:progress;}
+  .ap-main{flex:1 1 auto; min-width:0;}
+  .ap-label{font-size:.95rem; font-weight:650; margin:0 0 4px;}
+  .ap-item.done .ap-label{color:var(--text-dim);}
+  .ap-sub{font-size:.84rem; color:var(--text-dim); margin:0 0 6px;}
+  .ap-status{display:inline-block; font-size:.68rem; font-weight:800; letter-spacing:.06em;
+    text-transform:uppercase; border-radius:999px; padding:3px 10px; margin:0 0 6px;
+    background:#2a2f3d; color:var(--text-dim); border:1px solid var(--border);}
+  .ap-item.done .ap-status{background:var(--good); color:#06251a; border-color:var(--good);}
+  .ap-note-form{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 0;}
+  .ap-note-form textarea{flex:1 1 260px; min-width:0; resize:vertical; min-height:40px;
+    background:var(--bg); color:var(--text); border:1px solid var(--border);
+    border-radius:8px; padding:8px 10px; font-size:.86rem; font-family:inherit;
+    line-height:1.45;}
+  .ap-note-form textarea:focus{outline:2px solid var(--accent); outline-offset:-1px;}
+  .ap-note-form button{flex:none; cursor:pointer; background:var(--bg2); color:var(--text);
+    border:1px solid var(--border); border-radius:8px; padding:8px 16px;
+    font-size:.84rem; font-weight:650; min-height:40px;}
+  .ap-note-form button:hover{border-color:var(--accent); color:var(--accent);}
+  .ap-note-form button:disabled{opacity:.5; cursor:progress;}
+  .ap-notes{list-style:none; padding:0; margin:10px 0 0;}
+  .ap-notes li{border-left:3px solid var(--accent); background:#11141b;
+    border-radius:0 8px 8px 0; padding:7px 12px; margin:0 0 7px; font-size:.85rem;}
+  .ap-notes .ap-note-ts{display:block; font-size:.72rem; color:var(--text-dim);
+    margin:0 0 3px; letter-spacing:.02em;}
+  .ap-loading{font-size:.84rem; color:var(--text-dim);}
+  @media (max-width:520px){
+    .ap-note-form textarea{flex:1 1 100%;}
+    .ap-note-form button{width:100%;}
+  }
+
   .bot-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:22px 0 6px;}
   .bot-head h3{margin:0;}
   .kv{margin:0 0 12px;}
@@ -190,6 +246,7 @@
             aria-label="Toggle section navigation">&#9776;</button>
     <div class="nav-links" id="navLinks">
       <a href="#tldr">Where it stands</a>
+      <a href="#sec-action-plan">Action plan</a>
       <a href="#sec-3dayfile">The 3-Day File &mdash; final synthesis</a>
       <a href="#sec-portfolio">The 4-bot portfolio</a>
       <a href="#sec-weekend-starter">Weekend starter</a>
@@ -312,6 +369,28 @@
       <p class="stack-note"><strong>This page is now complete.</strong> Nothing from today's
       research arc is still in flight. Every &ldquo;still running, will be updated&rdquo; note
       that used to sit on this page has been closed out.</p>
+    </div>
+  </details>
+
+  <div id="ap-error-banner" role="alert"></div>
+
+  <details class="sec ap" id="sec-action-plan" open>
+    <summary><h2>The action plan &mdash; check these off, they stick</h2></summary>
+    <div class="sec-body">
+      <p class="big">Every open next step surfaced across today's research, in one list.
+      Tick a box and it saves to the database, not to this browser &mdash; it will still be
+      ticked on your phone, tomorrow, from anywhere.</p>
+
+      <p class="stack-note">Notes are append-only and timestamped. Nothing you write here is
+      ever overwritten, and notes stay available whether an item is open or done. If a save
+      ever fails you will see a loud red bar at the top of this section, never a silent
+      nothing.</p>
+
+      <p class="ap-counter" id="ap-counter">Loading saved state&hellip;</p>
+
+      <div id="ap-list">
+        <p class="ap-loading">Loading the checklist from the database&hellip;</p>
+      </div>
     </div>
   </details>
 
@@ -1682,6 +1761,267 @@
   if (restored && !location.hash) { window.scrollTo(0, 0); }
 })();
 </script>
+<!-- ACTION_PLAN_START
+     Database-backed action plan. Source of truth is orc-postgres via the
+     existing content_review_decisions_* tables (orchestrator/migrations/
+     061_content_review_decisions.sql) and the existing
+     /api/orc/content-review-decisions/* endpoints. NO new migration and NO new
+     endpoint were built for this: a checklist is a two-state decision with
+     append-only notes, which is exactly what 061 already stores.
+
+     Mapping, stated so nobody has to guess later:
+       decision = 'approve'  ->  item is DONE (checked)
+       decision = 'reject'   ->  item was explicitly re-opened (unchecked)
+       decision =  NULL      ->  never touched (open)
+     Every toggle appends a row to content_review_decisions_history, so "when
+     did he actually tick this" stays answerable. Notes append to
+     content_review_decisions_notes and are never overwritten.
+
+     localStorage is NOT used for any of this. A failed write shows a loud red
+     banner and the checkbox snaps back to its true stored value. -->
+<script>
+(function () {
+  'use strict';
+
+  var API = 'https://agentshq.boubacarbarry.com/api/orc/content-review-decisions';
+  var PAGE_SLUG = '20260822-hr-help-desk-crucible';
+
+  // The nine open actions from today's whole research arc.
+  var ITEMS = [
+    {
+      id: 'attorney-review',
+      label: '1. Book 2-3 hours with an employment attorney to review "The 3-Day File" plan',
+      sub: 'The B0 gate. Nothing downstream ships before this conversation happens. A candidate list is being researched separately and gets added to this item’s notes once it lands.'
+    },
+    {
+      id: 'eo-insurance-quotes',
+      label: '2. Get real quotes for solo-operator E&O / professional liability insurance',
+      sub: 'Estimated $300-$1,500/yr, unconfirmed — that range is a guess until a real quote exists. Must be in force before any client work, not after the first client.'
+    },
+    {
+      id: 'sofi-post-decision',
+      label: '3. Decide: post the SoFi / job-hunting piece sitting Ready on the content board',
+      sub: 'Drafted, gated, waiting. Separate thread from this business research, but still an open action from today. <a href="https://boubacarbarry.com/review/20260819-content-board-drafts/" target="_blank" rel="noopener">Open the content-board review page</a>.'
+    },
+    {
+      id: 'counsel-supervision-structure',
+      label: '4. Approve or reject the counsel-supervision engagement structure',
+      sub: 'Open question in Section 18 of the build contract. It decides whether attorney-client privilege actually attaches to the work product, which is not a detail. <a href="https://github.com/bokar83/agentHQ/blob/main/docs/prds/three-day-file-i9-readiness.md" target="_blank" rel="noopener">Read Section 18</a>.'
+    },
+    {
+      id: 'branding-surface',
+      label: '5. Decide the branding question: which surface do these launch under',
+      sub: 'Catalyst Works, Human at Work, or a new surface for "The 3-Day File" and the People-Decisions Desk. Flagged unresolved on the original tripwire branch and still unresolved.'
+    },
+    {
+      id: 'prd-read-and-approve',
+      label: '6. Read the build contract yourself, then approve it or send it back',
+      sub: 'Before B0 happens — the attorney conversation should be informed by a plan you have actually read, not one only agents have reviewed. <a href="https://github.com/bokar83/agentHQ/blob/main/docs/prds/three-day-file-i9-readiness.md" target="_blank" rel="noopener">docs/prds/three-day-file-i9-readiness.md</a>.'
+    },
+    {
+      id: 'free-bot-lead-magnet',
+      label: '7. Decide whether to build the free AI-HR-bot lead magnet',
+      sub: 'Recommended shape: front door only, no paid bot tier. A parallel low-cost build alongside The 3-Day File, not a replacement for it.'
+    },
+    {
+      id: 'sequencing-confirm',
+      label: '8. Confirm or override the sequencing call: 3-Day File first, People-Decisions Desk second',
+      sub: 'Already decided by an earlier pass on the reasoning above — the 3-Day File is the door-opener because it arrives with a reachable distribution channel. Your call to confirm or flip. <a href="#tldr">Re-read the reasoning</a>.'
+    },
+    {
+      id: 'merge-open-branches',
+      label: '9. Land the two branches still open from earlier today',
+      sub: 'Checked against origin/main on 2026-08-22: <code>fix/store-generator-stripe-routed-skus</code> is <strong>already merged</strong> (sha <code>8284474</code>) — that half is done. <code>feat/nate-herk-tripwire</code> (sha <code>b86a1e1</code>) is <strong>NOT merged</strong> and is the remaining half of this item.'
+    }
+  ];
+
+  var listEl = document.getElementById('ap-list');
+  var counterEl = document.getElementById('ap-counter');
+  var bannerEl = document.getElementById('ap-error-banner');
+  if (!listEl) { return; }
+
+  var state = {};        // item_id -> 'approve' | 'reject' | null
+  var notesByItem = {};  // item_id -> [{note_text, created_at}]
+
+  function showError(msg) {
+    if (!bannerEl) { return; }
+    bannerEl.textContent = msg;
+    bannerEl.style.display = 'block';
+  }
+  function hideError() {
+    if (bannerEl) { bannerEl.style.display = 'none'; }
+  }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function isDone(id) { return state[id] === 'approve'; }
+
+  function fmtTs(iso) {
+    try {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) { return String(iso); }
+      return d.toLocaleString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit'
+      });
+    } catch (e) { return String(iso); }
+  }
+
+  function updateCounter() {
+    var done = ITEMS.filter(function (it) { return isDone(it.id); }).length;
+    counterEl.innerHTML = '<strong>' + done + ' of ' + ITEMS.length + '</strong> done &middot; ' +
+      (ITEMS.length - done) + ' still open &middot; saved to the database, not this browser';
+  }
+
+  function renderNotes(id) {
+    var ul = document.getElementById('ap-notes-' + id);
+    if (!ul) { return; }
+    var notes = notesByItem[id] || [];
+    if (!notes.length) { ul.innerHTML = ''; return; }
+    ul.innerHTML = notes.slice().reverse().map(function (n) {
+      return '<li><span class="ap-note-ts">' + esc(fmtTs(n.created_at)) + '</span>' +
+        esc(n.note_text) + '</li>';
+    }).join('');
+  }
+
+  function paintItem(id) {
+    var wrap = document.getElementById('ap-item-' + id);
+    var box = document.getElementById('ap-check-' + id);
+    var status = document.getElementById('ap-status-' + id);
+    if (!wrap || !box) { return; }
+    var done = isDone(id);
+    box.checked = done;
+    wrap.classList.toggle('done', done);
+    if (status) { status.textContent = done ? 'Done' : 'Open'; }
+    updateCounter();
+  }
+
+  function render() {
+    listEl.innerHTML = ITEMS.map(function (it) {
+      return '' +
+        '<div class="ap-item" id="ap-item-' + it.id + '">' +
+          '<div class="ap-row">' +
+            '<input type="checkbox" class="ap-check" id="ap-check-' + it.id + '" ' +
+              'data-item="' + it.id + '" aria-label="Mark done: ' + esc(it.label) + '">' +
+            '<div class="ap-main">' +
+              '<span class="ap-status" id="ap-status-' + it.id + '">Open</span>' +
+              '<div class="ap-label">' + it.label + '</div>' +
+              '<div class="ap-sub">' + it.sub + '</div>' +
+              '<ul class="ap-notes" id="ap-notes-' + it.id + '"></ul>' +
+              '<div class="ap-note-form">' +
+                '<textarea id="ap-note-input-' + it.id + '" rows="1" ' +
+                  'placeholder="Your note on this one — saved with a timestamp, never overwritten"></textarea>' +
+                '<button type="button" class="ap-note-btn" data-item="' + it.id + '">Add note</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+
+    ITEMS.forEach(function (it) { paintItem(it.id); renderNotes(it.id); });
+
+    listEl.querySelectorAll('.ap-check').forEach(function (box) {
+      box.addEventListener('change', function () { onToggle(box.getAttribute('data-item'), box); });
+    });
+    listEl.querySelectorAll('.ap-note-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { onAddNote(btn.getAttribute('data-item'), btn); });
+    });
+  }
+
+  function postJSON(path, body) {
+    return fetch(API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (json) {
+        if (!res.ok || !json.ok) {
+          var detail = (json && (json.detail || json.error)) || ('HTTP ' + res.status);
+          throw new Error(detail);
+        }
+        return json;
+      });
+    });
+  }
+
+  function onToggle(id, box) {
+    var wanted = box.checked ? 'approve' : 'reject';
+    var previous = state[id] || null;
+    box.disabled = true;
+    hideError();
+    postJSON('/decision', { page_slug: PAGE_SLUG, item_id: id, decision: wanted })
+      .then(function () {
+        state[id] = wanted;
+        paintItem(id);
+      })
+      .catch(function (err) {
+        // Snap back to the true stored value. Never leave a tick on screen
+        // that the database did not accept.
+        state[id] = previous;
+        paintItem(id);
+        showError('NOT SAVED — that tick did not reach the database and has been undone. ' +
+          'Error: ' + err.message + '. Try again; if it keeps failing the API is down.');
+      })
+      .then(function () { box.disabled = false; });
+  }
+
+  function onAddNote(id, btn) {
+    var input = document.getElementById('ap-note-input-' + id);
+    if (!input) { return; }
+    var text = (input.value || '').trim();
+    if (!text) { return; }
+    btn.disabled = true;
+    hideError();
+    postJSON('/note', { page_slug: PAGE_SLUG, item_id: id, note_text: text })
+      .then(function (json) {
+        var note = (json && json.note) || { note_text: text, created_at: new Date().toISOString() };
+        notesByItem[id] = (notesByItem[id] || []).concat([note]);
+        input.value = '';
+        renderNotes(id);
+      })
+      .catch(function (err) {
+        showError('NOT SAVED — that note did not reach the database. Your text is still in ' +
+          'the box, do not close the page. Error: ' + err.message);
+      })
+      .then(function () { btn.disabled = false; });
+  }
+
+  function loadState() {
+    return fetch(API + '/state?page_slug=' + encodeURIComponent(PAGE_SLUG))
+      .then(function (res) { return res.json(); })
+      .then(function (json) {
+        if (!json || !json.ok) { throw new Error((json && json.error) || 'state read failed'); }
+        var items = json.items || {};
+        Object.keys(items).forEach(function (k) { state[k] = items[k].decision || null; });
+        notesByItem = {};
+        (json.notes || []).forEach(function (n) {
+          (notesByItem[n.item_id] = notesByItem[n.item_id] || []).push(n);
+        });
+      });
+  }
+
+  // Self-register the items (idempotent, never resets a decided item), then
+  // read the real stored state back and render from it.
+  postJSON('/run', {
+    page_slug: PAGE_SLUG,
+    items: ITEMS.map(function (it) {
+      return { item_id: it.id, item_label: it.label.replace(/<[^>]*>/g, '').slice(0, 120) };
+    })
+  })
+    .then(loadState)
+    .then(render)
+    .catch(function (err) {
+      listEl.innerHTML = '';
+      render();
+      showError('COULD NOT REACH THE DATABASE — this checklist is showing every item as ' +
+        'open because the saved state could not be read. Do not tick anything until this ' +
+        'clears. Error: ' + err.message);
+    });
+})();
+</script>
+<!-- ACTION_PLAN_END -->
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
