@@ -1,0 +1,1751 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building your own AI-agent connectors -- research, council, and the implementation plan</title>
+<!--
+  Built from scripts/templates/review-page-template.html so the layout hard standard passes.
+  Source: a completed multi-agent workflow on "how to build our own AI-agent connectors for
+  tools with no MCP and no published API." Four research lenses, a synthesis, a Council pass,
+  a Karpathy audit, and the implementation plan that came out the other side.
+  Nothing is summarised away -- the plan is reproduced in full because it is the thing to act on.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8; --codebg:#11141b;
+    --calloutbg:#1a1712; --calloutbad:#1d1315; --calloutgood:#121d18;
+  }
+  /* Light: system preference, unless an explicit data-theme="dark" overrides it. */
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#f5f6f8; --bg2:#ffffff; --card:#ffffff; --border:#dde1ea;
+      --text:#1a1d24; --text-dim:#5b6272; --accent:#1d6fd6; --accent2:#0e8f63;
+      --warn:#a9700a; --bad:#c23a3a; --good:#0e8f63; --codebg:#eef0f5;
+      --calloutbg:#fbf3e0; --calloutbad:#fbecec; --calloutgood:#e9f8f0;
+    }
+  }
+  /* Explicit override wins in both directions. */
+  :root[data-theme="light"]{
+    --bg:#f5f6f8; --bg2:#ffffff; --card:#ffffff; --border:#dde1ea;
+    --text:#1a1d24; --text-dim:#5b6272; --accent:#1d6fd6; --accent2:#0e8f63;
+    --warn:#a9700a; --bad:#c23a3a; --good:#0e8f63; --codebg:#eef0f5;
+    --calloutbg:#fbf3e0; --calloutbad:#fbecec; --calloutgood:#e9f8f0;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8; --codebg:#11141b;
+    --calloutbg:#1a1712; --calloutbad:#1d1315; --calloutgood:#121d18;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px; overflow-x:hidden;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.6rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:var(--bg); border-bottom:1px solid var(--border); padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.plan{border-color:var(--accent2);}
+  details.plan > summary h2{color:var(--accent2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.1rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  h3{font-size:1rem; margin:20px 0 8px;}
+  h4{font-size:.92rem; margin:16px 0 6px; color:var(--text-dim);
+     text-transform:uppercase; letter-spacing:.05em;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 7px;}
+  a{color:var(--accent);}
+  a:hover{text-decoration:none;}
+  code{background:var(--codebg); border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em; word-break:break-word;}
+  pre{background:var(--codebg); border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; font-size:.83rem; line-height:1.5;}
+  pre code{background:none; border:0; padding:0;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.87rem;
+    min-width:520px;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto; margin:0 0 14px;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .callout{border-left:3px solid var(--warn); background:var(--calloutbg); padding:12px 16px;
+    border-radius:0 8px 8px 0; margin:0 0 14px;}
+  .callout.bad{border-left-color:var(--bad); background:var(--calloutbad);}
+  .callout.good{border-left-color:var(--good); background:var(--calloutgood);}
+  .callout > :last-child{margin-bottom:0;}
+  .big{font-size:1.05rem; font-weight:650;}
+  .dim{color:var(--text-dim);}
+  .verdict-pill{display:inline-block; font-size:.78rem; font-weight:800; letter-spacing:.04em;
+    text-transform:uppercase; border-radius:999px; padding:5px 14px; background:var(--warn);
+    color:#241c07;}
+  .verdict-pill.go{background:var(--good); color:#06251a;}
+  .keystone{
+    border:2px solid var(--accent2); border-left-width:6px;
+    background:var(--calloutgood);
+    border-radius:0 12px 12px 0; padding:16px 20px; margin:18px 0 20px;
+  }
+  .keystone .keystone-label{
+    display:inline-block; font-size:.72rem; font-weight:800; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--accent2); margin-bottom:8px;
+  }
+  .keystone h3{margin-top:0;}
+  .keystone > :last-child{margin-bottom:0;}
+  .pullquote{
+    border:1px solid var(--accent); border-left:5px solid var(--accent);
+    background:var(--bg2); border-radius:0 10px 10px 0; padding:16px 20px; margin:0 0 14px;
+    font-size:1.06rem; line-height:1.5; color:var(--text);
+  }
+  blockquote{border-left:3px solid var(--border); margin:0 0 12px; padding:4px 0 4px 14px;
+    color:var(--text-dim); font-style:italic;}
+  .tag{display:inline-block; font-size:.72rem; letter-spacing:.03em; text-transform:uppercase;
+    border:1px solid var(--border); border-radius:999px; padding:2px 9px; color:var(--text-dim);
+    background:var(--bg2); white-space:nowrap;}
+  .tag.no{color:var(--bad); border-color:var(--bad);}
+  .tag.yes{color:var(--good); border-color:var(--good);}
+  .tag.part{color:var(--warn); border-color:var(--warn);}
+  .step{border:1px solid var(--border); border-radius:10px; background:var(--bg2);
+    padding:12px 16px; margin:0 0 12px;}
+  .step > :last-child{margin-bottom:0;}
+  .step h3{margin:0 0 6px; font-size:.98rem;}
+  .lens-meta{font-size:.82rem; color:var(--text-dim); margin:0 0 14px;
+    border-bottom:1px solid var(--border); padding-bottom:10px;}
+  .voice{border-left:4px solid var(--accent); padding:2px 0 2px 16px; margin:0 0 22px;}
+  .voice h3{margin-top:0; color:var(--accent);}
+  .grade{display:inline-block; font-size:.7rem; font-weight:800; letter-spacing:.05em;
+    border-radius:5px; padding:2px 8px; margin-left:6px; vertical-align:middle;}
+  .grade.fail{background:var(--bad); color:#2a0d0d;}
+  .grade.warn{background:var(--warn); color:#241c07;}
+  .grade.pass{background:var(--good); color:#06251a;}
+  @media (max-width:860px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.28rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+    .sec-body{padding:2px 14px 16px;}
+    .keystone, .pullquote{padding:14px 16px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Connector building</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-synthesis">Synthesis</a>
+      <a href="#sec-lens-1">Lens 1 &mdash; Printing Press</a>
+      <a href="#sec-lens-2">Lens 2 &mdash; Browser automation</a>
+      <a href="#sec-lens-3">Lens 3 &mdash; Private-API RE</a>
+      <a href="#sec-lens-4">Lens 4 &mdash; RPA bridges</a>
+      <a href="#sec-council">Council</a>
+      <a href="#sec-karpathy">Karpathy audit</a>
+      <a href="#sec-plan">Implementation plan</a>
+      <a href="#sec-gaps">Gaps</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Building your own AI-agent connectors for tools with no plug-in and no published API</h1>
+    <div class="meta">Completed multi-agent research run &middot; four lenses, a synthesis, a
+      five-voice Council pass and a ten-principle audit &middot; Aug 23, 2026 &middot;
+      final verdict <span class="verdict-pill">CHANGE THE DOCTRINE</span> &middot;
+      build verdict <span class="verdict-pill">HOLD until scope is cut</span></div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR &mdash; the four things that came out of this</h2></summary>
+    <div class="sec-body">
+      <p class="big">The technique is real, it has a name, and it takes an afternoon. The part
+      that is worth money is not the technique. Sell the curation, keep the capture as a rare
+      last resort, and practise on Skool this week.</p>
+
+      <h3>1. The real technique: capture-to-connector</h3>
+      <p>Almost no software has "no API." It has no <em>published</em> API. Every modern web and
+      mobile app is already talking to its own private data service in the background, using your
+      own logged-in credentials. You record that conversation, turn the recording into a written
+      map of what the app can do, throw away 95 percent of it, and hand the remaining ten or
+      fifteen business verbs to an agent as tools.</p>
+      <p>It has a named public implementation: <strong>Printing Press</strong>
+      (<a href="https://printingpress.dev/" rel="noopener">printingpress.dev</a>,
+      <a href="https://github.com/mvanhorn/cli-printing-press" rel="noopener">cli-printing-press</a>),
+      taught by Jay at RoboNuggets and verified first-hand from the paid Skool access, not from a
+      marketing page. It sniffs a site's private traffic and generates a command-line tool, a
+      plug-in server and docs from one run. Its public library ships tools built purely from
+      sniffed traffic for services with no official interface at all.</p>
+
+      <h3>2. The ranking correction: CLI &gt; API &gt; MCP</h3>
+      <p>An earlier internal assumption ranked the plug-in style connector as the preferred shape
+      on plumbing-convenience grounds. That is backwards. A plug-in server loads every tool
+      description into context on every session; a command-line tool does not. The same physics
+      was measured independently from the other end in this system's own token work
+      (~63,900 tokens for a restricted agent against ~101,100 for one inheriting everything, and
+      ~39,900 for a read-only search dispatch &mdash; a 61 percent cut). Shape also sets the
+      ceiling, not just the price: the Google Workspace command-line tool can mark a Gmail message
+      read, the Gmail plug-in cannot.</p>
+      <div class="callout good"><p><strong>Ship this one separately and now.</strong> The ranking
+      flip costs one commit, is correct on this system's own measured numbers, and should not wait
+      on whether any of the rest gets built.</p></div>
+
+      <h3>3. The service-line correction: sell the safest authorised path, not the hack</h3>
+      <p class="pullquote">I make the software you already own legible to AI agents, by the safest
+      authorised path that exists.</p>
+      <p>The wrong version is "I build custom connectors for tools with no API." It commits to the
+      hardest, riskiest, least supportable path as a specialty, sells strongest exactly where the
+      money is not, and turns one person into a pager rotation against a dozen vendors. Three
+      tiers instead, ordered by how much of the revenue they should be: <strong>(A) agent-readiness
+      curation</strong> &mdash; the base, the largest share, zero legal risk, and it applies to
+      companies that already have an API and have simply made it unusable by an agent;
+      <strong>(B) authorised-path integration</strong> through what the client already runs;
+      <strong>(C) last-resort capture</strong>, rare, premium, legally gated, never led with.</p>
+
+      <h3>4. The practice target: Skool, this week</h3>
+      <p>Own account, own purchased content, no third party's tenant, and it closes a real gap this
+      system already hit &mdash; the harvester could not reach the file-download endpoint, so two
+      named assets are still unretrieved. Roughly one focused afternoon, six steps, with a
+      fail-closed done condition. <strong>Do not practise on LinkedIn</strong> &mdash; hostile
+      terms, and account loss is unrecoverable.</p>
+
+      <h3>What the review passes said</h3>
+      <ul>
+        <li><strong>Council verdict: CHANGE &mdash; keep the pipeline, invert the doctrine.</strong>
+        Three of five voices independently converged that the ordering is backwards for enterprise,
+        and the outside-buyer voice landed the decisive point: the technique <em>sounds exactly
+        like an attack</em> and pattern-matches to incident-response playbooks.</li>
+        <li><strong>Karpathy verdict: HOLD.</strong> Six items required before shipping, led by
+        "name the first target and its authorisation basis" and "cut to one connector, one tool,
+        two pinned dependencies, read-only."</li>
+        <li><strong>The one question only Boubacar can answer:</strong> who is the first real
+        target? Until there is a named company and a named tool of theirs with no authorised path,
+        this is a validated capability with no validated market.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-synthesis" open>
+    <summary><h2>Synthesis &mdash; the four lenses pulled into one answer</h2></summary>
+    <div class="sec-body">
+
+      <div class="keystone">
+        <span class="keystone-label">Synthesis TL;DR</span>
+        <p>Yes, there is a fast way, it is real, and it is a five-step pipeline: capture the app's
+        own private traffic, turn the capture into an OpenAPI spec, curate it down to 8-15 business
+        verbs, and generate a connector server from it. Two tools do most of the work
+        (<code>mitmproxy2swagger</code>, <code>FastMCP.from_openapi()</code>), and one thing nobody
+        in the four lenses noticed: the capture step is already automated in this system today via
+        the browser-control <code>read_network_requests</code>, which removes the single manual
+        bottleneck the leading tool admits to. Build the pipeline on FastMCP; adopt Jay's
+        <code>cli-printing-press</code> as an accelerator after a security-gate pass, not as the
+        core.</p>
+      </div>
+
+      <h3>1. The real answer, separated from hype</h3>
+      <p><strong>Real:</strong> almost no tool has "no API." It has no <em>documented</em> API.
+      Every single-page app, mobile app, and modern web tool is already calling a private JSON API
+      from its own front end, with its own auth, right now. Capturing that traffic and wrapping it
+      is a solved, tooled, hours-not-weeks workflow. The chain
+      developer-tools capture &rarr; <code>mitmproxy2swagger</code> &rarr;
+      <code>FastMCP.from_openapi()</code> &rarr; curated connector server is the fastest legitimate
+      path in existence today and it is the thing most people do not know is possible.</p>
+      <p><strong>Also real:</strong> Jay's material exists and was verified first-hand from
+      Boubacar's own paid access. His curriculum (Claude Living Masterclass, Volume E) teaches
+      connection-method ranking <strong>CLI &gt; API &gt; MCP</strong> on token-cost and capability
+      grounds, and the bonus lesson hands over <code>cli-printing-press</code>, which sniffs a
+      site's traffic and generates a Go command-line tool <em>plus</em> a connector server
+      <em>plus</em> docs from one run. Its public library ships command-line tools built purely from
+      sniffed traffic for services with no official API (ESPN is labelled exactly that). That is
+      the technique running in public, not a claim.</p>
+      <p><strong>Hype, name it plainly:</strong> the "agentic operating system" framing around it is
+      packaging. The engineering underneath the packaging is checkable and good; the framework
+      language is not the asset. Also hype-adjacent: auto-generation as a finished product.
+      FastMCP's own docs say language models perform "significantly better" against curated servers
+      than auto-converted ones, and that auto-generation is for bootstrapping, not mirroring.
+      Dumping a 400-endpoint spec into an agent's tool list is a token disaster and a reliability
+      disaster.</p>
+      <p class="pullquote">The generation is the commodity. The curation is the billable expertise.
+      That distinction is the whole business model.</p>
+      <p><strong>The one thing that is genuinely hard, and it is not technical:</strong> contract
+      law and silent schema drift. Neither is a blocker. Both have concrete answers, below.</p>
+
+      <h3>2. The four techniques, ranked strongest and fastest first</h3>
+
+      <h4>Rung 1 &mdash; Private-API capture to spec to connector server. Hours. The default.</h4>
+      <p><strong>What it is:</strong> act in the app's interface while capturing network traffic
+      (developer-tools export, or <code>mitmproxy</code> for desktop and mobile). Run
+      <code>mitmproxy2swagger</code> (9.6k stars, MIT) over the capture: pass one emits candidate
+      path templates all prefixed <code>ignore:</code>, you strip the prefix from the endpoints you
+      actually want, pass two generates full request and response schemas. Feed that spec to
+      <code>FastMCP.from_openapi()</code> (27.3k stars, Apache-2.0) with an authenticated
+      <code>httpx</code> client and you have a working connector server. <code>RouteMap</code>
+      filters endpoints into Tool / Resource / Exclude by method, path regex, or tag.</p>
+      <p><strong>When:</strong> the default for any web or mobile software the client already pays
+      for and logs into. Covers the large majority of enterprise "we can't automate this" cases.</p>
+      <p><strong>Security tradeoff:</strong> the capture file is a live-credential artifact. It
+      contains bearer tokens, session cookies, and often personal data in response bodies.
+      <code>mitmproxy2swagger</code>'s own docs warn its output "may add sensitive data (tokens,
+      passwords, personal information)" into the generated spec. Never commit it, never email it,
+      scrub and destroy on a clock. Credentials live on the HTTP client from a secret manager, never
+      baked into the generated surface.</p>
+      <p><strong>Reliability tradeoff:</strong> an undocumented endpoint has no compatibility
+      contract, no changelog, no deprecation window. <code>nba_api</code> (3.7k stars) is the honest
+      public precedent: its contributing guide states outright that the vendor "does not provide
+      information regarding new, changed, or removed endpoints" and asks users to report breakage.
+      Mitigation is a schema-validating client plus a scheduled canary, not hope.</p>
+
+      <h4>Rung 2 &mdash; Skip the build: bridge through a platform that already owns the connector. Minutes to an hour.</h4>
+      <p><strong>What it is:</strong> n8n's MCP Server Trigger turns existing n8n workflows into
+      agent tools over SSE or Streamable HTTP (stdio not supported). Make exposes scenarios as tools
+      with hard run caps of 25s OAuth / 40s token, so anything slow must be built async-first
+      against <code>executionId</code>. UiPath's <code>uipath-mcp-python</code> hosts servers inside
+      their platform, inheriting the orchestrator's vault and audit trail. Pipedream Connect and
+      Composio solve the per-user auth problem (<code>external_user_id</code> binds a request to
+      that user's connected accounts) which is the thing that actually kills enterprise
+      rollouts.</p>
+      <p><strong>When:</strong> first check, always, before writing anything. If the client already
+      runs n8n or UiPath, this is both faster and a better security story, because credentials stay
+      in a vault the client already owns and already audits.</p>
+      <p><strong>Tradeoff:</strong> you inherit the platform's failure modes and timeouts, and the
+      client inherits a vendor dependency. Not a weakness for enterprise; usually a selling
+      point.</p>
+
+      <h4>Rung 3 &mdash; Native and mobile: defeat certificate pinning, then fall back to Rung 1. Hours to a day.</h4>
+      <p><strong>What it is:</strong> since Android 7, apps ignore the user trust store, so a proxy
+      alone fails. Three real answers, all MIT: <code>apk-mitm</code> (static patching, honest about
+      failing on Flutter and complex packages), <code>android-unpinner</code> from the mitmproxy
+      organisation (runtime, no root, injects Frida Gadget over ADB and touches only the manifest),
+      and <code>Frida</code> directly for hooking crypto calls above the wire when packet capture
+      fails entirely. Once decrypted, you are back on Rung 1. If the replayed API then gets blocked
+      by a web application firewall despite correct auth, <code>curl_cffi</code> (6.4k stars)
+      impersonates browser TLS and HTTP/2 fingerprints across 37 profiles. That last piece is the
+      difference between "works on my laptop" and "works in production" and almost nobody knows it
+      exists.</p>
+      <p><strong>Tradeoff:</strong> highest terms-of-service exposure of any rung, and the tooling
+      itself runs third-party code against real credentials, so it must pass a security gate before
+      it ever runs.</p>
+
+      <h4>Rung 4 &mdash; No HTTP layer at all: drive the interface. Days. Last resort, and call it what it is.</h4>
+      <p><strong>What it is:</strong> Citrix-delivered desktop apps, mainframe green screens,
+      air-gapped internal tools. Stagehand (MIT, Playwright API plus <code>act</code> /
+      <code>observe</code> / <code>extract</code> with typed extraction, accessibility-tree trimming,
+      self-healing) is the enterprise default. Skyvern is more capable out of the box but AGPL-3.0,
+      which is a real procurement conversation, not a footnote. Microsoft's
+      <code>playwright-mcp</code> says outright that it "is not a security boundary."</p>
+      <p><strong>Security tradeoff, and this is the sharpest one in the report:</strong> a browser
+      agent holds a live authenticated session with everything the human user can do, and a language
+      model decides what to click. Anthropic's own adversarial testing puts browser-agent
+      prompt-injection success at <strong>23.6% unmitigated, 11.2% autonomous-with-defences</strong>.
+      Page content is an attack surface. Scope these to a dedicated least-privilege service account,
+      always, and never grant one write access it does not need.</p>
+      <p><strong>Precise limit, honestly stated:</strong> this rung is not a connector. It is a
+      robot with a mouse. It fails in ways that look like success, which is worse than failing
+      loudly. Price it accordingly and prefer Rung 1 whenever an HTTP layer exists at all.</p>
+
+      <h3>3. Four adjacencies nobody proposed</h3>
+
+      <p><strong>A. The manual-capture limitation is already solved in this system, today.</strong>
+      <code>cli-printing-press</code> states its own hard limit plainly: "Browser-sniff requires
+      manual capture. You point a browser at the site (or import a HAR); the press doesn't crawl
+      autonomously." But the browser-control tooling is already connected here and exposes
+      <code>read_network_requests</code>, and Playwright exposes
+      <code>browser_network_requests</code>. That means an agent in this system can already drive
+      the interface <em>and</em> read the resulting network traffic in the same session. The capture
+      step that every external tool treats as the human-in-the-loop bottleneck is scriptable here
+      right now. Nobody has connected those two facts. That is the single biggest speed advantage
+      available, and it is sitting unused.</p>
+
+      <p><strong>B. The security-scan checkpoint covers the wrong artifact class, and the gap is exactly
+      where the danger is.</strong> The existing gate does static analysis before external code
+      runs, which correctly covers <code>apk-mitm</code>, Frida scripts, and
+      <code>cli-printing-press</code> itself. It does not cover <strong>capture artifacts</strong>,
+      which are a new artifact class this work introduces and which are live secrets by definition.
+      A capture file is more dangerous than a script: a script is inspectable, a capture silently
+      carries a client's session token and their customers' personal data. This needs a sibling
+      <strong>Capture Hygiene Gate</strong>, not an amendment to the existing one, with three
+      mechanical rules: captures never enter a repository, captures are scrubbed before spec
+      generation, captures are destroyed on a fixed clock. <code>cli-printing-press</code>'s
+      <code>auth doctor</code> fingerprints tokens to four characters and never prints full values,
+      which is the right instinct applied to the wrong file, and it is the control most likely to be
+      missing in a first client engagement.</p>
+
+      <p><strong>C. This system already has independent empirical proof of the CLI-first ranking,
+      from a completely different domain.</strong> Jay ranks the command-line tool above the plug-in
+      server because a plug-in server loads every tool description into context on every session.
+      This system measured the same effect from the other end: the token-efficiency work found a
+      restricted-tool agent costs ~63,900 tokens against ~101,100 for one inheriting all tools, and
+      a read-only search dispatch ~39,900 against ~101,100, a 61% cut. Same physics, arrived at from
+      dispatch economics rather than connector design. That means the existing discovery draft,
+      which ranks the plug-in server as the preferred shape on plumbing-convenience grounds, should
+      be <strong>flipped to CLI &gt; API &gt; MCP</strong> and justified with this system's own
+      measured numbers, which are stronger evidence than Jay's assertion. Jay's E3 example makes the
+      capability half of the argument too: the Google Workspace command-line tool can mark a Gmail
+      message read; the Gmail plug-in cannot. Shape determines ceiling, not just price.</p>
+
+      <p><strong>D. The second stakeholder is the retainer, and the maintenance burden is the
+      product, not the tax.</strong> Every reverse-engineered connector is durable liability, because
+      the vendor can break it silently. Priced as a one-time build that is a trap. Priced as
+      <strong>build plus drift monitoring</strong> it is exactly the recurring-revenue shape the
+      fractional-engagement north star needs. And the monitoring is not a new build here: a scheduled
+      synthetic canary that exercises each endpoint against a fixture and alerts on schema or status
+      drift is the same pattern as the existing audit crons and watchers. The deliverable to an
+      enterprise is therefore three line items, not one: the connector, the curation of it down to
+      real business verbs, and the canary that tells them before their users find out.</p>
+
+      <p><strong>E. The legal posture is the differentiator, not the disclaimer.</strong>
+      <em>Van Buren</em> gave the Computer Fraud and Abuse Act a narrow "gates-up-or-down" test and
+      <em>hiQ</em> applied it, but hiQ still lost on <strong>breach of contract</strong>, and the
+      <a href="https://www.eff.org/deeplinks/2022/04/scraping-public-websites-still-isnt-crime-court-appeals-declares" rel="noopener">EFF
+      summary</a> is explicit that protection for password-protected content remains undefined. Most
+      connector work is authenticated, so hiQ shelters none of it. The statute is not the risk; the
+      terms of service are. Which flips the whole thing: sniffing a <strong>client's own tenant, on
+      their own account, with written authorisation</strong>, is a fundamentally different posture
+      from sniffing a third-party consumer site, and it is why this skill sells to enterprises
+      specifically. Being the person who raises the vendor terms clause to the client's legal team in
+      writing before building is the consultant move. Hiding it is the scraper move. Non-US regimes
+      were not researched and should not be assumed.</p>
+
+      <h3>4. The one recommended architecture</h3>
+      <p><strong>Build a Connector Foundry: a five-stage pipeline, with FastMCP as the generation
+      core and the existing browser tools as the capture head.</strong></p>
+<pre><code>Stage 0  DISCOVER   Phase -1, reranked CLI &gt; API &gt; MCP. Check printing-press-library
+                    (452 prebuilt CLIs) and the client's n8n/UiPath estate FIRST.
+                    Most engagements should stop here.
+Stage 1  CAPTURE    browser-control read_network_requests / Playwright
+                    browser_network_requests for web; mitmproxy + android-unpinner
+                    for native. Output lands in a quarantined capture directory,
+                    never the repo.
+Stage 2  GATE       Capture Hygiene Gate (new, sibling to the security-scan checkpoint):
+                    scrub, fingerprint-only logging, fixed-clock destruction.
+                    The existing security-scan checkpoint runs unchanged over any third-party
+                    binary or script introduced.
+Stage 3  SPEC       mitmproxy2swagger two-pass. The ignore-prefix pass is the
+                    curation checkpoint, not a chore.
+Stage 4  GENERATE   FastMCP.from_openapi() with RouteMap filtering down to 8-15
+                    business verbs, descriptions hand-rewritten. Auth on the httpx
+                    client from a secret manager. Read-only by default; writes
+                    require an explicit allowlist.
+Stage 5  WATCH      Schema-validating client + scheduled canary on existing cron
+                    infra. Drift alerts before the client notices.</code></pre>
+
+      <p><strong>Why FastMCP as the core rather than <code>cli-printing-press</code>:</strong>
+      Python matches this system, Apache-2.0 is clean for client delivery, and it already ships the
+      OAuth/OIDC proxy and token-verification infrastructure that enterprise auth needs.
+      <code>cli-printing-press</code> is a genuinely good accelerator, it generates both a
+      command-line tool and a connector server from one run and ships four verification gates
+      including a read-only live smoke test, and it should be adopted after it clears a
+      security-scan checkpoint. But it is Go, it is one maintainer's MIT repository whose activity was not independently
+      verified, and it generates code that runs with real credentials. Accelerator, not
+      foundation.</p>
+
+      <p><strong>First three moves, concretely:</strong> (1) flip
+      the internal connector-method discovery guide to CLI &gt; API &gt; MCP
+      with this system's measured token numbers as the justification, and add the missing
+      "Stage 5: build it" branch that currently dead-ends at "building from scratch is the
+      fallback"; (2) write the Capture Hygiene Gate into the credential procedure <em>before</em>
+      the first client capture, not after; (3) prove the whole chain end to end on one internal tool
+      that genuinely has no connector, using <code>read_network_requests</code> for the capture, so
+      the automated-capture advantage in adjacency A is verified rather than assumed.</p>
+
+      <div class="callout">
+        <p><strong>Two things still worth pulling:</strong> Jay's guide PDF (file id
+        <code>c399bdb960204a1282b87a0f8a7e8340</code>), which the lesson says contains every starter
+        prompt from the video, and his packaged connector-finder skill zip. Both are on the R66
+        lesson and both need Skool's file-download endpoint, which the harvester did not reach.</p>
+      </div>
+
+      <div class="callout">
+        <p><strong>Honest gaps across all four lenses:</strong> the web-search budget was exhausted
+        (200/200) before three of the four lenses started, so everything is depth-verified via direct
+        source fetch but not breadth-exhaustive. No verifiable named enterprise case studies were
+        found for any of this, and none were invented. Non-US legal regimes were not researched.
+        <code>cli-printing-press</code>'s maintainer activity and star count were not independently
+        confirmed.</p>
+      </div>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-lens-1">
+    <summary><h2>Lens 1 &mdash; What Jay at RoboNuggets actually published: Printing Press</h2></summary>
+    <div class="sec-body">
+      <p class="lens-meta">Source verification: harvested first-hand from Boubacar's own paid Skool
+      access using the existing harvester skill and the saved session, not from marketing pages.
+      18 courses, 474 lessons indexed; 13 lessons harvested to a gitignored local directory with
+      text, screenshot and page HTML per lesson.</p>
+
+      <div class="keystone">
+        <span class="keystone-label">Lens 1 TL;DR</span>
+        <p>Jay's answer exists and it has a name: <strong>Printing Press</strong>. The "Claude Living
+        Masterclass" Volume E teaches three connection methods ranked <strong>CLI &gt; API &gt;
+        MCP</strong> (token cost is the reason), and its bonus lesson hands over
+        <code>cli-printing-press</code> &mdash; it sniffs a site's private network traffic (live
+        browser or an exported capture), reverse-engineers the API, and generates a Go command-line
+        tool plus a connector server plus docs.</p>
+      </div>
+
+      <h3>1. The curriculum, lesson by lesson</h3>
+      <p>The relevant curriculum is <strong>The Claude Living Masterclass &rarr; Volume E &mdash;
+      Apps</strong>:</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Lesson</th><th>Lesson ID</th><th>What it actually teaches</th></tr></thead>
+        <tbody>
+          <tr><td>E1 &mdash; Intro to Apps</td><td><code>be86e97122d3470cb527149133c59025</code></td><td>The three connection methods and their cost profile</td></tr>
+          <tr><td>E2 &mdash; Using plug-in servers</td><td><code>21bc2db91847452ca6698eedbe87e3f3</code></td><td>Fast wiring; names real plug-in limits</td></tr>
+          <tr><td>E3 &mdash; Using command-line tools</td><td><code>73a5b659a04b4f5db619c03cec64f12b</code></td><td>Why the command line is his default; Google Workspace as the worked example</td></tr>
+          <tr><td><strong>Bonus &mdash; Creating your own CLIs</strong></td><td><code>a1ffb0add7744147bec988522cbb5043</code></td><td><strong>The actual answer: Printing Press</strong></td></tr>
+          <tr><td>Tip &mdash; Searching for Connectors</td><td><code>f2e8cbce93814d94b55b65b5fe547e8f</code></td><td>A paste-ready connector-ranking prompt (full text below)</td></tr>
+          <tr><td>E4 &mdash; Creating your Own Apps</td><td><code>3fc71ce5675b439ea2285bd0d859b78d</code></td><td>Build the app yourself so you own the connection</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>Wider frame: his four-part framing is <strong>Applications, Routines, Memory, Skills</strong>
+      (lesson <code>2a693c1f29024215b08a1db8784b549a</code>, and R66 released 2026-08-21,
+      <code>d55e1eef7a00442cb97ee48be2595139</code>). His thesis, verbatim: <em>"Every agent platform
+      is just three parts: the model, the harness, and your context. Everyone shares the same model
+      and harness, so your context is your edge."</em> Connectors are the "A" in that framing.</p>
+      <p><strong>Real technique vs fluff:</strong> the framework framing is packaging. The Volume E
+      cost-ranking and the Printing Press handoff are real, checkable engineering. R27 ("Make Money
+      with MCP") is <em>consuming</em> existing plug-in servers via n8n &mdash; not
+      connector-building &mdash; so it is not the answer to this question despite the title.</p>
+
+      <h4>Jay's ranking rule, in his words (E1)</h4>
+      <blockquote>"MCPs are simplest but load every tool's description into your context window on
+      each session, so they tend to use the most tokens. CLIs are the leanest, which is why I default
+      to them."</blockquote>
+      <p>E3 makes the capability argument, not just the cost one: the Google Workspace command-line
+      tool can mark a Gmail message as read; the Gmail plug-in cannot. <strong>A connector's shape
+      determines its ceiling, not only its price.</strong></p>
+
+      <h4>His connector-finder prompt (verbatim, from lesson <code>f2e8cbce...</code>)</h4>
+<pre><code>figure out the best way to connect my agent to [tool x] and tell me which one to use.
+
+- look for three ways to connect to it: a CLI (a command line tool), an API (a direct
+  connection to the app), and an MCP (a plug-in style tool menu the agent can load)
+
+- check which of these actually exist for [tool x] right now - don't guess. find the real
+  ones and link me to where they live (the official site, github, or wherever you install
+  them from)
+
+- rank them in this exact order of preference: CLI first, API second, MCP third. always
+  point me to the best one that genuinely exists, and only drop down to the next one when
+  the one above it isn't available or can't do the job - and tell me which it was
+
+- for each one, in plain words: does it exist (yes / no / sort of), what it can do, what it
+  can't, what setup it needs, and roughly how heavy it is on tokens and cost - CLI is
+  usually the lightest, MCP the heaviest because its whole tool list sits in memory the
+  whole time
+
+- end with one clear pick: which connection to use, why it won, and the first step to set it up
+
+if there's no CLI, API, or MCP for [tool x], just say so plainly - don't invent one. a
+community or unofficial option is fine to mention, just label it as that.</code></pre>
+      <p>This is a near-exact match for the discovery flow already drafted in
+      the internal connector-method discovery guide, with one substantive
+      difference: <strong>Jay ranks CLI first, our draft ranks the plug-in server as the preferred
+      shape.</strong> Our draft's preference is a plumbing-convenience argument; his is a
+      context-cost and capability argument. His is better and should override ours.</p>
+
+      <h3>2. The real named tool: CLI Printing Press</h3>
+      <ul>
+        <li>Site: <a href="https://printingpress.dev/" rel="noopener">printingpress.dev</a></li>
+        <li>Generator: <a href="https://github.com/mvanhorn/cli-printing-press" rel="noopener">github.com/mvanhorn/cli-printing-press</a> (Go, MIT)</li>
+        <li>Library of prebuilt tools: <a href="https://github.com/mvanhorn/printing-press-library" rel="noopener">github.com/mvanhorn/printing-press-library</a> &mdash; states <strong>452 CLIs across 22 categories</strong></li>
+        <li>Authors: Matt Van Horn and Trevin Chow. Credits Peter Steinberger's <code>discrawl</code> / <code>gogcli</code> as architectural inspiration.</li>
+        <li>Jay's install prompt (from the lesson): <code>git clone https://github.com/mvanhorn/cli-printing-press</code>, follow the readme, then have the agent recommend how it applies to your setup before installing.</li>
+      </ul>
+
+      <h4>How it actually works</h4>
+      <p>Three input modes, and the third is the one that answers "tools with no plug-in or API":</p>
+      <ol>
+        <li><code>--spec</code> &mdash; an existing OpenAPI spec</li>
+        <li><code>--har ./capture.har</code> &mdash; a browser developer-tools export</li>
+        <li>a bare URL &mdash; it <strong>launches a browser, captures network traffic, and
+        reverse-engineers the private API</strong> the web app is already calling</li>
+      </ol>
+      <p>Then a five-phase pipeline: research and resolution &rarr; ecosystem absorption (catalogs
+      what competing wrappers already do) &rarr; code generation (Go command-line tool <strong>plus a
+      connector server plus docs</strong>, so you get both shapes from one build) &rarr; verification
+      &rarr; publish.</p>
+      <p>Agent-native design choices that matter for token economics: typed exit codes so the agent
+      can self-correct, auto-JSON when piped, <code>--compact</code> claiming <strong>60-80% token
+      reduction</strong>, <code>--dry-run</code>, local SQLite persistence with full-text search and
+      incremental sync, and compound commands that a stateless HTTP wrapper cannot express.</p>
+      <p><strong>Auth:</strong> infers the scheme from the spec (Bot / Bearer / Basic), supports
+      OAuth flows, and ships <code>cli-printing-press auth doctor</code>, which reports which
+      environment-variable tokens are set, unset or suspicious using <strong>four-character
+      fingerprints only, never full token values</strong>.</p>
+      <p><strong>Verification, four gates:</strong> a 100-point two-tier scorecard (50 infrastructure
+      / 50 domain correctness), a "dogfood" structural check for dead flags and auth mismatches, a
+      proof-of-behaviour data-flow check, and an <strong>optional read-only live smoke test &mdash;
+      GET only, never mutates, 10-second timeout, halts on 401</strong>.</p>
+      <h4>Commands</h4>
+<pre><code>/printing-press &lt;app-name&gt;
+/printing-press https://example.com
+/printing-press --har ./capture.har
+/printing-press-reprint &lt;api&gt;      # regenerate under the latest generator
+/printing-press-polish &lt;api&gt;
+/printing-press-publish &lt;api&gt;
+cli-printing-press scorecard --dir ./my-pp-cli --spec ./openapi.json
+cli-printing-press verify --dir ./my-pp-cli --spec ./openapi.json --api-key $TOKEN</code></pre>
+      <p>Requires Go 1.26.6+, Claude Code (Codex also documented), Node and npm for skill
+      installation.</p>
+
+      <h4>Proof it works on tools with no API</h4>
+      <p>The library ships command-line tools built from sniffed traffic where no official interface
+      exists &mdash; <strong>ESPN</strong> (explicitly "sniffed, no official API") and
+      <strong>flight-goat</strong> (Kayak nonstop search stitched to sniffed Google Flights data).
+      That is the technique running in public, not a claim.</p>
+
+      <h3>3. The honest tradeoffs</h3>
+      <p><strong>Legal and terms of service &mdash; the biggest one for enterprise work.</strong> The
+      project's own readme carries this warning: <em>"Before generating a CLI for any service, review
+      its Terms of Service. Many services explicitly prohibit automated access. Using this tool
+      against such services may violate their terms or applicable law. You are responsible for
+      ensuring your use is authorized."</em> In an enterprise engagement this flips from a risk to an
+      advantage: sniffing a client's <strong>own internal tool</strong>, on their own account, with
+      their written authorisation, is a completely different legal posture than sniffing a
+      third-party consumer site. That is the version to sell.</p>
+      <p><strong>Reliability.</strong> A reverse-engineered private endpoint carries no compatibility
+      contract. The vendor can change it in any release with no deprecation notice and no changelog.
+      Mitigation is structural, not hopeful: <code>printing-press-reprint</code> exists precisely
+      because regeneration is expected to be routine, and the scorecard plus live smoke test give you
+      a mechanical canary. Budget for breakage; do not promise a service level on a sniffed connector
+      without a monitoring line item.</p>
+      <p><strong>Not autonomous.</strong> Stated limit: <em>"Browser-sniff requires manual capture.
+      You point a browser at the site (or import a HAR); the press doesn't crawl autonomously."</em>
+      A human drives the session that produces the capture. For enterprise that is a feature &mdash;
+      the capture is scoped, consented, and auditable.</p>
+      <p><strong>Security &mdash; a capture file is a live-credential artifact.</strong> A
+      developer-tools capture contains session cookies, bearer tokens, and often personal data in
+      response bodies. It must be handled as a secret from the moment it is written: never committed,
+      never emailed, never left in a scratch directory. The <code>auth doctor</code> fingerprinting
+      discipline is the right instinct but it protects the generated tool's environment variables,
+      not the capture that produced it. This is the single control most likely to be missing in a
+      first engagement.</p>
+      <p><strong>Supply chain.</strong> <code>cli-printing-press</code> generates code that will run
+      with real credentials. It is a third-party MIT repository. I did <strong>not</strong>
+      independently verify its star count, last-commit date, or maintainer activity &mdash; the fetch
+      returned a summarised readme, not raw metadata, and my web-search budget was exhausted this
+      session. Anything installed here goes through the existing security-scan checkpoint first, no
+      exception.</p>
+      <p><strong>Maintenance burden is the real business-model risk.</strong> Every sniffed connector
+      is a small piece of durable liability. Priced as a one-time build it is a trap; priced as
+      build-plus-monitoring it is a recurring-revenue line that fits the fractional-engagement north
+      star exactly.</p>
+
+      <h3>4. What I would build on rather than build</h3>
+      <ul>
+        <li><strong>Adopt <code>cli-printing-press</code> as the connector generator</strong>, after it
+        clears a security-scan checkpoint. Do not write a bespoke sniff-and-generate pipeline; this one
+        already ships verification gates we would otherwise have to invent.</li>
+        <li><strong>Amend the internal connector-method discovery guide</strong>:
+        flip the ranking to CLI &rarr; API &rarr; MCP with the token-cost and capability-ceiling
+        reasoning, and add a <strong>step 5 &mdash; build it</strong> using Printing Press when steps
+        1-2 find nothing. Right now step 4 says "building from scratch is the fallback" and stops
+        there with no named method. That is the gap this research closes.</li>
+        <li><strong>Add a capture-handling rule</strong> to the credential procedure before the first
+        client capture: treat a capture as a live secret, capture in a clean profile, scrub and
+        destroy on a fixed clock.</li>
+        <li><strong><code>printing-press-library</code> is a shortcut worth checking first</strong>
+        &mdash; 452 prebuilt tools means the connector may already exist before anyone opens a
+        browser.</li>
+      </ul>
+
+      <h3>5. Still available, not yet pulled</h3>
+      <p>Two attachments on the R66 lesson that were identified but not downloaded (they need Skool's
+      file-download endpoint, and the harvester found no clickable resource on that page): the guide
+      PDF (file id <code>c399bdb960204a1282b87a0f8a7e8340</code>) which the lesson says contains
+      <strong>every starter prompt from the video</strong>, and a <strong>connector-finder skill
+      zip</strong> &mdash; Jay's own packaged version of the prompt above. Both are worth a second
+      pass; they are the closest thing to a ready-made skill for this.</p>
+
+      <h4>Sources</h4>
+      <p><a href="https://printingpress.dev/" rel="noopener">Printing Press</a> &middot;
+      <a href="https://github.com/mvanhorn/cli-printing-press" rel="noopener">cli-printing-press</a> &middot;
+      <a href="https://github.com/mvanhorn/printing-press-library" rel="noopener">printing-press-library</a> &middot;
+      <a href="https://modelcontextprotocol.io/introduction" rel="noopener">MCP docs</a> &middot;
+      <a href="https://github.com/googleworkspace/cli" rel="noopener">Google Workspace CLI</a> &middot;
+      RoboNuggets Claude Living Masterclass, Volume E
+      (<a href="https://www.skool.com/robonuggets/classroom/3420be76" rel="noopener">classroom/3420be76</a>)
+      and <a href="https://www.skool.com/robonuggets/classroom/7e984827?md=d55e1eef7a00442cb97ee48be2595139" rel="noopener">R66</a></p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-lens-2">
+    <summary><h2>Lens 2 &mdash; Browser automation and interface-driving (summary only)</h2></summary>
+    <div class="sec-body">
+      <div class="callout">
+        <p><strong>Honest note on this lens.</strong> This lens returned its full report to the
+        coordinating agent over the message bus rather than into the saved workflow output, so what
+        survives in the record is the summary below rather than the long-form findings. It is
+        reproduced exactly as it was recorded. Its substance is carried in full inside the synthesis
+        (Rung 4) and the Council's security reading, so nothing load-bearing is lost &mdash; but the
+        long form is genuinely not in the file, and I am not going to reconstruct it.</p>
+      </div>
+
+      <p><strong>The real pattern is a 4-rung ladder</strong> &mdash; (1) private-API replay via
+      developer-tools network capture, (2) deterministic Playwright plus <code>storageState</code>,
+      (3) AI-assisted self-healing automation, (4) pixel-level computer use as last resort. The
+      "speed way" is real: <code>playwright codegen</code> plus network capture, wrapped as a stdio
+      connector server exposing business actions, not clicks.</p>
+
+      <p><strong>Named tools verified by reading their primary sources:</strong>
+      <a href="https://github.com/microsoft/playwright-mcp" rel="noopener">microsoft/playwright-mcp</a>
+      (accessibility-tree based, ships allowlists and storage-state flags, says outright it "is not a
+      security boundary"), <a href="https://github.com/browserbase/stagehand" rel="noopener">Stagehand</a>
+      (hybrid deterministic plus <code>act</code> / <code>observe</code> / <code>extract</code>),
+      browser-use, <a href="https://github.com/Skyvern-AI/skyvern" rel="noopener">Skyvern</a>
+      (AGPL-3.0 &mdash; a real blocker for client delivery), Steel Browser (Apache-2.0,
+      self-hostable), Browserbase (named users: Microsoft, Ramp, Amplitude, DeepMind), plus
+      Anthropic's <code>browser_toolset_20260801</code> and <code>computer_toolset_20260801</code>.</p>
+
+      <p><strong>Hard numbers for the security conversation:</strong> Anthropic's own adversarial
+      testing puts browser-agent prompt-injection success at 23.6% unmitigated, 11.2%
+      autonomous-with-defences. Legal posture: the Computer Fraud and Abuse Act is narrow after it clears
+      <em>Van Buren</em>, but hiQ still lost on <strong>breach of contract</strong> &mdash; the terms
+      of service are the risk, not the statute.</p>
+
+      <p><strong>Two honest gaps stated in the report:</strong> the web-search budget was already
+      exhausted (200/200) at dispatch, so the RoboNuggets material could not be verified from this
+      lens, and UiPath's selector-resilience docs returned 404 on the URLs tried &mdash; nothing was
+      asserted about either.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-lens-3">
+    <summary><h2>Lens 3 &mdash; Private-API reverse engineering: the named technique end to end</h2></summary>
+    <div class="sec-body">
+      <div class="keystone">
+        <span class="keystone-label">Lens 3 TL;DR</span>
+        <p>The technique is real, named, and mature: intercept the app's own private API with a
+        man-in-the-middle proxy, convert the captured traffic into an OpenAPI spec, wrap that spec as
+        a connector server. Two tools do most of the work (<code>mitmproxy2swagger</code>,
+        <code>FastMCP.from_openapi()</code>). The hard part is not technical &mdash; it is contract
+        law and silent schema drift, and both have real engineering answers.</p>
+      </div>
+      <p class="lens-meta"><strong>Honest scope caveat:</strong> this session's web-search budget was
+      already spent (200/200) before this lens started. Everything below is from direct fetch of
+      primary sources, so it is depth-verified but not breadth-exhaustive. No open-ended discovery
+      searches were run.</p>
+
+      <h3>1. The technique, named properly</h3>
+      <p>There is no single name; practitioners call it <strong>private API reverse
+      engineering</strong>, <strong>API discovery via traffic interception</strong>, or in security
+      terms <strong>dynamic analysis / man-in-the-middle interception</strong>. The pipeline is five
+      layers, and you go down the stack only as far as you have to. Speed comes from stopping
+      early.</p>
+      <p><strong>Layer 1 &mdash; browser developer tools network tab / capture export.</strong> For
+      any web app, the front end is already calling a private JSON API. Filter to XHR and fetch, act
+      in the interface, read the calls, export the capture. This is minutes of work and covers a
+      surprising share of enterprise software. No proxy, no certificates, no legal grey area beyond
+      the terms of service.</p>
+      <p><strong>Layer 2 &mdash; man-in-the-middle proxy for desktop, mobile and native
+      traffic.</strong> <a href="https://github.com/mitmproxy/mitmproxy" rel="noopener">mitmproxy</a>
+      (44.8k stars, MIT, Python) is the reference tool, with three interfaces:
+      <code>mitmproxy</code> (console), <code>mitmweb</code> (browser UI), and <code>mitmdump</code>
+      ("tcpdump for HTTP"). It generates a per-host interception certificate signed by its own
+      authority; you install that authority in the client's trust store and it decrypts TLS
+      transparently. Commercial equivalents: Charles Proxy, Proxyman, Burp Suite, Fiddler, HTTP
+      Toolkit.</p>
+      <p><strong>Layer 3 &mdash; defeating certificate pinning.</strong> This is where most people
+      quit and where the real skill lives. Since Android 7 (API 24), apps ignore the <em>user</em>
+      trust store by default and only honour the <em>system</em> store, per
+      <a href="https://httptoolkit.com/blog/intercepting-android-https/" rel="noopener">HTTP Toolkit's
+      guide</a>. Three real answers:</p>
+      <ul>
+        <li><a href="https://github.com/shroudedcode/apk-mitm" rel="noopener"><code>apk-mitm</code></a>
+        (5.1k stars, MIT) &mdash; static patching. Decodes the package with Apktool, rewrites the
+        network security config to trust user certificates, patches known pinning implementations,
+        re-signs. Its stated limits are honest: Apktool struggles on complex apps, and it
+        <strong>cannot</strong> defeat pinning inside native binaries (Flutter).</li>
+        <li><a href="https://github.com/mitmproxy/android-unpinner" rel="noopener"><code>android-unpinner</code></a>
+        from the mitmproxy organisation (1k+ stars, MIT) &mdash; runtime patching, no root. Only
+        modifies the manifest to mark the app debuggable, injects Frida Gadget over ADB via a custom
+        JDWP implementation, then runs HTTP Toolkit's unpinning script. Leaves the compiled classes
+        untouched.</li>
+        <li><a href="https://frida.re/docs/home/" rel="noopener"><code>Frida</code></a> directly
+        &mdash; a dynamic instrumentation toolkit ("Greasemonkey for native apps") that injects
+        QuickJS into a running process and hooks arbitrary native functions across Windows, macOS,
+        Linux, iOS, Android, FreeBSD and QNX. Its own docs cite encrypted-protocol analysis as a
+        primary use case: when packet sniffing fails, you hook the crypto calls above the wire.</li>
+      </ul>
+      <p><strong>Layer 4 &mdash; client fingerprint impersonation.</strong> Once you replay the
+      private API from your own code, web application firewalls and bot detection often block you
+      even with correct auth, because your TLS handshake does not look like a browser.
+      <a href="https://github.com/lexiforest/curl_cffi" rel="noopener"><code>curl_cffi</code></a>
+      (6.4k stars, MIT) is the Python binding to the curl-impersonate fork; it mimics TLS and HTTP/2
+      fingerprints across 37 preset browser profiles (Chrome, Safari, Firefox), and supports HTTP/2
+      and HTTP/3. This is the piece almost nobody knows about and it is the difference between "works
+      on my machine" and "works in production."</p>
+      <p><strong>Layer 5 &mdash; browser and interface automation as the honest fallback.</strong>
+      When there is genuinely no HTTP API to find (a Citrix-delivered desktop app, a mainframe green
+      screen), you drive the interface: Playwright, or computer use. Slower, more fragile, but
+      sometimes the only path. Do not pretend this is a connector; it is a robot with a mouse.</p>
+
+      <h3>2. The speed play: capture &rarr; OpenAPI &rarr; connector server</h3>
+      <p>This is the answer to "there's got to be a fast way."</p>
+      <p><strong>Step A &mdash;
+      <a href="https://github.com/alufers/mitmproxy2swagger" rel="noopener"><code>mitmproxy2swagger</code></a></strong>
+      (9.6k stars, 372 forks, MIT, Python). It converts captured traffic into an OpenAPI 3.0 spec
+      automatically. The workflow is two-pass by design: capture to a flow file (or export a capture
+      straight from developer tools &mdash; that input format is supported), run it once to emit
+      candidate path templates prefixed <code>ignore:</code>, hand-remove the <code>ignore:</code> on
+      the endpoints you actually want, re-run to generate full schemas from observed request and
+      response bodies. The two-pass design is a feature: the human curation step is what keeps you
+      from shipping a 400-endpoint mess.</p>
+      <p>Its docs carry a warning you must operationalise: including example data and headers "may
+      add sensitive data (tokens, passwords, personal information etc.)" into the generated spec.
+      Scrub before that file touches a repository.</p>
+      <p><strong>Step B &mdash;
+      <a href="https://gofastmcp.com/integrations/openapi" rel="noopener"><code>FastMCP.from_openapi()</code></a></strong>
+      (27.3k stars, Apache-2.0). Feeds the spec straight into a working connector server:</p>
+<pre><code>mcp = FastMCP.from_openapi(
+    openapi_spec=openapi_spec,
+    client=httpx2.AsyncClient(
+        base_url="https://api.example.com",
+        headers={"Authorization": "Bearer YOUR_TOKEN"},
+    ),
+    name="My API Server",
+)</code></pre>
+      <p>Auth is configured on the HTTP client, not in the spec. <code>RouteMap</code> objects
+      control which endpoints become <code>TOOL</code> / <code>RESOURCE</code> /
+      <code>RESOURCE_TEMPLATE</code> / <code>EXCLUDE</code>, filtered by method, path regex, and
+      tags; the default is that every endpoint becomes a Tool. FastMCP also ships real auth
+      infrastructure &mdash; OAuth proxy, OIDC proxy, token verification, multi-auth sources, and
+      provider integrations for Auth0, Azure, Cognito, Google, Keycloak, Okta-likes, WorkOS.</p>
+      <div class="callout good">
+        <p><strong>FastMCP's own stated limitation is the most important line in this whole
+        report:</strong> language models perform "significantly better" against curated servers than
+        auto-converted OpenAPI ones, and auto-generation is recommended "for bootstrapping and
+        prototyping, not for mirroring" a full API. So the real deliverable is: auto-generate in an
+        hour, then hand-curate down to the 5-15 tools that map to actual business verbs. That
+        curation is the billable expertise.</p>
+      </div>
+      <p>Elapsed time for a cooperative web app: a single afternoon. That is the "speed way" he is
+      looking for, and it is not hype.</p>
+
+      <h3>3. What makes it safe and enterprise-acceptable</h3>
+      <p>This is what separates a consultant from a scraper, and it is the part he can sell.</p>
+      <p><strong>Auth: never bake a session.</strong> The captured traffic will contain a bearer
+      token or session cookie. Do not hardcode it. Three tiers, in order of preference: (1) if the
+      tool has an official token mechanism, use that even if the <em>endpoints</em> are undocumented
+      &mdash; you are then authenticated as intended and only the routes are unofficial; (2) a
+      service account whose credentials live in a secret manager, with the connector performing a
+      real login flow and refreshing; (3) headless browser session capture as last resort, isolated,
+      with cookies never written to disk in cleartext. The connector process should hold the
+      narrowest credential that works, not the admin one that was easiest to grab.</p>
+      <p><strong>Scope: read-only by default.</strong> Ship discovery and read endpoints first. Write
+      endpoints get an explicit allowlist and human approval, because an undocumented POST has
+      undocumented side effects.</p>
+      <p><strong>Rate limiting: budget below the observed human ceiling.</strong> You now know the
+      app's real limits because you watched it. Set a client-side token bucket well under that, add
+      jitter, honour <code>Retry-After</code>, and back off exponentially on 429 and 5xx. Getting a
+      client's corporate IP blocked is a fireable outcome.</p>
+      <p><strong>Blast radius: run it isolated.</strong> Dedicated egress IP, its own container,
+      structured logging of every outbound call so there is an audit trail the client's security team
+      can read. Enterprise security will ask "what did it do at 3am" and you need a real answer.</p>
+      <p><strong>Secrets and captures are toxic waste.</strong> Flow files and capture exports contain
+      live credentials by definition. Treat capture artifacts as secrets: scrub, short retention,
+      never committed.</p>
+
+      <h3>4. Legal and terms of service &mdash; the real constraint</h3>
+      <p>Two decisions define the US landscape, both verified via the EFF:</p>
+      <p><strong>Van Buren v. United States</strong> (Supreme Court) adopted a
+      <strong>"gates-up-or-down"</strong> test for "exceeds authorized access" under the Computer
+      Fraud and Abuse Act. <strong>hiQ v. LinkedIn</strong> (9th Circuit) applied it: scraping
+      <em>publicly available</em> data likely does not violate that statute, because public profiles
+      "erected no gates to lift or lower." Authorisation gates exist only where a login is
+      required.</p>
+      <p>What that means for connector work, stated as precisely as the courts did:</p>
+      <ul>
+        <li><strong>Public, unauthenticated data</strong>: statutory risk is low in the 9th
+        Circuit.</li>
+        <li><strong>Authenticated / logged-in data</strong>: this is the opposite side of the line. A
+        login <em>is</em> a gate. The EFF summary is explicit that protections for password-protected
+        or subscriber-only content <strong>remain undefined</strong>. Most enterprise connector work
+        is authenticated, so hiQ does not shelter it.</li>
+        <li><strong>Contract and terms claims were expressly not resolved</strong>, including whether
+        a cease-and-desist can retroactively revoke authorisation. Trespass to chattels was flagged
+        as a live alternative theory. So even where criminal exposure is low,
+        <strong>breach-of-contract exposure is not.</strong></li>
+      </ul>
+      <p>The practical consulting posture, and this is a genuine differentiator rather than a
+      disclaimer:</p>
+      <ol>
+        <li><strong>The client authorises access to their own tenant, in writing, in the statement of
+        work.</strong> When the enterprise is the account holder and instructs you to automate their
+        own data, the "authorisation" question mostly dissolves. This is the entire reason this skill
+        is more sellable to enterprises than to consumer-side hackers.</li>
+        <li><strong>Check the vendor terms for automated-access clauses</strong> and surface them to
+        the client's legal team as a named risk, in writing, before building. You are the one who
+        raises it, not the one who hides it.</li>
+        <li><strong>Never bypass a paywall, a per-seat licence, or a metered limit.</strong> That
+        converts a contract question into a fraud question.</li>
+        <li><strong>Prefer official when it exists.</strong> Discovery should always run first;
+        reverse engineering is what you do <em>after</em> the official path is proven absent.</li>
+        <li><strong>Jurisdiction matters</strong> &mdash; the above is US and largely 9th Circuit. EU
+        and UK clients have different database-rights and computer-misuse regimes. Those were not
+        researched and should not be pretended otherwise.</li>
+      </ol>
+
+      <h3>5. The real maintenance burden: silent API changes</h3>
+      <p>Undocumented means no changelog, no deprecation window, no versioning.
+      <a href="https://github.com/swar/nba_api" rel="noopener"><code>nba_api</code></a> (3.7k stars,
+      MIT) is the honest public example &mdash; a widely-used client for an undocumented statistics
+      API, whose contributing guide states plainly that the vendor "does not provide information
+      regarding new, changed, or removed endpoints" and asks contributors to report breakage as
+      issues. That is the true operating model: a community, or in your case a monitoring system, is
+      the changelog.</p>
+      <p>Engineering answers, all of which you already have infrastructure for:</p>
+      <ul>
+        <li><strong>Validate every response against the generated schema at runtime.</strong> A silent
+        field rename should raise a typed error, not propagate a null into a client deliverable. This
+        is exactly the "a signal that lies beats a crash" principle already in this system's
+        rules.</li>
+        <li><strong>Synthetic canary on a schedule.</strong> A cron that exercises each endpoint
+        against a known fixture and alerts on schema drift or status change &mdash; before a client
+        discovers it.</li>
+        <li><strong>Version-pin the client fingerprint and the spec together</strong>, so you can diff
+        "what changed" when something breaks.</li>
+        <li><strong>Consumer-driven contract testing</strong> (Pact is the standard named tool) is the
+        formal version of this pattern, though it was designed for services you control; against a
+        third party you get the consumer half only.</li>
+        <li><strong>Budget the maintenance in the engagement.</strong> A reverse-engineered connector
+        is a retainer line item, not a one-time build. Say so up front &mdash; it is more honest and
+        it is recurring revenue.</li>
+      </ul>
+
+      <h3>6. What to build on rather than from scratch</h3>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Stage</th><th>Tool</th><th>Verified</th></tr></thead>
+        <tbody>
+          <tr><td>Capture (web)</td><td>Browser developer-tools capture export</td><td>&mdash;</td></tr>
+          <tr><td>Capture (native/mobile)</td><td><code>mitmproxy</code> / <code>mitmweb</code> / <code>mitmdump</code></td><td>44.8k stars, MIT</td></tr>
+          <tr><td>Defeat pinning (static)</td><td><code>apk-mitm</code></td><td>5.1k stars, MIT</td></tr>
+          <tr><td>Defeat pinning (runtime, no root)</td><td><code>android-unpinner</code> (mitmproxy org)</td><td>1k+ stars, MIT</td></tr>
+          <tr><td>Deep hooking / native TLS</td><td><code>Frida</code></td><td>official docs</td></tr>
+          <tr><td>Spec synthesis</td><td><code>mitmproxy2swagger</code></td><td>9.6k stars, MIT</td></tr>
+          <tr><td>Fingerprint impersonation</td><td><code>curl_cffi</code></td><td>6.4k stars, MIT</td></tr>
+          <tr><td>Connector wrapping + auth</td><td><code>FastMCP.from_openapi()</code></td><td>Apache-2.0</td></tr>
+          <tr><td>Interface fallback</td><td>Playwright / computer use</td><td>already in this system</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>This slots directly into the existing <strong>Phase -1: Connector/Capability Discovery</strong>
+      gap as a <strong>Phase -1b: Connector Construction</strong> branch, taken only when discovery
+      returns "no official path." The existing <strong>Security Scan Gate</strong> already covers
+      running third-party code, which is exactly what <code>apk-mitm</code> and Frida scripts are
+      &mdash; so the gate applies unchanged rather than needing a new one.</p>
+
+      <h3>7. RoboNuggets and Jay &mdash; what this lens actually found</h3>
+      <p><code>robonuggets.com</code> redirects to <code>skool.com/robonuggets</code>, so the
+      community is real. Owner is <strong>Jay E</strong>. 1,200 members, $97/month or $59/month
+      annual. Positioning: "make AI easy to learn &amp; earn from for anyone," with 136 lessons, 100+
+      automation templates, and coverage of Claude Code, agentic AI foundations, and running an AI
+      agency.</p>
+      <p>Two honest notes:</p>
+      <ul>
+        <li><strong>The public landing page does not list custom connectors, plug-in servers, or API
+        reverse engineering as topics.</strong> The curriculum is gated, so this lens could not
+        confirm or deny that the connector content exists. It did not find it; that is different from
+        it not being there. <span class="tag part">resolved by Lens 1</span></li>
+        <li><strong>A discrepancy worth checking:</strong> the public page names the community's
+        agentic operating system <strong>"Rubric."</strong> An earlier internal note recorded it under
+        a different four-letter name. These may be two different things, or one may be a
+        mis-transcription. Worth a look at the actual video before either name gets used in
+        anything.</li>
+      </ul>
+
+      <h3>8. Gaps this lens will not paper over</h3>
+      <ul>
+        <li><strong>No broad search coverage.</strong> Budget was exhausted at 200/200 before this
+        task began. Nine primary sources were verified directly and no fishing was done for a tenth.
+        There may be a better-fitting framework never seen.</li>
+        <li><strong>Named production users</strong>: <code>nba_api</code> is confirmed as a real,
+        widely-used client for an undocumented API. An attempt to verify Plaid's public position on
+        moving from screen scraping to APIs returned 404, so nothing is asserted there.</li>
+        <li><strong>Non-US legal regimes</strong>: not researched.</li>
+        <li><strong>mitmproxy's Python addon API and capture export</strong>: these exist and
+        <code>mitmproxy2swagger</code>'s docs corroborate the capture format as an input, but
+        mitmproxy's own scripting docs were not fetched (two URL attempts 404'd). Treat the addon
+        specifics as unverified here.</li>
+      </ul>
+
+      <h4>Sources</h4>
+      <p><a href="https://github.com/alufers/mitmproxy2swagger" rel="noopener">mitmproxy2swagger</a> &middot;
+      <a href="https://github.com/shroudedcode/apk-mitm" rel="noopener">apk-mitm</a> &middot;
+      <a href="https://github.com/mitmproxy/android-unpinner" rel="noopener">android-unpinner</a> &middot;
+      <a href="https://frida.re/docs/home/" rel="noopener">Frida docs</a> &middot;
+      <a href="https://github.com/mitmproxy/mitmproxy" rel="noopener">mitmproxy</a> &middot;
+      <a href="https://github.com/lexiforest/curl_cffi" rel="noopener">curl_cffi</a> &middot;
+      <a href="https://github.com/swar/nba_api" rel="noopener">nba_api</a> &middot;
+      <a href="https://gofastmcp.com/integrations/openapi" rel="noopener">FastMCP OpenAPI integration</a> &middot;
+      <a href="https://github.com/jlowin/fastmcp" rel="noopener">FastMCP</a> &middot;
+      <a href="https://httptoolkit.com/blog/intercepting-android-https/" rel="noopener">HTTP Toolkit: Intercepting Android HTTPS</a> &middot;
+      <a href="https://www.eff.org/deeplinks/2022/04/scraping-public-websites-still-isnt-crime-court-appeals-declares" rel="noopener">EFF on hiQ v. LinkedIn and Van Buren</a> &middot;
+      <a href="https://www.skool.com/robonuggets" rel="noopener">RoboNuggets</a></p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-lens-4">
+    <summary><h2>Lens 4 &mdash; RPA and automation platforms as the connector layer</h2></summary>
+    <div class="sec-body">
+      <p class="lens-meta"><strong>Method caveat first, plainly:</strong> this session's web-search
+      budget (200/200) was already spent before this lens's first call, so no discovery searches were
+      run. Everything below is direct fetch against named vendor docs and repositories addressable by
+      URL. That means: strong on <em>how the mechanisms work</em>, weak on <em>who runs them in
+      production</em> &mdash; no verifiable named enterprise case studies were found and none were
+      invented. The RoboNuggets material was not verified from this lens.</p>
+
+      <div class="keystone">
+        <span class="keystone-label">Lens 4 TL;DR</span>
+        <p>There is a real, named, fast path, and it is a <strong>three-tier ladder you walk down
+        only as far as you have to</strong>. Tier 1 is minutes, Tier 2 is hours, Tier 3 is days and
+        carries the real risk. Most enterprise "this tool has no connector" cases resolve at Tier 1
+        or 2 &mdash; the tool almost always has <em>an</em> API, it just has no plug-in server.</p>
+      </div>
+
+      <h3>Tier 1 &mdash; the tool has an API or OpenAPI spec: generate the connector</h3>
+      <p><strong>FastMCP <code>from_openapi()</code></strong> &mdash; an OpenAPI spec plus an
+      authenticated <code>httpx</code> client becomes a working connector server in a handful of
+      lines. Every endpoint becomes a Tool by default; <code>RouteMap</code> objects re-map by HTTP
+      method, path regex or tag into Tool, Resource, ResourceTemplate or Exclude, and
+      <code>mcp_component_fn</code> callbacks rewrite descriptions after generation. It handles path
+      and query parameters, <code>explode</code> on arrays, and flattens <code>allOf</code> and
+      discriminator request bodies into flat tool arguments.</p>
+      <p>Auth is where it stays safe for enterprise: credentials live on the HTTP client you
+      construct, never in the generated surface.</p>
+      <p><strong>The caveat is in their own docs and it matters for a consulting engagement:</strong>
+      "LLMs achieve significantly better performance with well-designed and curated MCP servers than
+      with auto-converted OpenAPI servers." Auto-generation is a prototyping accelerant. A
+      400-endpoint enterprise resource spec dumped wholesale into an agent's tool list is a token
+      disaster and a reliability disaster. <strong>The billable skill here is curation, not
+      generation</strong> &mdash; pick the 8 endpoints that matter, exclude the rest, rewrite the
+      descriptions. That is the deliverable.</p>
+
+      <h3>Tier 2 &mdash; no connector, but an automation platform already has it</h3>
+      <p>This is the highest-leverage tier. Every major automation and no-code platform now ships an
+      agent-tool surface, so their pre-built connector catalogs become an agent's tool catalog
+      without writing a connector at all.</p>
+      <p><strong>n8n &mdash;
+      <a href="https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-langchain.mcptrigger/" rel="noopener">MCP Server Trigger node</a>.</strong>
+      Turns n8n itself into a connector server: exposes a URL endpoint, connects only to tool nodes,
+      and any existing workflow is attached via the Custom Workflow Tool node. Auth is Bearer or
+      Header credentials. Transports: SSE and Streamable HTTP; <strong>stdio is not supported</strong>.
+      Two real operational gotchas &mdash; in queue mode with multiple webhook replicas, all
+      <code>/mcp*</code> requests must route to one dedicated replica or the connections go
+      unreliable; behind nginx you must disable proxy buffering, gzip and chunked transfer encoding on
+      those endpoints. Combined with the HTTP Request node, this is the fastest general-purpose
+      answer: build the call once, expose it as a tool, done. Self-hostable, which is the part
+      enterprise security will care about.</p>
+      <p><strong>Make &mdash;
+      <a href="https://developers.make.com/mcp-server" rel="noopener">hosted server</a>.</strong>
+      Converts active and on-demand scenarios into callable tools; scenario inputs are the parameters
+      the agent fills, outputs are what comes back. Stateless Streamable HTTP (their recommendation),
+      SSE, Streamable HTTP. OAuth at <code>https://mcp.make.com</code> or a token URL. <strong>The
+      timeouts are the thing to design around:</strong> scenario runs cap at 25s (OAuth) / 40s
+      (token), management operations 30s to 5+ minutes. Scenarios keep running up to 40 minutes after
+      the timeout and you retrieve output asynchronously by <code>executionId</code> &mdash; so any
+      long-running connector has to be built async-first, not as a blocking tool call. Scenario-run
+      tools are on all plans; management tools are paid-only.</p>
+      <p><strong>UiPath &mdash;
+      <a href="https://github.com/UiPath/uipath-mcp-python" rel="noopener"><code>uipath-mcp-python</code></a>
+      SDK.</strong> Build and host connector servers <em>inside the UiPath platform</em>. Servers
+      declared in <code>mcp.json</code>, project needs <code>pyproject.toml</code> plus
+      <code>mcp.json</code> plus <code>uipath.json</code>, launched over stdio, then
+      <code>uipath init</code> &rarr; <code>uipath run</code> (local test) &rarr;
+      <code>uipath pack</code> &rarr; <code>uipath publish</code> to the orchestrator. It can also
+      package binary servers written in other languages (Go, for example). This is the one to name in
+      a room with an existing UiPath estate: their governance, credential vault and audit trail stay
+      in place and the agent inherits them.</p>
+      <p><strong>Sema4.ai Action Server (formerly Robocorp Action Server).</strong> Python functions
+      decorated <code>@tool</code> / <code>@action</code> with type hints and docstrings become tools
+      automatically &mdash; the docstring and types generate the schema. Environment pinned in
+      <code>package.yaml</code>. Exposed over an <code>/mcp</code> endpoint, plus custom-GPT and
+      LangChain paths. The action packages have moved to the <code>sema4ai-*</code> distributions; the
+      <a href="https://github.com/robocorp/robocorp" rel="noopener">robocorp repository</a> retains
+      the underlying automation libraries (browser, Windows, Excel, vault, work items) and is still
+      actively committed. <strong>This is the closest thing to a purpose-built "write your own
+      connector in Python" framework</strong> &mdash; the ergonomics are better than hand-rolling a
+      server, and it is the one to teach first for custom logic.</p>
+      <p><strong><a href="https://pipedream.com/docs/connect/mcp/developers" rel="noopener">Pipedream
+      Connect</a></strong> and <strong><a href="https://docs.composio.dev/docs/welcome" rel="noopener">Composio</a></strong>
+      solve the adjacent problem, which is the one that actually kills enterprise rollouts:
+      <strong>per-user auth</strong>. Pipedream: 3,000+ APIs, <code>external_user_id</code> binds each
+      request to that user's connected accounts, no OAuth flows or token storage to build, returns a
+      setup link automatically when an account is not connected, SSE and HTTP transports. Composio:
+      session bound to a user id, managed auth where the agent connects accounts at runtime, REST API
+      v3.1. Their docs did not clearly state a toolkit count or custom-tool story, and that was not
+      filled in.</p>
+
+      <h3>Tier 3 &mdash; genuinely no API. Two real techniques, both with teeth.</h3>
+      <p><strong>3a. Reverse-engineer the private API from traffic.</strong> Every web app has an
+      internal JSON API; the browser is already calling it. <code>mitmproxy2swagger</code> turns
+      captured traffic into an OpenAPI 3.0 spec &mdash; inputs are flow files <em>or</em> captures
+      exported straight from the browser network tab. Two-pass workflow: first pass generates path
+      templates all marked <code>ignore:</code>, you strip the prefix from the endpoints you want,
+      second pass regenerates with full parameters and schemas. <strong>Then that generated spec feeds
+      straight into Tier 1's <code>from_openapi()</code>.</strong> That chain &mdash; capture &rarr;
+      mitmproxy2swagger &rarr; FastMCP &rarr; connector server &mdash; is the sharpest thing in this
+      whole report and it is the technique most people do not know exists.</p>
+      <p><strong>3b. Drive the interface with a vision or language-model browser agent.</strong>
+      <a href="https://github.com/Skyvern-AI/skyvern" rel="noopener"><strong>Skyvern</strong></a>
+      (AGPL-3.0, managed cloud, anti-bot measures proprietary to the cloud offering): a Playwright
+      extension that replaces selector paths with a swarm of agents that comprehend the page, so it
+      survives layout changes and works on unseen sites. Exposes a REST API, Python and TypeScript
+      SDKs, an agent-tool surface, a CLI, and native Zapier / Make / n8n integrations. Documented
+      uses: invoice downloading, form filing, insurance quotes, procurement.
+      <a href="https://github.com/browserbase/stagehand" rel="noopener"><strong>Stagehand</strong></a>
+      (MIT, Browserbase): Playwright-style API plus <code>act()</code> / <code>observe()</code> /
+      <code>extract()</code> &mdash; natural-language actions, structured element discovery, and typed
+      extraction &mdash; with self-healing primitives, accessibility-tree trimming for token
+      efficiency, handling for out-of-process iframes and closed shadow DOM, and OpenTelemetry
+      observability. Stagehand's MIT licence and determinism-plus-AI posture make it the better
+      enterprise default; Skyvern's AGPL is a real procurement conversation.</p>
+
+      <h3>The tradeoffs, stated honestly</h3>
+      <p><strong>Security.</strong> Tiers 1 and 2 keep credentials in a vault the client already owns
+      (n8n credentials, the UiPath orchestrator, managed auth) &mdash; that is the defensible story.
+      Tier 3b is the opposite: a browser agent typically holds a live authenticated session with
+      whatever the human user can do, and a language model decides what to click. Prompt injection
+      from page content is a live attack path there, not a theoretical one. Scope those sessions to a
+      dedicated service account with least privilege, always.</p>
+      <p><strong>Reliability.</strong> Tier 1 is as reliable as the API. Tier 2 inherits the
+      platform's failure modes and its timeouts &mdash; Make's 25/40s ceiling and n8n's queue-mode
+      routing requirement are design constraints, not footnotes. Tier 3a is reliable until the vendor
+      changes their private API, silently, with no deprecation notice, because it was never a public
+      contract. Tier 3b is the least reliable and the most expensive per run, and it fails in ways
+      that look like success.</p>
+      <p><strong>Legal and terms.</strong> Tier 3 is where a fractional engagement gets a client in
+      trouble. Reverse-engineering a private API and driving an interface with a bot both commonly
+      violate software terms of service, and Skyvern's cloud explicitly sells anti-bot circumvention.
+      Rule to carry into every enterprise room: <strong>Tier 3 against a vendor the client pays for is
+      a contract question before it is a technical one.</strong> Get it in writing, or use it only
+      against systems the client owns.</p>
+      <p><strong>Maintenance.</strong> Tier 1 regenerates from the spec &mdash; near zero. Tier 2 is
+      maintained by the platform vendor, which is exactly what you are paying them for. Tier 3 is
+      permanent maintenance debt and should be priced as a retainer, never as a fixed-fee build.</p>
+
+      <h3>What to build on rather than from scratch</h3>
+      <p><a href="https://gofastmcp.com/integrations/openapi" rel="noopener">FastMCP</a> as the
+      connector-authoring core, <a href="https://github.com/Sema4AI/actions" rel="noopener">Sema4.ai
+      Action Server</a> for custom Python logic with real environment pinning, the n8n MCP Server
+      Trigger as the general-purpose bridge to anything with an HTTP endpoint,
+      <code>mitmproxy2swagger</code> as the undocumented-API opener, Stagehand as the no-API fallback.
+      UiPath's SDK only when the client already runs UiPath.</p>
+    </div>
+  </details>
+  <details class="sec" id="sec-council">
+    <summary><h2>Council &mdash; five voices pressure-test the plan</h2></summary>
+    <div class="sec-body">
+      <p class="lens-meta">Five independent voices stress-test the synthesis above. No voice sees the others&rsquo; output before writing. The Chairman converges what agrees, names what does not, and issues one recommendation.</p>
+      <div class="voice">
+        <h3>The Contrarian</h3>
+        <p>The fatal flaw is not in the pipeline. The pipeline works. The fatal flaw is that this document confuses "I can build a connector" with "an enterprise will let me run this inside their walls," and those are separated by a procurement, security, and liability chasm that no amount of FastMCP elegance crosses.</p>
+      <p>Walk the actual enterprise engagement. Boubacar shows up as a fractional AI consultant. To execute Rung 1, he needs to capture the client's live private-API traffic. That means one of two things: he sits at a machine authenticated as a real user inside the client's tenant, or the client hands him credentials. Both trigger the client's security team. The moment a security reviewer hears "I'm going to run a TLS-intercepting proxy against your production SaaS session and generate a spec from the capture," the engagement stops for a security review that takes weeks, not hours. The "hours-not-weeks" claim is true only for the code generation. It is wildly false for the thing that gates revenue: getting authorized to capture at all. The report measures the fast part and ignores the slow part, which is the classic error of the person who loves the engineering.</p>
+      <p>Second flaw, sharper: <strong>the vendor ToS problem is not a "raise it to legal" footnote, it is frequently a hard no that kills the whole technique for the exact tools enterprises care about.</strong> Salesforce, Workday, SAP, ServiceNow, NetSuite &mdash; the tools where "no accessible API" actually bites in enterprise &mdash; have ToS that explicitly prohibit reverse-engineering and automated access outside published interfaces, and they have the lawyers to mean it. The report's own strongest legal point (hiQ <em>lost on contract</em>) is the counterargument to the report's own recommendation. Authenticated + contract-prohibited is the default enterprise case, and it is precisely the case with the least legal shelter. So the technique is strongest exactly where the client has no ToS problem (their own scrappy internal tool with no vendor) and weakest exactly where the money is (name-brand enterprise SaaS with real legal teams).</p>
+      <p>Third: the "already solved in this repo via <code>read_network_requests</code>" adjacency (A) is presented as the crown jewel, and it is the most dangerous line in the document. It says an agent in this system can drive a client's UI and read the client's authenticated network traffic autonomously. That is not a feature. That is an LLM holding a live enterprise session and exfiltrating the session's bearer tokens into a capture. If that ever runs against a client tenant without an airtight, written, scoped authorization and a hardened capture path, it is a security incident with Boubacar's name on it. The report treats the automation of the capture step as pure upside. It is the single highest-liability capability in the entire proposal.</p>
+      <p>Fourth, the quiet one: <strong>who maintains 20 reverse-engineered connectors across 6 clients when the vendors silently ship breaking changes?</strong> The report brilliantly reframes drift monitoring as recurring revenue (adjacency D). But recurring revenue is recurring <em>obligation</em>. A canary that fires at 2am telling you Client C's undocumented Workday endpoint changed shape means someone &mdash; Boubacar, a one-man fractional consultant &mdash; now owes an emergency fix on a connector he cannot get vendor support for, because officially it does not exist. Sell ten of these and you have not built a business, you have built a pager rotation for one person against ten vendors who are actively, if unknowingly, trying to break you. The maintenance-as-product framing is honest about the revenue and silent about the load.</p>
+      </div>
+      <div class="voice">
+        <h3>The First-Principles Thinker</h3>
+        <p>Strip the framing. The question the document answers is "how do I build a connector for a tool with no API." That is the wrong variable. Boubacar's stated goal is fractional AI engagements at enterprises. The actual problem an enterprise is paying to solve is not "connect to tool X." It is "make this business process that currently requires a human clicking through tool X happen reliably without the human." The connector is one possible means. The document has quietly promoted a means to the status of the goal, and in doing so has committed him to the single hardest, highest-liability, least-supportable path as his <em>specialty</em>.</p>
+      <p>Reframe: the enterprise does not care whether the automation runs through a reverse-engineered private API, a vendor's real API you finally found, an iPaaS the client already owns, or a documented partner integration. They care that it works, that it survives audit, and that when it breaks it is not their consultant's undocumented hack that broke. Once you optimize for <em>reliable authorized automation of a process</em> instead of <em>connector for an unconnectable tool</em>, the entire ranking inverts. Rung 2 (bridge through n8n/UiPath the client already owns) stops being "check this first" and becomes the <em>product</em>, because it inherits the client's vault, audit trail, and vendor relationships &mdash; the three things that make enterprise security teams say yes. Rung 1 (private-API capture) drops to "the thing you do only when no authorized path exists and the client's legal team signs off in writing," which is rare in enterprise, not the default.</p>
+      <p>The wrong variable being optimized is <em>engineering difficulty overcome</em>. The document is proud of defeating TLS pinning, impersonating JA3 fingerprints, patching APKs with Frida. That pride is the tell. <strong>The value to an enterprise client is inversely proportional to how much of that you had to do.</strong> A consultant who says "I found your process runs on a tool that has a real API nobody knew about, and I wired it up cleanly in your existing iPaaS" is worth more, and is more re-hireable, than one who says "I reverse-engineered your vendor's private endpoints and here's a Go binary that impersonates a browser to dodge their WAF." The second one is more impressive and less valuable, because the enterprise buyer's actual utility function is <em>risk-adjusted</em>, and every clever technique in Rung 3 is negative risk-adjusted value in a boardroom.</p>
+      <p>The reframe that makes the original question irrelevant: <strong>the skill to master is not connector-building, it is authorized-path discovery plus curation.</strong> Discovery &mdash; is there a real API, a partner program, an iPaaS node, a documented export &mdash; is where 80% of enterprise value hides and where zero legal risk lives. Curation &mdash; turning any surface into 8-15 clean business verbs an agent can use reliably &mdash; is the genuinely billable, genuinely scarce expertise the document <em>correctly</em> identifies but then buries under the reverse-engineering pyrotechnics. Sell the curation. Treat the private-API capture as the rare last resort it should be, not the "default."</p>
+      </div>
+      <div class="voice">
+        <h3>The Expansionist</h3>
+        <p>Everyone is arguing about how to build one connector. The 10x play is that Boubacar is about to accidentally build a <em>methodology</em>, and the methodology is worth more than any connector or any single engagement.</p>
+      <p>Look at what's actually being assembled: a repeatable, five-stage, security-gated pipeline for turning any opaque software surface into a governed agent tool, with a curation discipline and a drift-monitoring layer. That is not a consulting task. That is <strong>a productized framework a fractional AI engineer walks into any enterprise and runs.</strong> The connector is the deliverable of one engagement. The <em>pipeline plus the security gates plus the curation rubric plus the ToS-authorization protocol</em> is the thing that makes every future engagement faster and makes Boubacar the person who has done this fifty times. The report sees the retainer (adjacency D). It does not see that the pipeline itself is the durable IP &mdash; the reason a client picks him over a generic AI consultant is that he has a named, battle-tested method for the exact problem every enterprise has (legacy tools no agent can touch) and nobody else has packaged.</p>
+      <p>Bigger: the Capture Hygiene Gate (adjacency B) is not a defensive chore. <strong>It is the centerpiece of the sales pitch.</strong> Every enterprise buyer's number one objection to letting an outside AI consultant near their systems is "how do I know you won't leak our credentials or our customers' data." Boubacar walking in with a written, mechanical capture-hygiene protocol &mdash; captures never touch a repo, secrets fingerprinted not logged, destroyed on a clock, scrubbed before spec generation &mdash; is the thing that lets the security team say yes. The competitor consultant does not have this. Turn the security gate from a footnote into the lead slide and it becomes the differentiator that closes deals, not the compliance overhead that slows them.</p>
+      <p>The adjacent opportunity the question is too narrow to see: the <em>curation</em> skill &mdash; collapsing a 400-endpoint surface into 8-15 business verbs with hand-written descriptions &mdash; is the highest-leverage, most-transferable, least-commoditizable skill in the whole stack, and it applies to <em>documented</em> APIs too, not just reverse-engineered ones. Every enterprise with a real but sprawling API (Salesforce has thousands of endpoints) has the exact same problem: an agent chokes on the raw surface. Boubacar could sell "we make your existing APIs agent-ready" &mdash; pure curation, zero reverse-engineering, zero legal risk, huge market &mdash; and never touch mitmproxy at all. The reverse-engineering is the narrow, risky 10% of a much larger, safer, more scalable business: <strong>being the person who makes enterprise software legible to agents.</strong> The report found the goldmine (curation is the billable expertise) and then spent 90% of its pages on the dynamite (capture) instead of the mine.</p>
+      </div>
+      <div class="voice">
+        <h3>The Outsider</h3>
+        <p>I run security procurement at a mid-size company. I have never heard of FastMCP, mitmproxy, or any of this. A consultant just pitched me "custom AI connectors for our tools that don't have APIs." Here is what I heard, cold.</p>
+      <p>I heard: an outside contractor wants to install software that reads all the network traffic from our systems, including our logins, and use it to build robots that act as our employees. My hand is already on the phone to our CISO. I do not care that it is elegant. The words "capture your traffic" and "the file contains your session tokens and customer PII" &mdash; which the report itself admits &mdash; are the entire conversation. I will not remember anything else the consultant said.</p>
+      <p>Here is what is obvious to me and apparently invisible to the insiders in this document: <strong>the technique sounds exactly like an attack.</strong> TLS interception, credential capture, fingerprint impersonation to evade our own web application firewall &mdash; you are describing, in order, the playbook our pentest vendor uses and the playbook our incident response plan is written to detect. When our monitoring flags a JA3-impersonating client hitting an internal endpoint, it does not know it is the friendly consultant. It pages someone at 3am. The report calls <code>curl_cffi</code> "the difference between works-on-my-laptop and works-in-production." I call it "the thing that will make my SOC treat our own consultant as a threat actor." Nobody inside this document seems to feel how this lands on the other side of the table.</p>
+      <p>Second obvious thing: I do not have a "no API" problem the way you think. I have a "nobody at my company knows we have an API" problem, or a "the vendor has a partner integration program I'd rather use" problem, or a "we already pay for a workflow tool that probably connects to this" problem. The consultant who leads with reverse-engineering looks like someone reaching for the most aggressive tool first. The consultant who leads with "let me first find the boring authorized way" looks like an adult I can trust near my systems. Same person, opposite outcome, based entirely on which rung they open with. The report's ordering &mdash; Rung 1 is "the default" &mdash; is the ordering that loses my business.</p>
+      <p>Third, and this is the one insiders never see: <strong>the vendor whose product you reverse-engineered is often also my vendor, and they have a relationship with me you are about to poison.</strong> If Workday finds out a consultant is hitting their private endpoints on my tenant, that is <em>my</em> contract violation, <em>my</em> account manager's angry call, <em>my</em> problem. You did not just take a risk. You took it with my vendor relationship, using my credentials, and I am the one exposed. The report frames ToS as a legal abstraction between the consultant and the vendor. From my chair it is a live business relationship the consultant is gambling on my behalf without fully telling me the odds.</p>
+      <p>What would make me say yes: lead with the authorized-path search, show me the written capture-hygiene protocol <em>before</em> I ask, use a dedicated service account not my employee's login, and put the vendor-ToS question in front of my legal team in writing on day one so it is my informed decision and not your quiet bet. Do those four things and I might be the easiest sale you ever make, because everyone else pitching me AI is hand-wavy about security and you are not.</p>
+      </div>
+      <div class="voice">
+        <h3>The Executor</h3>
+        <p>Monday morning, none of this is buildable as an <em>enterprise</em> offering, because there is no enterprise client. The report's three "first moves" are all internal repo work: flip a discovery doc's ranking, write a hygiene gate into the SOP, prove the chain on one internal tool. Those are good moves. They are also entirely about polishing the workshop while the storefront is empty. The gap between "beautiful pipeline" and "this is happening" is a paying enterprise that has agreed to let Boubacar capture their traffic, and there is no first step in this document that produces one.</p>
+      <p>Here is what actually happens in the first 7 days if we're honest. Move 3 &mdash; "prove the whole chain end to end on one internal tool using <code>read_network_requests</code>" &mdash; is the only one that touches reality, and it is genuinely doable this week because everything (claude-in-chrome, FastMCP install, mitmproxy2swagger) is available right now on this machine with no external dependency. That is the real Monday task, and it is worth doing, because a working end-to-end demo on one real tool is the artifact that makes the <em>sales</em> conversation possible. But be clear about what it proves: it proves the tech works on a tool Boubacar controls and authorizes himself. It proves nothing about the enterprise path, because the enterprise path's hard parts &mdash; authorization, security review, ToS sign-off &mdash; cannot be exercised against your own internal tool. So the demo is necessary and radically insufficient, and mistaking "the demo worked" for "the offering is validated" is the exact trap.</p>
+      <p>The beautiful-plan-with-no-first-step problem, concretely: the recommendation never names <em>which enterprise, which tool, which authorized capture.</em> Until there is one real named target &mdash; even a friendly one, a warm contact's company, a small business Boubacar already trusts &mdash; with a real tool that genuinely lacks an API and a real willingness to sign a one-paragraph capture authorization, this is a capability looking for a use, not a business. The Monday step is not "build the pipeline." It is "find the first authorized capture."</p>
+      <p>Concrete gaps I can name that have no owner in this plan: (1) There is no written capture-authorization template &mdash; the one-paragraph SOW clause a client signs before any capture. That document, not the code, is what unblocks the first real engagement, and it does not exist. (2) There is no answer to "what runs the capture in production" &mdash; Boubacar's laptop is not an enterprise-acceptable capture host, and the report never says where authorized capture actually executes at a client. (3) The Skool downloads (ARMS PDF, <code>/search-connectors</code> skill) are listed as "worth pulling" with no owner and no date &mdash; that is how a task dies. (4) <code>cli-printing-press</code> is recommended "after a security-scan checkpoint pass" but nobody scheduled the gate pass, so the accelerator is blocked on an unscheduled step.</p>
+      <p>The one thing I'd force before any code: write the client-facing capture-authorization protocol &mdash; the plain-English "here is exactly what I will access, how I protect it, when I destroy it, and the vendor-ToS question for your legal team." That document is simultaneously the security control, the sales asset, and the legal shield. It is one page. It does not exist. It gates everything downstream. And unlike the pipeline, it can be finished this week.</p>
+      </div>
+      <div class="keystone">
+        <span class="keystone-label">Chairman synthesis</span>
+        <p><strong>Convergence (all five voices, act on these):</strong></p>
+      <p>1. <strong>The technical pipeline is real, sound, and buildable at this system's scale today &mdash; that was never the question.</strong> Every voice grants it. The end-to-end chain (claude-in-chrome capture → mitmproxy2swagger → FastMCP curation → canary) runs on this machine with tools already present. Move 3 (prove it on one internal tool this week) is endorsed unanimously as the correct, cheap, real first action.</p>
+      <p>2. <strong>The ranking is backwards for enterprise, and this is the load-bearing finding.</strong> The Contrarian, First Principles, and Outsider independently converged: Rung 1 (private-API capture) is presented as "the default" but is the <em>highest-liability, least-authorized, least-supportable</em> path, strongest exactly where the money isn't (unowned internal tools) and weakest exactly where it is (name-brand SaaS with legal teams and ToS that prohibit it). Rung 2 (bridge through the client's own n8n/UiPath) should be the enterprise default, because it inherits the client's vault, audit trail, and vendor relationships &mdash; the three things that make a security team say yes. <strong>Flip the ordering for enterprise engagements: authorized-path discovery first, iPaaS-bridge second, private-API capture as a signed-off last resort.</strong></p>
+      <p>3. <strong>Curation is the business; capture is a risky sliver of it.</strong> First Principles and Expansionist converged hard here. The report <em>correctly</em> names curation (400 endpoints → 8-15 business verbs) as the billable expertise, then spends 90% of its pages on the reverse-engineering pyrotechnics that are 10% of the value and 90% of the risk. The larger, safer, more scalable business is "make enterprise software legible to agents" &mdash; which applies to documented-but-sprawling APIs too, with zero legal exposure.</p>
+      <p>4. <strong>The security exposure per technique, at an enterprise, is categorically worse than the report frames it &mdash; and it is a sales problem, not just a technical one.</strong> The Outsider's cold read is the decisive contribution: TLS interception, credential capture, and WAF-fingerprint evasion <em>sound like an attack</em> and <em>pattern-match to incident-response playbooks.</em> Rung 3's cleverness is negative risk-adjusted value in a boardroom. Adjacency A (autonomous capture via <code>read_network_requests</code>) is the single highest-liability capability in the proposal and must never run against a client tenant without airtight written authorization and a hardened capture host.</p>
+      <p>5. <strong>The Capture Hygiene Gate is the differentiator, not the overhead.</strong> Expansionist and Outsider converged: leading with a written, mechanical capture-protection protocol is the thing that closes enterprise deals, because every buyer's #1 objection is credential/data leakage. Promote it from footnote to lead slide.</p>
+      <p><strong>Divergence (named, not averaged):</strong></p>
+      <p>- <strong>The Expansionist wants to scale this into a productized methodology; the Executor says there is no client and no authorized-capture target, so scaling talk is premature.</strong> This tension is real and I will not smooth it. Resolution by sequencing, not compromise: the Executor is right about <em>what happens first</em> (one authorized capture, one authorization document), the Expansionist is right about <em>what it becomes</em> (a named method + curation-first offering). Do the Executor's week-one work; hold the Expansionist's framing as the 90-day direction. Neither is wrong; they operate on different clocks.</p>
+      <p>- <strong>The Contrarian sees the maintenance retainer as a one-person pager-rotation trap; the report (and Expansionist) see it as recurring revenue.</strong> Both true. The reframe: only sell drift-monitoring on connectors built on <em>authorized</em> paths (real APIs, iPaaS nodes), where the vendor won't silently break you out of spite and support exists. Reverse-engineered connectors should be priced as, and disclosed as, fragile &mdash; never sold on an SLA a one-person shop cannot honor against an uncooperative vendor.</p>
+      <p><strong>RECOMMENDATION: CHANGE &mdash; keep the pipeline, invert the doctrine.</strong></p>
+      <p>Keep every piece of the technical build; it is correct and cheap. But change what is sold and in what order. The offering is not "I reverse-engineer connectors." It is <strong>"I make your software agent-ready, by the safest authorized path that exists, and I have a mechanical protocol that protects your credentials while I do it."</strong> Private-API capture becomes the rare, legally-gated last resort it should always have been &mdash; mastered, kept sharp, but never led with. Curation and authorized-path discovery become the headline skill. The Capture Hygiene Gate and the ToS-authorization protocol become the sales assets. This is a change of doctrine and go-to-market, not a change of code.</p>
+      <p>On the three pressure-test questions directly: <strong>Buildable at this system's scale?</strong> The pipeline, yes, today. The enterprise <em>offering</em>, not yet &mdash; it is gated on a client-facing authorization protocol and a production-acceptable capture host, neither of which exists. <strong>Real enterprise security exposure?</strong> Far higher than framed for Rungs 1/3 (attack-shaped, ToS-prohibited, service-account and authorization-dependent), acceptable for Rung 2 (inherits client controls), last-resort-only for Rung 4 (LLM with a live authenticated session). <strong>Faster/cheaper path missed?</strong> Yes &mdash; Rung 2 for delivery, and <em>curation-of-existing-APIs</em> as a whole parallel business that skips reverse-engineering entirely and carries none of the legal risk.</p>
+      </div>
+      <div class="callout good">
+        <p><strong>Monday morning &mdash; the one concrete next step</strong></p>
+        <p><strong>One concrete next step:</strong> Do not start with code. Write the one-page <strong>client capture-authorization protocol</strong> &mdash; plain English: exactly what will be accessed, how credentials are protected (never in a repo, fingerprinted not logged, destroyed on a fixed clock), where capture executes, and the explicit vendor-ToS question routed to the client's legal team in writing on day one. This single document is simultaneously the security control, the sales asset, and the legal shield; it is what unblocks the first real engagement; and it is finishable this week. In parallel (secondary, same week), execute Move 3 from the report &mdash; prove the full chain end-to-end on one internal tool via <code>read_network_requests</code> &mdash; because a working demo makes the sales conversation real. Explicitly reorder the discovery doc so authorized-path discovery and iPaaS-bridge rank above private-API capture for enterprise.</p>
+      <p><strong>The one open question only Boubacar can answer:</strong> Who is the <em>first named enterprise or friendly-company target</em>, and which specific tool of theirs genuinely lacks an authorized path &mdash; because until that exists, this is a validated capability with no validated market, and the entire go-to-market (curation-first vs capture-first, which rung to lead with, whether the retainer is even sellable) depends on what that first real tool and that first real security conversation actually demand.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-karpathy">
+    <summary><h2>Karpathy audit &mdash; ten-principle pass</h2></summary>
+    <div class="sec-body">
+      <div class="keystone">
+        <span class="keystone-label">Verdict up front</span>
+        <p>HOLD. The pipeline is engineeringly sound and the document's honesty is above average, but it optimizes the fast half of the problem (generation) while the gating half (authorization) is unstated, and the security posture is asserted rather than demonstrated.</p>
+      </div>
+      <div class="step">
+        <h3>Principle 1 &mdash; Think Before Coding <span class="grade fail">FAIL</span></h3>
+        <p>Evidence: The plan never states who the first target is or under what authorization. Stage 1 says "CAPTURE" without naming whether the capture runs against (a) an internal tool this system owns, (b) a client tenant under a signed SOW, or (c) a third-party consumer service. Those three have completely different legal, security, and procurement paths, and the report's own adjacency E argues they are the decisive variable, then the architecture in section 4 ignores the distinction entirely. Second undeclared assumption: "hours-not-weeks" is stated as the headline claim, but it is measured only over Stage 3-4. Stages 0-2 (discovery, authorization, security review) are unmeasured and are where the calendar actually goes. Third: "8-15 business verbs" is a magic number with no derivation.</p>
+        <p>Action: Before any build, answer in writing: (1) what is the FIRST target and its authorization basis; (2) what is the pipeline's behavior when the vendor ToS prohibits automated access &mdash; this needs a stated branch, not a footnote; (3) where does the 8-15 number come from, or drop it and say "the verbs the client actually names in the intake".</p>
+      </div>
+      <div class="step">
+        <h3>Principle 2 &mdash; Simplicity First <span class="grade fail">FAIL</span></h3>
+        <p>Evidence: Zero connectors exist and the plan proposes five pipeline stages, a new governance gate, a canary monitoring service, two generation toolchains (FastMCP core plus <code>cli-printing-press</code> as accelerator), four capability rungs, and a doc-ranking flip &mdash; all before one end-to-end connector has been proven once. Rungs 3 and 4 (TLS-pinning defeat, browser-driving) are speculative capability for clients that do not exist yet. The n8n/UiPath bridge is a good instinct but is a Stage 0 checklist item, not a build. <code>curl_cffi</code> / JA3 impersonation is solving a WAF problem that has not been observed. This is the "premature abstraction" failure at architecture scale: building the Foundry before building a connector.</p>
+        <p>Action: Cut to the minimum that proves the claim. v1 is exactly: one internal tool with no MCP, HAR captured by hand from DevTools, <code>mitmproxy2swagger</code> two-pass, <code>FastMCP.from_openapi()</code> with a hand-written RouteMap, read-only. No gate framework, no canary, no accelerator, no rungs 2-4. Everything else waits for a second connector to justify it &mdash; three similar lines stay three lines.</p>
+      </div>
+      <div class="step">
+        <h3>Principle 3 &mdash; Surgical Changes <span class="grade warn">WARN</span></h3>
+        <p>Evidence: "First three moves" bundles a doc-ranking refactor (flip the internal connector-method discovery guide to CLI > API > MCP) into the same change as the pipeline build. That flip is defensible on its own evidence &mdash; the measured 63,900 vs 101,100 vs 39,900 token numbers from this repo's own token-efficiency work do genuinely support it, and it is a stronger justification than the external source's assertion. But it is a separate change with separate reviewers and it will not fail if the pipeline never ships. Same for the credential-SOP amendment.</p>
+        <p>Action: Ship the discovery guide flip as its own commit, justified by the repo's own token numbers, independent of whether the Foundry is built. Do not let a build's fate gate a doc correction that is already true.</p>
+      </div>
+      <div class="step">
+        <h3>Principle 4 &mdash; Goal-Driven Execution <span class="grade fail">FAIL</span></h3>
+        <p>Evidence: No machine-verifiable done condition appears anywhere in the document. The closest is "prove the whole chain end to end on one internal tool", which names no tool, no verbs, no assertion, and no pass/fail command. <strong>Bottleneck check fires hard here.</strong> The plan's entire speed claim is a component speedup &mdash; generation goes from weeks to hours. But the end-to-end critical path for the stated goal (a paid fractional engagement) runs: discovery → client authorization → security review → capture → generate → curate → deliver → maintain. The security review alone is plausibly weeks. Making the hours-long stage faster does not move a weeks-long pipeline, exactly like an arithmetic-bound kernel win on a bandwidth-bound pipeline. The document measures the part it enjoys.</p>
+        <p>Action: State a fail-closed done condition for v1 before writing code, in this shape: "<code><named internal tool></code> exposes exactly N tools over MCP; a single command runs each tool against a fixture and exits 0; no credential appears in any tracked file; the capture artifact no longer exists on disk." Then separately, measure the actual bottleneck: time one real authorization conversation end to end before claiming any calendar improvement.</p>
+      </div>
+      <div class="step">
+        <h3>Principle 5 &mdash; Complexity Hotspots <span class="grade warn">WARN</span></h3>
+        <p>Evidence: Three real analogues in the proposed design. (1) <strong>Fan-out with a single operator on the other end</strong> &mdash; the canary is O(clients × connectors × endpoints) scheduled probes, and every alert routes to one person who has no vendor support path. That is not a compute hotspot, it is a human hotspot, and it grows linearly with the revenue the plan wants. (2) <strong>Curation is O(endpoints) manual labor per connector</strong> &mdash; the <code>ignore:</code>-prefix pass and the description rewriting are correctly identified as the billable expertise, which is another way of saying they do not amortize; connector 10 costs about what connector 1 cost. (3) <strong>Token blowup on the generated surface</strong> is correctly identified and correctly mitigated by RouteMap, so that one is handled.</p>
+        <p>Action: No blocker. But price the connector as build + curation + monitoring line items explicitly, and cap the number of concurrent maintained connectors at a number one person can actually carry, stated up front.</p>
+      </div>
+      <div class="step">
+        <h3>Principle 6 &mdash; Verification <span class="grade warn">WARN</span></h3>
+        <p>Evidence: No reproducing artifact is defined for any claim. The strongest claim in the document &mdash; adjacency A, that <code>read_network_requests</code> removes the manual-capture bottleneck &mdash; is explicitly labeled as needing verification ("so the automated-capture advantage in adjacency A is verified rather than assumed"), which is the right instinct and is the only claim treated that way. Every other claim, including the security ones, is reasoned rather than tested.</p>
+        <p>Action: Before adjacency A is repeated anywhere as an advantage, run it once against a non-sensitive target and confirm (a) that the tool actually returns request/response bodies and headers, not just a request index, and (b) exactly what of that lands in model context. If it returns only a summary, the crown-jewel claim collapses and the plan changes.</p>
+      </div>
+      <div class="step">
+        <h3>Principle 7 &mdash; Debugging Protocol <span class="grade pass">PASS</span></h3>
+        <p>Evidence: No diagnosis is being made from a partial reading. The repo-internal facts the document cites (the token-efficiency numbers, the existing security-scan checkpoint scope, the existing cron infrastructure) match this repo's stated configuration, and the external claims are attributed to named sources with license and star counts rather than recalled.</p>
+      </div>
+      <div class="step">
+        <h3>Principle 8 &mdash; Dependencies <span class="grade fail">FAIL</span></h3>
+        <p>Evidence: Nine third-party dependencies are proposed (<code>mitmproxy2swagger</code>, <code>FastMCP</code>, <code>apk-mitm</code>, <code>android-unpinner</code>, <code>Frida</code>, <code>curl_cffi</code>, <code>Stagehand</code>, <code>Skyvern</code>, <code>cli-printing-press</code>). None are pinned in the plan. Several execute against live credentials. <code>Skyvern</code> is AGPL-3.0, correctly flagged. <code>cli-printing-press</code> is one maintainer's Go repo with self-admitted unverified activity, generating code that runs with real client credentials &mdash; the plan says "accelerator, not foundation", which is the right call, but adopting it at all adds a supply-chain surface for a speed gain on a stage that is not the bottleneck. No stdlib check was done for the pieces that plainly do not need a dependency: Stage 5's canary is a cron plus <code>httpx</code> plus <code>jsonschema</code>, all of which this system already has.</p>
+        <p>Action: v1 takes exactly two new dependencies, both pinned: <code>mitmproxy2swagger</code> and <code>fastmcp</code>. Build the canary on existing infrastructure. Defer every rung-3/4 dependency until a client actually needs that rung. Drop <code>cli-printing-press</code> from the plan entirely until there is a second connector to accelerate.</p>
+      </div>
+      <div class="step">
+        <h3>Principle 9 &mdash; Communication <span class="grade pass">PASS</span></h3>
+        <p>Evidence: This is the strongest part of the document and it deserves saying. The gaps section names the exhausted search budget, states plainly that no verifiable enterprise case studies were found <strong>and that none were invented</strong>, admits non-US legal regimes were not researched, and admits the <code>cli-printing-press</code> maintainer activity was not confirmed. Uncertainty is labeled where it exists rather than smoothed over. Rung 4 is described as "a robot with a mouse" that "fails in ways that look like success" &mdash; that is the honest framing, not the flattering one.</p>
+      </div>
+      <div class="step">
+        <h3>Principle 10 &mdash; Common Failure Modes <span class="grade fail">FAIL</span></h3>
+        <p>Evidence: 1. <strong>The Capture Hygiene Gate is a policy, not a mechanism.</strong> Its three rules &mdash; captures never enter a repo, captures are scrubbed, captures are destroyed on a clock &mdash; have no named enforcement. This system's other gates are real because they are mechanical: a PreToolUse hook that hard-denies with no bypass flag, a pre-commit check, a server-side provenance refusal. A gate that exists as a paragraph in a SOP is the control that fails silently the first time someone is in a hurry. Worse: <strong>scrubbing is a blocklist problem against an unknown vendor's schema.</strong> You can strip <code>Authorization</code>, <code>Cookie</code>, and <code>Set-Cookie</code>. You cannot enumerate the response-body field names that carry a client's customers' PII in a private API nobody has documented. The gate's success case is defined; its failure case &mdash; "the scrubber did not recognize this field" &mdash; is not.    2. <strong>Adjacency A is presented as pure upside and is the single highest-liability item in the document.</strong> An LLM driving a client's authenticated UI while reading that session's raw network traffic means the bearer token and the response bodies enter model context. Scrubbing happens downstream of that read, so it cannot help. And the plan cites Anthropic's own browser-agent prompt-injection numbers (23.6% unmitigated, 11.2% with defenses) <strong>only against Rung 4</strong>, when the same browser agent is what Adjacency A puts in the Rung 1 capture loop. Page content is attacker-influenced in both cases. That figure applies to the crown jewel and the document does not apply it there.    3. <strong>The legal branch has no failure path.</strong> "Being the person who raises the vendor ToS clause to the client's legal team in writing" is correct consultant behavior, and the plan states no behavior for what happens when legal says no. The document's own strongest legal evidence &mdash; hiQ won on CFAA and <em>lost on contract</em> &mdash; argues that for authenticated access to name-brand enterprise SaaS, no is the likely answer. The technique is therefore strongest where the client has no vendor to object to (their own scrappy internal tool) and weakest where the enterprise money is. That inversion is load-bearing and is not in the architecture.    4. <strong>Reliability: the canary detects, it does not repair.</strong> Drift monitoring is correctly reframed as recurring revenue and is silent on recurring obligation. A 2am alert on an undocumented endpoint means an emergency fix with no vendor support, no changelog, and no deprecation window, carried by one person. The "what happens when the external call fails" check has an answer at the connector level (schema-validating client) and no answer at the business level.    Evidence &mdash; Kitchen Sink. Asked "can we build connectors for tools with no API", the plan returned a four-rung capability taxonomy, a new governance gate, a monitoring service, a doc-ranking correction, a legal posture, a pricing model, and two acquisition targets on an external platform. Much of it is good thinking. None of it is the faucet.</p>
+        <p>Action: 1. Rewrite the security claim honestly: secure-and-safe is achievable in a <strong>narrower</strong> scope than the plan assumes, specifically &mdash; client's own tenant, capture named explicitly in a signed SOW, capture performed by a human on an isolated machine, connectors read-only by default, and <strong>no LLM in the capture loop for v1</strong>. State that scope as the boundary, not as a first iteration to be relaxed later.   2. Give the Capture Hygiene Gate a mechanism or do not call it a gate: a hard-deny hook on writes of capture-shaped files into any tracked path, plus a scheduled destroyer. And state plainly that scrubbing is best-effort against unknown schemas &mdash; which is an argument for destroying captures fast, not for trusting the scrubber.   3. Apply the cited prompt-injection numbers to Adjacency A explicitly, and demote it from "biggest speed advantage available" to "a capability that must not touch a client tenant until it has its own threat model".   4. Add the missing branch: what the engagement does when the vendor ToS prohibits it. If the answer is "we do not build it", say so, because that answer removes a large share of the enterprise segment the plan is aimed at and that changes the business case, not just the architecture.   5. Add the missing branch on reliability: who fixes a broken connector, in what window, at what price, and what the cap is on how many are carried at once.</p>
+      </div>
+      <div class="callout bad">
+        <p><strong>Final call: HOLD.</strong></p>
+        <p>Required before shipping, in order: 1. Name the first target and its authorization basis in writing (P1). 2. State a fail-closed, machine-verifiable v1 done condition (P4). 3. Cut scope to one connector, one internal tool, two pinned dependencies, read-only, no gate framework, no canary, no accelerator, no rungs 2-4 (P2, P8). 4. Rewrite the security section with the four missing failure branches and the narrowed scope, and demote Adjacency A (P10). 5. Measure the real bottleneck &mdash; one authorization conversation, timed end to end &mdash; before repeating the "hours not weeks" claim anywhere (P4 bottleneck check). 6. Ship the discovery guide CLI > API > MCP flip separately and now; it is correct on this repo's own measured numbers and does not depend on any of the above (P3). Logged WARNs for next session: human-fan-out hotspot on the canary as client count grows (P5); Adjacency A remains unverified until <code>read_network_requests</code> return shape is confirmed by an actual run (P6).</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec plan" id="sec-plan" open>
+    <summary><h2>The implementation plan &mdash; in full</h2></summary>
+    <div class="sec-body">
+
+      <div class="keystone">
+        <span class="keystone-label">The plan in one paragraph</span>
+        <p>Build the capture-to-connector pipeline, but sell the opposite of what you build. The
+        technique is real and you should master it. The <em>offering</em> is "I make your software
+        agent-ready by the safest authorised path," where reverse-engineering is the rare last
+        resort. Practice target this week: <strong>Skool</strong> (your own paid account, and it
+        closes a real gap this system already hit). Everything plugs into infrastructure that
+        already exists; the only new thing is one hard-deny hook and one client-facing
+        authorisation page.</p>
+      </div>
+
+      <h3>1. The recommended technique, in plain English</h3>
+      <p>Almost no software has "no API." It has no <em>published</em> API. Every modern web and
+      mobile app is already talking to its own private data service in the background, every second
+      you use it, using your own logged-in credentials. So instead of asking the vendor for access
+      you will never get, you sit with the app open, record the conversation it is already having
+      with its own servers, and turn that recording into a written map of what it can do. Then you
+      take that map, throw away 95 percent of it, and keep only the ten or fifteen things a
+      business actually needs ("list open invoices," "mark this ticket resolved"), rewrite those in
+      plain language, and hand that short, clean list to an AI agent as a set of tools it can use.
+      The recording and the map take a couple of hours and are largely automated.</p>
+      <div class="callout good">
+        <p><strong>The value is not in the recording. It is in the throwing away.</strong> A raw map
+        with four hundred entries makes an AI agent slower, more expensive, and less reliable than
+        no tool at all. A curated list of twelve verbs makes it work. That curation is the part
+        nobody can commoditise, it is the part you sell, and it applies just as much to companies
+        that <em>do</em> have an API and have simply made it unusable by an agent.</p>
+      </div>
+
+      <h3>2. Where this plugs into what already exists</h3>
+      <p>Reuse, do not build parallel. Every row below is infrastructure already live in this
+      system or already connected to this session.</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Pipeline stage</th><th>Existing thing it plugs into</th><th>What changes</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Stage 0 &mdash; Discovery</strong></td>
+            <td>the internal connector-method discovery guide (Phase -1,
+              44 lines, already written 2026-08-21)</td>
+            <td><strong>Edit in place.</strong> Two changes: (a) flip the preference ranking to
+              <strong>CLI &gt; API &gt; MCP</strong> and justify it with this system's own measured
+              numbers, not an outside claim; (b) add the missing branch &mdash; step 4 currently
+              dead-ends at "building from scratch is the fallback" with no procedure for what that
+              fallback <em>is</em>. That fallback is this pipeline.</td>
+          </tr>
+          <tr>
+            <td><strong>Stage 0b &mdash; Bridge check</strong></td>
+            <td>the workflow-automation tooling plus the live n8n integration</td>
+            <td>Add a step: before any capture, check whether the client already runs n8n or UiPath
+              and whether the workflow can ride their existing connector. This should be the
+              enterprise default, not a footnote. Credentials stay in a vault they already own and
+              already audit.</td>
+          </tr>
+          <tr>
+            <td><strong>Stage 1 &mdash; Capture</strong></td>
+            <td><code>read_network_requests</code> (browser control) and
+              <code>browser_network_requests</code> (Playwright), both connected right now</td>
+            <td>Nothing to build. This is the piece most external tooling treats as a manual human
+              step. <strong>Verify the return shape before relying on it</strong> (see Step 1
+              below) &mdash; if it returns only a request index and not bodies and headers, the
+              whole speed advantage collapses and you fall back to a hand-exported capture from
+              browser developer tools. Do not repeat the claim until you have run it once.</td>
+          </tr>
+          <tr>
+            <td><strong>Stage 2 &mdash; Gate (external code)</strong></td>
+            <td>The existing security-scan checkpoint plus its deferred-execution addendum and the
+              OWASP agentic-skills top-10 reference</td>
+            <td><strong>Unchanged, already correct.</strong> Any third-party tool introduced
+              (<code>mitmproxy2swagger</code>, and later any Go or Frida tooling) goes through it
+              before it runs. Log the result the way the existing phase already does.</td>
+          </tr>
+          <tr>
+            <td><strong>Stage 2b &mdash; Gate (capture artifacts)</strong></td>
+            <td><code>docs/governance/credential-handling-sop.md</code> plus the hook pattern in
+              <code>scripts/claude-hooks/</code> (model it on
+              <code>scratch-tmp-durability-guard.js</code>)</td>
+            <td><strong>The one genuinely new piece.</strong> A capture file is a live credential,
+              not a document. A policy paragraph is not a gate; this system's real gates are
+              mechanical. Needs a pre-write hard-deny on writing capture-shaped files into any
+              tracked path, plus an ignore entry, plus a scheduled destroyer.</td>
+          </tr>
+          <tr>
+            <td><strong>Stage 3 &mdash; Spec</strong></td>
+            <td>nothing existing; new pinned dependency <code>mitmproxy2swagger</code></td>
+            <td>Two-pass. The <code>ignore:</code>-prefix pass <strong>is the curation
+              checkpoint</strong>, treat it as the billable work, not a chore.</td>
+          </tr>
+          <tr>
+            <td><strong>Stage 4 &mdash; Generate</strong></td>
+            <td>the <code>claude mcp add -s user &lt;name&gt; -- &lt;command&gt;</code> registration
+              path (writes <code>~/.claude.json</code>, confirmed with <code>claude mcp list</code>;
+              an <code>mcpServers</code> block in <code>settings.json</code> is NOT loaded, per the
+              2026-08-01 correction) plus the production-hygiene reference</td>
+            <td>New pinned dependency <code>fastmcp</code>. Generate, filter to 8 to 15 verbs,
+              hand-rewrite every description, register through the existing path like any other
+              server. Read-only by default.</td>
+          </tr>
+          <tr>
+            <td><strong>Stage 5 &mdash; Drift canary</strong></td>
+            <td>the existing audit-cron pattern: <code>scripts/*_audit.py</code> plus
+              <code>scripts/*_cron_install.sh</code>, gated by
+              <code>data/autonomy-frozen.flag</code>, alerting via the notifier</td>
+            <td>Build on this, do not invent a monitoring service. A canary is a cron,
+              <code>httpx</code> and <code>jsonschema</code>, all of which are already here.
+              <strong>Defer until connector #2 exists.</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Process</strong></td>
+            <td>claim-before-work, worktree off <code>origin/main</code>, in-progress tags, gated
+              auto-merge, the task board lane row, the audit registry on close-out</td>
+            <td>Standard. No exceptions for this work.</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3>3. The practice build, this week</h3>
+      <p><strong>Primary target: Skool.</strong> Reasons it is the right one and not a random pick:
+      you already pay for it and hold the account, so the capture is your own tenant and your own
+      purchased content; it has no public API as far as I can tell (confirm in Step 0, do not
+      assume); and it closes a gap this system already hit and failed on. The Skool harvester could
+      not reach the file-download endpoint, which is why two named assets are still unretrieved. So
+      the practice exercise produces a real artifact, not a toy.</p>
+      <p><strong>Warm-up option if you want a no-credential first pass:</strong> run the exact same
+      chain against a public, no-login business-lookup site (the Utah business entity search, which
+      likely has no public API &mdash; verify in Step 0). Zero credentials enter the capture, so you
+      learn the tooling with nothing at risk, and the output feeds your own lead work. Do this only
+      if you want the training wheels; Skool is the better payoff.</p>
+      <div class="callout bad">
+        <p><strong>Do NOT practise on LinkedIn.</strong> It is your single most valuable owned
+        asset, the terms are hostile, and account loss is unrecoverable. Not a close call.</p>
+      </div>
+
+      <h4>Exact steps</h4>
+
+      <div class="step">
+        <h3>Step 0 &mdash; Prove the boring path is actually closed (15 min)</h3>
+        <p>Run the discovery phase as written. Search for an official Skool API, an official
+        command-line tool, any community wrapper, any plug-in server. If one exists and clears a
+        security-scan checkpoint, <strong>use it and stop.</strong> Log the finding either way. This step
+        is the habit that matters most at a client, so practise it here where the stakes are
+        zero.</p>
+      </div>
+
+      <div class="step">
+        <h3>Step 1 &mdash; Verify the capture tool's return shape (15 min, do this before anything else)</h3>
+        <p>Open one Skool page in the browser, navigate, then call the network-request reader. Look
+        at exactly what comes back: does it include request URLs, methods, request bodies, response
+        bodies, and headers? Or only a summary index? Write the answer down. If it is only an index,
+        switch to a hand-exported capture from the browser network tab (right-click, save all with
+        content) and note that the "capture is already automated here" advantage is unproven.
+        Everything downstream is identical either way.</p>
+      </div>
+
+      <div class="step">
+        <h3>Step 2 &mdash; Capture (30 min)</h3>
+        <p>In one session, deliberately perform the actions you want the connector to do, one at a
+        time, slowly: open a classroom, open a lesson, list the attached files, download one file.
+        Do not click around aimlessly; every extra click becomes noise you have to filter later.
+        Save the capture to the quarantined scratch directory, never the repository.</p>
+      </div>
+
+      <div class="step">
+        <h3>Step 3 &mdash; Spec (30 min)</h3>
+        <p><code>pip install mitmproxy2swagger</code> (pin the version). Pass one over the capture
+        emits every candidate path prefixed <code>ignore:</code>. <strong>This is the curation
+        step.</strong> Un-ignore only the endpoints matching the four actions above. Pass two
+        generates the schemas. Read the resulting spec by eye and confirm no bearer token or cookie
+        value ended up inside it.</p>
+      </div>
+
+      <div class="step">
+        <h3>Step 4 &mdash; Generate (45 min)</h3>
+        <p><code>pip install fastmcp</code> (pin the version).
+        <code>FastMCP.from_openapi()</code> with an authenticated <code>httpx</code> client,
+        credentials read from an environment variable, never from a literal. <code>RouteMap</code>
+        to exclude everything except your four verbs. <strong>Read-only for v1.</strong>
+        Hand-rewrite each of the four tool descriptions in plain business language.</p>
+      </div>
+
+      <div class="step">
+        <h3>Step 5 &mdash; Register and prove it (20 min)</h3>
+        <p><code>claude mcp add -s user skool -- &lt;command&gt;</code>, then
+        <code>claude mcp list</code> to confirm it actually connected. Then call each of the four
+        tools once and read the output.</p>
+      </div>
+
+      <div class="step">
+        <h3>Step 6 &mdash; Destroy the capture and close out (10 min)</h3>
+        <p>Delete the capture file. Confirm no capture file is tracked by version control. Add a row
+        to the audit registry. Commit the connector code to a worktree, push, let the merge gate
+        take it.</p>
+      </div>
+
+      <div class="callout">
+        <p><strong>The done condition, stated up front so it can fail loudly:</strong>
+        <em>"A registered connector named <code>skool</code> exposes exactly four read-only tools;
+        each returns real data from my own account when called; the guide PDF and the packaged
+        connectors skill zip are downloaded to disk; no credential appears in any tracked file; the
+        capture artifact no longer exists."</em> If any clause fails, it is not done. Total: roughly
+        one focused afternoon.</p>
+      </div>
+
+      <h3>4. The security checklist that makes this safe to bring to a client</h3>
+      <p>Not "be careful." Ten items, each either mechanically enforced or a signed document.
+      Anything that is only a good intention is marked as such.</p>
+
+      <h4>Before anything is captured</h4>
+      <ol>
+        <li><strong>Written authorisation, naming the system.</strong> A one-paragraph clause in the
+        statement of work: which application, which account, which date window, which environment.
+        Not "we may access client systems." Verbal permission is not authorisation.</li>
+        <li><strong>The vendor terms question goes to their legal team, in writing, on day one.</strong>
+        You raise it, they decide, it is documented. This is the single move that separates a
+        consultant from a scraper, and it is also your protection: it is their vendor relationship
+        you would be gambling with. If their legal team says no, <strong>the answer is you do not
+        build it</strong> and you route to the bridge stage instead. That branch must exist before
+        the first engagement, because for name-brand enterprise software "no" is a likely
+        answer.</li>
+        <li><strong>Dedicated least-privilege service account, never an employee's login.</strong>
+        Scoped to exactly the data the connector needs. Revocable independently. If the client
+        cannot create one, that is a finding to raise, not a thing to work around.</li>
+        <li><strong>Named capture host.</strong> A clean, isolated machine, disk-encrypted, agreed
+        in advance. Your daily laptop is not an enterprise-acceptable capture host and saying so
+        before they ask builds more trust than anything else on this list.</li>
+      </ol>
+
+      <h4>During capture</h4>
+      <ol start="5">
+        <li><strong>No language model in the capture loop for v1.</strong> An agent driving an
+        authenticated session reads bearer tokens and response bodies straight into model context,
+        upstream of any scrubbing, and page content is an attacker-influenced surface. The published
+        browser-agent prompt-injection numbers (23.6 percent unmitigated, 11.2 percent with
+        defences) apply to <em>this</em> loop, not only to interface-driving automation. A human
+        performs the capture until this capability has its own threat model.</li>
+        <li><strong>Scripted capture, minimum footprint.</strong> Perform only the specific actions
+        being modelled. Never a broad crawl. Never a bulk export.</li>
+      </ol>
+
+      <h4>After capture</h4>
+      <ol start="7">
+        <li><strong>Captures never enter a repository.</strong> Enforced by a pre-write hard-deny
+        hook plus an ignore entry, on the pattern this system already uses for approval markers. Not
+        a policy line in a document.</li>
+        <li><strong>Scrub, then destroy on a fixed clock.</strong> Strip
+        <code>Authorization</code>, <code>Cookie</code>, <code>Set-Cookie</code> before spec
+        generation. <strong>Say plainly that scrubbing is best-effort:</strong> you can enumerate
+        known auth headers, you cannot enumerate the response-body field names carrying a client's
+        customer data in a private schema nobody has documented. That is precisely why the real
+        control is a short destruction clock (24 hours), not confidence in the scrubber. Fingerprint
+        secrets to four characters in any log, never print values.</li>
+        <li><strong>Read-only by default, writes on an explicit allowlist.</strong> Every write verb
+        is named individually in the statement of work and justified. A connector that can only read
+        cannot cause an incident.</li>
+        <li><strong>Tell them what will page their security operations centre.</strong> Traffic
+        interception and unusual client fingerprints pattern-match to exactly what their monitoring
+        is built to detect. Notify their security team of the capture window in advance, in writing.
+        Getting your own consultant flagged as a threat actor is an avoidable,
+        relationship-ending own goal.</li>
+      </ol>
+
+      <div class="callout">
+        <p><strong>Two things that must be honestly disclosed and are not on the technical
+        list:</strong> a reverse-engineered connector has no vendor support, no changelog, and no
+        deprecation window, so it <em>will</em> break without warning; and there is a limit to how
+        many you can carry at once. Name the number in the contract.</p>
+      </div>
+
+      <h3>5. What this becomes as a service line</h3>
+      <p><strong>The wrong version:</strong> "I build custom connectors for tools with no API." That
+      commits you to the hardest, riskiest, least supportable path as your specialty, sells
+      strongest exactly where the money is not (a company's own scrappy internal tool with no
+      vendor), and turns you into a one-person pager rotation against a dozen vendors who will
+      silently break you.</p>
+      <p><strong>The right version, tied to fractional engagements:</strong></p>
+      <p class="pullquote">I make the software you already own legible to AI agents, by the safest
+      authorised path that exists.</p>
+      <p>Three offerings, ordered by how much of your revenue they should be.</p>
+
+      <div class="step">
+        <h3>A. Agent-readiness curation <span class="tag yes">the base</span></h3>
+        <p>The largest share, zero legal risk. Most enterprises do not have a "no API" problem. They
+        have a "our API has thousands of endpoints and every agent chokes on it" problem, plus a
+        "nobody here knows we already have three ways to do this" problem. Collapsing a sprawling
+        surface into ten clean business verbs is the same skill, applies to fully documented APIs,
+        requires no capture, involves no terms question, and has a far larger market. This is the
+        sellable core and it should be the headline. It also lands you inside the enterprise as the
+        person who understands their process, which is the actual doorway to a fractional
+        engagement.</p>
+      </div>
+
+      <div class="step">
+        <h3>B. Authorised-path integration <span class="tag part">the middle</span></h3>
+        <p>Discovery plus bridging through what they already run: their integration platform, their
+        existing connectors, their vault, their audit trail. Fast, inherits their controls, and their
+        security team says yes because nothing new gets access to anything. Boring on the outside,
+        high margin, high trust.</p>
+      </div>
+
+      <div class="step">
+        <h3>C. Last-resort capture <span class="tag no">rare, premium, legally gated</span></h3>
+        <p>For the genuinely stranded system, under a signed authorisation, with the full checklist
+        above. Priced high because of the disclosure burden, not the difficulty. Sold with the
+        drift-monitoring retainer attached, and <strong>only</strong> offered where the maintenance
+        load is honestly carryable. Never led with. Kept sharp, used rarely.</p>
+      </div>
+
+      <p><strong>The asset that outlives any single engagement is the method itself.</strong> A
+      named, documented, security-gated pipeline plus a written capture-authorisation protocol is a
+      repeatable thing you walk into any company with. Every consultant pitching AI right now is
+      hand-wavy about security. Walking in with the protocol <em>before</em> they ask it inverts the
+      hardest objection in the sale into your differentiator. That is why the security checklist is
+      the lead slide, not the appendix.</p>
+
+      <h3>The two things gating everything else</h3>
+      <ol>
+        <li><strong>The one-page client capture-authorisation protocol does not exist and it should
+        be written before any code.</strong> Plain English: what will be accessed, how it is
+        protected, when it is destroyed, and the vendor terms question for their legal team. It is
+        simultaneously the security control, the sales asset, and the legal shield. One page.
+        Finishable in an hour.</li>
+        <li><strong>The only question I cannot answer: who is the first real target?</strong> Until
+        there is a named company and a named tool of theirs with no authorised path, this is a
+        validated capability with no validated market, and the whole go-to-market ordering above
+        stays a hypothesis. A friendly company counts. So does a warm contact willing to let you do
+        it once for free. That first real security conversation will teach you more than the next
+        ten hours of building.</li>
+      </ol>
+
+      <div class="callout good">
+        <p><strong>Ship separately and now, independent of all of the above:</strong> the
+        discovery-doc ranking flip to CLI &gt; API &gt; MCP. It is correct on this system's own
+        measured token numbers, it costs one commit, and it should not wait on whether the pipeline
+        ever gets built.</p>
+      </div>
+      <div class="callout">
+        <p><strong>Two open retrievals with no owner and no date:</strong> the guide PDF
+        (file id <code>c399bdb960204a1282b87a0f8a7e8340</code>) and the packaged connectors skill
+        zip, both behind Skool's file-download endpoint. Step 5 of the practice build retrieves
+        both. That is not a coincidence, it is why Skool is the right practice target.</p>
+      </div>
+
+    </div>
+  </details>
+  <details class="sec" id="sec-gaps">
+    <summary><h2>Gaps &mdash; named, not papered over</h2></summary>
+    <div class="sec-body">
+      <p>Two research lenses ran with an exhausted web-search budget for that session (200/200
+      spent before the lens started) and worked from direct fetches against named vendor docs and
+      GitHub repositories instead of discovery search. That is a real limit on breadth, not on
+      depth: the mechanisms are verified against primary sources, but no independently verified
+      named enterprise case study of this technique in production was found, and none was
+      invented. Non-US legal regimes were not researched; every legal reference here is US-only
+      (Computer Fraud and Abuse Act, <em>Van Buren</em>, hiQ).</p>
+      <p>The Skool source material itself has two open retrievals with no owner and no date: a
+      guide PDF and a packaged connector-building resource, both sitting behind Skool's
+      file-download endpoint, which the harvesting pass could not reach directly.</p>
+      <div class="callout bad">
+        <p><strong>The one gap that gates everything else:</strong> there is no named first
+        target. Until a real company and a real tool of theirs with no authorised path exists,
+        this is a validated capability with no validated market, and every downstream choice
+        (which rung to lead with, whether the retainer is sellable, how the offer is priced)
+        depends on what that first real security conversation actually demands.</p>
+      </div>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Completed multi-agent research run on how to build custom AI-agent connectors for tools that
+    ship no plug-in and no published API, centred on Jay at RoboNuggets' <code>cli-printing-press</code>
+    tool and on <code>mitmproxy2swagger</code> plus <code>FastMCP.from_openapi()</code> as the
+    general toolchain, sourced in part from Jay's own paid course material verified first-hand.
+    Four independent research lenses, one synthesis, a five-voice Council pass, and a
+    ten-principle audit, followed by the implementation plan that came out the other side.
+    Council verdict: change the doctrine, keep the pipeline. Karpathy verdict: hold, six items
+    required before shipping. Nothing here has been softened into a marketing pitch; the
+    disagreements between the five voices are named, not averaged away.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+</body>
+</html>
