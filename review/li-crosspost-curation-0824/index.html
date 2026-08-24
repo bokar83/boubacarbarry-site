@@ -1,0 +1,819 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinkedIn Cross-Post Curation</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#5fb3ff; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+
+<style>
+  .meta-line{color:var(--text-dim); font-size:.85rem; margin:0 0 10px;}
+  .copybox{
+    white-space:pre-wrap; word-wrap:break-word;
+    background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:14px 16px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.86rem; line-height:1.55; color:var(--text); user-select:all;
+  }
+  .flagbox{
+    background:rgba(242,184,75,0.08); border:1px solid var(--warn); border-radius:8px;
+    padding:10px 14px; margin:0 0 14px; font-size:.9rem;
+  }
+  .flagbox ul{margin:6px 0 0;}
+  .flagbox li{margin:0 0 4px;}
+</style>
+
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-24-12:41:42 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">LI Cross-Post Curation</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">What did you build that nobo</a>
+      <a href="#sec-2">You cannot fire your way to </a>
+      <a href="#sec-3">The four questions I score b</a>
+      <a href="#sec-4">AI exposes broken handoffs. </a>
+      <a href="#sec-5">I put my name on the door</a>
+      <a href="#sec-6">You did not have a tool prob</a>
+      <a href="#sec-7">Your AI is pointed at the wr</a>
+      <a href="#sec-8">Before You Buy Another AI To</a>
+      <a href="#sec-9">Revenue is up. That is the p</a>
+      <a href="#sec-excluded">Excluded</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Newsletter to LinkedIn: cross-post curation</h1>
+    <div class="meta">Signal Works (Catalyst Works) Beehiiv issues, checked against the Content Board and LinkedIn &middot; 2026-08-24</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>What this is:</strong> your 10 most recent Signal Works (Catalyst Works) Beehiiv newsletter issues, checked against the Content Board and against LinkedIn -- none of them have been cross-posted to LinkedIn natively. This page curates which ones are ready to go as standalone LinkedIn posts, with the exact body text in a copy-ready box and the original header image for each.</p>
+      <p><strong>Included: 9 of 10.</strong> Excluded: 1 ("The operator stack, not another course" -- a priced product-roundup newsletter, not a standalone post; see the Excluded section).</p>
+      <p><strong>Before you paste any of these:</strong> most carry a newsletter-only footer (forward/subscribe/reply asks) and a few have a dated event pitch for a workshop that has already passed -- both flagged per-post below. Nothing in the copy boxes has been rewritten; they're your exact published words.</p>
+      <p><strong>Two posts have no real header image on file</strong> ("You did not have a tool problem." and "Revenue is up. That is the problem.") -- Beehiiv's own record for both is the generic default thumbnail, and the Content Board has nothing for either. Flagged in place rather than guessed.</p>
+    </div>
+  </details>
+
+  
+  <details class="sec" id="sec-1">
+    <summary><h2>1. What did you build that nobody saw</h2></summary>
+    <div class="sec-body">
+      <p class="meta-line">Newsletter sent 2026-08-12 &middot; Signal Works (Catalyst Works)</p>
+      <p><strong>Why this one:</strong> Strong standalone story about building vs. being seen -- the distribution-is-the-constraint insight lands with no newsletter-only context needed.</p>
+      <p><img src="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/49bfbe45-5ffc-48d7-ac43-0f6834f8d127/2026-08-12-live-is-not-finished.png?t=1786558598" alt="Header image for: What did you build that nobody saw" style="max-width:100%;border-radius:8px;border:1px solid var(--border);display:block;margin:0 0 14px;" loading="lazy"></p>
+      <p class="meta-line"><a href="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/49bfbe45-5ffc-48d7-ac43-0f6834f8d127/2026-08-12-live-is-not-finished.png?t=1786558598" target="_blank" rel="noopener">Direct link to header image</a></p>
+      <div class="flagbox"><strong>Flags / suggested trims before posting:</strong><ul>
+        <li>Ends with a dated paid-workshop pitch for "Wednesday, August 19th" -- that date is already past. Cut that paragraph (starts "I ran the in-person version..." through the price/link) before posting.</li>
+        <li>Swap "hit reply and tell me" -&gt; a LinkedIn comment ask.</li>
+        <li>Standard newsletter footer (3-things-before-you-go + email signature) is newsletter-only plumbing -- cut it for LinkedIn.</li>
+      </ul></div>
+      <p><strong>Copy-ready body</strong> (select all, paste into LinkedIn):</p>
+      <pre class="copybox">I shipped a paid product this week. Idea to live to taking payments, in an afternoon.
+
+Almost nobody saw it.
+
+I only said the real problem out loud when I got frustrated with my own operation. I do not have a problem creating things and making them go live. I have a problem getting people to see what I have created.
+
+I spent years in HR watching process people hunt for the one step that limits everything, fix that step, and leave the rest alone. Then I spent a year building, and I noticed I had been polishing steps that were never the constraint. The real constraint was distribution.
+
+Building feels like progress. Asking someone to look feels like asking a favor, so distribution loses the fight for my time almost every time I put the two side by side.
+
+Building has a finish line. You know the exact minute the page goes live. Being seen has no finish line, so it loses when you can only do one.
+
+Here is the rule I am writing down for myself, in public, so it is harder to skip again: a page is not finished when it is live. It is finished when there is a plan for who sees it, with names or dates attached to that plan.
+
+Look at your own last week. What did you build, fix, or launch that nobody outside your head saw? Do not answer that in your head. Go find the actual thing, then hit reply and tell me what it was.
+
+The same problem is probably sitting in your business right now.
+
+Most small businesses have no file anywhere that tells an AI assistant what they sell, who buys it, and what they charge. The business is real. It is just not written down anywhere the AI can reach. So when someone asks ChatGPT or Claude for a recommendation in that category, the AI is guessing, and it usually guesses wrong or skips the business completely. Same shape as my problem. You built the thing and nobody can see it.
+
+I ran the in-person version of this in Sandy on July 30. People came, built the file in the room, and more have been asking since, which is why the next one is online. Next Wednesday, August 19th, 11am to noon Mountain time.
+
+You bring a laptop and an hour. You leave with three things: the file itself, written in your own words and running on your own machine, the recipes to keep using it after we hang up, and a cheat sheet built to print.
+
+It gets built on your machine, by you, while I am there to unstick you. Nothing you type leaves your laptop, and you can prove that in the middle of the session by pulling your wifi down and carrying straight on. Camera on or off, your call. Not a demo of mine. Your file, done by noon.
+
+It is $25, and you have a week to clear one hour: catalystworks.consulting/w/online-nl
+
+Three things before you go
+
+- Forward this to one business owner who is trying to figure out where AI fits in their business. One forward is more useful to me than ten retweets.
+
+- Was this forwarded to you? Subscribe at signal.catalystworks.consulting. The moment you do, you also get a free scan that shows how visible your business is when people ask AI for a recommendation.
+
+- Reply with one sentence about what is stuck in your week. I read every one and it shapes what ships next.
+
+Boubacar
+I spent over a decade in HR at a Fortune 100. Now I'm a fractional AI leader who can help small businesses put AI to work.
+boubacar@catalystworks.consulting · signal.catalystworks.consulting</pre>
+    </div>
+  </details>
+
+
+  <details class="sec" id="sec-2">
+    <summary><h2>2. You cannot fire your way to an AI win</h2></summary>
+    <div class="sec-body">
+      <p class="meta-line">Newsletter sent 2026-08-03 &middot; Signal Works (Catalyst Works)</p>
+      <p><strong>Why this one:</strong> Clean contrarian argument (expansion vs. replacement framing) that reads complete on its own, no newsletter mechanics required.</p>
+      <p><img src="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/8deb5cb0-09ca-4f8f-9810-e31d30f9befa/fireway.png?t=1784147005" alt="Header image for: You cannot fire your way to an AI win" style="max-width:100%;border-radius:8px;border:1px solid var(--border);display:block;margin:0 0 14px;" loading="lazy"></p>
+      <p class="meta-line"><a href="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/8deb5cb0-09ca-4f8f-9810-e31d30f9befa/fireway.png?t=1784147005" target="_blank" rel="noopener">Direct link to header image</a></p>
+      <div class="flagbox"><strong>Flags / suggested trims before posting:</strong><ul>
+        <li>Content Board still shows this row as Status: Queued / not yet posted, but the live Beehiiv API confirms it was actually sent 2026-08-03 (status: confirmed) -- flagging the discrepancy rather than silently trusting either source alone.</li>
+        <li>No dated CTA -- safe to post as-is once the closing line is trimmed to a LinkedIn-appropriate sign-off if desired.</li>
+      </ul></div>
+      <p><strong>Copy-ready body</strong> (select all, paste into LinkedIn):</p>
+      <pre class="copybox">The assumption I keep seeing is that AI lets you cut people and pocket the difference. That math rarely survives contact with reality.
+
+Here is what actually happens. A team hands a function to a model. The model handles most cases cleanly. The rest need judgment, context, and the memory of the person who just got let go. Now your operations lead is doing the work the model could not, with none of the original context, and customers are feeling the gap.
+
+I run my own business with AI doing a lot of what I used to do by hand, so I know how it actually goes. Nobody got cut to make my setup exist. The work AI does for me is work I could not do at all before. Outreach at the volume of a small team. Back-office tasks that used to eat my evenings. Checks that catch mistakes before they cost me a weekend.
+
+The expansion story is more honest than the replacement story. AI lets one operator hold ground that used to need a team. It does not let a team shrink by the same headcount and still produce the same output. The arithmetic is not symmetrical, and that is the whole point.
+
+Why does the replacement story keep getting told? It sells consulting, and it gives an executive a clean number for a slide. Fire a group, save the salary, deploy the model, call it transformation. What the slide leaves out is the long tail the model cannot handle, the team quietly absorbing it, and the customer experience slipping while the savings and the costs sit on two different ledgers.
+
+AI is not a cheaper version of headcount. It is a different kind of capacity. The operators who treat it that way keep their people and grow their reach at the same time. The ones who treat it as headcount math end up paying for the model, paying the consultant, and paying their team overtime to cover what the model dropped.
+
+The framing is the strategy. Everything after it is consequence.
+
+That is the work I do at Catalyst Works. I help owners find where AI actually fits, without getting burned. If that is the season you are in, come say hello: catalystworks.consulting
+
+Boubacar
+</pre>
+    </div>
+  </details>
+
+
+  <details class="sec" id="sec-3">
+    <summary><h2>3. The four questions I score before I automate anything</h2></summary>
+    <div class="sec-body">
+      <p class="meta-line">Newsletter sent 2026-07-27 &middot; Signal Works (Catalyst Works)</p>
+      <p><strong>Why this one:</strong> The 880-run automation failure story plus the 4-question scoring framework is exactly the kind of concrete, screenshot-free, standalone insight that performs on LinkedIn.</p>
+      <p><img src="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/a38fc24c-2e51-47e4-9fab-33162fa3aee4/fourquestions.png?t=1784145240" alt="Header image for: The four questions I score before I automate anything" style="max-width:100%;border-radius:8px;border:1px solid var(--border);display:block;margin:0 0 14px;" loading="lazy"></p>
+      <p class="meta-line"><a href="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/a38fc24c-2e51-47e4-9fab-33162fa3aee4/fourquestions.png?t=1784145240" target="_blank" rel="noopener">Direct link to header image</a></p>
+      <div class="flagbox"><strong>Flags / suggested trims before posting:</strong><ul>
+        <li>Content Board row for this issue is marked Status: Archived, but the live Beehiiv API confirms it was actually sent 2026-07-27 (status: confirmed) -- Archived looks like a content-board workflow state, not proof it never went out; noting the discrepancy rather than resolving it silently.</li>
+        <li>The Content Board draft includes a P.S. pitching a July 30 workshop (now past) -- cut that P.S. before posting.</li>
+      </ul></div>
+      <p><strong>Copy-ready body</strong> (select all, paste into LinkedIn):</p>
+      <pre class="copybox">One of my automations ran 880 times before I noticed it had produced nothing.
+
+Green logs. Moving queue. Blank output, every single run, because the source it pulled from had quietly blocked it from day one. Nothing failed loudly, and that was exactly the problem. An automation you trust is an automation you stop watching.
+
+That incident is why nothing in my operation gets automated anymore until it survives four questions:
+
+1. Frequency. How often does the job repeat? Daily beats weekly beats monthly. Repetition is where a handoff compounds.
+
+2. Time drain. How much of the week does it actually eat? Count the small interruptions, they are the expensive part.
+
+3. Rules-clarity. Could you write the steps down so a new hire could follow them? A job that lives only in your head is not ready to hand to a machine.
+
+4. Stakes if rough. If the output came back eighty percent right, is that a quick fix or a damaged client relationship? Your first workflow should be one where a near-miss is cheap.
+
+Score your candidate jobs, five points each, twenty max. The winner is almost never the exciting idea. It is the boring job you could write the manual for. That is what makes it buildable this week.
+
+A tool is a thing you open. A workflow is a thing that runs. Go build one that earns the trust before it gets the keys.
+
+Boubacar
+</pre>
+    </div>
+  </details>
+
+
+  <details class="sec" id="sec-4">
+    <summary><h2>4. AI exposes broken handoffs. It will not fix them.</h2></summary>
+    <div class="sec-body">
+      <p class="meta-line">Newsletter sent 2026-07-20 &middot; Signal Works (Catalyst Works)</p>
+      <p><strong>Why this one:</strong> The seam/handoff framing and the phone-alert anecdote stand alone as a sharp operator insight.</p>
+      <p><img src="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/4ec5a6fe-808d-4e51-8969-a3411fd6054a/handoffs.png?t=1784146885" alt="Header image for: AI exposes broken handoffs. It will not fix them." style="max-width:100%;border-radius:8px;border:1px solid var(--border);display:block;margin:0 0 14px;" loading="lazy"></p>
+      <p class="meta-line"><a href="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/4ec5a6fe-808d-4e51-8969-a3411fd6054a/handoffs.png?t=1784146885" target="_blank" rel="noopener">Direct link to header image</a></p>
+      <div class="flagbox"><strong>Flags / suggested trims before posting:</strong><ul>
+        <li>Body includes a dated "Thursday, July 30" workshop pitch (now past) -- cut that paragraph before posting.</li>
+        <li>Standard newsletter footer (3-things-before-you-go + email signature) -- cut for LinkedIn.</li>
+      </ul></div>
+      <p><strong>Copy-ready body</strong> (select all, paste into LinkedIn):</p>
+      <pre class="copybox">Buying AI before you fix your workflow is like bolting a bigger engine onto a car with no steering.
+
+The bottleneck is almost never the tool. It lives in the seam between two owners. Sales to onboarding. A draft to a reviewer. A finished task to whoever ships it. That is where work disappears, where context dies, and where AI exposes the gap the loudest.
+
+I learned this the hard way in my own business. I had a process that could sort and score incoming work perfectly well. And then nothing happened, because the result landed in a queue I never opened. The handoff from the machine back to me was the whole bottleneck. The model was not the problem. The seam was.
+
+What fixed it was not a smarter model. It was a simple alert on my phone with one button, and a way to actually close the loop when a task was done. Small, boring pieces. Zero new AI.
+
+Most teams drop an AI tool into a broken process and call the broken process a strategy. The tool exposes every gap. It closes none of them. That part is your job.
+
+Here is how to find the broken handoff before AI finds it for you. Walk one task end to end. Not the clean version. The real one. Where does it pause? Who is waiting on whom? Where does a status sit stale for more than a day? That is your seam.
+
+Fix the seam first. Then add the engine. In that order, every time.
+
+Want to find your seam with someone who already made the expensive mistakes? I am teaching AI Without Getting Burned on Thursday, July 30, 7 pm in Sandy. 90 minutes, in person, a limited number of free seats: catalystworks.consulting/ai-checklist
+
+Three things before you go
+
+- Forward this to one business owner who is trying to figure out where AI fits in their business. One forward is more useful to me than ten retweets.
+
+- Was this forwarded to you? Subscribe at signal.catalystworks.consulting. The moment you do, you also get a free scan that shows how visible your business is when people ask AI for a recommendation.
+
+- Reply with one sentence about what is stuck in your week. I read every one and it shapes what ships next.
+
+Boubacar
+I spent over a decade in HR at a Fortune 100. Now I'm a fractional AI leader who helps small businesses put AI to work.
+boubacar@catalystworks.consulting · signal.catalystworks.consulting</pre>
+    </div>
+  </details>
+
+
+  <details class="sec" id="sec-5">
+    <summary><h2>5. I put my name on the door</h2></summary>
+    <div class="sec-body">
+      <p class="meta-line">Newsletter sent 2026-07-15 &middot; Signal Works (Catalyst Works)</p>
+      <p><strong>Why this one:</strong> Personal, specific, dated story (booking the room, the 880-run failure callback) -- exactly the kind of first-person account that reads as only-he-could-write-this.</p>
+      <p><img src="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/555a3234-c5d9-46df-b26f-2da9c67e69d3/namedoor.png?t=1784145047" alt="Header image for: I put my name on the door" style="max-width:100%;border-radius:8px;border:1px solid var(--border);display:block;margin:0 0 14px;" loading="lazy"></p>
+      <p class="meta-line"><a href="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/555a3234-c5d9-46df-b26f-2da9c67e69d3/namedoor.png?t=1784145047" target="_blank" rel="noopener">Direct link to header image</a></p>
+      <div class="flagbox"><strong>Flags / suggested trims before posting:</strong><ul>
+        <li>Ends with a dated "Thursday, July 30" workshop pitch (now past) -- cut before posting.</li>
+        <li>Standard newsletter footer -- cut for LinkedIn.</li>
+      </ul></div>
+      <p><strong>Copy-ready body</strong> (select all, paste into LinkedIn):</p>
+      <pre class="copybox">Two weeks ago I did something that still makes me a little nervous.
+
+I booked a room, put my name on the door, and told people to come watch me use AI live. No slides full of theory. One real job, built in front of them, on their own laptops.
+
+Here is why I stopped waiting.
+
+For months I have leaned on AI to do work I used to do by hand. The outreach. The scheduling. The back-office grind that used to eat my evenings. And it has burned me more than once. One task of mine ran hundreds of times looking perfectly healthy and produced nothing, because the source it pulled from had blocked it on day one and nothing failed loudly.
+
+I did not learn that from a course. I learned it the way you learn anything real. You build one thing, you trust it too soon, and you watch it fail small enough that it costs you a weekend instead of a client.
+
+That is the whole reason this workshop exists. Most people meet AI through a wall of tools and a lot of noise, and they either freeze or they get burned. The way through is not more reading. It is building one real thing, rough at first, with someone in the room who already made the expensive mistakes so you get to make the cheap ones.
+
+One move to make this week, whether or not you can be there. Pick one job you do by hand that repeats every week, that you could write down for a new hire, and where an eighty-percent-right result is a quick fix and not a disaster. That is your first one. Start there.
+
+Boubacar
+</pre>
+    </div>
+  </details>
+
+
+  <details class="sec" id="sec-6">
+    <summary><h2>6. You did not have a tool problem.</h2></summary>
+    <div class="sec-body">
+      <p class="meta-line">Newsletter sent 2026-06-17 &middot; Signal Works (Catalyst Works)</p>
+      <p><strong>Why this one:</strong> The Fortune 100 enterprise-software anecdote plus the tool-hopping-without-losing-a-step point is a solid standalone adoption argument.</p>
+      <p style="border:1px dashed var(--warn);border-radius:8px;padding:12px 14px;color:var(--warn);">No real header image on file for this issue -- Beehiiv's thumbnail is the generic default placeholder. See the flag below.</p>
+      <div class="flagbox"><strong>Flags / suggested trims before posting:</strong><ul>
+        <li>Not logged in the Content Board at all (checked by title and by Beehiiv URL -- no row found), so it carries no cross-post tracking either way; the live Beehiiv send record is the only confirmation this went out (2026-06-17, status: confirmed).</li>
+        <li>No custom header image exists anywhere -- Beehiiv's own thumbnail for this issue is the generic default placeholder, not a real designed asset. Flagging rather than guessing one.</li>
+        <li>The back half is a full paid-event pitch for a June 25 workshop ($47/$97, specific venue) that is long past -- this is more than a one-line CTA swap; cut the entire event block (from "On Thursday June 25..." through the reserve-seat link) before posting, or ask for a rewrite of that section specifically.</li>
+      </ul></div>
+      <p><strong>Copy-ready body</strong> (select all, paste into LinkedIn):</p>
+      <pre class="copybox">Hey friend,
+
+When I was at the Fortune 100, we spent real money on enterprise software. Licenses, training days, rollout plans. Then we watched smart, capable people open the tool once, get confused, and go back to their spreadsheets.
+
+We blamed the tool. Every time.
+
+It was never the tool.
+
+The problem was adoption. Nobody mapped how the change would actually land on the humans who had to live with it. Nobody asked whether the person on the other end was ready. We just bought the thing.
+
+AI is doing the same to small business owners right now.
+
+You are not behind because you picked the wrong model. The gap is not technical. It is the missing layer between "this exists" and "this actually works in my business, under my name." You have an adoption problem.
+
+I moved from ChatGPT to Gemini to Claude, and other tools since. Never lost a step. Because what I kept was not the product. It was how I think about what to delegate, what to verify, and what to never let out without a human eye on it first.
+
+That thinking travels. To whatever tool comes next.
+
+On Thursday June 25 in Sandy, I am teaching it in a room.
+
+Ninety minutes, hands on keyboards. You leave with three tools you built yourself that night.
+
+A framework for pressure-testing any decision with five angles at once. A filter for catching when AI is about to make your work more complicated than it needs to be. And a one-page document that teaches any AI tool your business before you type your first prompt.
+
+They live in your account. You own them. They move with you.
+
+Not a slide deck. Not a replay. Things that work Monday.
+
+Karen Gail Miller Conference Center, SLCC Miller Campus, Room 105, Sandy.
+
+Thursday June 25, 7:00 to 8:30 pm.
+
+$47 presale. $97 at the door.
+
+Small room on purpose.
+
+Reserve your seat: catalystworks.consulting/w/nl
+
+Boubacar</pre>
+    </div>
+  </details>
+
+
+  <details class="sec" id="sec-7">
+    <summary><h2>7. Your AI is pointed at the wrong link.</h2></summary>
+    <div class="sec-body">
+      <p class="meta-line">Newsletter sent 2026-06-11 &middot; Signal Works (Catalyst Works)</p>
+      <p><strong>Why this one:</strong> The Conakry power-outage story anchoring the theory-of-constraints argument is a genuine only-he-could-write-this piece with no newsletter-only mechanics in it at all.</p>
+      <p><img src="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/11008c15-ac3a-472a-bf3a-b539bd1d7c56/iss4-card.png?t=1781203390" alt="Header image for: Your AI is pointed at the wrong link." style="max-width:100%;border-radius:8px;border:1px solid var(--border);display:block;margin:0 0 14px;" loading="lazy"></p>
+      <p class="meta-line"><a href="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/11008c15-ac3a-472a-bf3a-b539bd1d7c56/iss4-card.png?t=1781203390" target="_blank" rel="noopener">Direct link to header image</a></p>
+      <div class="flagbox"><strong>Flags / suggested trims before posting:</strong><ul>
+        <li>Clean as-is -- no dated CTA, no footer block in this version. Ready to post with at most a "Until next week" sign-off tweak.</li>
+      </ul></div>
+      <p><strong>Copy-ready body</strong> (select all, paste into LinkedIn):</p>
+      <pre class="copybox">Growing up in Conakry, the power cut out most days. The surges and outages killed appliances constantly, and replacing them cost money we did not have. So you learned to open the thing up, find the one part that had actually failed, and fix that part. Not the whole machine. The broken piece. New things were expensive. Diagnosis was free.
+
+I think about that every time I watch someone buy another AI tool.
+
+A leader wires a shiny new model into the process they already run, and waits. Six months later the team is frustrated, the number has not moved, and everyone blames the model.
+
+The model is usually fine. The map is wrong.
+
+Every operation is a chain. Work flows from one step to the next, and somewhere in that chain one link does all the waiting: a handoff where work piles up, a step where the customer quietly gives up. Eli Goldratt called that link the constraint, and he showed something most people never quite believe. The constraint is the only place where improvement moves the whole system. Fix anywhere else and you are polishing a link that was never the problem.
+
+AI does not change that math. It amplifies whatever you point it at.
+
+Which means a wrongly aimed AI is not neutral. It is worse than what you had before, because now the stuck system runs faster and looks productive.
+
+Point it at the constraint and you get real speed. Point it at a link that was already fine and you get a faster version of the same stuck system. And if the process was broken before AI ever arrived, you get confident garbage, delivered quicker than before.
+
+So here is the one question. Ask it before any tool, any automation, any purchase. Answer it without naming a single piece of technology:
+
+Where does work wait the longest before it moves?
+
+Not where people look busy, and not where it feels slow. Where the work itself sits, untouched, before someone picks it up and carries it forward. That is your constraint. That is where AI belongs. Everything else is expensive decoration.
+
+It is the same instinct from that house in Conakry with no power, moved into a company with a budget. The instinct travels. The price tag is the only thing that changes.
+
+This week: pick one process your team runs more than twice a week. Walk it end to end, slowly, and find where it stops. Then point your attention there, before you point your money anywhere. Diagnosis is still free.
+
+Until next week,
+Boubacar
+</pre>
+    </div>
+  </details>
+
+
+  <details class="sec" id="sec-8">
+    <summary><h2>8. Before You Buy Another AI Tool, Read This</h2></summary>
+    <div class="sec-body">
+      <p class="meta-line">Newsletter sent 2026-04-29 &middot; Signal Works (Catalyst Works)</p>
+      <p><strong>Why this one:</strong> The 80%-of-AI-projects-fail stat plus the diagnose-before-you-buy argument reads as a complete, sourced standalone piece.</p>
+      <p><img src="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/7303d5a7-ab8f-4b9c-ae1e-cab443b61e01/thumbnail_gpt2.png?t=1777427810" alt="Header image for: Before You Buy Another AI Tool, Read This" style="max-width:100%;border-radius:8px;border:1px solid var(--border);display:block;margin:0 0 14px;" loading="lazy"></p>
+      <p class="meta-line"><a href="https://beehiiv-images-production.s3.amazonaws.com/uploads/asset/file/7303d5a7-ab8f-4b9c-ae1e-cab443b61e01/thumbnail_gpt2.png?t=1777427810" target="_blank" rel="noopener">Direct link to header image</a></p>
+      <div class="flagbox"><strong>Flags / suggested trims before posting:</strong><ul>
+        <li>Swap "Reply to this email" -&gt; a LinkedIn comment ask.</li>
+        <li>No dated event references -- otherwise ready as-is.</li>
+      </ul></div>
+      <p><strong>Copy-ready body</strong> (select all, paste into LinkedIn):</p>
+      <pre class="copybox">Hey friend,
+
+You saw a demo. You got excited. You bought the tool. And now six months later you are paying for software your team barely uses.
+
+That is the pattern. It is playing out across companies right now, and it is costing people real money.
+
+Here is how it happens. Someone hears about AI and goes looking for what to apply it to. Suddenly every problem in the business looks like it could be solved by an AI tool. The hiring process. The customer support backlog. The reporting. The onboarding. Pick your pain point and there is a vendor ready to sell you the AI solution for it.
+
+The problem is not the excitement. The problem is starting with the tool and working backwards to the problem. When you do that, you skip the one step that actually matters: figuring out what is broken and why.
+
+Let's Also Name What AI Actually Is
+
+A lot of what gets sold as AI right now is not AI. It is automation. Rule-based logic. If-this-then-that workflows with a language model bolted on for the pitch deck.
+
+That is not a criticism of automation. Automation is genuinely useful. But if you are paying AI prices for automation value, and skipping the root cause work that would tell you which one you actually need, you are getting hit twice.
+
+What the Numbers Actually Tell You
+
+More than 80% of AI projects fail. That is twice the failure rate of regular IT projects. And 48% of C-suite executives now call AI adoption a "massive disappointment" on ROI, up from 34% just last year.
+
+But here is what those numbers do not say: most of those projects were not killed by bad AI. They were killed by processes that were already broken before the AI showed up. The AI just made the failure more expensive and more visible.
+
+If your customer support team is overwhelmed because your product has a confusing onboarding flow, an AI chatbot does not fix that. It automates the confusion. If your sales reporting is a mess because nobody agreed on definitions three years ago, an AI analytics layer does not fix that.
+
+It just produces faster wrong answers.
+
+One Thing to Do This Week
+
+Before you greenlight any new AI purchase, answer this question without mentioning technology: what exact problem am I solving, and why does it exist?
+
+If you cannot answer that clearly, you are not ready to buy. You are ready to diagnose.
+
+That is where the real work starts. Reply to this email and tell me what you are trying to solve. I read every reply.
+
+Until next week,
+Boubacar</pre>
+    </div>
+  </details>
+
+
+  <details class="sec" id="sec-9">
+    <summary><h2>9. Revenue is up. That is the problem.</h2></summary>
+    <div class="sec-body">
+      <p class="meta-line">Newsletter sent 2026-04-21 &middot; Signal Works (Catalyst Works)</p>
+      <p><strong>Why this one:</strong> The structured VERDICT/SCENE/MECHANISM/TELL/SIGNAL format tells a complete, self-contained diagnostic story about owner-as-bottleneck margin problems -- strongest standalone candidate in the batch.</p>
+      <p style="border:1px dashed var(--warn);border-radius:8px;padding:12px 14px;color:var(--warn);">No real header image on file for this issue -- Beehiiv's thumbnail is the generic default placeholder. See the flag below.</p>
+      <div class="flagbox"><strong>Flags / suggested trims before posting:</strong><ul>
+        <li>No header image on file anywhere -- Beehiiv's thumbnail for this issue is the generic default placeholder, and the Content Board row (Drive Link / Generated Media both empty) has nothing either. Needs a header image generated or sourced before this goes out with art.</li>
+        <li>Swap "Reply and tell me what your number is" -&gt; a LinkedIn comment ask.</li>
+      </ul></div>
+      <p><strong>Copy-ready body</strong> (select all, paste into LinkedIn):</p>
+      <pre class="copybox">THE VERDICT
+
+Your revenue grew. Your margin did not. The problem is not your pricing. It is the
+person whose name appears on every deliverable before it goes to the client.
+
+That person is probably you.
+
+THE SCENE
+
+Picture this:
+
+Professional services firm. Eight people. Three years of 20% growth.
+
+The owner had done everything right. Hired carefully. Built a process. Brought in a
+project manager specifically to take things off his plate.
+
+Margin: flat for two years.
+
+He had already raised rates. Twice. Nothing moved.
+
+One question cuts through it: who reviewed the last five deliverables before they
+went to the client?
+
+The answer is almost always the same.
+
+"Me."
+
+"Every one?"
+
+"Every one."
+
+He was not a control freak. His team had simply learned to wait. His review was the
+gate. His calendar was the bottleneck. The business had grown around him without
+anyone noticing that he hadn't.
+
+THE MECHANISM
+
+Here is what this looks like from inside.
+
+Revenue grows. The owner's available hours do not. Work piles up behind the one
+person whose sign-off the whole system requires. The team finishes at full speed.
+Then they wait. Projects that are 95% complete sit in a queue until a window opens.
+The window comes late. The client feels it. The delay gets absorbed into delivery
+time. Margin takes the hit.
+
+Nobody names it because it does not look like a structural problem. It looks like a
+busy owner. The accountant sees a growing revenue line with a flat margin and
+suggests raising rates. The coach sees stress and suggests delegation. The project
+manager builds a better tracker.
+
+None of it works. You cannot organize your way out of a capacity constraint. You can
+only move it.
+
+This is not a character flaw. It is a system that was never designed to run without
+you. The fix is to design it so it can.
+
+That means two things. First: define what a finished deliverable looks like in
+writing, with enough specificity that someone other than you can make the call.
+Second: give someone the authority to make it.
+
+That is not a loss of control. It is the difference between standards that live in
+your head and standards that live in a document anyone can apply.
+
+THE TELL
+
+Pull your last ten client deliverables. For each one, write down who touched it
+before it went out.
+
+Count how many have your name.
+
+If the answer is more than half, you are the constraint. The question is not whether
+your standards are too high. The question is whether anyone else knows what they are.
+
+THE SIGNAL
+
+This is one of the most predictable structural problems in professional services
+firms that have grown past their first three years. It rarely gets named. Owners
+feel the pressure. They hire into it. They raise rates around it. The constraint
+stays.
+
+Reply and tell me what your number is. I read every one.
+
+If you know an operator who suspects the problem is structural but cannot name it,
+forward this. That is the whole pitch.
+
+Boubacar Barry
+Catalyst Works Consulting | catalystworks.consulting
+
+Most consultants bring frameworks. I bring a diagnosis.</pre>
+    </div>
+  </details>
+
+
+  
+  <details class="sec" id="sec-excluded">
+    <summary><h2>Excluded: The operator stack, not another course</h2></summary>
+    <div class="sec-body">
+      <p class="meta-line">Newsletter sent 2026-05-20 &middot; Signal Works (Catalyst Works)</p>
+      <p><strong>Why excluded:</strong> Structured as a weekly product-roundup newsletter -- a priced SKU list ($27/$79/$297) with buy links, a curated "what I'm reading" section, and forward/subscribe asks. It doesn't read as a standalone piece; making it work on LinkedIn would need a real rewrite of the whole shape, not a mechanical CTA swap, so it's excluded rather than force-fit.</p>
+    </div>
+  </details>
+
+
+  <footer class="foot">
+    Sourced live from the Beehiiv API (post content + thumbnail_url) and the Notion Content Board
+    (post status, LinkedIn Posted URL field, header asset tracking) on 2026-08-24. No copy has been
+    rewritten -- bodies are exact published text. Flags note suggested mechanical trims only.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #5fb3ff;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
