@@ -59,9 +59,26 @@ $endMarker   = "<!-- REVIEW_FURNITURE_END -->"
 # Everything below is one self-contained block: no external CSS, no external JS, no fonts,
 # no network. Review pages must stand alone -- they get opened from a phone on bad hotel
 # wifi, and a shared include that 404s would take the back-to-top button down with it.
+#
+# NO-BLUE-LINKS SAFETY NET (2026-08-25, 5th violation of the standing rule -- see
+# memory/feedback_no_blue_text_on_dark_background_except_hyperlinks_2026_07_21.md).
+# scripts/templates/review-page-template.html now ships a correct base `a{color}` rule,
+# but furniture injection runs on EVERY publish including pages that did NOT start from
+# that template (hand-written pages, pages copy-pasted from an older page, pages built by
+# an agent that skipped the template). This block is the backstop for those: it uses
+# `:where(...)` so its specificity is ZERO -- lower than a plain `a` selector (0,0,1) --
+# so it NEVER overrides a page's own intentional link colour, including a non-terracotta
+# accent a page chose on purpose. It only fires when nothing else in the page's cascade
+# claims the anchor at all, which is exactly the failure mode this rule exists to close
+# (an unstyled `<a>` falling back to browser-default blue rgb(0,0,238)).
 $block = @"
 $startMarker
 <style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored `a{color:...}` rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
   /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
      deploy stamp (which moves to bottom-LEFT under 560px). */
   #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
