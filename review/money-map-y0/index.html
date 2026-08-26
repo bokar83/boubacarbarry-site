@@ -1635,9 +1635,29 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   // ---- local cache of remote state: item_id -> value ----
   var state = {};
 
+  // ---- when each item was last written (item_id -> ISO string) -----------
+  // Added 2026-08-26 for the "done today" count. The board row already
+  // carries updated_at; the page was throwing it away on hydrate, which is
+  // why nothing could tell what was finished TODAY as opposed to what is
+  // finished and happens to sit on today's list. Nothing is written to the
+  // database for this -- it is the row's own stamp, read and kept.
+  var stateTs = {};
+  // Whether the board was actually READ. A count of 0 from an unread board is
+  // a lie, so the counter says so instead of printing a number.
+  var REMOTE_OK = false;
+
   // ---- helpers ----
   function lsGet(k){ try { return localStorage.getItem(LS + k); } catch(e){ return null; } }
   function lsSet(k, v){ try { localStorage.setItem(LS + k, v); } catch(e){} }
+  function tsGet(k){
+    if (stateTs[k]) return stateTs[k];
+    try { return localStorage.getItem(LS + '__ts__' + k); } catch(e){ return null; }
+  }
+  function tsSet(k, iso){
+    if (!iso) return;
+    stateTs[k] = iso;
+    try { localStorage.setItem(LS + '__ts__' + k, iso); } catch(e){}
+  }
 
   // ---- date helpers ----
   // v5 fix: dkey was UTC (toISOString), so evening logs after 6pm MT landed on
@@ -1757,6 +1777,10 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   function persist(item, value){
     state[item] = value;
     lsSet(item, value);
+    // Stamp it locally the moment he ticks it, so a box he checks right now
+    // counts as done TODAY without waiting for a reload to read updated_at
+    // back off the board.
+    tsSet(item, new Date().toISOString());
     if (!sb){
       setSync('error', 'Not saving');
       setSaveFailure(item, 'the database client never loaded on this page', true);
@@ -2227,6 +2251,51 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     if (v === undefined || v === null) v = lsGet(doneKey(id));
     return v === '1';
   }
+  // ---- WHAT WAS ACTUALLY FINISHED TODAY (2026-08-26) --------------------
+  // The bug this closes, in plain language: the header used to say "0 of 24
+  // done" and he read that as "nothing done today", which was false. That
+  // number only ever counted rows DATED today. Everything he finishes that
+  // was carried over from an earlier day drops OUT of today's list the
+  // instant it is ticked (rollover deliberately stops rolling a done row),
+  // so ticking a carried-over item could never move the number up -- it took
+  // the row out of the numerator and the denominator at the same time. Nine
+  // real completions on 2026-08-26 rendered as zero.
+  //
+  // This counts the honest, narrow thing: DONE-MARKERS THAT WERE FLIPPED ON
+  // TODAY, read off the row's own updated_at. A note, a rank change, or an
+  // edit to a row's text is NOT a completion and is not counted here.
+  //
+  // Two storage conventions exist and both are handled: hand-written seed
+  // rows carry their tick on the row itself, everything else carries it on a
+  // done-<id> row. Counted once per underlying item either way.
+  function sameLocalDay(iso, todayKey){
+    if (!iso) return false;
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return false;
+    return dkey(d) === todayKey;
+  }
+  function doneTodayIds(){
+    var today = dkey(new Date()), seen = {};
+    Object.keys(state).forEach(function(k){
+      if (state[k] !== '1') return;
+      var base = null;
+      if (k.indexOf('done-') === 0) base = k.slice(5);
+      else if (SEED_BY_ID[k] && !SEED_BY_ID[k].daily) base = k;
+      if (!base) return;
+      if (!sameLocalDay(tsGet(k), today)) return;
+      seen[base] = true;
+    });
+    return Object.keys(seen);
+  }
+  function doneTodayCount(){ return doneTodayIds().length; }
+  // One wording, used by the first paint and by every tick after it, so the
+  // header and the live update can never disagree.
+  function countLine(doneT, doneOnList, listLen){
+    if (!REMOTE_OK) return 'count unavailable, board not read';
+    var a = doneT + ' done today';
+    return listLen ? (a + ' · ' + doneOnList + ' of ' + listLen + ' on this list') : a;
+  }
+
   function prettyDate(ds){
     var p = ds.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2]);
     var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
@@ -2538,9 +2607,10 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     var dates = Object.keys(byDay).sort();
     if (todayHost){
       var doneN = mine.filter(function(r){ return isDone(r.id); }).length;
+      var doneT = doneTodayCount();
       var dEl = document.getElementById('taDate'), cEl = document.getElementById('taCount');
       if (dEl) dEl.textContent = prettyDate(today);
-      if (cEl) cEl.textContent = mine.length ? (doneN + ' of ' + mine.length + ' done') : '';
+      if (cEl) cEl.textContent = countLine(doneT, doneN, mine.length);
 
       var futureD = dates.filter(function(d){ return d > today; });
       var pastD   = dates.filter(function(d){ return d < today; }).reverse();
@@ -2566,8 +2636,18 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       } else {
         var rolledN = mine.filter(function(r){ return r.rolledFrom; }).length;
         thtml += '<div class="ta-todayhead">Today &middot; ' + rlEsc(prettyDate(today)) +
-                 ' &middot; <b>' + doneN + ' of ' + mine.length + ' done</b>, in ' +
+                 ' &middot; <b>' + doneT + ' done today</b> &middot; <b>' + doneN + ' of ' + mine.length +
+                 '</b> ticked on the list below, which is in ' +
                  'sections by the kind of work, so you do one type at a time instead of jumping between them.</div>';
+        // The two numbers are different on purpose and the difference is the
+        // thing that used to be invisible: anything finished today that was
+        // carried over from an earlier day counts in the first number and
+        // then leaves this list, back to the day it was due.
+        if (doneT > doneN){
+          thtml += '<div class="ta-sub" style="margin:0 0 0.55rem;font-size:0.76rem;">' +
+                   '<b>' + (doneT - doneN) + ' of the ' + doneT + ' you finished today</b> came from an earlier day, ' +
+                   'so they are counted above and have moved back into their own day below rather than staying on this list.</div>';
+        }
         if (rolledN){
           thtml += '<div class="ta-sub" style="margin:0 0 0.55rem;font-size:0.76rem;">' +
                    '<b>' + rolledN + ' of these rolled over</b> because they were not ticked on the day they were due. They will keep coming back here every day, with the count of days climbing, until you either do them or write a note saying why you will not. Nothing gets to go quiet on its own.</div>';
@@ -2650,7 +2730,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     var rows = todayRows();
     var done = rows.filter(function(r){ return isDone(r.id); }).length;
     var cEl = document.getElementById('taCount');
-    if (cEl) cEl.textContent = rows.length ? (done + ' of ' + rows.length + ' done') : '';
+    if (cEl) cEl.textContent = countLine(doneTodayCount(), done, rows.length);
     refreshGroupCounts();
   }
 
@@ -3171,7 +3251,8 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       if (r.updated_at && (newest === null || r.updated_at > newest)) newest = r.updated_at;
     });
     setFreshness(newest, rows.length);
-    rows.forEach(function(r){ state[r.item_id] = r.value; lsSet(r.item_id, r.value); applyToDom(r.item_id, r.value); });
+    REMOTE_OK = true;
+    rows.forEach(function(r){ state[r.item_id] = r.value; lsSet(r.item_id, r.value); tsSet(r.item_id, r.updated_at); applyToDom(r.item_id, r.value); });
     // goal target
     var gt = state['goal-target'];
     if (gt){ var num = document.querySelector('.goal .g-num span'); if (num) num.textContent = '$' + gt; }
@@ -3200,7 +3281,9 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
             function(payload){
               var row = payload.new || payload.old; if (!row) return;
               var item = row.item_id, value = (payload.eventType === 'DELETE') ? '' : row.value;
-              state[item] = value; lsSet(item, value); applyToDom(item, value);
+              state[item] = value; lsSet(item, value);
+              tsSet(item, row.updated_at || new Date().toISOString());
+              applyToDom(item, value);
               // A live write is the newest row by definition; move the
               // freshness line with it so it never lags behind the board.
               setFreshness((row.updated_at || new Date().toISOString()), Object.keys(state).length);
