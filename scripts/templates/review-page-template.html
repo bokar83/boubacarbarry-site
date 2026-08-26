@@ -125,6 +125,28 @@
     padding:1px 5px; font-size:.86em;}
   pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
     padding:12px 14px; overflow-x:auto;}
+
+  /* ---- copy-and-paste blocks -------------------------------------------------------
+     ANY block he is meant to copy-paste (a message, a comment, a subject line) uses
+     this pattern, not a bare <pre>. He reads these on his phone; a code box he cannot
+     one-tap copy costs him more than the draft saves. Markup:
+       <div class="copy-wrap">
+         <pre class="copy">one unbroken line per paragraph, never manually wrapped --
+     a forced line break pastes as a literal break and corrupts what he sends</pre>
+         <button type="button" class="copy-btn">Copy</button>
+       </div>
+     The button is wired up automatically by the copy-to-clipboard script near the
+     bottom of this file -- do not write a per-button onclick, just use the markup. */
+  pre.copy{white-space:pre-wrap; word-break:break-word; font-size:.9rem; line-height:1.6;
+    margin:0;}
+  .copy-wrap{position:relative; margin:0 0 12px;}
+  .copy-btn{display:inline-flex; align-items:center; gap:6px; margin-top:8px;
+    font-size:.82rem; font-weight:650; color:var(--accent); background:var(--bg2);
+    border:1px solid var(--accent); border-radius:8px; padding:8px 14px; cursor:pointer;
+    min-height:38px; -webkit-tap-highlight-color:transparent;}
+  .copy-btn:hover{opacity:.85;}
+  .copy-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .copy-btn.copied{color:var(--good); border-color:var(--good);}
   table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
   th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
   th{background:var(--bg2); color:var(--text-dim);}
@@ -240,6 +262,84 @@
     if (!a) { return; }
     var t = document.getElementById(a.getAttribute('href').slice(1));
     if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  // Tap-to-copy for every .copy-wrap block. Phone-first: navigator.clipboard.writeText is
+  // the primary path, a document.execCommand('copy') fallback covers older/locked-down
+  // mobile browsers, and both are wrapped in try/catch so a copy that cannot succeed fails
+  // LOUD (button flips to "Copy failed, select text above") rather than silently doing
+  // nothing -- a button that looks like it worked and did not is worse than no button.
+
+  function legacyCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    ta.style.left = '-1000px';
+    ta.setAttribute('readonly', '');
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    var ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch (e) {
+      ok = false;
+    }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function flip(btn, label, cls, revertLabel) {
+    var original = revertLabel || btn.textContent;
+    btn.textContent = label;
+    if (cls) { btn.classList.add(cls); }
+    setTimeout(function () {
+      btn.textContent = original;
+      if (cls) { btn.classList.remove(cls); }
+    }, 2000);
+  }
+
+  function onCopyClick(btn) {
+    var wrap = btn.closest('.copy-wrap');
+    var pre = wrap && wrap.querySelector('pre.copy');
+    if (!pre) { return; }
+    var text = pre.textContent || '';
+    var original = btn.textContent;
+
+    function ok() { flip(btn, 'Copied', 'copied', original); }
+    function fail() { flip(btn, 'Copy failed, select text above', null, original); }
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(ok, function () {
+          try {
+            legacyCopy(text) ? ok() : fail();
+          } catch (e2) {
+            fail();
+          }
+        });
+        return;
+      }
+    } catch (e) {
+      // fall through to legacy path
+    }
+
+    try {
+      legacyCopy(text) ? ok() : fail();
+    } catch (e3) {
+      fail();
+    }
+  }
+
+  Array.prototype.slice.call(document.querySelectorAll('.copy-btn')).forEach(function (btn) {
+    btn.addEventListener('click', function () { onCopyClick(btn); });
   });
 })();
 </script>
