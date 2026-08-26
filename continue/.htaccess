@@ -1,9 +1,18 @@
-# Continue? -- every request under /continue/ goes through the gate.
+# Continue -- every request through this directory goes through the gate.
 #
-# The web server serves NOTHING in this tree directly. That is the point: the
-# first generation of this pattern on /review/ was a CSS panel that hid a
-# document the server had already sent in full, and a plain fetch returned all
-# 214,446 bytes of it. gate.php decides, then readfile()s.
+# This directory is the document root for TWO subdomains, python.boubacarbarry.com
+# and continue.boubacarbarry.com (both point their Hostinger vhost root_directory
+# at this same physical folder, so there is exactly one copy of the app to keep
+# in sync). It is also still physically reachable at the old path,
+# boubacarbarry.com/continue/, because a Hostinger subdomain vhost does not
+# remove a folder from its parent domain's own docroot -- so the FIRST rule
+# below redirects that old apex path out to the subdomain rather than letting
+# it fall through to the gate under a prefix the gate no longer expects.
+#
+# The web server serves NOTHING in this tree directly otherwise. That is the
+# point: the first generation of this pattern on /review/ was a CSS panel that
+# hid a document the server had already sent in full, and a plain fetch
+# returned all 214,446 bytes of it. gate.php decides, then readfile()s.
 #
 # Same shape as review/.htaccess and profit-and-purpose/.htaccess, with its own
 # key file and its own cookie, so no two gates on this domain share a secret and
@@ -18,7 +27,15 @@
 # which is the correct direction to fail.
 
 RewriteEngine On
-RewriteBase /continue/
+
+# Old apex path -> new subdomain. Runs before anything else, unconditionally,
+# for any request that still arrives on the apex host (boubacarbarry.com or
+# www.boubacarbarry.com) rather than on one of the two subdomains. Preserves
+# the trailing path so a bookmarked deep link still resolves.
+RewriteCond %{HTTP_HOST} ^(www\.)?boubacarbarry\.com$ [NC]
+RewriteRule ^(.*)$ https://python.boubacarbarry.com/$1 [R=301,L]
+
+RewriteBase /
 
 # Force TLS before anything else. The session cookie is Secure, so over plain
 # HTTP the gate would render the login form, take the passphrase in cleartext,

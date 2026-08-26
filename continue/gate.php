@@ -1,15 +1,20 @@
 <?php
 /**
- * Continue? -- server-side passphrase gate for boubacarbarry.com/continue/.
+ * Continue -- server-side passphrase gate for python.boubacarbarry.com and
+ * continue.boubacarbarry.com (two subdomains, one physical directory: both
+ * Hostinger vhosts point their root_directory at this same folder, so there
+ * is exactly one copy of the app and one gate to keep in sync).
  *
- * DEPLOYED AS A PATH, NOT A SUBDOMAIN, and that is deliberate. The two gates
- * already live on this domain (/review/ and /profit-and-purpose/) are paths on
- * boubacarbarry.com, deployed by the same git-push-to-Hostinger pipeline that
- * carries the rest of the site. A subdomain would need a DNS record created by
- * hand in a control panel before a single byte could ship, and would buy
- * nothing this gate does not already have. So the key file, the cookie path and
- * the served root are all scoped to THIS DIRECTORY rather than to a document
- * root, which is the only structural difference from the subdomain draft.
+ * DEPLOYED AS A SUBDOMAIN ROOT, not a path, per Boubacar's direct instruction
+ * 2026-08-26 (this superseded an earlier path-only build the same week). The
+ * old apex path, boubacarbarry.com/continue/, is redirected out to
+ * python.boubacarbarry.com by the FIRST rule in .htaccess before it can ever
+ * reach this file, so DOJO_PREFIX below is the subdomain root, not a
+ * directory prefix. The key file, the cookie path and the served root are
+ * still all scoped to THIS DIRECTORY rather than to Apache's own
+ * DOCUMENT_ROOT, because DOCUMENT_ROOT is whatever the server says it is
+ * while __DIR__ is where this file actually sits -- true under either
+ * routing shape.
  *
  * Same mechanism as the two gates already live on this domain (/review/ and
  * /profit-and-purpose/), pointed at its own key file so no two gates ever share
@@ -48,11 +53,12 @@ declare(strict_types=1);
 const DOJO_NAME            = 'Continue';
 
 /**
- * The one URL path this gate owns. Every absolute reference below is built from
- * this, so moving the directory means changing this line and the RewriteBase in
- * .htaccess, and nothing else.
+ * The one URL path this gate owns. '/' because this directory IS the document
+ * root of both subdomains -- there is no path prefix to strip. Every absolute
+ * reference below is built from this, so moving the directory means changing
+ * this line and the RewriteBase in .htaccess, and nothing else.
  */
-const DOJO_PREFIX          = '/continue/';
+const DOJO_PREFIX          = '/';
 
 const DOJO_COOKIE          = 'continue_session';
 const DOJO_SESSION_SECONDS = 5 * 24 * 60 * 60;  // five days, matching the pnp gate
@@ -461,10 +467,10 @@ function dojo_serve(string $requested): void
         dojo_503();
     }
 
-    // The request arrives as /continue/<something>. Strip the prefix this gate
-    // owns before resolving against its own directory, or /continue/app.js
-    // would be looked up as continue/continue/app.js and fall through to the
-    // SPA shell for every asset.
+    // The request arrives as /<something> at the subdomain root. DOJO_PREFIX
+    // is '/' so this strip is a no-op beyond the leading slash, kept only so
+    // this function still behaves correctly if DOJO_PREFIX is ever repointed
+    // at a real directory prefix again.
     $rel = (string) (parse_url($requested, PHP_URL_PATH) ?: '/');
     if (strncmp($rel, DOJO_PREFIX, strlen(DOJO_PREFIX)) === 0) {
         $rel = substr($rel, strlen(DOJO_PREFIX));
@@ -576,10 +582,10 @@ if (PHP_SAPI === 'cli') {
 }
 
 // Every asset in index.html is a RELATIVE url (vendor/..., app.js), and Pyodide
-// is handed a relative indexURL too. At /continue those resolve against the
-// domain root and every one of them 404s; at /continue/ they resolve
-// correctly. Apache's own trailing-slash redirect cannot be relied on here
-// because .htaccess rewrites the path into this file first, so make it explicit.
+// is handed a relative indexURL too. Those resolve correctly against a
+// subdomain root ('/'), which is what DOJO_PREFIX is now, so this check is
+// effectively dead at the subdomain root -- kept as a harmless no-op in case
+// DOJO_PREFIX is ever repointed at a real directory prefix again.
 $reqPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
 if ($reqPath === rtrim(DOJO_PREFIX, '/')) {
     dojo_security_headers();
