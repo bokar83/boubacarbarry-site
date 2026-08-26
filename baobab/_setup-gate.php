@@ -47,12 +47,23 @@ if ($remote !== DOJO_INSTALLER_ALLOWED_IP) {
 // and untouched by the Hostinger clean-replace deploy.
 $keyPath = dirname(__DIR__, 2) . '/.baobab-gate-key.php';
 
-if (file_exists($keyPath)) {
-    // Refuse rather than overwrite. An installer that silently rotates the key
-    // is an installer that can lock him out of his own tool.
+// Overwriting is possible but never accidental. An installer that silently
+// rotates the key is an installer that can lock him out of his own tool, so the
+// caller has to say `rotate=1` and mean it. Without that it still refuses, which
+// is the behaviour the first install relies on.
+//
+// A rotation replaces BOTH halves of the key: the passphrase hash and the
+// signing secret. That is deliberate and it has a consequence worth knowing
+// before pressing it -- every live session cookie and every API token stops
+// verifying at once, and the new DOJO_SESSION_SECRET printed below has to reach
+// the Supabase secret store or every Edge Function call starts failing.
+$rotate = ($_POST['rotate'] ?? '') === '1';
+if (file_exists($keyPath) && !$rotate) {
     http_response_code(409);
     echo "key already exists; refusing to overwrite\n";
-    echo "to rotate: delete the key file by hand, then run this again\n";
+    echo "to rotate deliberately, POST again with -d 'rotate=1'\n";
+    echo "note: rotating invalidates every live session AND changes\n";
+    echo "DOJO_SESSION_SECRET, which must then be updated on Supabase\n";
     exit;
 }
 
