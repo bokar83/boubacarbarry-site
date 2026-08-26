@@ -69,6 +69,7 @@
     .stale-banner.warn { border-color: var(--amber-border); background: var(--amber-soft); color: var(--amber); }
     .stale-banner.warn b { color: var(--amber); }
     .stale-banner[hidden] { display: none; }
+    .notes-alarm { margin-top: 0.55rem; }
 
     /* TODAY'S ACTIONS -- clickable dated rows, added 2026-08-19 (v6) */
 
@@ -637,6 +638,11 @@
     <span class="sync" id="syncPill"><span class="dot"></span><span id="syncText">Connecting</span></span>
     <span class="freshness" id="freshness" data-state="loading">Checking the board&hellip;</span>
     <div class="stale-banner" id="staleBanner" hidden></div>
+    <!-- Notes read/write alarm. Its own element on purpose: the stale-banner
+         above is owned by the board-freshness + save-failure logic, and a
+         notes failure must never be able to overwrite, or be overwritten by,
+         a board failure. Both are data loss and both have to stay on screen. -->
+    <div class="stale-banner notes-alarm" id="notesAlarm" hidden></div>
   </header>
 
   <nav class="mini" id="jumpnav" aria-label="Jump">
@@ -2243,16 +2249,63 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     try { return new Date(iso).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); }
     catch(e){ return String(iso).slice(0, 16).replace('T', ' '); }
   }
-  function loadNotes(){
+  // The notes read used to trust ANY response body it could parse as JSON.
+  // A 401 from the wrong upstream answers with {"error":"Unauthorized"}, which
+  // parses fine, has no .notes key, and so emptied NOTES and set
+  // notesLoaded = true -- every panel then rendered "No notes yet on this
+  // one." That is the exact silent failure this page exists to prevent: his
+  // notes were safe in the database the whole time and the screen told him
+  // they were gone. A read is now only believed when the transport succeeded
+  // AND the server said ok, and a failed read never touches NOTES.
+  var notesAlarmEl = null;
+  function notesAlarm(html){
+    if (!notesAlarmEl) notesAlarmEl = document.getElementById('notesAlarm');
+    if (!notesAlarmEl) return;
+    if (!html){ notesAlarmEl.hidden = true; notesAlarmEl.innerHTML = ''; return; }
+    notesAlarmEl.innerHTML = html;
+    notesAlarmEl.hidden = false;
+  }
+  function noteReadFailed(reason){
+    notesLoaded = false;
+    notesReadError = reason || 'unknown reason';
+    notesAlarm('<b>YOUR NOTES COULD NOT BE READ. THIS PAGE IS NOT SHOWING ALL OF THEM.</b>' +
+      'The notes store did not answer properly (' + rlEsc(notesReadError) + '), so every Notes button below is ' +
+      'showing an incomplete or empty list. <b style="display:inline;font-size:inherit">Nothing has been deleted</b> -- ' +
+      'notes you saved before are still in the database, this screen just cannot see them right now. ' +
+      'Do not re-type a note you already wrote. Reload the page. If this message comes back, the notes path is broken and needs fixing before you rely on this page.');
+  }
+  var notesReadError = null;
+
+  function loadNotes(attempt){
+    attempt = attempt || 1;
     return fetch(NOTES_API + '/state?page_slug=' + encodeURIComponent(NOTES_SLUG), { cache: 'no-store' })
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        var list = (j && j.notes) || [];
-        NOTES = {};
-        list.forEach(function(n){ (NOTES[n.item_id] = NOTES[n.item_id] || []).push(n); });
-        notesLoaded = true;
+      .then(function(r){
+        return r.json()
+          .catch(function(){ return null; })
+          .then(function(j){ return { ok: r.ok, status: r.status, j: j }; });
       })
-      .catch(function(){ notesLoaded = false; });
+      .then(function(o){
+        // Transport-level failure, or the server explicitly said it did not
+        // succeed, or the body is not the shape this page reads.
+        if (!o.ok || !o.j || o.j.ok !== true || !Object.prototype.hasOwnProperty.call(o.j, 'notes')){
+          var why = (o.j && (o.j.error || o.j.detail)) || ('HTTP ' + o.status);
+          // One silent retry covers a momentary upstream blip. A second
+          // failure is reported to him rather than hidden.
+          if (attempt < 2) return loadNotes(attempt + 1);
+          noteReadFailed(String(why));
+          return;
+        }
+        var next = {};
+        (o.j.notes || []).forEach(function(n){ (next[n.item_id] = next[n.item_id] || []).push(n); });
+        NOTES = next;
+        notesLoaded = true;
+        notesReadError = null;
+        notesAlarm(null);
+      })
+      .catch(function(err){
+        if (attempt < 2) return loadNotes(attempt + 1);
+        noteReadFailed('could not reach the notes server');
+      });
   }
   // Idempotent self-registration of today's dated items, the same path the
   // other review pages use. ON CONFLICT DO NOTHING server side, safe on every
@@ -2267,13 +2320,19 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       body: JSON.stringify({ page_slug: NOTES_SLUG, items: fresh.map(function(id){
         return { item_id: id, item_label: SEED_LABEL[id] || rlLabel(id, id.indexOf('kpi-') === 0 ? 'kpi-' : 'status-') };
       }) })
-    }).catch(function(){});
+    })
+    // Registration failing used to be swallowed whole. It is idempotent and
+    // safe to retry, so un-register these ids and let the next render try
+    // again rather than marking them done and never touching them again.
+    .then(function(r){ if (!r.ok) fresh.forEach(function(id){ delete registered[id]; }); })
+    .catch(function(){ fresh.forEach(function(id){ delete registered[id]; }); });
   }
 
   function notesHtml(id){
     var list = NOTES[id] || [], h = '';
     if (!notesLoaded){
-      h += '<div class="lr-notestatus bad">Notes could not be read from the database. Anything you add here may not save. Reload before relying on this.</div>';
+      h += '<div class="lr-notestatus bad">NOTES NOT READ' + (notesReadError ? ' (' + rlEsc(notesReadError) + ')' : '') +
+           '. This list is NOT what is in the database and may be missing notes you already wrote. Nothing was deleted. Reload before writing anything here.</div>';
     }
     list.forEach(function(n){
       h += '<div class="lr-note"><span class="lr-note-ts">' + rlEsc(noteClock(n.created_at)) + '</span>' + rlEsc(n.note_text) + '</div>';
@@ -2662,8 +2721,26 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
         var btns = document.querySelectorAll('.lr-notebtn[data-notes="' + CSS.escape(saveId) + '"]');
         Array.prototype.forEach.call(btns, function(b){ b.className = 'lr-notebtn has'; b.textContent = 'Notes (' + NOTES[saveId].length + ')'; });
         var st2 = document.querySelector('[data-notestatus="' + CSS.escape(saveId) + '"]');
-        if (st2){ st2.className = 'lr-notestatus ok'; st2.textContent = 'Saved to the database.'; }
+        if (st2){ st2.className = 'lr-notestatus ok'; st2.textContent = 'Saving... confirming against the database.'; }
         if (renderPending) renderRevLanes();
+        // A 200 is a claim, not proof. Re-read the notes store and confirm
+        // this exact text came back out of it before telling him it is saved.
+        loadNotes().then(function(){
+          var stf = document.querySelector('[data-notestatus="' + CSS.escape(saveId) + '"]');
+          var back = (NOTES[saveId] || []).some(function(n){ return (n.note_text || '') === text; });
+          var w = document.querySelector('.lr-notes[data-noteswrap="' + CSS.escape(saveId) + '"]');
+          if (w) w.innerHTML = notesHtml(saveId);
+          stf = document.querySelector('[data-notestatus="' + CSS.escape(saveId) + '"]');
+          if (!notesLoaded){
+            if (stf){ stf.className = 'lr-notestatus bad'; stf.textContent = 'The server accepted it, but the notes store could not be re-read to confirm it. Keep a copy of your text until this page reloads clean.'; }
+            return;
+          }
+          if (!back){
+            if (stf){ stf.className = 'lr-notestatus bad'; stf.textContent = 'NOT SAVED: the server said ok but the note is not in the database on a fresh read. Copy your text somewhere before you leave this page.'; }
+            return;
+          }
+          if (stf){ stf.className = 'lr-notestatus ok'; stf.textContent = 'Saved. Confirmed by reading it back from the database.'; }
+        });
       })
       .catch(function(){
         t.disabled = false;
