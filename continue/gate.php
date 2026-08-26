@@ -1,6 +1,6 @@
 <?php
 /**
- * Baobab -- server-side passphrase gate for boubacarbarry.com/baobab/.
+ * Continue? -- server-side passphrase gate for boubacarbarry.com/continue/.
  *
  * DEPLOYED AS A PATH, NOT A SUBDOMAIN, and that is deliberate. The two gates
  * already live on this domain (/review/ and /profit-and-purpose/) are paths on
@@ -45,16 +45,16 @@ declare(strict_types=1);
 // The user-visible name, defined ONCE. The app shell carries the same name in
 // index.html; if that changes, change it here in the same commit. A login page
 // branded differently from the page it opens reads as the wrong site.
-const DOJO_NAME            = 'Baobab';
+const DOJO_NAME            = 'Continue?';
 
 /**
  * The one URL path this gate owns. Every absolute reference below is built from
  * this, so moving the directory means changing this line and the RewriteBase in
  * .htaccess, and nothing else.
  */
-const DOJO_PREFIX          = '/baobab/';
+const DOJO_PREFIX          = '/continue/';
 
-const DOJO_COOKIE          = 'baobab_session';
+const DOJO_COOKIE          = 'continue_session';
 const DOJO_SESSION_SECONDS = 5 * 24 * 60 * 60;  // five days, matching the pnp gate
 const DOJO_API_SECONDS     = 60 * 60;           // one hour
 const DOJO_MAX_ATTEMPTS    = 8;                 // per IP (or IPv6 /64), per window
@@ -75,7 +75,7 @@ function dojo_doc_root(): string
  * request can reach it, and the Hostinger clean-replace deploy wipes everything
  * inside public_html but never touches its parent.
  *
- * __DIR__ is public_html/baobab, so dirname(__DIR__, 2) is the parent of
+ * __DIR__ is public_html/continue, so dirname(__DIR__, 2) is the parent of
  * public_html. Same anchor the /profit-and-purpose/ gate uses, and it is
  * anchored on __DIR__ rather than DOCUMENT_ROOT on purpose: DOCUMENT_ROOT is
  * whatever the server says it is, while __DIR__ is where this file actually
@@ -83,12 +83,12 @@ function dojo_doc_root(): string
  */
 function dojo_key_path(): string
 {
-    return dirname(__DIR__, 2) . '/.baobab-gate-key.php';
+    return dirname(__DIR__, 2) . '/.continue-gate-key.php';
 }
 
 function dojo_state_path(): string
 {
-    return dirname(__DIR__, 2) . '/.baobab-gate-attempts.json';
+    return dirname(__DIR__, 2) . '/.continue-gate-attempts.json';
 }
 
 /** The Supabase Functions base URL. Not a secret: the token is what authorises. */
@@ -125,7 +125,7 @@ function dojo_load_key(): ?array
     $keyDir  = realpath(dirname($path));
     if ($docRoot !== false && $keyDir !== false
         && strncmp($keyDir . DIRECTORY_SEPARATOR, $docRoot . DIRECTORY_SEPARATOR, strlen($docRoot) + 1) === 0) {
-        error_log('baobab gate: key directory ' . $keyDir . ' is inside the document root; refusing');
+        error_log('continue gate: key directory ' . $keyDir . ' is inside the document root; refusing');
         return null;
     }
 
@@ -461,9 +461,9 @@ function dojo_serve(string $requested): void
         dojo_503();
     }
 
-    // The request arrives as /baobab/<something>. Strip the prefix this gate
-    // owns before resolving against its own directory, or /baobab/app.js
-    // would be looked up as baobab/baobab/app.js and fall through to the
+    // The request arrives as /continue/<something>. Strip the prefix this gate
+    // owns before resolving against its own directory, or /continue/app.js
+    // would be looked up as continue/continue/app.js and fall through to the
     // SPA shell for every asset.
     $rel = (string) (parse_url($requested, PHP_URL_PATH) ?: '/');
     if (strncmp($rel, DOJO_PREFIX, strlen(DOJO_PREFIX)) === 0) {
@@ -576,8 +576,8 @@ if (PHP_SAPI === 'cli') {
 }
 
 // Every asset in index.html is a RELATIVE url (vendor/..., app.js), and Pyodide
-// is handed a relative indexURL too. At /baobab those resolve against the
-// domain root and every one of them 404s; at /baobab/ they resolve
+// is handed a relative indexURL too. At /continue those resolve against the
+// domain root and every one of them 404s; at /continue/ they resolve
 // correctly. Apache's own trailing-slash redirect cannot be relied on here
 // because .htaccess rewrites the path into this file first, so make it explicit.
 $reqPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');

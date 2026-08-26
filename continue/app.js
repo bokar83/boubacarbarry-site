@@ -1,5 +1,5 @@
 /*
- * Baobab (internal dir name stays python-dojo) -- frontend logic.
+ * Continue? (internal dir name stays python-dojo) -- frontend logic.
  *
  * Reads window.DOJO_TOKEN and window.DOJO_API, injected by the server-side
  * PHP gate that serves this page. Never authenticates itself, never stores
@@ -12,7 +12,7 @@
 
   // The visible product name. Change this one line (and nothing else) to
   // rename the app; it drives the tab title and the wordmark.
-  var APP_NAME = "Baobab";
+  var APP_NAME = "Continue?";
 
   // ---------------------------------------------------------------------
   // Auth state
