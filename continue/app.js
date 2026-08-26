@@ -70,6 +70,10 @@
     els.authBanner.classList.add("visible");
   }
 
+  function hideAuthBanner() {
+    els.authBanner.classList.remove("visible");
+  }
+
   function showSaveFailBanner() {
     els.saveFailBanner.classList.add("visible");
   }
@@ -150,6 +154,15 @@
         err.status = 401;
         throw err;
       }
+      // Any non-401 response means the Edge Function's own verifyToken()
+      // accepted this token (guard() checks auth before anything else runs),
+      // so whatever caused the banner a moment ago is no longer true. Clear
+      // it here rather than only at page load -- the banner previously had
+      // no code path that ever hid it again within a session, so a single
+      // transient 401 (a token-rotation race, a CORS-allowlist gap during a
+      // deploy, etc.) left it stuck on screen forever even once the very
+      // next call proved the session was fine.
+      hideAuthBanner();
       return res.json().then(function (data) {
         if (!res.ok) {
           var e = new Error(data && data.message ? data.message : "request failed");
