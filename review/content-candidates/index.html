@@ -1,0 +1,1745 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Candidates</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:96px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border); padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  /* Post copy keeps preformatted whitespace fidelity (verbatim, line breaks
+     intact) but renders in the body face. He is reading 28 posts as a reader
+     would see them, not auditing a code listing. */
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:14px 16px; overflow-x:auto; white-space:pre-wrap; word-wrap:break-word;
+    margin:0 0 12px; font-size:.95rem; line-height:1.65; font-family:inherit;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .badge{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.03em;
+    padding:3px 9px; border-radius:999px; text-transform:uppercase;}
+  .badge-score{background:rgba(127,224,184,.15); color:var(--good); border:1px solid var(--good);}
+  .badge-thread{background:rgba(255,143,94,.15); color:var(--accent); border:1px solid var(--accent);}
+  .badge-frozen{background:rgba(242,184,75,.15); color:var(--warn); border:1px solid var(--warn);}
+
+  /* Running counter, sticky under the nav so he can stop and resume. */
+  .counter-bar{position:sticky; top:57px; z-index:48; background:rgba(15,17,21,0.95);
+    border-bottom:1px solid var(--border); padding:9px 0;}
+  .counter-inner{max-width:960px; margin:0 auto; padding:0 20px; display:flex;
+    gap:14px; flex-wrap:wrap; align-items:center; font-size:.84rem; color:var(--text-dim);}
+  .counter-inner strong{color:var(--accent2); font-size:.95rem;}
+  .counter-sub{font-size:.78rem;}
+
+  /* Opaque on purpose: a save failure must be readable, never washed over the
+     post text it is sitting on top of. */
+  #write-error-banner{display:none; position:sticky; top:102px; z-index:56;
+    background:#2b1416; border:1px solid var(--bad); color:#ffb3b3;
+    box-shadow:0 6px 18px rgba(0,0,0,.55);
+    font-size:.84rem; padding:11px 14px; margin:14px 0; border-radius:8px; font-weight:700;}
+
+  .post-card{border:1px solid var(--border); border-radius:12px; background:var(--bg2);
+    padding:16px 18px; margin:0 0 20px;}
+  .post-head{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap;
+    margin:0 0 12px; padding:0 0 10px; border-bottom:1px solid var(--border);}
+  .post-num{font-weight:700; font-size:.9rem; color:var(--accent);}
+  .post-slot{font-size:.84rem; color:var(--text-dim);}
+  .tweet-label{font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--text-dim); margin:0 0 5px; font-weight:700;}
+  .score-line{font-size:.82rem; color:var(--text-dim); margin:12px 0 0;}
+
+  .decision-block{margin-top:14px; padding:14px 16px; border:1px solid var(--border);
+    border-radius:10px; background:var(--card);}
+  .decision-block h4{margin:0 0 8px; font-size:.78rem; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--text-dim);}
+  .decision-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .decision-btn{font-weight:700; font-size:.8rem; padding:9px 18px; border-radius:999px;
+    cursor:pointer; background:var(--bg2); border:1px solid var(--border); color:var(--text-dim);
+    min-height:40px;}
+  .decision-btn[data-decision="approve"].active{background:rgba(127,224,184,.16);
+    border-color:var(--good); color:var(--good);}
+  .decision-btn[data-decision="reject"].active{background:rgba(255,122,122,.16);
+    border-color:var(--bad); color:var(--bad);}
+  .decision-status{margin-left:4px; font-size:.78rem; color:var(--text-dim);}
+  .item-notes{margin-top:14px;}
+  .item-notes label{display:block; font-size:.74rem; color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:.04em; margin:0 0 6px;}
+  .reason-input{width:100%; background:#11141b; border:1px solid var(--border);
+    border-radius:8px; color:var(--text); font-family:inherit; font-size:.88rem;
+    padding:10px 12px; min-height:42px;}
+  .note-actions{margin-top:8px; display:flex; gap:8px; align-items:center;}
+  .save-note{font-weight:700; font-size:.8rem; padding:9px 18px; border-radius:999px;
+    cursor:pointer; background:var(--accent); border:1px solid var(--accent); color:#0f1115;
+    min-height:40px;}
+  .save-note:disabled{opacity:.55; cursor:default;}
+  .notes-log{list-style:none; margin:10px 0 0; padding:0;}
+  .notes-log li{padding:8px 10px; border:1px solid var(--border); border-radius:6px;
+    margin:0 0 6px; font-size:.84rem; background:var(--bg2);}
+  .notes-log li.note-empty{color:var(--text-dim); border-style:dashed;}
+  .note-ts{display:block; font-size:.72rem; color:var(--text-dim); margin:0 0 3px;}
+
+
+  /* ── APPROVE WITH EDITS (2026-08-19) ────────────────────────────────
+     He asked to be able to fix a word himself instead of describing the
+     fix to an agent. The post body becomes directly editable; what he
+     saves IS the version that publishes. Original is never overwritten:
+     the post markup in this file stays byte-identical to the gated draft, and
+     his edit lives in content_review_decisions_items.edited_text with
+     every prior version in _edit_history. A textarea, not
+     contenteditable, because a textarea is the one text-entry control
+     that types reliably on a phone. */
+  .edit-block{margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);}
+  .edit-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .edit-btn{font-weight:700; font-size:.8rem; padding:9px 18px; border-radius:999px;
+    cursor:pointer; background:var(--bg2); border:1px solid var(--accent); color:var(--accent);
+    min-height:40px;}
+  .edit-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .edit-area{display:block; width:100%; margin-top:10px; background:#11141b;
+    border:1px solid var(--accent); border-radius:8px; color:var(--text);
+    font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.88rem; line-height:1.55; padding:12px; min-height:180px;
+    /* Capped on purpose. Autosizing to the full post pushed Save edit a
+       thousand pixels off a phone screen -- the box scrolls inside itself
+       instead, so the buttons stay where his thumb is. */
+    max-height:58vh; overflow:auto; scroll-margin-top:118px;
+    resize:vertical; -webkit-appearance:none; appearance:none;}
+  .edit-area:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .edit-actions{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:9px;}
+  /* The hidden attribute is a UA rule and loses to any class that sets display.
+     Without these two, a closed editor renders as an open empty box. Caught by
+     looking at the screenshot, not by reading the code. */
+  .edit-area[hidden], .edit-actions[hidden]{display:none;}
+  .edit-save{font-weight:700; font-size:.8rem; padding:9px 18px; border-radius:999px;
+    cursor:pointer; background:var(--accent); border:1px solid var(--accent); color:#0f1115;
+    min-height:40px;}
+  .edit-cancel,.edit-revert{font-weight:700; font-size:.8rem; padding:9px 16px;
+    border-radius:999px; cursor:pointer; background:var(--bg2);
+    border:1px solid var(--border); color:var(--text-dim); min-height:40px;}
+  .edit-save:disabled,.edit-cancel:disabled,.edit-revert:disabled{opacity:.55; cursor:default;}
+  .edit-hint{font-size:.74rem; color:var(--text-dim); margin-top:7px;}
+  .edit-draft-warn{display:none; margin-top:9px; padding:9px 11px; border-radius:7px;
+    font-size:.8rem; font-weight:700; background:#33260c; border:1px solid var(--warn);
+    color:#ffd88a;}
+  .edit-draft-warn.on{display:block;}
+
+  /* Visual marker so an edited post is obvious at a glance, plus the diff. */
+  .post-card.is-edited{border-color:var(--warn); box-shadow:inset 3px 0 0 var(--warn);}
+  .edit-flag{display:none; font-size:.72rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.05em; padding:4px 9px; border-radius:999px;
+    background:rgba(242,184,75,.15); color:var(--warn); border:1px solid var(--warn);}
+  .edit-flag.on{display:inline-block;}
+  .post-head .edit-flag{margin-left:auto;}
+  .edit-diff{display:none; margin-top:11px; padding:11px 12px; border-radius:8px;
+    background:#11141b; border:1px solid var(--border);
+    font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.82rem; line-height:1.6; white-space:pre-wrap; word-break:break-word;}
+  .edit-diff.on{display:block;}
+  .edit-diff .diff-title{display:block; font-family:inherit; font-size:.72rem;
+    text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim);
+    margin:0 0 7px; font-weight:700;}
+  .diff-del{background:rgba(255,122,122,.16); color:#ffb3b3; text-decoration:line-through;
+    border-radius:3px; padding:0 2px;}
+  .diff-ins{background:rgba(127,224,184,.16); color:var(--good); border-radius:3px;
+    padding:0 2px;}
+  .decision-btn[data-decision="approve"].active.with-edits{background:rgba(242,184,75,.16);
+    border-color:var(--warn); color:var(--warn);}
+  .edit-note{font-size:.76rem; color:var(--text-dim);}
+  @media (max-width:560px){
+    /* His phone is where he reads these. The box must be big enough to type
+       in without pinching, and the buttons must be real tap targets. */
+    .edit-area{min-height:200px; max-height:52vh; font-size:16px;}   /* 16px stops iOS zoom-on-focus */
+    .edit-row,.edit-actions{gap:6px;}
+    .edit-btn,.edit-save,.edit-cancel,.edit-revert{padding:0 14px; min-height:42px;}
+    .edit-note{flex-basis:100%;}
+    .post-head .edit-flag{margin-left:0;}
+  }
+  /* A thread post is several code blocks in one card. The editable unit is
+     the WHOLE post, composed with [Tweet n] markers, so an edit can never
+     silently apply to tweet 1 only. His saved version renders as one block
+     and the untouched original stays one click away. */
+  .edited-body{margin:12px 0 0; border:1px solid var(--warn); border-radius:8px;
+    background:#11141b; padding:0 0 2px;}
+  .edited-body-hd{font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
+    font-weight:700; color:var(--warn); padding:9px 12px 0;}
+  .edited-body pre{border:0; background:transparent; margin:6px 0 0;}
+  .orig-toggle{margin-top:9px; font-weight:700; font-size:.76rem; padding:7px 14px;
+    border-radius:999px; cursor:pointer; background:var(--bg2);
+    border:1px solid var(--border); color:var(--text-dim); min-height:36px;}
+  .post-card.is-edited .orig-body{display:none;}
+  .post-card.is-edited.show-orig .orig-body{display:block;}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+    .counter-inner{padding:0 14px;}
+    .post-card{padding:14px;}
+    .sec-body{padding:2px 12px 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar, .counter-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+
+  /* Storytelling rewrite pass, 2026-08-19. No <pre> and no .tweet-label inside
+     these blocks on purpose: bodyEls() would absorb them into the editable body. */
+  .moment-block{margin-top:11px; border:1px solid var(--border); border-radius:8px;
+    background:var(--bg2); padding:0 12px;}
+  .moment-block>summary{cursor:pointer; padding:10px 0; font-size:.82rem; font-weight:700;
+    color:var(--accent);}
+  .moment-block>summary:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .moment-block p{font-size:.83rem; line-height:1.6; margin:0 0 10px; color:var(--text-dim);}
+  .moment-block p strong{color:var(--text);}
+  .moment-q{border-color:var(--warn);}
+  .moment-q>summary{color:var(--warn);}
+  .rewrite-banner{border:1px solid var(--accent); border-radius:10px; padding:16px 18px;
+    margin:0 0 22px; background:var(--bg2);}
+  .rewrite-banner h3{margin:0 0 10px; font-size:1rem; color:var(--accent);}
+  .rewrite-banner p{font-size:.88rem; line-height:1.65; margin:0 0 10px;}
+  .rewrite-questions{border:1px solid var(--warn); border-radius:8px; padding:0 12px;
+    margin-top:12px; background:#1a1712;}
+  .rewrite-questions>summary{cursor:pointer; padding:10px 0; font-weight:700; font-size:.86rem;
+    color:var(--warn);}
+  .rewrite-questions ol{margin:0 0 12px; padding-left:20px;}
+  .rewrite-questions li{font-size:.85rem; line-height:1.6; margin:0 0 9px;}
+  @media (max-width:560px){
+    .rewrite-banner{padding:13px 13px;}
+    .moment-block{padding:0 10px;}
+  }
+  
+  .stale-decision{border:1px solid var(--warn); border-left:4px solid var(--warn);
+    border-radius:8px; background:#33260c; padding:11px 13px; margin:11px 0 0;}
+  .stale-decision p{font-size:.83rem; line-height:1.6; margin:0 0 8px; color:#ffd88a;}
+  .stale-decision p:last-child{margin-bottom:0;}
+  .stale-decision .stale-title{font-weight:700; color:var(--warn);}
+  
+  /* --- theme grouping, added 2026-08-20 ------------------------------------
+     Platform is labelled off the card id, so no card markup is touched and no
+     decision can detach from its post. */
+  /* The card head already prints "LinkedIn 2" / "X 20", so the platform is named
+     in text already. Colour is the fast visual separator, not a second prefix. */
+  .post-card[id^="li-"]{border-left:4px solid var(--accent);}
+  .post-card[id^="x-"]{border-left:4px solid var(--accent2);}
+  .post-card[id^="li-"] .post-num{color:var(--accent);}
+  .post-card[id^="x-"] .post-num{color:var(--accent2);}
+  .theme-blurb{font-size:.86rem; color:var(--text-dim); margin:14px 0 16px;}
+  .theme-count{font-size:.74rem; font-weight:700; letter-spacing:.03em;
+    text-transform:uppercase; color:var(--text-dim); margin-left:auto;
+    white-space:nowrap;}
+  details.sec > summary h2{margin-right:10px;}
+  .platform-key{display:flex; gap:14px; flex-wrap:wrap; font-size:.78rem;
+    color:var(--text-dim); margin:0 0 4px;}
+  .platform-key span{display:inline-flex; align-items:center; gap:6px;}
+  .platform-key i{width:12px; height:12px; border-radius:3px; display:inline-block;}
+  .key-li{background:var(--accent);} .key-x{background:var(--accent2);}
+  /* ── content-candidates additions ── */
+  .decision-btn[data-decision="park"].active{background:rgba(242,184,75,.16);
+    border-color:var(--warn); color:var(--warn);}
+  .cand{border:1px solid var(--border); border-radius:12px; background:var(--bg2);
+    padding:16px 16px 14px; margin:0 0 18px;}
+  .cand.is-edited{border-color:var(--warn);}
+  .cand-head{display:flex; flex-wrap:wrap; gap:8px; align-items:baseline; margin:0 0 10px;}
+  .cand-head h3{margin:0; font-size:1.04rem; line-height:1.3; flex:1 1 240px;}
+  .rank{font:700 .74rem/1 ui-monospace,Menlo,Consolas,monospace; color:var(--bg);
+    background:var(--accent); border-radius:6px; padding:5px 7px; flex:0 0 auto;}
+  .chip{font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; font-weight:700;
+    border:1px solid var(--border); border-radius:999px; padding:4px 9px; color:var(--text-dim);
+    background:var(--card); white-space:nowrap;}
+  .chip.anchor-yes{color:var(--good); border-color:var(--good);}
+  .chip.anchor-no{color:var(--warn); border-color:var(--warn);}
+  .fld{margin:0 0 11px;}
+  .fld > b{display:block; font-size:.7rem; text-transform:uppercase; letter-spacing:.07em;
+    color:var(--text-dim); margin:0 0 4px; font-weight:700;}
+  .fld p{margin:0; font-size:.93rem;}
+  .fld .src{color:var(--text-dim); font-size:.82rem;}
+  .fwd{border-left:3px solid var(--accent); padding-left:12px;}
+  .anchor-line{border-left:3px solid var(--good); padding-left:12px;}
+  .anchor-line.none{border-left-color:var(--warn);}
+  .cand pre{white-space:pre-wrap; word-wrap:break-word; background:#11141b;
+    border:1px solid var(--border); border-radius:8px; padding:12px 13px; margin:0;
+    font:400 .92rem/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .cand.show-orig .orig-body{display:block;}
+  .cand.is-edited .orig-body{display:none;}
+  .cand.is-edited.show-orig .orig-body{display:block; opacity:.72;}
+  .qcard{border:1px solid var(--accent); border-radius:12px; background:var(--bg2);
+    padding:16px; margin:0 0 18px;}
+  .qcard blockquote{margin:0 0 10px; font-size:1rem; line-height:1.5; font-style:normal;
+    border-left:3px solid var(--accent); padding-left:12px;}
+  .flagcard{border:1px solid var(--warn); border-radius:12px; background:var(--bg2);
+    padding:16px; margin:0 0 18px;}
+  .flagcard h3{margin:0 0 8px; font-size:.98rem; color:var(--warn);}
+  .taste-box{border:1px dashed var(--border); border-radius:12px; background:var(--card);
+    padding:16px; margin:0 0 22px;}
+  .taste-box code{font-size:.82rem; color:var(--accent2); word-break:break-all;}
+  @media (max-width:560px){
+    .cand{padding:14px 13px 12px;}
+    .cand pre{font-size:.9rem; padding:11px;}
+    .rank{font-size:.7rem;}
+  }
+  /* base link colours -- HARD RULE no-blue-on-dark. Defined here rather than
+     relying on the injected review furniture, so the rule holds even if this
+     file is opened before publish. no-blue-check-ok */
+  a{color:#FF8F5E;}
+  a:visited{color:#B87333;}
+  a:hover,a:active{color:#FFB08A;}
+
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-26-00:13:45 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Content Candidates</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-tier1">Tier 1</a>
+      <a href="#sec-tier2">Tier 2</a>
+      <a href="#sec-comments">Comments</a>
+      <a href="#sec-inbox">From the inbox</a>
+      <a href="#sec-questions">Questions for you</a>
+      <a href="#sec-flags">Flags</a>
+      <a href="#sec-how">How this works</a>
+    </div>
+  </div>
+</nav>
+
+<div class="counter-bar">
+  <div class="counter-inner">
+    <strong id="counter-main">0 of 24 decided</strong>
+    <span class="counter-sub" id="counter-sub">0 yes, 0 yes with your edit, 0 parked, 0 no, 24 still open</span>
+    <span class="counter-sub">Everything saves to the database as you tap. Stop anywhere and come back.</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div id="write-error-banner" role="alert"></div>
+
+  <header class="mast">
+    <h1>Content candidates, 24 things waiting on your call</h1>
+    <div class="meta">From the scan of 2026-08-25. Ten ranked candidates, two comment plays, four things out of your newsletters, four questions only you can answer, and four flags. This is the standing home for this &mdash; every future scan lands on this same page, at this same address, so your decisions accumulate in one place instead of scattering across dated pages.</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p>Yes, park, or no on each one, and <strong>tell me why in your own words</strong>. The why is the point. Over time your accepts and rejects and the reasons behind them become a record of your taste, and the next scan proposes against that instead of against whatever is loudest that week.</p>
+      <p>The four questions and the four flags need your call as much as the ten do. Two of the flags are contradictions already sitting in files, which a future writer will read and repeat unless you settle them.</p>
+      <p>Nothing here publishes. Nothing here touches the content board. This is where you decide; everything downstream waits on that.</p>
+    </div>
+  </details>
+
+  <div class="taste-box">
+    <p><b>Why the note box matters more than the buttons.</b> A yes or a no on its own tells the next scan almost nothing. A yes plus &ldquo;this one because I actually lived it&rdquo; or a no plus &ldquo;too close to what everyone else is saying&rdquo; is the thing that changes what gets proposed next time. Half a sentence is enough. It is stored next to the topic, the format, and whether you already had an anchor, so the pattern in your rejections becomes readable rather than being lost.</p>
+  </div>
+
+<details class="sec" open id="sec-tier1"><summary><h2>Tier 1 &mdash; a dated moment of yours already in hand</h2></summary><div class="sec-body">
+<p class="lede">These four have the strongest forward call and you already have the moment. Nothing needs to be invented for any of them.</p>
+
+      <article class="cand" id="c01-ai-layoff-reversal">
+        <div class="cand-head">
+          <span class="rank">#1</span>
+          <h3>The AI-layoff reversal, and what the 6% actually is</h3>
+          <span class="chip">post</span>
+          <span class="chip anchor-yes">anchor in hand</span>
+        </div>
+        <div class="fld"><b>The signal</b><p>Ford rehired 350 veteran "gray beard" engineers after automated QC missed defects. VP Charles Poon: "Mistakenly we thought that by just introducing artificial intelligence&hellip;that would produce a high-quality product." IBM's AI HR system handled ~94% of routine requests but couldn't cover the remaining 6% (ethical/edge cases); IBM is tripling US entry-level hiring. 55% of leaders who did AI-driven layoffs now call it a mistake.</p><p class="src">Source: TechCrunch 2026-06-28; Inc; CNBC 2026-07-01</p></div>
+        <div class="fld fwd"><b>Where it is heading</b><p>In 1-3 months this stops being &quot;AI layoffs happened&quot; and becomes a fight over who gets rehired and why, specifically judgment-heavy people who catch what the model misses. &quot;The un-fireable skill is judgment, not tenure&quot; is about to be everywhere.</p></div>
+        <div class="fld anchor-line"><b>Your anchor</b><p>Yes. His own years inside big-company HR.</p></div>
+        
+        <div class="fld"><b>The angle only you could write &mdash; edit it to steer the piece</b></div>
+        <pre>He spent years inside big-company HR watching exactly what that 6% looks like, so he can name what it is instead of gesturing at it.</pre>
+        
+        <div class="decision-block" data-item-id="c01-ai-layoff-reversal" data-item-label="The AI-layoff reversal, and what the 6% actually is | post | tier 1" data-facets="{&quot;topic&quot;:&quot;ai-layoff-reversal&quot;,&quot;themes&quot;:[&quot;hr-inside-a-big-company&quot;,&quot;ai-adoption-failure&quot;,&quot;genx&quot;],&quot;source_type&quot;:&quot;trend-scan&quot;,&quot;has_anchor&quot;:true,&quot;format&quot;:&quot;post&quot;,&quot;tier&quot;:1,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c01-ai-layoff-reversal-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c01-ai-layoff-reversal-note" class="reason-input" placeholder="Too generic? Wrong read? Right idea wrong week? Say it however you say it.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="c02-version-20-two-nav-bars">
+        <div class="cand-head">
+          <span class="rank">#2</span>
+          <h3>Version 20, and the two nav bars nobody saw</h3>
+          <span class="chip">post</span>
+          <span class="chip anchor-yes">anchor in hand</span>
+        </div>
+        <div class="fld"><b>The signal</b><p>Deloitte says only 11% of enterprise AI agent pilots reach production (89% failure, widening from ~86% in July).</p><p class="src">Source: docs/personal/book-source-material.md L8574</p></div>
+        <div class="fld fwd"><b>Where it is heading</b><p>By Sept/Oct buyers stop accepting slides and start asking &quot;show me it running live.&quot;</p></div>
+        <div class="fld anchor-line"><b>Your anchor</b><p>Yes. 2026-08-21, 4:40 PM, first real client pitch to Dino Anthony, reply at 4:41 PM &quot;let me take a look.&quot; The page sent was version 20. Three cold reads came back NO. Five wrong or fabricated claims caught before Dino saw them, including two navigation bars stacked on desktop that every automated screenshot review looked right past.</p></div>
+        
+        <div class="fld"><b>The angle only you could write &mdash; edit it to steer the piece</b></div>
+        <pre>The system produced twenty versions in a day, volume no human drafts alone, and it did not know when it was wrong. Someone had to say &quot;not yet&quot; nineteen times.</pre>
+        
+        <div class="decision-block" data-item-id="c02-version-20-two-nav-bars" data-item-label="Version 20, and the two nav bars nobody saw | post | tier 1" data-facets="{&quot;topic&quot;:&quot;demo-vs-production&quot;,&quot;themes&quot;:[&quot;demo-vs-production&quot;,&quot;ai-adoption-failure&quot;,&quot;his-own-system&quot;],&quot;source_type&quot;:&quot;his-own-moment&quot;,&quot;has_anchor&quot;:true,&quot;format&quot;:&quot;post&quot;,&quot;tier&quot;:1,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c02-version-20-two-nav-bars-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c02-version-20-two-nav-bars-note" class="reason-input" placeholder="Too generic? Wrong read? Right idea wrong week? Say it however you say it.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="c03-five-contacts-zero">
+        <div class="cand-head">
+          <span class="rank">#3</span>
+          <h3>Five contacts a day, for weeks, zero</h3>
+          <span class="chip">post</span>
+          <span class="chip anchor-yes">anchor in hand</span>
+        </div>
+        <div class="fld"><b>The signal</b><p>His own system scored him against that number every morning and never once asked whether the number was right. In the same period three conversations through existing relationships produced the reframe that changed his pricing.</p><p class="src">Source: docs/personal/book-source-material.md L8384</p></div>
+        <div class="fld fwd"><b>Where it is heading</b><p>As the AI-KPI-dashboard wave matures, the critique shifts from &quot;AI is inaccurate&quot; to &quot;AI is confidently measuring the wrong thing.&quot;</p></div>
+        <div class="fld anchor-line"><b>Your anchor</b><p>Yes. 2026-08-20, verbatim: &quot;You&#x27;ve had me doing the five contacts a day for how many weeks and I&#x27;ve done zero.&quot;</p></div>
+        <div class="fld"><b>Heads up</b><p class="src">STATUS UNKNOWN. Routed for approval 8/20, no local record it shipped. Check before this gets rewritten.</p></div>
+        <div class="fld"><b>The angle only you could write &mdash; edit it to steer the piece</b></div>
+        <pre>A target missed completely for weeks is a broken target, not a discipline problem, and a system that keeps scoring it is lying with a straight face in the friendliest possible tone.</pre>
+        
+        <div class="decision-block" data-item-id="c03-five-contacts-zero" data-item-label="Five contacts a day, for weeks, zero | post | tier 1" data-facets="{&quot;topic&quot;:&quot;measuring-the-wrong-thing&quot;,&quot;themes&quot;:[&quot;his-own-system&quot;,&quot;ai-adoption-failure&quot;,&quot;honest-metrics&quot;],&quot;source_type&quot;:&quot;his-own-moment&quot;,&quot;has_anchor&quot;:true,&quot;format&quot;:&quot;post&quot;,&quot;tier&quot;:1,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c03-five-contacts-zero-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c03-five-contacts-zero-note" class="reason-input" placeholder="Too generic? Wrong read? Right idea wrong week? Say it however you say it.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="c04-resume-tool-invented">
+        <div class="cand-head">
+          <span class="rank">#4</span>
+          <h3>The resume tool that invented three restructurings</h3>
+          <span class="chip">post</span>
+          <span class="chip anchor-yes">anchor in hand</span>
+        </div>
+        <div class="fld"><b>The signal</b><p>swooped.co produced a tailored resume that invented "3 organizational restructurings" (record supports one he co-led), invented "coached 10 senior leaders," renamed his company, moved a start date from 2023 to 2025, and left a broken fragment mid-sentence.</p><p class="src">Source: docs/personal/book-source-material.md L8497</p></div>
+        <div class="fld fwd"><b>Where it is heading</b><p>AI resume tools are about to collide with employers who verify; the tell will be candidates who cannot source their own numbers.</p></div>
+        <div class="fld anchor-line"><b>Your anchor</b><p>Yes. 2026-08-20.</p></div>
+        
+        <div class="fld"><b>The angle only you could write &mdash; edit it to steer the piece</b></div>
+        <pre>He only caught it because he keeps a canonical record of his own career to diff against. Most people using these tools have no canonical version.</pre>
+        
+        <div class="decision-block" data-item-id="c04-resume-tool-invented" data-item-label="The resume tool that invented three restructurings | post | tier 1" data-facets="{&quot;topic&quot;:&quot;ai-fabrication&quot;,&quot;themes&quot;:[&quot;ai-adoption-failure&quot;,&quot;canonical-record&quot;,&quot;hr-inside-a-big-company&quot;],&quot;source_type&quot;:&quot;his-own-moment&quot;,&quot;has_anchor&quot;:true,&quot;format&quot;:&quot;post&quot;,&quot;tier&quot;:1,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c04-resume-tool-invented-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c04-resume-tool-invented-note" class="reason-input" placeholder="Too generic? Wrong read? Right idea wrong week? Say it however you say it.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+</div></details>
+<details class="sec" open id="sec-tier2"><summary><h2>Tier 2 &mdash; strong, slightly narrower</h2></summary><div class="sec-body">
+<p class="lede">Six more. The last three have no anchor yet, which is marked on each one, and that is the honest reason they sit below the first four rather than a judgment about the idea.</p>
+
+      <article class="cand" id="c05-not-about-me">
+        <div class="cand-head">
+          <span class="rank">#5</span>
+          <h3>&quot;It&#x27;s not about me, it&#x27;s about him&quot;</h3>
+          <span class="chip">post/newsletter</span>
+          <span class="chip anchor-yes">anchor in hand</span>
+        </div>
+        <div class="fld"><b>The signal</b><p>He deleted his own best headline hours before the biggest send of the year. "I don't wanna personalize by saying his name. I wanna personalize the content so that he recognizes this is content for him."</p><p class="src">Source: docs/personal/book-source-material.md L8638</p></div>
+        <div class="fld fwd"><b>Where it is heading</b><p>As AI-personalized outreach saturates in Q4, mail-merge personalization stops working and content-recognition personalization becomes the only kind that does.</p></div>
+        <div class="fld anchor-line"><b>Your anchor</b><p>Yes. 2026-08-21.</p></div>
+        
+        <div class="fld"><b>The angle only you could write &mdash; edit it to steer the piece</b></div>
+        <pre>Personalising by name is the cheapest possible tell. Personalising by content is the only kind that survives saturation.</pre>
+        
+        <div class="decision-block" data-item-id="c05-not-about-me" data-item-label="&quot;It&#x27;s not about me, it&#x27;s about him&quot; | post/newsletter | tier 2" data-facets="{&quot;topic&quot;:&quot;personalisation&quot;,&quot;themes&quot;:[&quot;outreach&quot;,&quot;his-own-system&quot;],&quot;source_type&quot;:&quot;his-own-moment&quot;,&quot;has_anchor&quot;:true,&quot;format&quot;:&quot;post/newsletter&quot;,&quot;tier&quot;:2,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c05-not-about-me-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c05-not-about-me-note" class="reason-input" placeholder="Too generic? Wrong read? Right idea wrong week? Say it however you say it.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="c06-refused-to-fake">
+        <div class="cand-head">
+          <span class="rank">#6</span>
+          <h3>The piece he refused to fake</h3>
+          <span class="chip">post</span>
+          <span class="chip anchor-yes">anchor in hand</span>
+        </div>
+        <div class="fld"><b>The signal</b><p>A sample reader-reply in Dino's voice came back wrong. "He doesn't insult the behavior&hellip; it's with care and with love." He cut it and turned the hole into the ask.</p><p class="src">Source: docs/personal/book-source-material.md L8723</p></div>
+        <div class="fld fwd"><b>Where it is heading</b><p>Published writing leaves a trail a model can study; how someone answers a stranger at 11pm does not. As voice-cloning gets sold as complete, the register gap becomes the argument.</p></div>
+        <div class="fld anchor-line"><b>Your anchor</b><p>Yes. 2026-08-21.</p></div>
+        
+        <div class="fld"><b>The angle only you could write &mdash; edit it to steer the piece</b></div>
+        <pre>He cut the piece he could not source rather than ship a plausible version of someone else&#x27;s voice.</pre>
+        
+        <div class="decision-block" data-item-id="c06-refused-to-fake" data-item-label="The piece he refused to fake | post | tier 2" data-facets="{&quot;topic&quot;:&quot;voice-register&quot;,&quot;themes&quot;:[&quot;voice&quot;,&quot;ai-adoption-failure&quot;,&quot;his-own-system&quot;],&quot;source_type&quot;:&quot;his-own-moment&quot;,&quot;has_anchor&quot;:true,&quot;format&quot;:&quot;post&quot;,&quot;tier&quot;:2,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c06-refused-to-fake-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c06-refused-to-fake-note" class="reason-input" placeholder="Too generic? Wrong read? Right idea wrong week? Say it however you say it.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="c07-smb-marketing-not-ops">
+        <div class="cand-head">
+          <span class="rank">#7</span>
+          <h3>SMB AI is a marketing story, not an operations story</h3>
+          <span class="chip">post</span>
+          <span class="chip anchor-no">needs a moment from you</span>
+        </div>
+        <div class="fld"><b>The signal</b><p>~56% of small businesses use AI, 63% of that concentrated in marketing.</p><p class="src">Source: trend scan 2026-08-25</p></div>
+        <div class="fld fwd"><b>Where it is heading</b><p>The conversation fractures in 1-2 months into &quot;marketing AI is table stakes, operations AI is untouched,&quot; and the real fractional opportunity is the boring back-office half nobody is pitching.</p></div>
+        <div class="fld anchor-line none"><b>Your anchor</b><p>No. You would need to supply a moment, most likely from an actual operational engagement.</p></div>
+        
+        <div class="fld"><b>The angle only you could write &mdash; edit it to steer the piece</b></div>
+        <pre>His engagements are operational, so he can name the gap before it is named.</pre>
+        
+        <div class="decision-block" data-item-id="c07-smb-marketing-not-ops" data-item-label="SMB AI is a marketing story, not an operations story | post | tier 2" data-facets="{&quot;topic&quot;:&quot;smb-ai-operations&quot;,&quot;themes&quot;:[&quot;fractional-ai&quot;,&quot;smb&quot;],&quot;source_type&quot;:&quot;trend-scan&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;post&quot;,&quot;tier&quot;:2,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c07-smb-marketing-not-ops-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c07-smb-marketing-not-ops-note" class="reason-input" placeholder="Too generic? Wrong read? Right idea wrong week? Say it however you say it.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="c08-africa-leapfrog">
+        <div class="cand-head">
+          <span class="rank">#8</span>
+          <h3>Africa&#x27;s AI leapfrog is about to get specific</h3>
+          <span class="chip">post</span>
+          <span class="chip anchor-no">needs a moment from you</span>
+        </div>
+        <div class="fld"><b>The signal</b><p>Africa AI market $16B+, ~27%/yr; South Africa leads at 23.1% adoption; IMF 2026-07-21 "Africa Can Grow Faster With AI, If It Moves Now."</p><p class="src">Source: IMF 2026-07-21</p></div>
+        <div class="fld fwd"><b>Where it is heading</b><p>The story moves from hand-wavy optimism to a concrete argument about which sectors actually leapfrog (mobile money as template) versus which stay dependent on foreign infrastructure. Near-unique territory for him.</p></div>
+        <div class="fld anchor-line none"><b>Your anchor</b><p>No. You would need to supply a moment.</p></div>
+        
+        <div class="fld"><b>The angle only you could write &mdash; edit it to steer the piece</b></div>
+        <pre>Near-unique territory: he can argue which sectors actually leapfrog rather than repeat the optimism.</pre>
+        
+        <div class="decision-block" data-item-id="c08-africa-leapfrog" data-item-label="Africa&#x27;s AI leapfrog is about to get specific | post | tier 2" data-facets="{&quot;topic&quot;:&quot;africa-ai-leapfrog&quot;,&quot;themes&quot;:[&quot;africa-america-bridge&quot;],&quot;source_type&quot;:&quot;trend-scan&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;post&quot;,&quot;tier&quot;:2,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c08-africa-leapfrog-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c08-africa-leapfrog-note" class="reason-input" placeholder="Too generic? Wrong read? Right idea wrong week? Say it however you say it.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="c09-genx-bridge">
+        <div class="cand-head">
+          <span class="rank">#9</span>
+          <h3>GenX as the bridge, not the laggard</h3>
+          <span class="chip">post</span>
+          <span class="chip anchor-no">needs a moment from you</span>
+        </div>
+        <div class="fld"><b>The signal</b><p>GenX GenAI usage ~57-60% (Gen Z 83%, Boomers 52%), with declining tech-confidence even as usage holds.</p><p class="src">Source: trend scan 2026-08-25</p></div>
+        <div class="fld fwd"><b>Where it is heading</b><p>This framing gets picked up as companies deal with the layoff-regret backlash and realise the people who catch AI&#x27;s mistakes are the experienced middle generation. Pairs with #1 into one strong piece.</p></div>
+        <div class="fld anchor-line none"><b>Your anchor</b><p>No. You would need to supply a moment.</p></div>
+        
+        <div class="fld"><b>The angle only you could write &mdash; edit it to steer the piece</b></div>
+        <pre>Pairs with candidate 1 into a single stronger piece: the generation that catches the mistakes.</pre>
+        
+        <div class="decision-block" data-item-id="c09-genx-bridge" data-item-label="GenX as the bridge, not the laggard | post | tier 2" data-facets="{&quot;topic&quot;:&quot;genx-bridge&quot;,&quot;themes&quot;:[&quot;genx&quot;,&quot;ai-adoption-failure&quot;],&quot;source_type&quot;:&quot;trend-scan&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;post&quot;,&quot;tier&quot;:2,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c09-genx-bridge-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c09-genx-bridge-note" class="reason-input" placeholder="Too generic? Wrong read? Right idea wrong week? Say it however you say it.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="c10-avenues-of-revenue">
+        <div class="cand-head">
+          <span class="rank">#10</span>
+          <h3>&quot;Avenues of revenue&quot;</h3>
+          <span class="chip">post</span>
+          <span class="chip anchor-yes">anchor in hand</span>
+        </div>
+        <div class="fld"><b>The signal</b><p>The AI consultant researching Costco liquidation pallets, cleaning used appliances in his own garage. He named the theme before it made a dollar. The contrast is the argument, anti-purity and anti-guru.</p><p class="src">Source: docs/personal/book-source-material.md L8785</p></div>
+        <div class="fld fwd"><b>Where it is heading</b><p>Lead with the pallet, never with &quot;diversify your income.&quot;</p></div>
+        <div class="fld anchor-line"><b>Your anchor</b><p>Yes. Sunday 2026-08-23. &quot;I wanna create as many avenues for revenue and that&#x27;s my theme: avenues of revenue.&quot;</p></div>
+        
+        <div class="fld"><b>The angle only you could write &mdash; edit it to steer the piece</b></div>
+        <pre>He named the theme before it made a dollar. The contrast is the argument.</pre>
+        
+        <div class="decision-block" data-item-id="c10-avenues-of-revenue" data-item-label="&quot;Avenues of revenue&quot; | post | tier 2" data-facets="{&quot;topic&quot;:&quot;avenues-of-revenue&quot;,&quot;themes&quot;:[&quot;anti-guru&quot;,&quot;his-own-moment&quot;],&quot;source_type&quot;:&quot;his-own-moment&quot;,&quot;has_anchor&quot;:true,&quot;format&quot;:&quot;post&quot;,&quot;tier&quot;:2,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c10-avenues-of-revenue-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c10-avenues-of-revenue-note" class="reason-input" placeholder="Too generic? Wrong read? Right idea wrong week? Say it however you say it.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+</div></details>
+<details class="sec" open id="sec-comments"><summary><h2>Tier 3 &mdash; comments, not posts</h2></summary><div class="sec-body">
+<p class="lede">Two threads worth stepping into rather than writing a post about.</p>
+
+      <article class="cand" id="c11-solo-ai-business-corrective">
+        <div class="cand-head"><h3>#11  The &quot;solo AI business&quot; hype thread corrective</h3></div>
+        <div class="fld"><p>Jump into "solo AI business" hype threads with the corrective: it is still distribution, not the agents (the cited Marc Lou example credits 800K followers, not the stack).</p></div>
+        
+        
+        <div class="decision-block" data-item-id="c11-solo-ai-business-corrective" data-item-label="The &quot;solo AI business&quot; hype thread corrective | comment | tier 3" data-facets="{&quot;topic&quot;:&quot;distribution-not-agents&quot;,&quot;themes&quot;:[&quot;anti-guru&quot;,&quot;distribution&quot;],&quot;source_type&quot;:&quot;trend-scan&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;comment&quot;,&quot;tier&quot;:3,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, comment</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c11-solo-ai-business-corrective-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c11-solo-ai-business-corrective-note" class="reason-input" placeholder="Your words. Why yes, why no, why not now.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="c12-10k-agency-backlash">
+        <div class="cand-head"><h3>#12  The &quot;$10K AI agency in a weekend&quot; guru backlash</h3></div>
+        <div class="fld"><p>He has proof of work, not a course.</p></div>
+        
+        
+        <div class="decision-block" data-item-id="c12-10k-agency-backlash" data-item-label="The &quot;$10K AI agency in a weekend&quot; guru backlash | comment | tier 3" data-facets="{&quot;topic&quot;:&quot;guru-backlash&quot;,&quot;themes&quot;:[&quot;anti-guru&quot;,&quot;proof-of-work&quot;],&quot;source_type&quot;:&quot;trend-scan&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;comment&quot;,&quot;tier&quot;:3,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, comment</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="c12-10k-agency-backlash-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="c12-10k-agency-backlash-note" class="reason-input" placeholder="Your words. Why yes, why no, why not now.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+</div></details>
+<details class="sec" open id="sec-inbox"><summary><h2>From the inbox</h2></summary><div class="sec-body">
+<p class="lede">Four things that landed in your newsletters and had nowhere to go. The first one is the reason the scan missed it at all: it is not about AI.</p>
+
+      <article class="cand" id="i01-shannon-jean">
+        <div class="cand-head"><h3>Shannon Jean, &quot;Unconventional Entrepreneur&quot; (4 emails 8/24-8/25)</h3></div>
+        <div class="fld"><p>A reselling/liquidation-auction newsletter, not AI, which is likely why it was skipped. $3.7M in handbags over 3 years, 38 to 87,605 Instagram followers, "It took me 11 months, 149 calls, and 348 emails&hellip; to find a reliable source." The value is the narrative mechanic (uncomfortable decision, specific number, next uncomfortable decision), not the niche. Lines up with his own pallet research two days earlier.</p></div>
+        <div class="fld"><b>The question</b><p>Register this sender as a standing source?</p></div>
+        
+        <div class="decision-block" data-item-id="i01-shannon-jean" data-item-label="Shannon Jean, &quot;Unconventional Entrepreneur&quot; (4 emails 8/24-8/25) | inbox" data-facets="{&quot;topic&quot;:&quot;narrative-mechanic&quot;,&quot;themes&quot;:[&quot;storytelling&quot;,&quot;reselling&quot;],&quot;source_type&quot;:&quot;newsletter&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;newsletter&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="i01-shannon-jean-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="i01-shannon-jean-note" class="reason-input" placeholder="Your words. Why yes, why no, why not now.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="i02-robonuggets-arms">
+        <div class="cand-head"><h3>RoboNuggets 8/22, &quot;The NEW Agentic OS format for Claude 5 Models&quot;</h3></div>
+        <div class="fld"><p>The "ARMS" framework, a public framework converging on the architecture he already built. Strong validation/contrast post.</p></div>
+        <div class="fld"><b>The question</b><p>Worth a post?</p></div>
+        
+        <div class="decision-block" data-item-id="i02-robonuggets-arms" data-item-label="RoboNuggets 8/22, &quot;The NEW Agentic OS format for Claude 5 Models&quot; | inbox" data-facets="{&quot;topic&quot;:&quot;agentic-os-convergence&quot;,&quot;themes&quot;:[&quot;his-own-system&quot;,&quot;validation&quot;],&quot;source_type&quot;:&quot;newsletter&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;post&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="i02-robonuggets-arms-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="i02-robonuggets-arms-note" class="reason-input" placeholder="Your words. Why yes, why no, why not now.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="i03-ai-deleted-my-mac">
+        <div class="cand-head"><h3>&quot;AI deleted almost everything on my Mac&quot; (8/24, beehiiv)</h3></div>
+        <div class="fld"><p>Subject and snippet only. The body did not retrieve. <strong>NOT VERIFIED, do not use until read.</strong></p></div>
+        <div class="fld"><b>The question</b><p>Want the body retrieved before this goes anywhere?</p></div>
+        
+        <div class="decision-block" data-item-id="i03-ai-deleted-my-mac" data-item-label="&quot;AI deleted almost everything on my Mac&quot; (8/24, beehiiv) | inbox" data-facets="{&quot;topic&quot;:&quot;ai-destructive-failure&quot;,&quot;themes&quot;:[&quot;ai-adoption-failure&quot;],&quot;source_type&quot;:&quot;newsletter&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;post&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="i03-ai-deleted-my-mac-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="i03-ai-deleted-my-mac-note" class="reason-input" placeholder="Your words. Why yes, why no, why not now.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="cand" id="i04-capability-not-ownership">
+        <div class="cand-head"><h3>Excellent AI Prompts 8/24, &quot;AI gives you capability, action, ownership, options&quot;</h3></div>
+        <div class="fld"><p>Good post to push back on. Capability is not ownership.</p></div>
+        <div class="fld"><b>The question</b><p>Worth a pushback post?</p></div>
+        
+        <div class="decision-block" data-item-id="i04-capability-not-ownership" data-item-label="Excellent AI Prompts 8/24, &quot;AI gives you capability, action, ownership, options&quot; | inbox" data-facets="{&quot;topic&quot;:&quot;capability-vs-ownership&quot;,&quot;themes&quot;:[&quot;anti-guru&quot;],&quot;source_type&quot;:&quot;newsletter&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;post&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;candidate&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Yes, write it</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">No</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="i04-capability-not-ownership-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="i04-capability-not-ownership-note" class="reason-input" placeholder="Your words. Why yes, why no, why not now.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+</div></details>
+<details class="sec" open id="sec-questions"><summary><h2>Four questions that need a real moment from you</h2></summary><div class="sec-body">
+<p class="lede">These are decisions too, and they are the intake working rather than failing. Nothing gets invented to fill them. Answer in the note box, or park it and come back.</p>
+
+      <article class="qcard" id="q1-apprentice-again">
+        <blockquote>I want to write a post about choosing to be the apprentice again when your resume says you shouldn&#x27;t have to. Do you have anything around the moment you decided you were fine being the junior person in this deal, and whether any part of you argued against it?</blockquote>
+        
+        <div class="decision-block" data-item-id="q1-apprentice-again" data-item-label="QUESTION: apprentice-again" data-facets="{&quot;topic&quot;:&quot;apprentice-again&quot;,&quot;themes&quot;:[&quot;humility&quot;,&quot;genx&quot;],&quot;source_type&quot;:&quot;question&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;post&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;question&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Good question, here is the moment</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">Not a post</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="q1-apprentice-again-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="q1-apprentice-again-note" class="reason-input" placeholder="Answer it right here, or say why it is not a post.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="qcard" id="q2-bar-at-one-person">
+        <blockquote>I want to write a post about setting the bar at one person before you know whether anyone is coming. Once the 27th is behind you, can you tell me what actually happened and what you were thinking on the drive there?</blockquote>
+        
+        <div class="decision-block" data-item-id="q2-bar-at-one-person" data-item-label="QUESTION: bar-at-one-person" data-facets="{&quot;topic&quot;:&quot;bar-at-one-person&quot;,&quot;themes&quot;:[&quot;workshops&quot;,&quot;honest-metrics&quot;],&quot;source_type&quot;:&quot;question&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;post&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;question&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Good question, here is the moment</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">Not a post</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="q2-bar-at-one-person-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="q2-bar-at-one-person-note" class="reason-input" placeholder="Answer it right here, or say why it is not a post.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="qcard" id="q3-applying-vs-asking">
+        <blockquote>I want to write a post about the difference between applying and asking. Do you have anything around the SoFi message to your MBA classmate, did you hear back, and was there a pause before you hit send?</blockquote>
+        
+        <div class="decision-block" data-item-id="q3-applying-vs-asking" data-item-label="QUESTION: applying-vs-asking" data-facets="{&quot;topic&quot;:&quot;applying-vs-asking&quot;,&quot;themes&quot;:[&quot;outreach&quot;,&quot;network&quot;],&quot;source_type&quot;:&quot;question&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;post&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;question&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Good question, here is the moment</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">Not a post</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="q3-applying-vs-asking-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="q3-applying-vs-asking-note" class="reason-input" placeholder="Answer it right here, or say why it is not a post.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="qcard" id="q4-never-lead-with-credentials">
+        <blockquote>I want to write a post about why you never lead with your own credentials when you&#x27;re in someone else&#x27;s comments. Do you have anything around this, a comment you almost posted and deleted?</blockquote>
+        
+        <div class="decision-block" data-item-id="q4-never-lead-with-credentials" data-item-label="QUESTION: credentials-in-comments" data-facets="{&quot;topic&quot;:&quot;credentials-in-comments&quot;,&quot;themes&quot;:[&quot;voice&quot;,&quot;engagement&quot;],&quot;source_type&quot;:&quot;question&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;post&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;question&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Good question, here is the moment</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">Not a post</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="q4-never-lead-with-credentials-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="q4-never-lead-with-credentials-note" class="reason-input" placeholder="Answer it right here, or say why it is not a post.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+</div></details>
+<details class="sec" open id="sec-flags"><summary><h2>Flags</h2></summary><div class="sec-body">
+<p class="lede">Four things that need a decision from you before anyone writes anything. Two of them are contradictions already sitting in files a future writer will read.</p>
+
+      <article class="flagcard" id="f1-unverified-stats">
+        <h3>Two unverified stats, excluded from copy, narrative only</h3>
+        <div class="fld"><p>The "36.3% of new ventures are solo founders" figure and the "Microsoft Research 61% of multi-agent failures start at handoffs" figure. Both are held out of any copy until sourced.</p></div>
+        <div class="fld"><b>The question</b><p>Kill them, or should someone go verify them?</p></div>
+        
+        <div class="decision-block" data-item-id="f1-unverified-stats" data-item-label="FLAG: Two unverified stats, excluded from copy, narrative only" data-facets="{&quot;topic&quot;:&quot;f1-unverified-stats&quot;,&quot;themes&quot;:[&quot;flag&quot;],&quot;source_type&quot;:&quot;flag&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;flag&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;flag&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Go verify them</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">Kill them</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="f1-unverified-stats-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="f1-unverified-stats-note" class="reason-input" placeholder="Your words.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="flagcard" id="f2-pendry-park-city">
+        <h3>The Pendry Park City interview material (8/24) is live job-search</h3>
+        <div class="fld"><p>Real and strong, but it is your call whether any of it goes public. Flagged, not recommended.</p></div>
+        <div class="fld"><b>The question</b><p>Your call, and only yours.</p></div>
+        
+        <div class="decision-block" data-item-id="f2-pendry-park-city" data-item-label="FLAG: The Pendry Park City interview material (8/24) is live job-search" data-facets="{&quot;topic&quot;:&quot;f2-pendry-park-city&quot;,&quot;themes&quot;:[&quot;flag&quot;],&quot;source_type&quot;:&quot;flag&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;flag&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;flag&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Usable publicly</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">Off limits</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="f2-pendry-park-city-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="f2-pendry-park-city-note" class="reason-input" placeholder="Your words.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="flagcard" id="f3-contradiction-global-rebuild">
+        <h3>Contradiction to fix: &quot;led a global rebuild&quot;</h3>
+        <div class="fld"><p><code>book-source-material.md</code> L4759 still says he "led a global rebuild," and the resume V5 files in <code>Downloads\</code> still say "helped lead the global Kaizen." Both contradict your own 8/19 correction. Untouched so far, but a future writer will read them and repeat them.</p></div>
+        <div class="fld"><b>The question</b><p>Correct both files to match the 8/19 version?</p></div>
+        
+        <div class="decision-block" data-item-id="f3-contradiction-global-rebuild" data-item-label="FLAG: Contradiction to fix: &quot;led a global rebuild&quot;" data-facets="{&quot;topic&quot;:&quot;f3-contradiction-global-rebuild&quot;,&quot;themes&quot;:[&quot;flag&quot;],&quot;source_type&quot;:&quot;flag&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;flag&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;flag&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Correct both files</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">Leave them</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="f3-contradiction-global-rebuild-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="f3-contradiction-global-rebuild-note" class="reason-input" placeholder="Your words.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+
+      <article class="flagcard" id="f4-already-used-unknown">
+        <h3>&quot;Already used&quot; in the scan only means &quot;not in a local draft file&quot;</h3>
+        <div class="fld"><p>The content board lives in Notion with no posted-content export in the repo, so what actually shipped to LinkedIn could not be confirmed. Any candidate here could already have been posted.</p></div>
+        <div class="fld"><b>The question</b><p>Worth building the posted-content export so this stops being a guess?</p></div>
+        
+        <div class="decision-block" data-item-id="f4-already-used-unknown" data-item-label="FLAG: &quot;Already used&quot; in the scan only means &quot;not in a local draft file&quot;" data-facets="{&quot;topic&quot;:&quot;f4-already-used-unknown&quot;,&quot;themes&quot;:[&quot;flag&quot;],&quot;source_type&quot;:&quot;flag&quot;,&quot;has_anchor&quot;:false,&quot;format&quot;:&quot;flag&quot;,&quot;proposed_on&quot;:&quot;2026-08-25&quot;,&quot;item_kind&quot;:&quot;flag&quot;}">
+          <h4>Your call</h4>
+          <div class="decision-row">
+            <button type="button" class="decision-btn" data-decision="approve">Build the export</button>
+            <button type="button" class="decision-btn" data-decision="park">Park it</button>
+            <button type="button" class="decision-btn" data-decision="reject">Not worth it</button>
+            <span class="decision-status">undecided</span>
+          </div>
+          <div class="item-notes">
+            <label for="f4-already-used-unknown-note">Why? Your words. This is the part that teaches the system your taste, so a half sentence beats nothing.</label>
+            <input type="text" id="f4-already-used-unknown-note" class="reason-input" placeholder="Your words.">
+            <button type="button" class="save-note">Save note</button>
+            <ul class="notes-log"></ul>
+          </div>
+        </div>
+      </article>
+</div></details>
+
+  <details class="sec" open id="sec-how"><summary><h2>How this works</h2></summary>
+  <div class="sec-body">
+  <div class="taste-box">
+    <p>Every tap and every note writes straight to the database. Nothing lives in your browser. Open this on your phone, decide three, close it, and the rest is exactly where you left it on your laptop.</p>
+    <p>The angle on each candidate is editable. What you save there is what a writer builds from, and your original is always one tap away behind &ldquo;Show the original draft&rdquo; with a word-by-word diff so you can confirm nothing else moved.</p>
+    <p>If a save ever fails you will see a red banner at the top and your text stays in the box. A failure is loud here on purpose. It never quietly loses what you typed.</p>
+    <p class="src">Every decision, edit and note is appended, never overwritten, so the history stays readable. The accumulated record is queryable at <code>GET /api/orc/content-review-decisions/taste?page_slug=content-candidates</code>.</p>
+  </div>
+  </div></details>
+
+</div>
+
+<script src="/review/shared/review-save-client.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // DB-backed APPROVE / APPROVE WITH EDITS / REJECT for all 28 staged posts.
+  //
+  // Standing rule (2026-07-20): a decision page needs a real database from v1,
+  // never browser localStorage, plus a place for his own timestamped notes
+  // available regardless of status. Same stack the other /review/ decision
+  // pages already run on: content_review_decisions_items + _history +
+  // _edit_history + _notes (orchestrator/migrations/061_content_review_decisions.sql).
+  //
+  // 2026-08-19, his ask: he needed to fix one word on post 1 ("I caught myself
+  // ONCE writing...") and the only mechanisms on the page were approve, reject,
+  // and a note an agent would have to interpret. So the body is now directly
+  // editable and what he saves IS the version that publishes. There is no
+  // second storage mechanism: edited_text and the append-only _edit_history
+  // table were already in migration 061 and are now actually used. No schema
+  // change was needed or made.
+  //
+  // "Approved with edits" is DERIVED, not a third enum value:
+  // decision === 'approve' AND edited_text is a non-empty string that differs
+  // from the gated draft. That keeps the existing CHECK constraint
+  // (approve|reject) untouched while still giving him three real end states.
+  //
+  // The post markup in this file is never rewritten on disk -- it is the
+  // original, preserved. His edit renders alongside it and lives in the database.
+  //
+  // Read failures degrade quietly (a fresh page shows everything undecided).
+  // WRITE failures show a VISIBLE banner and NEVER discard what he typed: the
+  // textarea stays open with his text, and a localStorage draft is kept
+  // UNDER the database write purely as a crash net (never as the store of
+  // record) so a closed tab or a dead network cannot eat an edit.
+  var API = 'https://agentshq.boubacarbarry.com/api/orc/content-review-decisions';
+  var PAGE_SLUG = 'content-candidates';
+  var DRAFT_PREFIX = 'cc-draft:' + PAGE_SLUG + ':';
+
+  function banner() { return document.getElementById('write-error-banner'); }
+  function showWriteError(msg) {
+    var b = banner(); if (!b) { return; }
+    b.textContent = 'SAVE FAILED: ' + msg;
+    b.style.display = 'block';
+    try { b.scrollIntoView({ block: 'nearest' }); } catch (e) { /* older browsers */ }
+  }
+  function showRetrying(attempt) {
+    var b = banner(); if (!b) { return; }
+    b.textContent = 'Save delayed (server restarting), retrying, attempt ' + attempt + '...';
+    b.style.display = 'block';
+  }
+  function hideWriteError() {
+    var b = banner(); if (b) { b.style.display = 'none'; }
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ── local crash net, strictly under the DB write ──────────────────
+  function draftKey(id) { return DRAFT_PREFIX + id; }
+  function readDraft(id) {
+    try { return localStorage.getItem(draftKey(id)); } catch (e) { return null; }
+  }
+  function writeDraft(id, text) {
+    try { localStorage.setItem(draftKey(id), text); } catch (e) { /* private mode */ }
+  }
+  function clearDraft(id) {
+    try { localStorage.removeItem(draftKey(id)); } catch (e) { /* private mode */ }
+  }
+
+  // ── word-level diff, so he can confirm nothing else moved ─────────
+  function tokenize(s) {
+    return String(s == null ? '' : s).split(/(\s+)/).filter(function (t) { return t !== ''; });
+  }
+  function diffHtml(oldText, newText) {
+    var a = tokenize(oldText), b = tokenize(newText);
+    var n = a.length, m = b.length;
+    // Guard: LCS is O(n*m). These posts are short, but never let a paste
+    // of something enormous freeze his phone -- fall back to a plain
+    // before/after instead of hanging.
+    if (n * m > 400000) {
+      return '<span class="diff-title">Original</span>' + esc(oldText) +
+             '\n\n<span class="diff-title">Your version</span>' + esc(newText);
+    }
+    var dp = [], i, j;
+    for (i = 0; i <= n; i++) { dp.push(new Array(m + 1).fill(0)); }
+    for (i = n - 1; i >= 0; i--) {
+      for (j = m - 1; j >= 0; j--) {
+        dp[i][j] = (a[i] === b[j]) ? dp[i + 1][j + 1] + 1
+                                   : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    var out = []; i = 0; j = 0;
+    while (i < n && j < m) {
+      if (a[i] === b[j]) { out.push(esc(a[i])); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { out.push('<span class="diff-del">' + esc(a[i]) + '</span>'); i++; }
+      else { out.push('<span class="diff-ins">' + esc(b[j]) + '</span>'); j++; }
+    }
+    while (i < n) { out.push('<span class="diff-del">' + esc(a[i]) + '</span>'); i++; }
+    while (j < m) { out.push('<span class="diff-ins">' + esc(b[j]) + '</span>'); j++; }
+    return '<span class="diff-title">Your change, word by word</span>' + out.join('');
+  }
+
+  var blocks = Array.prototype.slice.call(document.querySelectorAll('.decision-block[data-item-id]'));
+  var decided = {};   // item_id -> 'approve' | 'reject' | null
+  var edits = {};     // item_id -> saved edited text ('' = no edit)
+  var ORIGINAL = {};  // item_id -> the gated draft, snapshotted from the DOM
+  var UI = {};        // item_id -> the editor elements
+
+  function cardFor(block) { return block.closest('.post-card'); }
+
+  // The editable unit is the WHOLE post, not its first block. A thread post
+  // is several code blocks with [Tweet n] labels between them; composing
+  // them into one string with those markers means an edit can never land on
+  // tweet 1 only and silently drop the rest.
+  function bodyEls(card) {
+    if (!card) { return []; }
+    return Array.prototype.slice.call(card.querySelectorAll('.tweet-label, pre'))
+      .filter(function (el) { return !el.closest('.decision-block') && !el.closest('.edited-body'); });
+  }
+  function composeBody(card) {
+    return bodyEls(card).map(function (el) {
+      return el.classList.contains('tweet-label')
+        ? '[' + el.textContent.trim() + ']'
+        : el.textContent;
+    }).join('\n\n');
+  }
+  function isEdited(id) {
+    var e = edits[id];
+    return typeof e === 'string' && e !== '' && e !== ORIGINAL[id];
+  }
+  function currentText(id) { return isEdited(id) ? edits[id] : ORIGINAL[id]; }
+
+  function updateCounter() {
+    var total = blocks.length, n = 0, asWritten = 0, withEdits = 0, rejected = 0, parked = 0;
+    blocks.forEach(function (b) {
+      var id = b.getAttribute('data-item-id');
+      var d = decided[id];
+      if (!d) { return; }
+      n++;
+      if (d === 'reject') { rejected++; }
+      else if (d === 'park') { parked++; }
+      else if (isEdited(id)) { withEdits++; }
+      else { asWritten++; }
+    });
+    var el = document.getElementById('counter-main');
+    if (el) { el.textContent = n + ' of ' + total + ' decided'; }
+    var sub = document.getElementById('counter-sub');
+    if (sub) {
+      sub.textContent = asWritten + ' yes, ' + withEdits +
+        ' yes with your edit, ' + parked + ' parked, ' + rejected + ' no, ' +
+        (total - n) + ' still open';
+    }
+  }
+
+  function renderNotesForBlock(block, notes) {
+    var log = block.querySelector('.notes-log');
+    if (!log) { return; }
+    if (!notes || !notes.length) {
+      log.innerHTML = '<li class="note-empty">No note logged yet.</li>';
+      return;
+    }
+    log.innerHTML = notes.slice().reverse().map(function (n) {
+      var ts = '';
+      try {
+        ts = new Date(n.created_at).toLocaleString('en-US', {
+          timeZone: 'America/Denver', month: 'short', day: 'numeric',
+          year: 'numeric', hour: 'numeric', minute: '2-digit'
+        }) + ' MT';
+      } catch (e) { ts = n.created_at || ''; }
+      return '<li><span class="note-ts">' + ts + '</span>' + esc(n.note_text || '') + '</li>';
+    }).join('');
+  }
+
+  // ── render one post's edit state (pre text, badge, diff, status) ──
+  function renderItem(id) {
+    var ui = UI[id]; if (!ui) { return; }
+    if (!ui.area) { renderStatusOnly(ui, id); return; }
+    var edited = isEdited(id);
+    var text = currentText(id);
+    // The original markup is never rewritten. His version renders in its own
+    // block; the untouched draft stays in the DOM behind a toggle.
+    if (ui.editedPre) { ui.editedPre.textContent = text; }
+    if (ui.editedWrap) { ui.editedWrap.hidden = !edited; }
+    if (ui.origToggle) { ui.origToggle.hidden = !edited; }
+    if (ui.card) {
+      ui.card.classList.toggle('is-edited', edited);
+      if (!edited) { ui.card.classList.remove('show-orig'); }
+    }
+    if (ui.flag) {
+      ui.flag.classList.toggle('on', edited);
+      ui.flag.textContent = edited ? 'Edited by you' : '';
+    }
+    if (ui.diff) {
+      ui.diff.classList.toggle('on', edited);
+      ui.diff.innerHTML = edited ? diffHtml(ORIGINAL[id], text) : '';
+    }
+    if (ui.editBtn) { ui.editBtn.textContent = edited ? 'Edit text again' : 'Edit text'; }
+    if (ui.revertBtn) { ui.revertBtn.style.display = edited ? '' : 'none'; }
+
+    var d = decided[id];
+    var statusEl = ui.block.querySelector('.decision-status');
+    if (statusEl) {
+      statusEl.textContent = !d ? 'undecided'
+        : (d === 'approve' ? (edited ? 'current: yes, with your edit to the angle' : 'current: yes')
+        : (d === 'park' ? 'current: parked, not now' : 'current: no'));
+    }
+    ui.block.querySelectorAll('.decision-btn').forEach(function (btn) {
+      var on = btn.getAttribute('data-decision') === d;
+      btn.classList.toggle('active', on);
+      btn.classList.toggle('with-edits', on && d === 'approve' && edited);
+    });
+  }
+
+  // Items with no editable copy still show their verdict and light up
+  // their button -- they are decisions too.
+  function renderStatusOnly(ui, id) {
+    var d = decided[id];
+    var statusEl = ui.block.querySelector('.decision-status');
+    if (statusEl) {
+      statusEl.textContent = !d ? 'undecided'
+        : (d === 'approve' ? 'current: yes'
+        : (d === 'park' ? 'current: parked, not now' : 'current: no'));
+    }
+    ui.block.querySelectorAll('.decision-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-decision') === d);
+    });
+  }
+
+  function autosize(ta) {
+    ta.style.height = 'auto';
+    var cap = Math.max(200, Math.round(window.innerHeight * 0.58));
+    ta.style.height = Math.min(cap, Math.max(180, ta.scrollHeight + 4)) + 'px';
+  }
+
+  function openEditor(id, seedText) {
+    var ui = UI[id]; if (!ui) { return; }
+    ui.area.value = (seedText != null) ? seedText : currentText(id);
+    ui.area.hidden = false;
+    ui.actions.hidden = false;
+    ui.hint.hidden = false;
+    autosize(ui.area);
+    ui.area.focus();
+  }
+  function closeEditor(id) {
+    var ui = UI[id]; if (!ui) { return; }
+    ui.area.hidden = true;
+    ui.actions.hidden = true;
+    ui.hint.hidden = true;
+    ui.draftWarn.classList.remove('on');
+  }
+
+  // POST an edit. text === '' means "revert to the original".
+  function saveEdit(id, text, onDone) {
+    var ui = UI[id];
+    ui.saveBtn.disabled = true; ui.revertBtn.disabled = true; ui.cancelBtn.disabled = true;
+    ReviewSaveClient.fetchWithRetry(API + '/edit-text', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, edited_text: text })
+    }, showRetrying)
+      .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+      .then(function (r) {
+        if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+        hideWriteError();
+        // Trust the server's echo, not the local variable.
+        edits[id] = (r.body.edited_text != null) ? r.body.edited_text : text;
+        clearDraft(id);
+        closeEditor(id);
+        renderItem(id);
+        updateCounter();
+        if (onDone) { onDone(); }
+      })
+      .catch(function (err) {
+        // Loud, and his text is untouched: the textarea stays open with what
+        // he typed and the localStorage crash net still holds it.
+        writeDraft(id, text);
+        ui.draftWarn.textContent = 'Not saved to the database. Your text is still in the box below and kept in this browser. Fix the connection and press Save edit again.';
+        ui.draftWarn.classList.add('on');
+        showWriteError('The edit to ' + id + ' did NOT save to the database (' + err.message +
+          '). Your text has NOT been lost, it is still in the edit box. Press Save edit again.');
+      })
+      .finally(function () {
+        ui.saveBtn.disabled = false; ui.revertBtn.disabled = false; ui.cancelBtn.disabled = false;
+      });
+  }
+
+  function applyState(items, notesByItem) {
+    blocks.forEach(function (block) {
+      var id = block.getAttribute('data-item-id');
+      var st = items && items[id];
+      decided[id] = (st && st.decision) || null;
+      edits[id] = (st && typeof st.edited_text === 'string') ? st.edited_text : '';
+      renderItem(id);
+      renderNotesForBlock(block, (notesByItem && notesByItem[id]) || []);
+
+      // Crash net: a draft that survived a closed tab / dead network and
+      // does not match what the database holds gets surfaced, never
+      // silently applied. He decides whether to keep it.
+      var d = readDraft(id);
+      var ui = UI[id];
+      if (d != null && ui && ui.draftWarn && d !== currentText(id)) {
+        ui.draftWarn.textContent = 'An unsaved edit from this browser was recovered. It is NOT in the database yet. Review it and press Save edit, or press Cancel to throw it away.';
+        ui.draftWarn.classList.add('on');
+        openEditor(id, d);
+      }
+    });
+    updateCounter();
+  }
+
+  function groupNotesByItem(notes) {
+    var out = {};
+    (notes || []).forEach(function (n) {
+      if (!out[n.item_id]) { out[n.item_id] = []; }
+      out[n.item_id].push(n);
+    });
+    return out;
+  }
+
+  function loadState() {
+    ReviewSaveClient.fetchWithRetry(API + '/state?page_slug=' + encodeURIComponent(PAGE_SLUG))
+      .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+      .then(function (r) {
+        if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+        applyState(r.body.items || {}, groupNotesByItem(r.body.notes || []));
+      })
+      .catch(function () { updateCounter(); });
+  }
+
+  function registerPage() {
+    var items = blocks.map(function (block) {
+      var f = null;
+      try { f = JSON.parse(block.getAttribute('data-facets') || 'null'); } catch (e) { f = null; }
+      return {
+        item_id: block.getAttribute('data-item-id'),
+        item_label: block.getAttribute('data-item-label') || '',
+        facets: f
+      };
+    });
+    ReviewSaveClient.fetchWithRetry(API + '/run', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page_slug: PAGE_SLUG, items: items })
+    }).then(function () { loadState(); }).catch(function () { loadState(); });
+  }
+
+  // ── build the editor UI for every post ───────────────────────────
+  blocks.forEach(function (block) {
+    var id = block.getAttribute('data-item-id');
+    var card = cardFor(block);
+    var parts = bodyEls(card);
+    if (!parts.length) {
+      // No editable copy on this item (a question or a flag). Wire the
+      // decision buttons and the note box, skip the editor entirely.
+      UI[id] = { block: block, card: card };
+      ORIGINAL[id] = '';
+      edits[id] = '';
+      wireDecisions(block, id);
+      wireNote(block, id);
+      return;
+    }
+    parts.forEach(function (el) { el.classList.add('orig-body'); });
+    ORIGINAL[id] = composeBody(card);
+    edits[id] = '';
+
+    var flag = document.createElement('span');
+    flag.className = 'edit-flag';
+    var head = card ? card.querySelector('.post-head') : null;
+    if (head) { head.appendChild(flag); }
+
+    var lastPart = parts.length ? parts[parts.length - 1] : null;
+
+    var editedWrap = document.createElement('div');
+    editedWrap.className = 'edited-body';
+    editedWrap.hidden = true;
+    editedWrap.innerHTML = '<div class="edited-body-hd">Your version, this is what publishes</div><pre></pre>';
+    var editedPre = editedWrap.querySelector('pre');
+
+    var origToggle = document.createElement('button');
+    origToggle.type = 'button';
+    origToggle.className = 'orig-toggle';
+    origToggle.hidden = true;
+    origToggle.textContent = 'Show the original draft';
+    origToggle.addEventListener('click', function () {
+      var on = card.classList.toggle('show-orig');
+      origToggle.textContent = on ? 'Hide the original draft' : 'Show the original draft';
+    });
+
+    var diff = document.createElement('div');
+    diff.className = 'edit-diff';
+
+    if (lastPart && lastPart.parentNode) {
+      lastPart.parentNode.insertBefore(editedWrap, lastPart.nextSibling);
+      editedWrap.parentNode.insertBefore(origToggle, editedWrap.nextSibling);
+      origToggle.parentNode.insertBefore(diff, origToggle.nextSibling);
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'edit-block';
+    wrap.innerHTML =
+      '<div class="edit-row">' +
+        '<button type="button" class="edit-btn">Edit text</button>' +
+        '<span class="edit-note">Fix it yourself. What you save is what publishes.</span>' +
+      '</div>' +
+      '<div class="edit-draft-warn" role="alert"></div>' +
+      '<textarea class="edit-area" hidden spellcheck="true" autocapitalize="sentences" ' +
+        'aria-label="Edit the text of this post"></textarea>' +
+      '<div class="edit-actions" hidden>' +
+        '<button type="button" class="edit-save">Save edit</button>' +
+        '<button type="button" class="edit-cancel">Cancel</button>' +
+        '<button type="button" class="edit-revert" style="display:none">Revert to original</button>' +
+      '</div>' +
+      '<p class="edit-hint" hidden>Saved straight to the database. The original draft is kept, so you can always revert.</p>';
+    // Editing sits above the notes box on purpose: fixing is the first
+    // reach now, explaining is the fallback.
+    var notesEl = block.querySelector('.item-notes');
+    if (notesEl) { block.insertBefore(wrap, notesEl); } else { block.appendChild(wrap); }
+
+    var ui = {
+      block: block, card: card, flag: flag, diff: diff,
+      editedWrap: editedWrap, editedPre: editedPre, origToggle: origToggle,
+      editBtn: wrap.querySelector('.edit-btn'),
+      area: wrap.querySelector('.edit-area'),
+      actions: wrap.querySelector('.edit-actions'),
+      saveBtn: wrap.querySelector('.edit-save'),
+      cancelBtn: wrap.querySelector('.edit-cancel'),
+      revertBtn: wrap.querySelector('.edit-revert'),
+      hint: wrap.querySelector('.edit-hint'),
+      draftWarn: wrap.querySelector('.edit-draft-warn')
+    };
+    UI[id] = ui;
+
+    ui.editBtn.addEventListener('click', function () {
+      if (ui.area.hidden) { openEditor(id); } else { closeEditor(id); }
+    });
+
+    var draftTimer = null;
+    ui.area.addEventListener('input', function () {
+      autosize(ui.area);
+      if (draftTimer) { clearTimeout(draftTimer); }
+      draftTimer = setTimeout(function () { writeDraft(id, ui.area.value); }, 400);
+    });
+
+    ui.saveBtn.addEventListener('click', function () {
+      var text = ui.area.value;
+      if (text === ORIGINAL[id]) { saveEdit(id, ''); return; }  // typed it back = no edit
+      saveEdit(id, text);
+    });
+
+    ui.cancelBtn.addEventListener('click', function () {
+      var d = readDraft(id);
+      if (d != null) {
+        clearDraft(id);
+        ui.draftWarn.textContent = 'Draft discarded. The database version is what you see above.';
+        ui.draftWarn.classList.add('on');
+        setTimeout(function () { ui.draftWarn.classList.remove('on'); }, 4000);
+      }
+      closeEditor(id);
+      renderItem(id);
+    });
+
+    ui.revertBtn.addEventListener('click', function () {
+      clearDraft(id);
+      saveEdit(id, '');
+    });
+
+    wireDecisions(block, id);
+    wireNote(block, id);
+  });
+
+  function wireDecisions(block, id) {
+    block.querySelectorAll('.decision-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var decision = btn.getAttribute('data-decision');
+        ReviewSaveClient.fetchWithRetry(API + '/decision', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, decision: decision })
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            hideWriteError();
+            decided[id] = decision;
+            renderItem(id);
+            updateCounter();
+          })
+          .catch(function (err) {
+            showWriteError('Post ' + id + ' did NOT save to the database (' + err.message + '). It is only in this browser right now.');
+          });
+      });
+    });
+
+  }
+
+  function wireNote(block, id) {
+    var saveNoteBtn = block.querySelector('.save-note');
+    var noteInput = block.querySelector('.reason-input');
+    if (saveNoteBtn && noteInput) {
+      var submitNote = function () {
+        var text = (noteInput.value || '').trim();
+        if (!text) { return; }
+        saveNoteBtn.disabled = true;
+        ReviewSaveClient.fetchWithRetry(API + '/note', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, note_text: text })
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            hideWriteError();
+            noteInput.value = '';
+            loadState();
+          })
+          .catch(function (err) {
+            showWriteError('Note for ' + id + ' did NOT save to the database (' + err.message + '). Your text is still in the box, try again.');
+          })
+          .finally(function () { saveNoteBtn.disabled = false; });
+      };
+      saveNoteBtn.addEventListener('click', submitNote);
+      noteInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submitNote(); }
+      });
+    }
+  }
+
+  updateCounter();
+  if (blocks.length) { registerPage(); } else { loadState(); }
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var open = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    navBar.querySelectorAll('.nav-links a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+})();
+</script>
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
