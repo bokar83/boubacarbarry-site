@@ -12,7 +12,7 @@
 
   // The visible product name. Change this one line (and nothing else) to
   // rename the app; it drives the tab title and the wordmark.
-  var APP_NAME = "Continue?";
+  var APP_NAME = "Continue";
 
   // ---------------------------------------------------------------------
   // Auth state

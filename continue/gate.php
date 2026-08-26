@@ -45,7 +45,7 @@ declare(strict_types=1);
 // The user-visible name, defined ONCE. The app shell carries the same name in
 // index.html; if that changes, change it here in the same commit. A login page
 // branded differently from the page it opens reads as the wrong site.
-const DOJO_NAME            = 'Continue?';
+const DOJO_NAME            = 'Continue';
 
 /**
  * The one URL path this gate owns. Every absolute reference below is built from
