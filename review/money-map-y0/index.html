@@ -135,6 +135,22 @@
     details.ta-grp .grp-lbl { flex: 1; min-width: 0; font-size: 0.68rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
     details.ta-grp[open] .grp-lbl { color: var(--ink-strong); }
     details.ta-grp.grp-today .grp-lbl { color: var(--ember-bright); }
+    /* HIS OWN ORDER (2026-08-26). Ranked by him, pinned above every work-type
+       group, so the sequence he actually stated is the first thing on the page
+       instead of a note buried 26,000 pixels down. */
+    details.ta-grp.grp-pin > summary { border-color: var(--ember-bright); border-width: 2px; background: var(--card); }
+    details.ta-grp.grp-pin .grp-lbl { color: var(--ember-bright); }
+    details.ta-grp.grp-pin > .grp-body { border-left: 2px solid var(--ember-bright); padding-left: 0.5rem; margin-top: 0.35rem; }
+    .pin-note { font-size: 0.72rem; line-height: 1.5; color: var(--faint); margin: 0 0 0.55rem; }
+    .pin-note b { color: var(--ember-bright); }
+    ol.pin-index { margin: 0 0 0.8rem; padding: 0.6rem 0.7rem 0.6rem 1.9rem; border: 1px solid var(--ember-bright); border-radius: 10px; background: var(--card-2); }
+    ol.pin-index li { font-size: 0.85rem; font-weight: 750; line-height: 1.5; color: var(--ink-strong); margin: 0.1rem 0; }
+    ol.pin-index li::marker { color: var(--ember-bright); font-weight: 900; }
+    ol.pin-index li.done { color: var(--faint); text-decoration: line-through; }
+    .pin-done { font-size: 0.55rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: #141210; background: var(--verd, #6f9b6e); border-radius: 999px; padding: 0.1rem 0.4rem; text-decoration: none; display: inline-block; vertical-align: middle; }
+    .lr-rank { flex-shrink: 0; font-size: 0.58rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #141210; background: var(--ember-bright); border-radius: 999px; padding: 0.12rem 0.45rem; }
+    details.ta-grp.grp-closed .grp-lbl { color: var(--faint); }
+    details.ta-grp.grp-closed .act-row { opacity: 0.55; }
     details.ta-grp .grp-hint { flex-shrink: 0; font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.45rem; }
     details.ta-grp .grp-hint::after { content: "Open"; }
     details.ta-grp[open] .grp-hint::after { content: "Close"; }
@@ -2442,7 +2458,8 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       '<div class="lr-head">' +
         '<input type="checkbox" class="lr-check" data-done="' + rlEsc(id) + '"' + (done ? ' checked' : '') +
           ' aria-label="Mark done: ' + rlEsc(name.replace(/&[a-z#0-9]+;/gi, '')) + '">' +
-        tag + age + '<span class="lr-name">' + (seed ? name : rlEsc(name)) + '</span>' +
+        tag + (rankOf(id) ? '<span class="lr-rank">His #' + rankOf(id) + '</span>' : '') +
+        age + '<span class="lr-name">' + (seed ? name : rlEsc(name)) + '</span>' +
         '<button type="button" class="lr-notebtn' + (n ? ' has' : '') + '" data-notes="' + rlEsc(id) + '">Notes' + (n ? ' (' + n + ')' : '') + '</button>' +
       '</div>' +
       '<div class="lr-body">' +
@@ -2507,16 +2524,60 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   //
   // A DONE item stops rolling and stays in its own day's group with the tick
   // visible, so the record of when it was finished survives.
+  // ---- A CLOSED ROW IS NOT AN ACTION (2026-08-26) -----------------------
+  // A row whose own first line says it is CLOSED, SUPERSEDED, MERGED, or a
+  // pointer to somewhere else is a record, not a task. Those rows were never
+  // ticked (there was nothing to tick), so the rollover above kept carrying
+  // them forward and they sat in the live undone list next to real work. He
+  // read a dead row as something he still owed.
+  //
+  // They are NOT deleted and NOT hidden: they render at the bottom of today's
+  // block in their own closed section, dimmed and shut, so the record survives
+  // where nobody can mistake it for an ask. The test reads only the FIRST line
+  // of the value, so a live row that merely mentions the word "closed" later
+  // in its text is untouched.
+  var TOMBSTONE_RE = /^\s*(CLOSED|SUPERSEDED|MERGED|POINTER ROW|CORRECTED AND CLOSED|DUPLICATE)\b/i;
+  function isTombstone(id, v){
+    if (SEED_BY_ID[id]) return false;
+    if (String(id).indexOf('closed-') === 0) return true;
+    var s = String(v == null ? '' : v);
+    // A dated row with NOTHING in it is the other shape of a dead row: its text
+    // was moved to a closed- twin and the original was left blank, so the board
+    // rendered an empty card that read like an unfinished task. A record with
+    // no content is never an action.
+    if (!s.trim()) return true;
+    return TOMBSTONE_RE.test(s.split('\n')[0]);
+  }
+
+  // ---- HIS OWN ORDER (2026-08-26) ---------------------------------------
+  // Boubacar states the order he works in. Until today that order lived only
+  // as prose inside one row, so the board rendered it nowhere and he could not
+  // see his own priorities. A row now carries its rank on its face, as
+  // "*** RANK n", written into the row value itself, which is the only place
+  // this board stores anything. Ranked rows render pinned at the very top,
+  // above every work-type group, in rank order, whether they are dated,
+  // undated, open or already done. Nothing else about the row changes.
+  var RANK_RE = /\*\*\*\s*RANK\s+(\d+)/;
+  function rankOf(id){
+    var v = state[id];
+    if (v == null) return 0;
+    var m = RANK_RE.exec(String(v));
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
   function todayRows(){
     var today = dkey(new Date());
     var byDay = collectActs().byDay;
-    var rows = (byDay[today] || []).slice().sort(function(a, b){ return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0); });
+    var rows = (byDay[today] || []).slice()
+      .filter(function(r){ return !isTombstone(r.id, r.v); })
+      .sort(function(a, b){ return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0); });
     var rolled = [];
     Object.keys(byDay).forEach(function(d){
       if (d >= today) return;
       byDay[d].forEach(function(r){
         if (r.daily) return;          // a missed daily does not stack
         if (isDone(r.id)) return;     // done stops rolling
+        if (isTombstone(r.id, r.v)) return; // a closed record is not an action
         rolled.push({ id: r.id, v: r.v, kind: r.kind, seeded: r.seeded, rolledFrom: d });
       });
     });
@@ -2628,6 +2689,46 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
                '</details>';
       }
 
+      // ---- HIS ORDER, PINNED ABOVE EVERYTHING (2026-08-26) --------------
+      // Every row carrying a "*** RANK n" marker, wherever it lives on the
+      // board and whatever its date, in the order HE gave. This renders FIRST,
+      // above the work-type sections, because an order he cannot see is an
+      // order the board does not have. A ranked row that is already DONE stays
+      // here with its tick showing, so the first thing he sees is the win and
+      // not an inference from a footnote.
+      var pinned = [], pinnedIds = {};
+      (function collectPinned(){
+        function consider(id, v, kind){
+          if (pinnedIds[id]) return;
+          var rk = rankOf(id);
+          if (!rk) return;
+          pinnedIds[id] = 1;
+          pinned.push({ id: id, v: v, kind: kind, rank: rk });
+        }
+        undatedStatus.forEach(function(k){ consider(k, state[k], 'status'); });
+        undatedKpi.forEach(function(k){ consider(k, state[k], 'kpi'); });
+        Object.keys(byDay).forEach(function(d){
+          byDay[d].forEach(function(r){ if (!r.seeded) consider(r.id, r.v, r.kind); });
+        });
+        pinned.sort(function(a, b){ return a.rank - b.rank || (a.id < b.id ? -1 : 1); });
+      })();
+      if (pinned.length){
+        var pdone = pinned.filter(function(r){ return isDone(r.id); }).length;
+        // The sequence itself, on one screen. The full rows sit under it, but
+        // the point of this section is that he can SEE the order without
+        // scrolling through five open cards to reconstruct it.
+        var pindex = '<ol class="pin-index">' + pinned.map(function(r){
+          var seed = SEED_BY_ID[r.id];
+          var nm = seed ? seed.name : rlLabel(r.id, r.kind === 'kpi' ? 'kpi-' : 'status-').replace(/\s+\d{4} \d{2} \d{2}$/, '');
+          return '<li' + (isDone(r.id) ? ' class="done"' : '') + '>' + rlEsc(nm) +
+                 (isDone(r.id) ? ' <span class="pin-done">done</span>' : '') + '</li>';
+        }).join('') + '</ol>';
+        var pbody = '<div class="pin-note">This is <b>the order you said you would work today</b>, in your own sequence, pinned above everything else. It is read off the rows themselves, so it stays true when the board changes. Anything already finished stays here with the tick on it.</div>' +
+                    pindex +
+                    pinned.map(function(r){ return rlActRow(r.id, r.v, r.kind); }).join('');
+        thtml += grpHtml('ta-grp-pinned', true, 'Your order for today', pdone, pinned.length, pbody, 'grp-pin');
+      }
+
       if (!mine.length){
         thtml += '<div class="ta-empty">Nothing dated ' + rlEsc(prettyDate(today)) + ' is on the board yet. Actions show up here the moment they are written to the money map, and the count above tracks them.</div>';
       } else {
@@ -2652,7 +2753,9 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
         // One section per kind of work. Sections with nothing in them today do
         // not render at all, so the page never shows an empty header.
         var buckets = {};
-        mine.forEach(function(r){ (buckets[actGroup(r.id)] = buckets[actGroup(r.id)] || []).push(r); });
+        // A pinned row already rendered at the top. Rendering it twice would
+        // let him tick the copy nobody is looking at.
+        mine.forEach(function(r){ if (pinnedIds[r.id]) return; (buckets[actGroup(r.id)] = buckets[actGroup(r.id)] || []).push(r); });
         ACT_GROUPS.forEach(function(g){
           var rows = buckets[g.key];
           if (!rows || !rows.length) return;
@@ -2677,6 +2780,25 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
         thtml += grpHtml('ta-grp-' + d, false, lbl, dn, rows.length,
                          rows.map(function(r){ return rlActRow(r.id, r.v, r.kind); }).join(''));
       });
+
+      // ---- CLOSED AND SUPERSEDED, kept but out of the way (2026-08-26) ----
+      // These are the rows the active list above now refuses to carry. They
+      // are records of something already decided, merged or re-keyed. Nothing
+      // is deleted; it ships shut, dimmed, at the bottom.
+      var closed = [];
+      Object.keys(byDay).sort().forEach(function(d){
+        if (d > today) return;
+        byDay[d].forEach(function(r){
+          if (r.seeded || isDone(r.id)) return;
+          if (isTombstone(r.id, r.v)) closed.push(r);
+        });
+      });
+      if (closed.length){
+        thtml += grpHtml('ta-grp-closed', false, 'Closed and superseded · nothing here is yours to do',
+                         0, closed.length,
+                         closed.map(function(r){ return rlActRow(r.id, r.v, r.kind); }).join(''),
+                         'grp-closed');
+      }
       todayHost.innerHTML = thtml;
       // Hand the freshly rendered groups to the SAME fold-memory mechanism the
       // rest of the page uses, so Collapse all reaches them and what he shut
