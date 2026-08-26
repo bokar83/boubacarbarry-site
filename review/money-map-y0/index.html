@@ -43,7 +43,8 @@
     .pin-links a:hover, .pin-links a:active { background: #ffa477; color: #141210; }
     .pin-links a.ghost { background: transparent; color: var(--ember-bright); border: 1px solid var(--ember-bright); }
     .pin-links a.ghost:visited { background: transparent; color: #c19a6b; border-color: #c19a6b; }
-    .pin-flag { font-size: 0.75rem; color: var(--amber); line-height: 1.5; margin: 0 0 0.45rem; }
+    .pin-tldr { font-size: 0.75rem; color: var(--faint); line-height: 1.5; margin: 0 0 0.45rem; }
+    .pin-tldr b { color: var(--ink-strong); }
     details.pin-full { margin-top: 0.3rem; }
     details.pin-full > summary { cursor: pointer; list-style: none; font-size: 0.62rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.07em; color: var(--faint); }
     details.pin-full > summary::-webkit-details-marker { display: none; }
@@ -2603,53 +2604,62 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   // click on it and go to the page, copy and paste items, and send."
   //
   // So: the row VALUE in the database is untouched and keeps every word of the
-  // audit trail. What renders on the card he decides from is one line of
-  // action, the link straight to the content he has to copy, and a flag ONLY
-  // when the flag changes what he does. Everything else moves one tap down,
-  // behind "Full detail". Nothing is deleted anywhere.
+  // audit trail. What renders on the card he decides from is a fixed 3-part
+  // structure, his own layout spec, verbatim, 2026-08-26: "it should be the
+  // action and links and then a short message or short summary of what is
+  // happening with TLDR. Nothing deep." In order, always:
+  //   1. ACTION -- the one-line imperative of what to do.
+  //   2. LINKS -- the direct link(s) to the content, right after the action.
+  //   3. TL;DR -- one short sentence of context. No history, no rationale.
+  // That is the whole card. Nothing else renders above the fold. The full row
+  // text (the "why", the conditionals, the audit trail) moves one tap down,
+  // behind "Full detail" -- never deleted, never shown by default.
   //
   // A row with no entry here renders exactly as it did before. This is a
   // whitelist, not a filter, so a new ranked row is never silently truncated.
   var PIN_BRIEF = {
     'kpi-next-action-norm-smallwood-direct-2026-08-20': {
-      act: 'Done. You sent it yourself on Aug 26. Nothing to do unless he answers.',
-      flag: 'No reply by Sep 2: one follow-up, your words, your hands.'
+      action: 'Nothing to do -- you already sent it.',
+      tldr: 'Sent yourself Aug 26; follow up only if Norm has not replied by Sep 2.'
     },
     'kpi-next-action-linkedin-reconnects-send-2026-08-26': {
-      act: 'Send the three approved LinkedIn messages yourself: Kelly Lafnitzegger, Denice Biocca, Sirje Deringer.',
+      action: 'Send the 3 LinkedIn DMs: Kelly Lafnitzegger, Denice Biocca, Sirje Deringer.',
       links: [
         { label: 'All three, ready to copy', href: 'https://boubacarbarry.com/review/20260826-linkedin-reconnect-dms/' },
         { label: 'LinkedIn messages', href: 'https://www.linkedin.com/messaging/', ghost: true }
-      ]
+      ],
+      tldr: 'All three are already approved and paste-ready, no edits needed.'
     },
     'kpi-next-action-wellsaidjohn-send-2026-08-20': {
-      act: 'Write wellsaidjohn@gmail.com. Offer Wednesday Sep 16 online at $25, or Thursday Sep 24 in person at $50.',
+      action: 'Email wellsaidjohn@gmail.com the workshop offer.',
       links: [
         { label: 'Email him', href: 'mailto:wellsaidjohn@gmail.com' }
       ],
-      flag: 'The draft on file names two sessions that no longer exist. It needs a rewrite, not an edit.'
+      tldr: 'Draft on file names two cancelled sessions -- rewrite before sending, do not copy as-is.'
     },
     'kpi-next-action-linkedin-comments-daily': {
-      act: 'Comment on 3 to 5 other people’s LinkedIn posts. Link above each one, comment in a copy box under it.',
+      action: 'Post today’s 3 to 5 LinkedIn comments.',
       links: [
         { label: 'Today’s comments', href: 'https://boubacarbarry.com/review/linkedin-comments/' }
       ],
-      flag: 'That page carries its own date at the top. If it is not today’s, today’s set has not been built yet.'
+      tldr: 'Page is dated at the top -- confirm it says today before using it.'
     },
     'kpi-next-action-inbox-replies-daily': {
-      act: 'Clear the replies that need a human answer in all three inboxes.',
+      action: 'Clear replies that need a human answer.',
       links: [
         { label: 'LinkedIn', href: 'https://www.linkedin.com/messaging/' },
         { label: 'bokar83 Gmail', href: 'https://mail.google.com/mail/u/0/#inbox' },
         { label: 'Catalyst Works mail', href: 'https://mail.google.com/a/catalystworks.consulting' }
-      ]
+      ],
+      tldr: 'Check all three inboxes for anything waiting on you.'
     }
   };
 
   function pinBriefHtml(id, fullHtml){
     var b = PIN_BRIEF[id];
     if (!b) return null;
-    var h = '<div class="pin-do">' + rlEsc(b.act) + '</div>';
+    // Fixed order: action, links, TL;DR. Nothing else renders on the card.
+    var h = '<div class="pin-do">' + rlEsc(b.action) + '</div>';
     if (b.links && b.links.length){
       h += '<div class="pin-links">' + b.links.map(function(l){
         return '<a href="' + rlEsc(l.href) + '"' + (l.ghost ? ' class="ghost"' : '') +
@@ -2657,7 +2667,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
                rlEsc(l.label) + '</a>';
       }).join('') + '</div>';
     }
-    if (b.flag) h += '<div class="pin-flag">' + rlEsc(b.flag) + '</div>';
+    if (b.tldr) h += '<div class="pin-tldr"><b>TL;DR:</b> ' + rlEsc(b.tldr) + '</div>';
     // Never destroyed, just folded. One tap for the whole record.
     h += '<details class="pin-full"><summary>Full detail</summary>' + fullHtml + '</details>';
     return h;
