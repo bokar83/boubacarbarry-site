@@ -1,0 +1,615 @@
+/* Traceback -- dark or light, calm, low-chrome. No gamification, no confetti. */
+
+:root[data-theme="dark"] {
+  --bg: #14161a;
+  --bg-raised: #1c1f26;
+  --bg-input: #101216;
+  --border: #2c313c;
+  --text: #d9dce2;
+  --text-dim: #8b93a3;
+  --text-faint: #5c6474;
+  --accent: #FF6B35;
+  --accent-dim: #B87333;
+  --ok: #57b06a;
+  --error: #e2665c;
+  --warn: #d9a44c;
+  --unsupported: #b48ee0;
+  --banner-bg: #4a1f1f;
+  --banner-border: #a8443b;
+}
+
+:root[data-theme="light"] {
+  --bg: #f4f5f7;
+  --bg-raised: #ffffff;
+  --bg-input: #eef0f3;
+  --border: #d7dbe2;
+  --text: #1c2029;
+  --text-dim: #565f6f;
+  --text-faint: #8892a0;
+  --accent: #B5521F;
+  --accent-dim: #A8541F;
+  --ok: #2f8a4a;
+  --error: #c23b30;
+  --warn: #a56c18;
+  --unsupported: #7c4fb0;
+  --banner-bg: #fdecea;
+  --banner-border: #d98a82;
+}
+
+:root {
+  /* Fallback if data-theme has not been set yet (JS sets it immediately on
+     load, before first paint of anything that matters). Mirrors dark. */
+  --bg: #14161a;
+  --bg-raised: #1c1f26;
+  --bg-input: #101216;
+  --border: #2c313c;
+  --text: #d9dce2;
+  --text-dim: #8b93a3;
+  --text-faint: #5c6474;
+  --accent: #FF6B35;
+  --accent-dim: #B87333;
+  --ok: #57b06a;
+  --error: #e2665c;
+  --warn: #d9a44c;
+  --unsupported: #b48ee0;
+  --banner-bg: #4a1f1f;
+  --banner-border: #a8443b;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  overflow-x: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+/* A visited link must LOOK visited. These are "go learn this properly" links,
+   so which ones he has already followed is the useful signal, and without a
+   distinct state every one of them reads as new forever. Bronze against
+   terracotta is a clear shift without introducing a second hue. */
+a:visited {
+  color: #B87333;
+}
+
+:root[data-theme="light"] a:visited {
+  color: #7A4A2B;
+}
+
+a:hover,
+a:focus-visible {
+  color: #FF8A5C;
+  text-decoration: underline;
+}
+
+:root[data-theme="light"] a:hover,
+:root[data-theme="light"] a:focus-visible {
+  color: #8F4319;
+}
+
+a:active {
+  color: #E05520;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+  flex: 0 0 auto;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.topbar .title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.tab-btn.active {
+  background: var(--bg-input);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.tab-btn:hover:not(.active) {
+  color: var(--text);
+}
+
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+
+/* ---------- Mode banner (Debug vs Test & Run) ---------- */
+
+.mode-banner {
+  flex: 0 0 auto;
+  /* Match the topbar's 16px inset. Without this the mode title sits flush at
+     x=0 while the wordmark above it and the panels below it are both inset,
+     which reads as a broken layout rather than a deliberate full-bleed. */
+  padding: 10px 16px 0;
+  margin-bottom: 4px;
+}
+
+.mode-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.mode-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* ---------- Loading screen ---------- */
+
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 100;
+  text-align: center;
+  padding: 20px;
+}
+
+#loading-screen.hidden {
+  display: none;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: var(--text-dim);
+  font-size: 14px;
+  max-width: 320px;
+}
+
+.loading-sub {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+#app {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Views ---------- */
+
+.view {
+  display: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.view.active {
+  display: flex;
+}
+
+/* ---------- Dojo layout ---------- */
+
+#view-dojo {
+  padding: 12px;
+  gap: 12px;
+}
+
+.panes {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 12px;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .panes {
+    flex-direction: column;
+  }
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 50%;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pane-body {
+  flex: 1 1 auto;
+  min-height: 220px;
+  overflow: auto;
+  position: relative;
+}
+
+/* Editor pane */
+
+#editor-host {
+  height: 100%;
+}
+
+.CodeMirror {
+  height: 100% !important;
+  font-family: var(--mono);
+  font-size: 13.5px;
+}
+
+/* Textarea fallback (last resort) */
+
+#code-fallback {
+  width: 100%;
+  height: 100%;
+  border: none;
+  resize: none;
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13.5px;
+  padding: 10px;
+  outline: none;
+  line-height: 1.5;
+  tab-size: 4;
+}
+
+/* Output pane */
+
+#output {
+  padding: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+#output .line {
+  margin: 0 0 4px 0;
+}
+
+#output .stdout { color: var(--text); }
+#output .stderr { color: var(--error); }
+#output .traceback { color: var(--error); }
+#output .ok-msg { color: var(--ok); }
+#output .unsupported-msg { color: var(--unsupported); }
+#output .meta { color: var(--text-faint); font-size: 11.5px; }
+#output .placeholder { color: var(--text-faint); }
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text);
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent-dim);
+}
+
+.btn-primary {
+  background: var(--accent-dim);
+  border-color: var(--accent-dim);
+  color: #fff6ef;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #C9832F;
+}
+
+:root[data-theme="light"] .btn-primary:hover:not(:disabled) {
+  background: #8F4319;
+}
+
+.btn-explain {
+  background: transparent;
+  border-color: var(--unsupported);
+  color: var(--unsupported);
+}
+
+.btn-explain:hover:not(:disabled) {
+  background: rgba(180, 142, 224, 0.12);
+}
+
+.run-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.hint {
+  color: var(--text-faint);
+  font-size: 11.5px;
+}
+
+/* ---------- Explain panel ---------- */
+
+#explain-panel {
+  border-top: 1px solid var(--border);
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  display: none;
+  background: rgba(180, 142, 224, 0.06);
+}
+
+#explain-panel.visible {
+  display: block;
+}
+
+#explain-panel .explain-meta {
+  color: var(--text-faint);
+  font-size: 11.5px;
+  margin-top: 8px;
+}
+
+#explain-resource {
+  margin-top: 10px;
+}
+
+#explain-resource a {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#explain-resource .resource-why {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+/* ---------- Banners ---------- */
+
+#save-fail-banner {
+  display: none;
+  background: var(--banner-bg);
+  border: 1px solid var(--banner-border);
+  color: #ffd9d4;
+  padding: 10px 14px;
+  font-size: 13px;
+  flex: 0 0 auto;
+  margin: 0 12px;
+  border-radius: 6px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+#save-fail-banner.visible {
+  display: block;
+}
+
+#auth-banner {
+  display: none;
+  background: #3a2f10;
+  border: 1px solid #8a6a20;
+  color: #ffe6a8;
+  padding: 14px;
+  font-size: 14px;
+  text-align: center;
+  margin: 12px;
+  border-radius: 6px;
+}
+
+#auth-banner.visible {
+  display: block;
+}
+
+/* ---------- Progress view ---------- */
+
+#view-progress {
+  padding: 16px;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.progress-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.stat-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.stat-card .stat-value {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.stat-card .stat-label {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.progress-section {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.progress-section h3 {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-pill {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+}
+
+.tag-pill.touched {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.tag-pill.not-touched {
+  color: var(--text-faint);
+}
+
+.error-type-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.error-type-row:last-child {
+  border-bottom: none;
+}
+
+#assessment-output {
+  font-size: 13.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+#assessment-output .placeholder {
+  color: var(--text-faint);
+}
+
+.scratch-note {
+  color: var(--text-faint);
+  font-size: 11.5px;
+  padding: 0 12px;
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    padding: 8px 10px;
+  }
+
+  .topbar .title {
+    font-size: 13px;
+  }
+
+  #view-dojo {
+    padding: 8px;
+  }
+
+  .pane-body {
+    min-height: 160px;
+  }
+}
