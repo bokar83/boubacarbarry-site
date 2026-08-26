@@ -29,6 +29,27 @@
     }
     .wrap { max-width: 840px; margin: 0 auto; padding: 1.4rem 1.1rem 6rem; position: relative; z-index: 1; }
     a { color: var(--ember-bright); }
+    a:visited { color: #c19a6b; }
+    a:hover, a:active { color: #ffa477; }
+
+    /* PINNED ROWS RENDER SHORT (2026-08-26, his instruction). The row VALUE in
+       the database keeps its full audit trail. The card he decides from shows
+       one line of action plus the link to the actual content, and nothing
+       else. The full text is still on the page, one tap down, never deleted. */
+    .pin-do { font-size: 0.95rem; font-weight: 700; color: var(--ink-strong); line-height: 1.5; margin: 0 0 0.5rem; }
+    .pin-links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.45rem; }
+    .pin-links a { display: inline-block; font-size: 0.8rem; font-weight: 800; text-decoration: none; color: #141210; background: var(--ember-bright); border-radius: 999px; padding: 0.32rem 0.7rem; }
+    .pin-links a:visited { background: #c19a6b; color: #141210; }
+    .pin-links a:hover, .pin-links a:active { background: #ffa477; color: #141210; }
+    .pin-links a.ghost { background: transparent; color: var(--ember-bright); border: 1px solid var(--ember-bright); }
+    .pin-links a.ghost:visited { background: transparent; color: #c19a6b; border-color: #c19a6b; }
+    .pin-flag { font-size: 0.75rem; color: var(--amber); line-height: 1.5; margin: 0 0 0.45rem; }
+    details.pin-full { margin-top: 0.3rem; }
+    details.pin-full > summary { cursor: pointer; list-style: none; font-size: 0.62rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.07em; color: var(--faint); }
+    details.pin-full > summary::-webkit-details-marker { display: none; }
+    details.pin-full > summary::marker { content: ""; }
+    details.pin-full > summary:hover { color: var(--ember-bright); }
+    details.pin-full .lr-next { margin-top: 0.45rem; }
 
     .doc-header { margin-bottom: 1rem; }
     .tag { display: inline-block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.2rem 0.55rem; border-radius: 999px; background: #2c2722; color: var(--ink-strong); margin-right: 0.35rem; vertical-align: middle; border: 1px solid var(--line); }
@@ -2430,7 +2451,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     return h;
   }
 
-  function rlActRow(id, value, kind, rolledFrom){
+  function rlActRow(id, value, kind, rolledFrom, brief){
     var seed  = SEED_BY_ID[id];
     var isKpi = (kind === 'kpi');
     var name  = seed ? seed.name
@@ -2463,7 +2484,11 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
         '<button type="button" class="lr-notebtn' + (n ? ' has' : '') + '" data-notes="' + rlEsc(id) + '">Notes' + (n ? ' (' + n + ')' : '') + '</button>' +
       '</div>' +
       '<div class="lr-body">' +
-        (seed ? seed.html : '<div class="lr-next">' + rlEsc(value) + '</div>') +
+        (function(){
+          var full = seed ? seed.html : '<div class="lr-next">' + rlEsc(value) + '</div>';
+          if (!brief) return full;
+          return pinBriefHtml(id, full) || full;   // no brief on file: render as before
+        })() +
         '<div class="lr-notes" data-noteswrap="' + rlEsc(id) + '"' + (open ? '' : ' hidden') + '>' + (open ? notesHtml(id) : '') + '</div>' +
       '</div></div>';
   }
@@ -2568,6 +2593,74 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     if (v == null) return 0;
     var m = RANK_RE.exec(String(v));
     return m ? parseInt(m[1], 10) : 0;
+  }
+
+  // ---- THE PINNED CARDS RENDER SHORT, AND THEY CARRY THE LINK -----------
+  // 2026-08-26, his instruction, verbatim: "there's just a little too much
+  // text on the money map for information that I don't need. I need to have
+  // just the bare minimum. I need to be able to make a decision to take the
+  // action... I need the link to the content created in the money maps. I can
+  // click on it and go to the page, copy and paste items, and send."
+  //
+  // So: the row VALUE in the database is untouched and keeps every word of the
+  // audit trail. What renders on the card he decides from is one line of
+  // action, the link straight to the content he has to copy, and a flag ONLY
+  // when the flag changes what he does. Everything else moves one tap down,
+  // behind "Full detail". Nothing is deleted anywhere.
+  //
+  // A row with no entry here renders exactly as it did before. This is a
+  // whitelist, not a filter, so a new ranked row is never silently truncated.
+  var PIN_BRIEF = {
+    'kpi-next-action-norm-smallwood-direct-2026-08-20': {
+      act: 'Done. You sent it yourself on Aug 26. Nothing to do unless he answers.',
+      flag: 'No reply by Sep 2: one follow-up, your words, your hands.'
+    },
+    'kpi-next-action-linkedin-reconnects-send-2026-08-26': {
+      act: 'Send the three approved LinkedIn messages yourself: Kelly Lafnitzegger, Denice Biocca, Sirje Deringer.',
+      links: [
+        { label: 'All three, ready to copy', href: 'https://boubacarbarry.com/review/20260826-linkedin-reconnect-dms/' },
+        { label: 'LinkedIn messages', href: 'https://www.linkedin.com/messaging/', ghost: true }
+      ]
+    },
+    'kpi-next-action-wellsaidjohn-send-2026-08-20': {
+      act: 'Write wellsaidjohn@gmail.com. Offer Wednesday Sep 16 online at $25, or Thursday Sep 24 in person at $50.',
+      links: [
+        { label: 'Email him', href: 'mailto:wellsaidjohn@gmail.com' }
+      ],
+      flag: 'The draft on file names two sessions that no longer exist. It needs a rewrite, not an edit.'
+    },
+    'kpi-next-action-linkedin-comments-daily': {
+      act: 'Comment on 3 to 5 other people’s LinkedIn posts. Link above each one, comment in a copy box under it.',
+      links: [
+        { label: 'Today’s comments', href: 'https://boubacarbarry.com/review/linkedin-comments/' }
+      ],
+      flag: 'That page carries its own date at the top. If it is not today’s, today’s set has not been built yet.'
+    },
+    'kpi-next-action-inbox-replies-daily': {
+      act: 'Clear the replies that need a human answer in all three inboxes.',
+      links: [
+        { label: 'LinkedIn', href: 'https://www.linkedin.com/messaging/' },
+        { label: 'bokar83 Gmail', href: 'https://mail.google.com/mail/u/0/#inbox' },
+        { label: 'Catalyst Works mail', href: 'https://mail.google.com/a/catalystworks.consulting' }
+      ]
+    }
+  };
+
+  function pinBriefHtml(id, fullHtml){
+    var b = PIN_BRIEF[id];
+    if (!b) return null;
+    var h = '<div class="pin-do">' + rlEsc(b.act) + '</div>';
+    if (b.links && b.links.length){
+      h += '<div class="pin-links">' + b.links.map(function(l){
+        return '<a href="' + rlEsc(l.href) + '"' + (l.ghost ? ' class="ghost"' : '') +
+               (l.href.indexOf('http') === 0 ? ' target="_blank" rel="noopener"' : '') + '>' +
+               rlEsc(l.label) + '</a>';
+      }).join('') + '</div>';
+    }
+    if (b.flag) h += '<div class="pin-flag">' + rlEsc(b.flag) + '</div>';
+    // Never destroyed, just folded. One tap for the whole record.
+    h += '<details class="pin-full"><summary>Full detail</summary>' + fullHtml + '</details>';
+    return h;
   }
 
   function todayRows(){
@@ -2728,9 +2821,13 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
           return '<li' + (isDone(r.id) ? ' class="done"' : '') + '>' + rlEsc(nm) +
                  (isDone(r.id) ? ' <span class="pin-done">done</span>' : '') + '</li>';
         }).join('') + '</ol>';
-        var pbody = '<div class="pin-note">This is <b>the order you said you would work today</b>, in your own sequence, pinned above everything else. It is read off the rows themselves, so it stays true when the board changes. Anything already finished stays here with the tick on it.</div>' +
-                    pindex +
-                    pinned.map(function(r){ return rlActRow(r.id, r.v, r.kind); }).join('');
+        // The narration that used to sit here (three sentences explaining that
+        // this is his order and how it is derived) is gone on purpose,
+        // 2026-08-26. The group heading already says it. He asked for the bare
+        // minimum needed to decide and act, and an explanation of the section
+        // is not that. The mechanism itself is documented in the code above.
+        var pbody = pindex +
+                    pinned.map(function(r){ return rlActRow(r.id, r.v, r.kind, null, true); }).join('');
         thtml += grpHtml('ta-grp-pinned', true, 'Your order for today', pdone, pinned.length, pbody, 'grp-pin');
       }
 
