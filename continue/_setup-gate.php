@@ -1,6 +1,6 @@
 <?php
 /**
- * One-shot installer for the Baobab gate key. Same shape as the installer
+ * One-shot installer for the Continue? gate key. Same shape as the installer
  * that set up /review/ on 2026-08-04.
  *
  * This file is normally UNREACHABLE: .htaccess rewrites every request to
@@ -19,7 +19,7 @@
  *   curl -4 -s -X POST \
  *     -d 'pw=<THE-PASSPHRASE-FROM-HIS-PASSWORD-MANAGER>' \
  *     -d 'api_base=https://<project-ref>.supabase.co/functions/v1' \
- *     https://boubacarbarry.com/baobab/_setup-gate.php
+ *     https://boubacarbarry.com/continue/_setup-gate.php
  *
  * The passphrase is never written to this file, never committed, and never
  * logged. It exists in his password manager and, as a bcrypt hash only, in the
@@ -42,10 +42,10 @@ if ($remote !== DOJO_INSTALLER_ALLOWED_IP) {
 }
 
 // Anchored on __DIR__, exactly as gate.php is, so the installer and the gate
-// can never disagree about where the key lives. __DIR__ is public_html/baobab,
+// can never disagree about where the key lives. __DIR__ is public_html/continue,
 // so dirname(__DIR__, 2) is the parent of public_html: unreachable over HTTP,
 // and untouched by the Hostinger clean-replace deploy.
-$keyPath = dirname(__DIR__, 2) . '/.baobab-gate-key.php';
+$keyPath = dirname(__DIR__, 2) . '/.continue-gate-key.php';
 
 // Overwriting is possible but never accidental. An installer that silently
 // rotates the key is an installer that can lock him out of his own tool, so the
@@ -103,7 +103,7 @@ if (!is_string($hash) || $hash === '') {
 $secret = bin2hex(random_bytes(32));
 
 $body = "<?php\n"
-      . "// Baobab gate key. Written by _setup-gate.php. Never commit this.\n"
+      . "// Continue? gate key. Written by _setup-gate.php. Never commit this.\n"
       . "return " . var_export([
             'hash'     => $hash,
             'secret'   => $secret,
