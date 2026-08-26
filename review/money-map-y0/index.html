@@ -2538,7 +2538,12 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   // in its text is untouched.
   var TOMBSTONE_RE = /^\s*(CLOSED|SUPERSEDED|MERGED|POINTER ROW|CORRECTED AND CLOSED|DUPLICATE)\b/i;
   function isTombstone(id, v){
-    if (SEED_BY_ID[id]) return false;
+    // A hand-written seed carries its own title, and a closed seed says so in
+    // that title. Those are the rows he actually saw sitting in the live list
+    // with "CLOSED, SUPERSEDED" written across the front of them. A seed has no
+    // stored value, so the blank test below must never reach it.
+    var seed = SEED_BY_ID[id];
+    if (seed) return TOMBSTONE_RE.test(String(seed.name || ''));
     if (String(id).indexOf('closed-') === 0) return true;
     var s = String(v == null ? '' : v);
     // A dated row with NOTHING in it is the other shape of a dead row: its text
@@ -2789,7 +2794,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       Object.keys(byDay).sort().forEach(function(d){
         if (d > today) return;
         byDay[d].forEach(function(r){
-          if (r.seeded || isDone(r.id)) return;
+          if (isDone(r.id)) return;
           if (isTombstone(r.id, r.v)) closed.push(r);
         });
       });
