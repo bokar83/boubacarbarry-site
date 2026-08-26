@@ -134,6 +134,56 @@ try {
         }
     }
 
+    # HARD RULE (feedback_no_blue_text_on_dark_background_except_hyperlinks_2026_07_21,
+    # 5th violation 2026-08-25): gate on the no-blue-on-dark checker. The checker lives in
+    # the sibling agentsHQ repo (C:\Ai_Sandbox\agentsHQ\scripts\check_no_blue_on_dark.py) --
+    # cross-repo on purpose, this repo does not duplicate it. If that repo is not present
+    # (e.g. a CI/VPS checkout of boubacarbarry-site alone), this WARNS and does not block --
+    # a missing checker must never silently gate nothing, but it also must never turn every
+    # publish red on a machine that never had the other repo. Same -AllowNonCompliant escape
+    # hatch as the layout gate, so one urgent publish never needs two different override
+    # flags remembered.
+    # Candidate locations, in order: env override, sibling of this checkout (normal case,
+    # this repo cloned at C:\Ai_Sandbox\boubacarbarry-site next to C:\Ai_Sandbox\agentsHQ),
+    # sibling of a worktree's PARENT (a worktree checkout lives one level deeper, e.g.
+    # C:\Ai_Sandbox\boubacarbarry-site-worktrees\wt-foo), and the conventional absolute path
+    # as a last resort. First one that actually exists on disk wins.
+    $blueCheckerCandidates = @(
+        $env:AGENTSHQ_BLUE_CHECKER,
+        (Join-Path (Split-Path $RepoRoot -Parent) "agentsHQ\scripts\check_no_blue_on_dark.py"),
+        (Join-Path (Split-Path (Split-Path $RepoRoot -Parent) -Parent) "agentsHQ\scripts\check_no_blue_on_dark.py"),
+        "C:\Ai_Sandbox\agentsHQ\scripts\check_no_blue_on_dark.py"
+    ) | Where-Object { $_ }
+    $blueChecker = $blueCheckerCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if (-not $blueChecker) { $blueChecker = $blueCheckerCandidates[0] }
+    if (Test-Path $blueChecker) {
+        $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+        if (-not $pythonCmd) { $pythonCmd = Get-Command py -ErrorAction SilentlyContinue }
+        if ($pythonCmd) {
+            $blueOutput = & $pythonCmd.Source $blueChecker $Staged 2>&1
+            $blueExit = $LASTEXITCODE
+            if ($blueExit -ne 0) {
+                if ($AllowNonCompliant) {
+                    Write-Host ""
+                    Write-Warning "BLUE-LINK GATE OVERRIDDEN with -AllowNonCompliant. Publishing a page with blue-on-dark violations. Fix it and republish."
+                    $blueOutput | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+                } else {
+                    Write-Host ""
+                    Write-Host "PUBLISH BLOCKED -- this page ships blue text/links on a dark background." -ForegroundColor Red
+                    $blueOutput | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+                    Write-Host "Nothing was copied, no manifest row written, no commit made." -ForegroundColor Red
+                    Write-Host "Fix the colours, or, only if it is genuinely urgent, re-run with -AllowNonCompliant." -ForegroundColor Yellow
+                    Write-Error "no-blue-on-dark check failed for slug '$Slug'."
+                    exit 1
+                }
+            }
+        } else {
+            Write-Warning "no-blue-on-dark checker found but no python/py on PATH -- SKIPPING the blue-link gate for this publish. Run it manually: python `"$blueChecker`" `"$Staged`""
+        }
+    } else {
+        Write-Warning "agentsHQ repo not found next to this one ($blueChecker missing) -- SKIPPING the blue-link gate for this publish."
+    }
+
     New-Item -ItemType Directory -Path $SlugDir -Force | Out-Null
     Copy-Item $Staged (Join-Path $SlugDir "index.html") -Force
 }
