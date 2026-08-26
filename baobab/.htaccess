@@ -1,0 +1,68 @@
+# Baobab -- every request under /baobab/ goes through the gate.
+#
+# The web server serves NOTHING in this tree directly. That is the point: the
+# first generation of this pattern on /review/ was a CSS panel that hid a
+# document the server had already sent in full, and a plain fetch returned all
+# 214,446 bytes of it. gate.php decides, then readfile()s.
+#
+# Same shape as review/.htaccess and profit-and-purpose/.htaccess, with its own
+# key file and its own cookie, so no two gates on this domain share a secret and
+# none of them opens another.
+#
+# NOTE ON THE MISSING <IfModule> WRAPPER, which is deliberate.
+# An earlier draft wrapped the rewrite in <IfModule mod_rewrite.c>. That block
+# is SKIPPED SILENTLY when the module is absent, and the server would then
+# happily serve index.html, app.js and the whole vendor tree to anyone, with
+# nothing logged and nothing returning 500. A gate that disappears quietly when
+# a module is missing is not a gate. Unwrapped, a missing module is a hard 500,
+# which is the correct direction to fail.
+
+RewriteEngine On
+RewriteBase /baobab/
+
+# Force TLS before anything else. The session cookie is Secure, so over plain
+# HTTP the gate would render the login form, take the passphrase in cleartext,
+# set a cookie the HTTP origin cannot read, and loop. The passphrase would be
+# typed and leaked more than once.
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# The gate must stay directly reachable or the catch-all below rewrites it into
+# itself.
+RewriteRule ^gate\.php$ - [L]
+
+# The one-time key installer is the one deliberate exception and it is commented
+# out. See the runbook in README.md: uncomment, deploy, install the passphrase
+# from the VPS, then comment it out and deploy again. Leaving it live is a
+# standing offer to whoever finds it first.
+#
+# BOTH lines have to be uncommented together, and this is easy to get wrong: the
+# <FilesMatch "."> block further down denies every file by name regardless of
+# what mod_rewrite decided, so uncommenting only the RewriteRule gives a 403 and
+# looks like the installer is broken when it is actually just unauthorised.
+# RewriteRule ^_setup-gate\.php$ - [L]
+
+RewriteRule ^ gate.php [L,QSA]
+
+# Second layer, independent of mod_rewrite entirely. If the rewrite is ever
+# bypassed, disabled, or the rules above are edited wrongly, the only file the
+# server will hand out directly is the gate itself, which discloses nothing.
+<FilesMatch ".">
+  Require all denied
+</FilesMatch>
+<Files "gate.php">
+  Require all granted
+</Files>
+
+# The installer's other half. Uncomment with the RewriteRule above, and
+# re-comment both the moment the passphrase is installed.
+# <Files "_setup-gate.php">
+#   Require all granted
+# </Files>
+
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+</IfModule>
+
+Options -Indexes
+ServerSignature Off
