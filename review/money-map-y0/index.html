@@ -171,6 +171,10 @@
     ol.pin-index li.done { color: var(--faint); text-decoration: line-through; }
     .pin-done { font-size: 0.55rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: #141210; background: var(--verd, #6f9b6e); border-radius: 999px; padding: 0.1rem 0.4rem; text-decoration: none; display: inline-block; vertical-align: middle; }
     .lr-rank { flex-shrink: 0; font-size: 0.58rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #141210; background: var(--ember-bright); border-radius: 999px; padding: 0.12rem 0.45rem; }
+    /* Carried-over backlog: present, counted, and visibly not today's work. */
+    details.ta-grp.grp-carried > summary { border-style: dashed; }
+    details.ta-grp.grp-carried .grp-lbl { color: var(--muted); }
+    details.ta-grp.grp-carried[open] .grp-lbl { color: var(--ink-strong); }
     details.ta-grp.grp-closed .grp-lbl { color: var(--faint); }
     details.ta-grp.grp-closed .act-row { opacity: 0.55; }
     details.ta-grp .grp-hint { flex-shrink: 0; font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.45rem; }
@@ -711,7 +715,7 @@
       <span class="ta-count" id="taCount"></span>
       <span class="toggle-hint"></span>
     </summary>
-    <p class="ta-sub">Today is broken into sections by the KIND of work, so you do one type at a time: the outreach together, the LinkedIn together, the ghostwriting together. Under today sit the days that are coming and the days behind you, still grouped by date and shut by default. Tick one off and it saves to the database and shows on your phone. Open Notes on any of them to write down what happened, including on the ones you skip.</p>
+    <p class="ta-sub">Today is broken into sections by the KIND of work, so you do one type at a time: the outreach together, the LinkedIn together, the ghostwriting together. Under today sits everything carried over from earlier days, in its own section, shut, so a backlog you decide on never gets counted as work due today. Under that sit the days that are coming and the days behind you, still grouped by date and shut by default. Tick one off and it saves to the database and shows on your phone. Open Notes on any of them to write down what happened, including on the ones you skip.</p>
     <p class="ta-sub">Every row below names a person, a date, what you expect back, and what happens on <b>both</b> branches: if they answer, and if they go quiet. Nothing here has been sent. The two detail packs sit one click away: <a href="/review/20260819-morning-packet/">the full call sheet for today</a> and <a href="/review/20260819-podcast-circuit/">the podcast circuit, with the fourteen shows and the written pitches</a>. The five podcast pitches and the two follow-ups only leave after you tap Send it on their rows on that page.</p>
     <div id="todayact-body" class="rl"><div class="ta-empty">Loading today's actions&hellip;</div></div>
     <div class="callout amber" style="margin:0 0 0.7rem;"><span class="lbl">Booking latency is six to twelve weeks, so these go as one block</span>The old rule of one pitch at a time gave about four shots a year. The five below send together, then it holds until one books or thirty days pass. Every draft is written for its own show and voice-gated, scores 91 to 94. <b>Nothing leaves until you tap Send it on each row</b> at <a href="/review/20260819-podcast-circuit/">the podcast circuit page</a>.</div>
@@ -2277,6 +2281,30 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     if (SEED_BY_ID[id]) return SEED_BY_ID[id].date;
     var m = Y0_DATE_RE.exec(id); return m ? m[1] : null;
   }
+  // A habit, not a one-off. See the note at its use site in collectActs().
+  var STANDING_RE = /STATUS:\s*STANDING|CADENCE:\s*DAILY|EVERY DAY after|RECURRING DAILY/i;
+  var SURFACES_RE = /SURFACES:\s*(\d{4}-\d{2}-\d{2})/;
+  // The date the row actually becomes his, which is the LATER of the date in
+  // its id (when it was written) and any date it names itself. Never earlier:
+  // a row cannot talk itself out of being overdue.
+  function effectiveDate(id, v){
+    var base = itemDate(id);
+    if (!base) return null;
+    var m = SURFACES_RE.exec(String(v == null ? '' : v).slice(0, 400));
+    return (m && m[1] > base) ? m[1] : base;
+  }
+  // ---- A SEQUENCE DOES NOT STACK (2026-08-27) ---------------------------
+  // A dated plan written as "DAY 3 of 28" is a schedule, not twenty-eight
+  // independent tasks. Miss two days of a course and the rollover put day 1,
+  // day 2 and day 3 on the same morning, which is both impossible and wrong:
+  // lesson 3 cannot be done before lesson 1. Only the EARLIEST open day of a
+  // series is actionable. The later days are not closed and not deleted; they
+  // simply wait their turn, and the plan slides instead of piling up.
+  var DAY_SERIES_RE = /^(.*)-day(\d+)-\d{4}-\d{2}-\d{2}$/;
+  function daySeries(id){
+    var m = DAY_SERIES_RE.exec(String(id));
+    return m ? { base: m[1], n: parseInt(m[2], 10) } : null;
+  }
   // Hand-written seeds keep their own historical key. Daily rows use the
   // done-<id> convention, which is also what keeps them working before
   // SEED_BY_ID has been populated for a past date.
@@ -2517,7 +2545,22 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       if (val == null || String(val).indexOf('superseded-by-per-channel-rows') === 0) continue; // hide tombstones
       var kind = (k.indexOf('status-') === 0) ? 'status' : (k.indexOf('kpi-') === 0 ? 'kpi' : null);
       if (!kind) continue;
-      var d = itemDate(k);
+      // ---- A STANDING DAILY IS NOT A DEBT (2026-08-27) ------------------
+      // A row that says CADENCE: DAILY, STATUS: STANDING, or "every day
+      // after" is a habit, not a one-off that was missed. Carried forward as
+      // a one-off it read as one more overdue item every single day. It now
+      // behaves exactly like the seeded daily rows: it lands on today, it
+      // shows once, and a missed day does not stack.
+      if (STANDING_RE.test(String(val).slice(0, 400))){
+        (byDay[dkey(new Date())] = byDay[dkey(new Date())] || []).push({ id: k, v: val, kind: kind, daily: true });
+        continue;
+      }
+      // ---- A ROW THAT NAMES ITS OWN SURFACING DATE (2026-08-27) ---------
+      // "SURFACES: 2026-08-28" means do nothing until then, and some rows say
+      // so in as many words. The date baked into the id is when the row was
+      // WRITTEN, so those rows rendered as days overdue while their own text
+      // said not to touch them yet. The later of the two dates wins.
+      var d = effectiveDate(k, val);
       if (d){ (byDay[d] = byDay[d] || []).push({ id: k, v: val, kind: kind }); }
       else if (kind === 'status') undatedStatus.push(k);
       else undatedKpi.push(k);
@@ -2563,7 +2606,36 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   // of the value, so a live row that merely mentions the word "closed" later
   // in its text is untouched.
   var TOMBSTONE_RE = /^\s*(CLOSED|SUPERSEDED|MERGED|POINTER ROW|CORRECTED AND CLOSED|DUPLICATE)\b/i;
+  // ---- A FINISHED ROW THAT WAS NEVER TICKED (2026-08-27) ----------------
+  // A row can announce its own completion in its text and still never have a
+  // tick against it, because whoever wrote the outcome into the row did not
+  // also write the done flag. The rollover above only stops on the tick, so a
+  // row reading "STATUS: DONE" carried forward as an open ask indefinitely.
+  // Read the HEAD of the value, not the first line: these markers sit behind a
+  // lead-in like "PROOF DELIVERED, 2026-08-23. STATUS: DONE".
+  var DONE_MARKER_RE = /STATUS:\s*(DONE|COMPLETE|COMPLETED|CLOSED)\b/i;
+  // ---- A RECORD IS NOT AN ASK (2026-08-27) ------------------------------
+  // Three shapes of row that carry information rather than work, and were all
+  // rolling forward daily as though he owed them something:
+  //   1. kpi-priority-order-* IS the source of the pinned "Your order for
+  //      today" block at the top. It rendered there AND again as its own
+  //      action card, so his own priority list read as a task.
+  //   2. A verified-fact row (an address confirmed, a number checked). The
+  //      action it supports has its own row.
+  //   3. A concept/decision record, written down so it is not lost.
+  // They are not deleted: they fall through to the closed-and-superseded
+  // section at the bottom, where the record survives and cannot be misread.
+  var RECORD_ID_RE = /^kpi-priority-order-/;
+  var RECORD_IDS = {
+    'status-turchin-address-verified-2026-08-20': 1,
+    'status-air-ai-resources-concept-2026-08-20': 1
+  };
   function isTombstone(id, v){
+    if (RECORD_ID_RE.test(String(id)) || RECORD_IDS[id]) return true;
+    if (v != null && DONE_MARKER_RE.test(String(v).slice(0, 300))) return true;
+    return isTombstoneInner(id, v);
+  }
+  function isTombstoneInner(id, v){
     // A hand-written seed carries its own title, and a closed seed says so in
     // that title. Those are the rows he actually saw sitting in the live list
     // with "CLOSED, SUPERSEDED" written across the front of them. A seed has no
@@ -2692,7 +2764,45 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     // Oldest first, and above today's own rows. The thing that has been open
     // longest is the thing that should hit him first.
     rolled.sort(function(a, b){ return a.rolledFrom < b.rolledFrom ? -1 : (a.rolledFrom > b.rolledFrom ? 1 : (a.id < b.id ? -1 : 1)); });
-    return rolled.concat(rows);
+    return collapseSeries(rolled.concat(rows));
+  }
+  // Keep only the earliest open day of any "day N of M" series. See the note
+  // on daySeries() above. Order is preserved; nothing else is touched.
+  function collapseSeries(list){
+    var lowest = {};
+    list.forEach(function(r){
+      var s = daySeries(r.id);
+      if (!s) return;
+      if (lowest[s.base] == null || s.n < lowest[s.base]) lowest[s.base] = s.n;
+    });
+    return list.filter(function(r){
+      var s = daySeries(r.id);
+      return !s || s.n === lowest[s.base];
+    });
+  }
+  // ---- TODAY IS NOT THE SAME THING AS EVERYTHING STILL OPEN (2026-08-27) -
+  // Boubacar, this morning, in his own words: "we have way too many tasks due
+  // today on the money map. There's no way I can do 80+ tasks in a single day
+  // so there's something wrong there."
+  //
+  // He was right, and the board was the thing lying. Eight rows were actually
+  // dated today. The other sixty-seven were open rows from the eight days
+  // before it, rolled forward by the rule above and then rendered inside a
+  // block headed "Today" with a single count over all of them. Rollover is
+  // correct and stays; presenting eight days of carried work as one day's
+  // list is what made the number unusable, because a list nobody can finish
+  // gives him no signal about what today actually is.
+  //
+  // So the two are now separated and both are counted honestly. Today holds
+  // what is dated today, plus his ranked order, plus the standing dailies.
+  // Everything carried lands in its own section directly underneath, shut by
+  // default, labelled for what it is, oldest first. It is not hidden, it is
+  // not quietly aged out, and its size is on the summary line where he can
+  // see it. It simply stops pretending to be today's work.
+  function splitToday(list){
+    var due = [], carried = [];
+    list.forEach(function(r){ (r.rolledFrom ? carried : due).push(r); });
+    return { due: due, carried: carried };
   }
   // ---- TODAY GROUPED BY KIND OF WORK (2026-08-19) -----------------------
   // His instruction, in his words: "Tasks and items that fit together and are
@@ -2772,11 +2882,18 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     var mine  = todayRows();
     var dates = Object.keys(byDay).sort();
     if (todayHost){
-      var doneN = mine.filter(function(r){ return isDone(r.id); }).length;
+      var split   = splitToday(mine);
+      var dueList = split.due, carriedList = split.carried;
+      var doneN = dueList.filter(function(r){ return isDone(r.id); }).length;
       var doneT = doneTodayCount();
       var dEl = document.getElementById('taDate'), cEl = document.getElementById('taCount');
       if (dEl) dEl.textContent = prettyDate(today);
-      if (cEl) cEl.textContent = countLine(doneT, doneN, mine.length);
+      // Set after the pinned block is built, because a carried row that also
+      // carries a rank renders at the top and must not be counted twice.
+      var setCount = function(nCarried){
+        if (cEl) cEl.textContent = countLine(doneT, doneN, dueList.length) +
+                                   (nCarried ? ' · ' + nCarried + ' carried' : '');
+      };
 
       var futureD = dates.filter(function(d){ return d > today; });
       var pastD   = dates.filter(function(d){ return d < today; }).reverse();
@@ -2844,9 +2961,9 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       if (!mine.length){
         thtml += '<div class="ta-empty">Nothing dated ' + rlEsc(prettyDate(today)) + ' is on the board yet. Actions show up here the moment they are written to the money map, and the count above tracks them.</div>';
       } else {
-        var rolledN = mine.filter(function(r){ return r.rolledFrom; }).length;
+        var rolledN = carriedList.filter(function(r){ return !pinnedIds[r.id]; }).length;
         thtml += '<div class="ta-todayhead">Today &middot; ' + rlEsc(prettyDate(today)) +
-                 ' &middot; <b>' + doneT + ' done today</b> &middot; <b>' + doneN + ' of ' + mine.length +
+                 ' &middot; <b>' + doneT + ' done today</b> &middot; <b>' + doneN + ' of ' + dueList.length +
                  '</b> ticked on the list below, which is in ' +
                  'sections by the kind of work, so you do one type at a time instead of jumping between them.</div>';
         // The two numbers are different on purpose and the difference is the
@@ -2860,14 +2977,14 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
         }
         if (rolledN){
           thtml += '<div class="ta-sub" style="margin:0 0 0.55rem;font-size:0.76rem;">' +
-                   '<b>' + rolledN + ' of these rolled over</b> because they were not ticked on the day they were due. They will keep coming back here every day, with the count of days climbing, until you either do them or write a note saying why you will not. Nothing gets to go quiet on its own.</div>';
+                   '<b>' + rolledN + ' more are carried over</b> from earlier days and sit in their own section below, shut, oldest first. They are not today\'s work and they are not counted above. They keep coming back with the day count climbing until you either do them or write a note saying why you will not. Nothing gets to go quiet on its own.</div>';
         }
         // One section per kind of work. Sections with nothing in them today do
         // not render at all, so the page never shows an empty header.
         var buckets = {};
         // A pinned row already rendered at the top. Rendering it twice would
         // let him tick the copy nobody is looking at.
-        mine.forEach(function(r){ if (pinnedIds[r.id]) return; (buckets[actGroup(r.id)] = buckets[actGroup(r.id)] || []).push(r); });
+        dueList.forEach(function(r){ if (pinnedIds[r.id]) return; (buckets[actGroup(r.id)] = buckets[actGroup(r.id)] || []).push(r); });
         ACT_GROUPS.forEach(function(g){
           var rows = buckets[g.key];
           if (!rows || !rows.length) return;
@@ -2877,6 +2994,32 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
           // ships closed, below.
           thtml += grpHtml('ta-grp-today-' + g.key, true, g.label, gdone, rows.length, gbody, 'grp-today');
         });
+      }
+
+      // ---- CARRIED OVER, ITS OWN SECTION, SHUT (2026-08-27) --------------
+      // Everything the rollover brought forward, grouped by the same work
+      // types, under one shut parent that names the oldest day it reaches
+      // back to. Same rows, same renderer, same ticks and notes, same age
+      // badges. The only change is that they no longer sit inside "Today"
+      // and no longer inflate today's count. See splitToday() for why.
+      var carriedOpen = carriedList.filter(function(r){ return !pinnedIds[r.id]; });
+      setCount(carriedOpen.length);
+      if (carriedOpen.length){
+        var oldest = carriedOpen[0].rolledFrom;
+        var cbuck = {};
+        carriedOpen.forEach(function(r){ (cbuck[actGroup(r.id)] = cbuck[actGroup(r.id)] || []).push(r); });
+        var cbody = '<div class="ta-sub" style="margin:0 0 0.6rem;font-size:0.76rem;">' +
+                    'These were due on an earlier day and are still open. This is a backlog to <b>decide on</b>, not a list to finish today: do it, re-date it, or write one line saying why it is not happening. The oldest reaches back to ' +
+                    rlEsc(prettyDate(oldest)) + '.</div>';
+        ACT_GROUPS.forEach(function(g){
+          var rows = cbuck[g.key];
+          if (!rows || !rows.length) return;
+          cbody += '<div class="ta-sub" style="margin:0.5rem 0 0.35rem;font-size:0.66rem;font-weight:850;text-transform:uppercase;letter-spacing:0.07em;">' + rlEsc(g.label) + ' &middot; ' + rows.length + '</div>' +
+                   rows.map(function(r){ return rlActRow(r.id, r.v, r.kind, r.rolledFrom); }).join('');
+        });
+        thtml += grpHtml('ta-grp-carried', false,
+                         'Carried over from earlier days · not today\'s work',
+                         0, carriedOpen.length, cbody, 'grp-carried');
       }
       futureD.concat(pastD).forEach(function(d){
         // Earlier days keep only what was actually finished. Anything still
