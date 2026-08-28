@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HQ Core — a real teardown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,300&display=swap" rel="stylesheet">
+<style>
+  @font-face{
+    font-family:"Geist";
+    src:url("https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/Geist-Variable.woff2") format("woff2-variations");
+    font-weight:100 900; font-style:normal; font-display:swap;
+  }
+  :root{
+    --bg:#000000; --fg:#FFFFFF; --panel:rgba(20,20,22,0.95);
+    --grey-40:rgba(255,255,255,0.4); --grey-50:rgba(255,255,255,0.5);
+    --grey-60:rgba(255,255,255,0.6); --grey-70:rgba(255,255,255,0.7);
+    --grey-90:rgba(255,255,255,0.9); --fg-100:rgba(255,255,255,1.0);
+    --accent:#FF9966; --accent-visited:#C97A4F; --hairline:rgba(255,255,255,0.5);
+    --font-sans:"Geist","Segoe UI",ui-sans-serif,system-ui,-apple-system,sans-serif;
+    --font-accent:"Fraunces",Georgia,serif;
+    --tracking-display:-0.03em; --tracking-micro:0.16em;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:80px;}
+  body{
+    background:var(--bg); color:var(--grey-70); margin:0; line-height:1.55;
+    font-family:var(--font-sans); font-weight:400;
+    padding:0 0 140px; overflow-x:hidden;
+  }
+  .wrap{max-width:840px; margin:0 auto; padding:0 20px; width:100%;}
+  img,pre,table{max-width:100%;}
+
+  h1,h2,h3{color:var(--fg-100); font-family:var(--font-sans); font-weight:400; margin:0;}
+  h1{font-size:clamp(2.2rem,6vw,3.4rem); line-height:1.02; letter-spacing:var(--tracking-display);}
+  h2{font-size:clamp(1.3rem,3.4vw,1.7rem); line-height:1.1; letter-spacing:var(--tracking-display); font-weight:650; border:0; padding:0;}
+  h3{font-size:1.1rem; line-height:1.3; font-weight:600; margin:18px 0 8px;}
+  em.accent{color:var(--accent); font-family:var(--font-accent); font-style:italic; font-weight:300;}
+  .eyebrow{font-size:.7rem; text-transform:uppercase; letter-spacing:var(--tracking-micro); color:var(--grey-50); font-weight:400;}
+
+  /* ---- masthead ---- */
+  header.mast{padding:44px 0 18px;}
+  header.mast .meta{color:var(--grey-50); font-size:.85rem; margin-top:10px;}
+
+  /* ---- floating nav / hamburger ---- */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(0,0,0,0.88); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(255,255,255,0.12); padding:12px 0;
+  }
+  .nav-inner{max-width:840px; margin:0 auto; padding:0 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-size:.68rem; text-transform:uppercase; letter-spacing:var(--tracking-micro); color:var(--grey-50); margin-right:auto;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--grey-90); text-decoration:none; font-size:.68rem; text-transform:uppercase;
+    letter-spacing:var(--tracking-micro); border:1px solid rgba(255,255,255,0.25);
+    border-radius:0; padding:8px 14px; background:transparent; white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:transparent; color:var(--fg-100); border:1px solid var(--hairline);
+    border-radius:0; padding:9px 12px; font-size:1rem; line-height:1; min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections ---- */
+  details.sec, details.tldr{
+    background:var(--panel); border:1px solid rgba(255,255,255,0.14);
+    border-radius:0; margin:20px 0;
+  }
+  details.tldr{border-color:var(--accent);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:18px 20px; display:flex; align-items:center; gap:12px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker, details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\2192"; color:var(--accent); font-size:.95rem; transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{transform:rotate(90deg);}
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 20px 24px; border-top:1px solid rgba(255,255,255,0.1);}
+  .sec-body > :first-child{margin-top:16px;}
+
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 14px;}
+  ul,ol{margin:0 0 14px; padding-left:22px;}
+  li{margin:0 0 8px;}
+  strong{color:var(--fg-100); font-weight:600;}
+  code{background:#0c0c0d; border:1px solid rgba(255,255,255,0.14); border-radius:0; padding:1px 6px; font-size:.86em; color:var(--grey-90);}
+  pre{background:#0c0c0d; border:1px solid rgba(255,255,255,0.14); border-radius:0; padding:14px 16px; overflow-x:auto; font-size:.82rem; line-height:1.5;}
+  pre code{background:none; border:0; padding:0;}
+  table{width:100%; border-collapse:collapse; margin:0 0 16px; font-size:.88rem;}
+  th,td{border:1px solid rgba(255,255,255,0.14); padding:9px 11px; text-align:left; vertical-align:top;}
+  th{background:rgba(255,255,255,0.05); color:var(--grey-90); font-weight:600;}
+  .table-scroll{overflow-x:auto;}
+
+  .tag{display:inline-block; font-size:.65rem; text-transform:uppercase; letter-spacing:var(--tracking-micro);
+    border:1px solid var(--hairline); padding:4px 10px; color:var(--grey-90); margin:0 6px 6px 0;}
+  .tag.hyp{border-color:var(--accent); color:var(--accent);}
+  .friction{border-left:2px solid var(--accent); padding-left:14px; margin:14px 0;}
+  .hyp-box{border:1px solid var(--accent); padding:20px; margin:18px 0; background:rgba(255,153,102,0.06);}
+  .hyp-box .tag.hyp{margin-bottom:12px;}
+  .video-slot{border:1px dashed var(--hairline); padding:36px 20px; text-align:center; color:var(--grey-50); margin:16px 0;}
+
+  footer.foot{color:var(--grey-50); font-size:.8rem; padding:28px 0 10px; border-top:1px solid rgba(255,255,255,0.14); margin-top:30px;}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch; gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    .wrap{padding:0 16px;}
+    .nav-inner{padding:0 16px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-28-11:38:36 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">HQ Core teardown</span>
+    <button type="button" class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-install">The install</a>
+      <a href="#sec-scaffold">Scaffolding Catalyst Works</a>
+      <a href="#sec-terminal">Real terminal output</a>
+      <a href="#sec-teardown">The honest teardown</a>
+      <a href="#sec-hypothetical">Hypothetical: large-org rollout</a>
+      <a href="#sec-recording">The recording</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="eyebrow">Hands-on, dated, checkable</div>
+    <h1>I actually ran HQ Core. Here is <em class="accent">exactly</em> what happened.</h1>
+    <div class="meta">Boubacar Barry · Catalyst Works · 2026-08-28 to 2026-08-30 · <a href="https://github.com/indigoai-us/hq-core" target="_blank" rel="noopener">github.com/indigoai-us/hq-core</a> · <a href="https://docs.hq.computer" target="_blank" rel="noopener">docs.hq.computer</a></div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p>I installed HQ Core fresh on Windows, pinned it at <code>hqVersion 15.0.116</code> / <code>create-hq v10.12.10</code>, and scaffolded a real company inside it for Catalyst Works, my own consulting practice — not a fictional client. I followed the actual <code>/newcompany</code> skill procedure line by line: directory scaffold, knowledge base with its own embedded git repo, manifest registry entry, a real business-discovery write-up of how Catalyst Works actually runs, and two workers (<code>growth-ops</code>, <code>delivery-ops</code>) modeled on my real cold-outreach and delivery workflow, not the demo defaults.</p>
+      <p>Along the way I hit five concrete pieces of friction, all reproducible and named below with the real command and the real error — including two internal contradictions inside HQ Core's own documented procedure, not just "the setup wizard wants macOS tools" (true, and also below).</p>
+      <p>This page also carries one section marked <span class="tag hyp">HYPOTHETICAL</span> — a scope sketch for a large-org HR/ops rollout, built around the one thing Jacob named as the actual success factor: executive alignment. That section is a sketch, not a real engagement, and it says so everywhere it appears.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-install" open>
+    <summary><h2>The install</h2></summary>
+    <div class="sec-body">
+      <p>Repo: <a href="https://github.com/indigoai-us/hq-core" target="_blank" rel="noopener">indigoai-us/hq-core</a>. Installed via <code>npx create-hq</code> with <code>--minimal --skip-sync --skip-packages --skip-cli</code>, deliberately closer to what a first-time Windows evaluator would actually get than a fully dependency-loaded install. Pinned at <code>hqVersion 15.0.116</code>, <code>create-hq</code> CLI <code>v10.12.10</code>, and never re-run or <code>hq update</code>d for the rest of the weekend, so this teardown describes one fixed, reproducible state rather than a moving target.</p>
+      <p>Environment: Git Bash on Windows 11, Node v24.18.1 / npm 12.0.2, GitHub CLI present, <code>qmd</code> and the global <code>hq</code> CLI intentionally absent (minimal mode).</p>
+      <p><strong>Already-known friction going in:</strong> the guided <code>/setup</code> wizard assumes macOS tooling — Homebrew, <code>qmd</code> installed via brew+sqlite, <code>gh</code> installed the Mac way — while the base <code>create-hq</code> scaffold itself ran cleanly under Git Bash with no changes needed. The scaffold and the setup wizard are two different pieces of software with two different levels of Windows readiness.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-scaffold" open>
+    <summary><h2>Scaffolding Catalyst Works — the real company, not a fictional one</h2></summary>
+    <div class="sec-body">
+      <p>Jacob's own bar is familiarity with the product, and a fabricated client would be the one thing most likely to read as staged to the person who built it. So I scaffolded my own practice instead: <code>catalyst-works</code>, prefix <code>cat</code>, computed the way the skill's procedure says to (strip hyphens, lowercase, first three characters, checked against existing prefixes in <code>manifest.yaml</code>, which was empty).</p>
+      <p>I followed HQ Core's own <code>.claude/skills/newcompany/SKILL.md</code> procedure directly — the same Markdown that drives the <code>/newcompany</code> slash command inside a live Claude Code session — rather than opening a second nested interactive session, since I was already operating as an agent with shell and file access. That is an honest description of how this was done, not a slash-command transcript; I want that distinction on the record rather than implied.</p>
+      <h3>What got built, following Phase 0-3 of the skill exactly</h3>
+      <ul>
+        <li><strong>Phase 0 — scaffold:</strong> <code>companies/catalyst-works/</code> with <code>settings/</code>, <code>data/</code>, <code>workspace/</code>, <code>board.json</code> seeded with the empty objectives/initiatives/projects shape the skill specifies, and <code>company.yaml</code> with <code>cloud: false</code> (the documented local-only default).</li>
+        <li><strong>Knowledge base:</strong> a real directory (not a symlink — verified per the skill's own check) with its own embedded git repo, per the skill's explicit warning that a symlinked knowledge dir uploads as a ~50-byte marker and breaks team sync.</li>
+        <li><strong>Business discovery (Phase 1), with real facts, not filler:</strong> <code>company-info.md</code> and <code>business-model.json</code> describing how Catalyst Works actually operates — the fractional-operator pitch, the reply-first cold-outreach model, the parachute-test rule that the client list can never depend on warm network, ROI-anchored pricing over hourly billing, and async-first delivery.</li>
+        <li><strong>Two workers (Phase 3), modeled on the real workflow:</strong> <code>growth-ops</code> (cold discovery, sector-vs-size template selection, no Calendly link in the first touch, no weekend sends) and <code>delivery-ops</code> (engagement scoping, ROI-anchored pricing, async-first delivery, stay-on partnership framing). Both carry <code>approval_required: true</code> — nothing in either worker's spec authorizes an unreviewed send or an unreviewed price.</li>
+        <li><strong>Registry:</strong> a real <code>manifest.yaml</code> entry with the computed prefix and knowledge path.</li>
+      </ul>
+      <p>Skipped, deliberately, per the PRD's own tech boundary: Phase 2.5 (brand packs), Phase 4-8 (cloud provisioning, team ACLs, integrations, invites, cloud agents) — those require the hosted vault-service backend and a live team, out of scope for a solo weekend evaluation with no VPS component.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-terminal" open>
+    <summary><h2>Real terminal output</h2></summary>
+    <div class="sec-body">
+      <p>These are the actual commands and actual output from this weekend's session, not reconstructed after the fact. Five genuine findings came directly out of running this, not out of reading the README.</p>
+
+      <h3>1. A doc reference that does not exist in the scaffold</h3>
+      <p>The <code>/newcompany</code> procedure says to copy <code>companies/_template/.obsidian</code> into every new company. It is not there:</p>
+      <pre><code>$ ls companies/_template/.obsidian
+ls: cannot access 'companies/_template/.obsidian': No such file or directory</code></pre>
+      <p class="friction">Not fatal — the step is written defensively (<code>[ -e ... ] &amp;&amp;</code>) so it fails soft. But the documented Obsidian-vault-config step is currently a no-op on a fresh scaffold, and nothing in the skill's own output says so.</p>
+
+      <h3>2. The skill tells you to edit a file the tool declares locked</h3>
+      <p>Phase 0.7 says: "If CLAUDE.md's <code>## Companies</code> line doesn't include the new slug, update it." <code>core/core.yaml</code>, HQ Core's own lock manifest, declares:</p>
+      <pre><code>rules:
+  locked:
+    - .agents/
+    - .claude/
+    - .codex/
+    ...</code></pre>
+      <p class="friction">There is no top-level <code>CLAUDE.md</code> at all — only <code>.claude/CLAUDE.md</code>, which is inside the tool's own locked path. The skill's documented instruction targets a directory the tool declares immutable. I did not edit it, and I'm noting the contradiction rather than quietly resolving it either way.</p>
+
+      <h3>3. The minimal install has no working CLI, so most of the pipeline is inert</h3>
+      <pre><code>$ hq reindex
+bash: hq: command not found
+
+$ npx --yes @indigoai-us/hq-cli reindex
+npm error could not determine executable to run</code></pre>
+      <p class="friction">This is the direct, load-bearing consequence of the <code>--skip-cli</code> minimal install: the workers registry auto-generation, <code>hq groups</code>/<code>hq secrets</code>/<code>hq files share</code>/<code>hq members invite</code> — the entire Phase 4-8 integration/ACL/invite layer the skill describes — simply cannot run without the CLI, and the documented fallback (<code>npx @indigoai-us/hq-cli</code>) doesn't resolve to an executable either. A first-time Windows evaluator staying in minimal mode, as the wizard's own macOS-tooling friction would push them to do, hits a wall well before the "operational" half of what <code>/newcompany</code> promises.</p>
+
+      <h3>4. <code>qmd</code> absent (expected, and confirms the doc's own dependency posture)</h3>
+      <pre><code>$ qmd collection add companies/catalyst-works/knowledge --name catalyst-works --mask "**/*.md"
+bash: qmd: command not found</code></pre>
+      <p class="friction">Documented and expected in minimal mode — knowledge search/reindex depends on a tool that has to be installed separately via Homebrew, which is the same macOS-first assumption already flagged for <code>/setup</code>.</p>
+
+      <h3>5. A small internal contradiction in the manifest schema example</h3>
+      <p>The skill says every manifest field must be populated, "no nulls" — then shows <code>github_org: {org or omit}</code> as the literal field template for a company with no GitHub org. Those two instructions conflict for the one field a solo practice like mine actually needs to omit. I resolved it by leaving the key out entirely (matching the "no nulls" spirit) rather than writing a literal placeholder string, and confirmed the resulting YAML still parses.</p>
+
+      <h3>Committing the scaffold surfaced one more real thing</h3>
+      <pre><code>$ git add -A -- companies/manifest.yaml companies/catalyst-works
+warning: adding embedded git repository: companies/catalyst-works/knowledge
+hint: You've added another git repository inside your current repository.
+...</code></pre>
+      <p class="friction">The embedded-git-repo pattern for the knowledge directory is deliberate per the skill's own instructions (needed so cloud sync uploads real files, not a symlink marker) — but it throws Git's standard submodule warning on every single commit that touches it, with no suppression built into the scaffold. Cosmetic, not a defect, but it is the kind of "does this look broken" moment a first-time user would stop and second-guess.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-teardown" open>
+    <summary><h2>The honest teardown</h2></summary>
+    <div class="sec-body">
+      <h3>What's genuinely good</h3>
+      <p>The scaffold-first design is the right call: Phase 0 always leaves you with a working company directory in seconds, and everything past that — business discovery, brand packs, workers, team ACLs, invites, cloud agents — is explicitly fail-soft and skippable, rolling into a finish-later checklist instead of blocking. That's a real architectural decision, not a marketing line; I could see it directly in how the skill is written. The company/knowledge separation (a real git repo per company, never a symlink) is a deliberate, correct choice for a product whose whole thesis is that context should sync across a team — a symlinked "vault marker" would quietly break that thesis for anyone who tripped into it.</p>
+      <h3>What surprised me</h3>
+      <p>How much of the "team AI operating system" pitch depends on the hosted vault-service backend and the <code>hq</code> CLI specifically, not on the local scaffold. The local-only path (what I ran) gives you real structure — knowledge, workers, policies, a board — but the actual compounding-memory mechanism the README leads with (shared context synced across a team, connected tools, ACL-scoped access) is gated entirely behind provisioning a cloud vault. That's a reasonable product boundary, but it means "installed HQ Core" and "have the thing HQ Core is actually selling" are two different states, and the gap between them is not obvious from the README.</p>
+      <h3>What's rough</h3>
+      <p>Windows readiness is uneven across the product's own surfaces: the base scaffold is clean, the guided <code>/setup</code> wizard assumes Homebrew, and the documented CLI fallback path (<code>npx @indigoai-us/hq-cli</code>) doesn't actually resolve on a fresh machine. For a company whose install command is <code>npx create-hq</code> — the single lowest-friction install pattern in the Node ecosystem — the CLI it hands you off to next is the highest-friction thing in this teardown.</p>
+      <h3>What's genuinely missing (for a domain I know)</h3>
+      <p>Nothing in the scaffold, the policies, or the skill library speaks to large-org HR/ops rollout mechanics — stakeholder alignment, change-management sequencing, executive sponsorship. That's not a knock; HQ Core's own customer base is clearly engineering/product teams shipping code with Claude/Cursor/Codex, and it's honest about that. It is real white space relative to what I do, which is the whole reason the next section exists.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-hypothetical" open>
+    <summary><h2>Scope sketch: a large-org HR/ops rollout <span class="tag hyp">HYPOTHETICAL</span></h2></summary>
+    <div class="sec-body">
+      <div class="hyp-box">
+        <span class="tag hyp">HYPOTHETICAL — not a real engagement, not a real client, not a real result</span>
+        <p>This is a scope sketch, built to answer one question directly: given what Jacob himself named as the number one success factor for any implementation — <em>"the highest possible level executive alignment... the human element of it is more important than the tech at this point"</em> — how would I actually scope a large-org HR/ops rollout of HQ Core? No client is named or implied. No numbers below are results; they're a sequencing sketch.</p>
+        <h3>Phase 1 — executive alignment before a single skill is written</h3>
+        <p>Before any scaffold work: identify who actually owns the outcome (usually CHRO/COO plus the functional VPs whose teams will feel the change), get them in a room together, and get explicit agreement on what "working" looks like in their terms, not HQ Core's terms. This is the phase most implementation partners skip because it isn't billable-looking work — it's exactly the phase Jacob flagged as the actual determinant of success.</p>
+        <h3>Phase 2 — one function, not the whole org</h3>
+        <p>Same Phase-1-through-3 scaffold shown above (company, knowledge, business discovery, one or two workers) but scoped to a single function with a visible, checkable win — the function whose executive showed up in Phase 1 with real skin in the game, not the function that's easiest technically.</p>
+        <h3>Phase 3 — a checkpoint that can say no</h3>
+        <p>A named go/no-go review with the same executives from Phase 1, using the same "working" definition they set, before touching a second function. This is the review-and-pivot point HR/ops rollouts routinely skip in favor of a fixed multi-phase plan that nobody re-checks against reality.</p>
+        <h3>Phase 4 — expand only on a proven win</h3>
+        <p>Additional functions get the same treatment, in the order their executives are ready to sponsor — not in the order that is easiest to build.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-recording" open>
+    <summary><h2>The recording</h2></summary>
+    <div class="sec-body">
+      <div class="video-slot">Recording slot — under 5 minutes, recorded by Boubacar. Not something an agent can create; see the shot list below.</div>
+      <h3>What I need Boubacar to record himself</h3>
+      <p>A single take, under five minutes, screen-recorded, showing the real terminal and the real install — not narrated after the fact, not edited to remove the friction:</p>
+      <ol>
+        <li>Open a terminal in <code>C:\Ai_Sandbox\hq-core-eval</code> and show the pinned version (<code>hqVersion 15.0.116</code>) and the folder structure — proves the install is real and dated.</li>
+        <li>Show <code>companies/catalyst-works/</code> — the scaffolded company, the knowledge folder, the two worker files — and say out loud, in your own words, what each one does for the real Catalyst Works workflow (cold outreach, reply-first, ROI-anchored pricing).</li>
+        <li>Re-run one of the friction moments live — the <code>hq reindex: command not found</code> or the <code>npx @indigoai-us/hq-cli</code> failure — and react to it honestly on camera. This is the single highest-credibility moment on the whole page: a real person hitting a real wall in real time, not a polished walkthrough.</li>
+        <li>Close by saying, in one or two sentences and in your own words, what you'd actually use HQ Core for and where you think large-org HR/ops work would need something HQ Core doesn't have yet.</li>
+      </ol>
+      <p>Once recorded, drop the file link here (or embed it) and republish this page with the same slug — the publish script updates this exact page in place.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Published by Boubacar Barry, Catalyst Works. Everything on this page — the install, the scaffold, the terminal output, the friction — is real and dated 2026-08-28. The one section marked HYPOTHETICAL is a scope sketch, not a claimed engagement.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
