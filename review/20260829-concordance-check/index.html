@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concordance Check</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #f5f5f3;
+    --paper-raised: #ffffff;
+    --ink: #1b1e21;
+    --ink-soft: #4a4f56;
+    --ink-faint: #7b8188;
+    --rule: #d7d5cf;
+    --accent: #9a5b1f;
+    --accent-soft: #f0e2d0;
+    --verified: #2f6f4e;
+    --verified-bg: #e3ede6;
+    --inference: #8a6d1c;
+    --inference-bg: #f2ecda;
+    --speculation: #8b3f3f;
+    --speculation-bg: #f3e2e2;
+    --gap-bg: #efece5;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #16181b;
+      --paper-raised: #1e2124;
+      --ink: #ece9e3;
+      --ink-soft: #b7b9bb;
+      --ink-faint: #82868c;
+      --rule: #33363a;
+      --accent: #d99a5c;
+      --accent-soft: #34281a;
+      --verified: #7fbf9c;
+      --verified-bg: #1f2b24;
+      --inference: #d3b862;
+      --inference-bg: #2c2717;
+      --speculation: #d98787;
+      --speculation-bg: #2c1e1e;
+      --gap-bg: #212327;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #16181b;
+    --paper-raised: #1e2124;
+    --ink: #ece9e3;
+    --ink-soft: #b7b9bb;
+    --ink-faint: #82868c;
+    --rule: #33363a;
+    --accent: #d99a5c;
+    --accent-soft: #34281a;
+    --verified: #7fbf9c;
+    --verified-bg: #1f2b24;
+    --inference: #d3b862;
+    --inference-bg: #2c2717;
+    --speculation: #d98787;
+    --speculation-bg: #2c1e1e;
+    --gap-bg: #212327;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 68px; }
+  html, body { background: var(--paper); }
+
+  body {
+    color: var(--ink);
+    font-family: "Work Sans", system-ui, sans-serif;
+    font-size: 16.5px;
+    line-height: 1.62;
+    margin: 0;
+    padding: 0 0 120px;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Sticky section nav, rule 5 */
+  .nav-bar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--paper) 92%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    padding: 10px 0;
+  }
+  .nav-inner {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .nav-title {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-right: auto;
+  }
+  .nav-links { display: flex; flex-wrap: wrap; gap: 6px; }
+  .nav-links a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 5px 11px;
+    background: var(--paper-raised);
+    white-space: nowrap;
+  }
+  .nav-links a:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-toggle {
+    display: none;
+    appearance: none;
+    cursor: pointer;
+    background: var(--paper-raised);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 7px 11px;
+    font-size: 1rem;
+    line-height: 1;
+    min-width: 40px;
+    min-height: 36px;
+  }
+  .nav-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 720px) {
+    .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+    .nav-links {
+      display: none; flex-direction: column; align-items: stretch;
+      gap: 6px; width: 100%; margin-top: 8px;
+    }
+    .nav-bar.open .nav-links { display: flex; }
+    .nav-links a { text-align: left; }
+  }
+
+  header.masthead {
+    padding: 44px 0 32px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+
+  h1.title {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin: 0 0 16px;
+    text-wrap: balance;
+  }
+
+  .dek {
+    font-size: 1.05rem;
+    color: var(--ink-soft);
+    max-width: 58ch;
+    margin: 0 0 20px;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+
+  /* Verdict strip */
+  .verdict-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    margin: 20px 0 0;
+    border: 1px solid var(--rule);
+  }
+  .verdict-cell { background: var(--paper-raised); padding: 20px 16px; }
+  .verdict-num {
+    font-family: "Newsreader", serif;
+    font-weight: 500;
+    font-size: 1.8rem;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .verdict-label { margin-top: 8px; font-size: 0.82rem; color: var(--ink-soft); line-height: 1.4; }
+
+  @media (max-width: 600px) {
+    .verdict-strip { grid-template-columns: 1fr; }
+  }
+
+  /* Collapsible sections (rules 1-3) */
+  details.tldr, details.chapter {
+    border-bottom: 1px solid var(--rule);
+  }
+  details.tldr { padding: 30px 0; background: var(--accent-soft); border-radius: 0; margin: 0 -24px; padding-left: 24px; padding-right: 24px; }
+  details.chapter { padding: 40px 0; }
+  details.chapter:last-of-type { border-bottom: none; }
+
+  summary.chapter-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+  summary.chapter-head::-webkit-details-marker { display: none; }
+  summary.chapter-head::before {
+    content: "\25B8";
+    color: var(--accent);
+    font-size: 0.85rem;
+    transition: transform 0.15s ease;
+    flex: none;
+    transform: translateY(1px);
+  }
+  details[open] > summary.chapter-head::before { transform: rotate(90deg) translateY(0); }
+
+  .chapter-no {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    color: var(--accent);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+  }
+  h2.chapter-title {
+    font-family: "Newsreader", Georgia, serif;
+    font-weight: 500;
+    font-size: 1.5rem;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .chapter-body { margin-top: 20px; }
+  .chapter-body p { margin: 0 0 16px; max-width: 68ch; }
+  .chapter-body p:last-child { margin-bottom: 0; }
+  .chapter-body ul { margin: 0 0 16px; padding-left: 22px; max-width: 68ch; }
+  .chapter-body li { margin-bottom: 10px; }
+
+  /* Evidence tags */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    margin: 0 2px;
+    transform: translateY(-1px);
+  }
+  .tag.verified   { background: var(--verified-bg);   color: var(--verified); }
+  .tag.inference  { background: var(--inference-bg);  color: var(--inference); }
+  .tag.speculation{ background: var(--speculation-bg);color: var(--speculation); }
+
+  cite.src {
+    font-family: "IBM Plex Mono", monospace;
+    font-style: normal;
+    font-size: 0.85em;
+    color: var(--ink-faint);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .verdict-block {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 20px 24px;
+    margin: 22px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .verdict-block p { margin: 0; font-size: 1.02rem; }
+  .verdict-block p + p { margin-top: 12px; }
+  .verdict-block strong { color: var(--accent); }
+
+  .avenues { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .avenue {
+    display: grid; grid-template-columns: 28px 1fr; gap: 12px;
+    padding: 14px 16px; background: var(--paper-raised);
+    border: 1px solid var(--rule); border-radius: 6px;
+  }
+  .avenue-no { font-family: "IBM Plex Mono", monospace; color: var(--ink-faint); font-size: 13px; font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .avenue-name { font-weight: 600; }
+  .avenue-desc { color: var(--ink-soft); font-size: 0.94rem; margin-top: 2px; }
+
+  .gaps-box {
+    background: var(--gap-bg);
+    border: 1px dashed var(--rule);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-top: 8px;
+  }
+  .gaps-box ul { margin: 0; padding-left: 20px; }
+  .gaps-box li { margin-bottom: 8px; color: var(--ink-soft); font-size: 0.94rem; }
+  .gaps-box li:last-child { margin-bottom: 0; }
+
+  footer.colophon {
+    padding-top: 40px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    summary.chapter-head::before { transition: none; }
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-29-15:42:05 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Concordance Check</span>
+    <button type="button" class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">What it is</a>
+      <a href="#sec-2">Set up</a>
+      <a href="#sec-3">Revenue avenues</a>
+      <a href="#sec-4">Connected/disparate</a>
+      <a href="#sec-5">Oldest</a>
+      <a href="#sec-6">Biggest issue</a>
+      <a href="#sec-7">Verdict</a>
+      <a href="#sec-gaps">Gaps</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Concordance Check &middot; External Read</p>
+    <h1 class="title">Does agentsHQ's real behavior match the strategy in your head?</h1>
+    <p class="dek">A blind, evidence-only read of the repo, the database, and the roadmap &mdash; not a features inventory. Every claim below is tagged and cited; nothing is taken on the strategy's own word.</p>
+    <div class="meta-row">
+      <span>2026-08-29</span>
+      <span>Subject: agentsHQ</span>
+      <span>176,649 tokens of research &middot; 22 tool calls</span>
+    </div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary class="chapter-head"><h2 class="chapter-title">TL;DR</h2></summary>
+    <div class="chapter-body">
+      <p>The blind read does not match a deliberate, revenue-executing strategy right now. It matches a strategy that was designed well and then substantially consumed by its own tooling &mdash; governance, memory, and roadmap maintenance occupy more of the system's recent detailed history than any customer does. Zero confirmed live sales across all five avenues checked. The Signal Works / Catalyst Works cold-email lane is the oldest lane and carries the freshest verified activity &mdash; it is the closest to a 10&times; outcome with the least new work.</p>
+      <div class="verdict-strip">
+        <div class="verdict-cell">
+          <div class="verdict-num">1</div>
+          <div class="verdict-label">row in <code>purchase_fulfilments</code> &mdash; a test transaction, not a sale</div>
+        </div>
+        <div class="verdict-cell">
+          <div class="verdict-num">25</div>
+          <div class="verdict-label">days past Lighthouse's 3-client deadline, with no closure recorded</div>
+        </div>
+        <div class="verdict-cell">
+          <div class="verdict-num">0</div>
+          <div class="verdict-label">confirmed live sales across all five revenue avenues checked</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-1" open>
+    <summary class="chapter-head"><span class="chapter-no">01</span><h2 class="chapter-title">What agentsHQ is</h2></summary>
+    <div class="chapter-body">
+      <p>Reading only the artifacts, with no prior context: agentsHQ is a solo operator's combined <strong>software platform and business-operations system</strong>. One person has built a large automation codebase &mdash; 15,010 commits, hundreds of scripts, a Postgres database with roughly 100 tables, a fleet of AI &ldquo;agent&rdquo; sessions and skills &mdash; whose stated purpose is to run several small businesses (consulting, a productized website service, ghostwriting, a digital-product catalog, a content-media portfolio) with AI agents doing most of the labor of building, selling, and even governing itself. <span class="tag verified">verified</span> <cite class="src">table list + roadmap files</cite></p>
+      <p>It also spends a very large share of its own effort maintaining, auditing, and repairing itself rather than running those businesses.</p>
+      <p>Does this read as a coherent, legible strategy to a first-time observer? Partially. The <em>businesses</em> are legible &mdash; five distinct customer-facing ideas, each documented. What is not legible from the artifacts is a single unifying &ldquo;this is the machine and this is what it's for&rdquo; &mdash; the system's own internal life (merge conflicts, USB-dongle debugging, model-cost overruns) occupies as much or more of the most recent, most detailed record as any customer or dollar does.</p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-2" open>
+    <summary class="chapter-head"><span class="chapter-no">02</span><h2 class="chapter-title">How it's set up</h2></summary>
+    <div class="chapter-body">
+      <ul>
+        <li><strong>Codebase + agents.</strong> <code>orchestrator/</code> runs on a VPS container (<code>orc-crewai</code>) driving role-based agents &mdash; Router, Planner, Copywriter, Web Builder, Consulting Agent, Hunter Agent &mdash; per <cite class="src">docs/SYSTEM_MAP.md</cite>. <span class="tag verified">verified</span></li>
+        <li><strong>A Postgres database</strong> (<code>orc-postgres</code>) holding ~100 tables spanning leads, email sends, workshop registrations, Upwork tracking, purchase fulfillment, cost accounting, agent coordination, memory, and content review &mdash; the CRM/ops layer and the system's self-management layer share one database. <span class="tag verified">verified</span> <cite class="src">pg_tables, live query</cite></li>
+        <li><strong>A governance layer (&ldquo;the Gate&rdquo;)</strong> arbitrates every merge to main and the VPS. It was itself the subject of at least 6 audit-registry entries in the last 3 recorded days (Aug 26&ndash;28), including a stale branch that could have reverted a $414/week cost-control fix. <span class="tag verified">verified</span> <cite class="src">docs/audits/REGISTRY.md</cite></li>
+        <li><strong>A roadmap system</strong> tracks ~15 initiatives under one master roadmap, whose stated deadline &mdash; 3 paying clients by 2026-08-04 &mdash; is already 3+ weeks past as of today, with no file marking it closed, hit, or missed. <span class="tag inference">inference</span> <cite class="src">no closure entry found in lighthouse.md</cite></li>
+        <li><strong>A memory system</strong> that is explicitly documented as chronically over capacity &mdash; its own maintenance note says the index regenerates to ~30.7KB against a 24.4KB load cap and is &ldquo;visibly truncating.&rdquo; <span class="tag verified">verified</span> <cite class="src">CLAUDE.md</cite></li>
+      </ul>
+      <p>This is genuinely sophisticated infrastructure. It is also infrastructure whose most recent, most detailed written history is dominated by infrastructure problems, not business results.</p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-3" open>
+    <summary class="chapter-head"><span class="chapter-no">03</span><h2 class="chapter-title">The actual avenues of revenue</h2></summary>
+    <div class="chapter-body">
+      <ol class="avenues">
+        <li class="avenue"><span class="avenue-no">01</span><div><div class="avenue-name">Catalyst Works (CW)</div><div class="avenue-desc">Consulting &mdash; discovery calls, a $497/90-min diagnostic, custom builds.</div></div></li>
+        <li class="avenue"><span class="avenue-no">02</span><div><div class="avenue-name">Signal Works (SW)</div><div class="avenue-desc">Productized website/AI-presence infra &mdash; $500 setup + $497/mo, run on a cold-email lead pipeline.</div></div></li>
+        <li class="avenue"><span class="avenue-no">03</span><div><div class="avenue-name">Ghost Works (GW)</div><div class="avenue-desc">Ghostwriting retainers, priced at a $2,500 pilot / $5,000 per month.</div></div></li>
+        <li class="avenue"><span class="avenue-no">04</span><div><div class="avenue-name">Human at Work (HAW)</div><div class="avenue-desc">A 52&ndash;53-SKU digital-product catalog plus newsletter, aimed at self-serve sales.</div></div></li>
+        <li class="avenue"><span class="avenue-no">05</span><div><div class="avenue-name">Studio</div><div class="avenue-desc">Faceless, non-founder-voiced content channels monetized via ads/affiliate/sponsorship.</div></div></li>
+        <li class="avenue"><span class="avenue-no">06</span><div><div class="avenue-name">Atelier</div><div class="avenue-desc">A portfolio of small paid apps &mdash; thesis explicitly borrowed from a third party's $36K MRR claim.</div></div></li>
+        <li class="avenue"><span class="avenue-no">07</span><div><div class="avenue-name">Upwork channel</div><div class="avenue-desc">A foot-in-door lead channel feeding the CW umbrella.</div></div></li>
+        <li class="avenue"><span class="avenue-no">08</span><div><div class="avenue-name">Workshops</div><div class="avenue-desc">Paid-seat local events (e.g. the SLCC-venue session) feeding the CW/audit funnel.</div></div></li>
+        <li class="avenue"><span class="avenue-no">09</span><div><div class="avenue-name">Dashboards4Sale</div><div class="avenue-desc">A separate satellite product/repo, deliberately kept out of the main codebase.</div></div></li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-4" open>
+    <summary class="chapter-head"><span class="chapter-no">04</span><h2 class="chapter-title">Connected &mdash; and honestly disparate</h2></summary>
+    <div class="chapter-body">
+      <p><strong>Genuinely linked, by design:</strong> SW &harr; GW &harr; CW form one upsell ladder &mdash; &ldquo;SW client &rarr; upsell GW retainer,&rdquo; a $2.5K/mo bundle &mdash; sharing the same ICP, lead-gen infra, and cold-email engine. <span class="tag verified">verified</span> <cite class="src">harvest.md</cite></p>
+      <p><strong>Linked, but loosely:</strong> Workshops and Upwork both feed CW top-of-funnel; HAW is framed as funding &ldquo;runway&rdquo; and building an owned list that could someday feed CW &mdash; aspirational, not yet evidenced by any actual conversion. <span class="tag inference">inference</span></p>
+      <p><strong>Genuinely disparate &mdash; and the system says so itself:</strong> Studio and Atelier are explicitly &ldquo;Path B&rdquo; &mdash; agent-run, zero-founder-time bets whose whole logic is that they don't depend on your time or voice, unlike Path A (CW/SW/GW, where &ldquo;Boubacar-time IS the product&rdquo;). Dashboards4Sale sits in its own repo specifically so it won't entangle with agentsHQ's codebase. There's no requirement, and no real evidence, that Studio/Atelier/Dashboards4Sale need to relate to CW/SW/GW at all &mdash; and the documentation agrees, rather than forcing a unity that isn't there. <span class="tag verified">verified</span> <cite class="src">docs/roadmap/README.md</cite></p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-5" open>
+    <summary class="chapter-head"><span class="chapter-no">05</span><h2 class="chapter-title">The oldest avenue</h2></summary>
+    <div class="chapter-body">
+      <p><strong>Catalyst Works / Signal Works</strong> is the oldest revenue-facing work, by direct git evidence: the <code>signal_works/</code> directory's first commits and the <code>studio</code> roadmap file both date to <strong>2026-04-25 / 2026-04-27</strong>, only weeks after the repo's earliest commits (2026-03-25). <code>harvest.md</code> itself states &ldquo;Started: 2026-04-25.&rdquo; Ghost started 2026-05-11, HAW 2026-06-12, Atelier 2026-05-26. <span class="tag verified">verified</span> <cite class="src">git log --diff-filter=A, harvest.md, studio.md</cite></p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-6" open>
+    <summary class="chapter-head"><span class="chapter-no">06</span><h2 class="chapter-title">The biggest issue</h2></summary>
+    <div class="chapter-body">
+      <p>This is structural, not one bug. Three compounding, independently verified facts:</p>
+      <ul>
+        <li><strong>Self-governance now consumes more documented attention than revenue does.</strong> The audit registry's most recent 6 entries, spanning 3 days, are entirely about the Gate merge mechanism repeatedly re-alerting on dead branches &mdash; including one where a fix for a <em>previous</em> cost overrun ($414/week from mis-routed model usage) nearly got reverted by the very system meant to prevent bad merges. <span class="tag verified">verified</span></li>
+        <li><strong>The master goal is already blown, with no visible closure.</strong> Lighthouse's &ldquo;done&rdquo; definition &mdash; 3 paying clients across SW+GW+CW by 2026-08-04 &mdash; is 25 days overdue as of today, and nothing found shows a reckoning actually recorded. <span class="tag inference">inference &mdash; absence noted, not exhaustively searched</span></li>
+        <li><strong>The one table built to prove a real sale happened contains exactly one row &mdash; and it's synthetic.</strong> <code>purchase_fulfilments</code> holds one row: <code>livemode: false</code>, a Stripe test session, the operator's own email as buyer. Ghost reports 0 sends / 0 calls / 0 clients at day 56 of 90. The Aug-27 workshop had zero paid registrations against $78+ ad spend. Studio's own status table still shows $0 against a $1,000+/mo gate, unedited since April. <span class="tag verified">verified &mdash; all three</span></li>
+      </ul>
+      <p>Put together: this isn't &ldquo;one lane is broken.&rdquo; It's a system that built extraordinarily deep tooling to manage <em>itself</em> while the proof-of-revenue layer, checked directly, shows no confirmed live sale across any of the five avenues in the tables designed to record one.</p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-7" open>
+    <summary class="chapter-head"><span class="chapter-no">07</span><h2 class="chapter-title">Analysis, verdict, and recommendation</h2></summary>
+    <div class="chapter-body">
+      <div class="verdict-block">
+        <p><strong>The concordance question, answered directly:</strong> the strategies are legible and individually sound &mdash; the CW/SW/GW ladder makes sense, Studio/Atelier as separable zero-founder-time bets makes sense, each avenue states a real reason to exist. But the system's <em>evidenced behavior</em> does not currently match a deliberate, revenue-executing strategy. It matches a strategy that was designed well and then substantially consumed by its own tooling.</p>
+        <p>The clearest single data point: the table that exists specifically to prove a dollar changed hands contains a test row from the operator's own inbox. That is not &ldquo;revenue is slow&rdquo; &mdash; it's &ldquo;the proof-of-revenue layer has never fired for real,&rdquo; four-plus months into a 12-week sprint that was supposed to have closed three weeks ago.</p>
+      </div>
+      <p>Every avenue justifies its <em>existence</em> on paper &mdash; a stated ICP, mechanism, done-definition. Not one, on the evidence pulled, has cleared its own bar yet.</p>
+      <p><strong>Closest to a 10&times; outcome with the least additional work: the Signal Works / Catalyst Works cold-email lane.</strong> It carries the freshest independently verified activity of any avenue &mdash; the <code>leads</code> table has 890 rows, most recent dated 2026-08-22; <code>sw_email_log</code> has 1,106 rows as recent as 2026-08-25. That's real, current, machine-verified motion, unlike Studio (stale since April) or HAW (one synthetic transaction). The infrastructure is already built and running &mdash; the gap is conversion, not construction. It's also the oldest lane, and per the tiebreaker rule, fresher verified data beats a better-written plan.</p>
+      <p><strong>Recommendation:</strong> stop building more platform &mdash; governance, memory, new roadmaps &mdash; until this lane produces one real, <code>livemode: true</code> row in <code>purchase_fulfilments</code>, or until the Lighthouse goal is explicitly re-scoped. The system has ample capacity to sell; the evidence says that capacity has been spent on itself.</p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-gaps" open>
+    <summary class="chapter-head"><span class="chapter-no">&mdash;</span><h2 class="chapter-title">Confidence and gaps</h2></summary>
+    <div class="chapter-body gaps-box">
+      <ul>
+        <li>Infrastructure-only roadmaps (compass, echo, atlas, bara-sandbox, beacon, second-brain-graph) were not read in full &mdash; cited only via the system map, since they're not revenue avenues.</li>
+        <li>Supabase (<code>y0_money_map_state</code>, the &ldquo;Money Map&rdquo; board referenced repeatedly) was unreachable from this session &mdash; any Money Map dollar figures are unverified and deliberately not cited as fact.</li>
+        <li><code>cost_ledger</code> query failed on a schema mismatch and wasn't retried &mdash; total infra spend isn't quantified here beyond the one $414/week incident.</li>
+        <li>Lighthouse's actual close/miss reckoning was inferred from absence, not confirmed by reading the roadmap's full session log end-to-end &mdash; a stronger claim would require that full read.</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer class="colophon">Read-only research &middot; no code, file, or table changes made &middot; task board ref a2bffcfa9cfa4d46aaf3b8e3537bb587</footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
