@@ -270,6 +270,14 @@
       .lr-notebtn { margin-left: 0; }
       .lr-pushlbl { width: 100%; }
       .lr-pushform input[type=date] { flex: 1; min-width: 8rem; }
+      /* Found by LOOKING at a 375px screenshot rather than by checking a list,
+         2026-08-29. Pre-existing, and worse than it sounds: .lr-name is
+         flex:1 1 0 in a wrapping head row, so on a phone the chips and the
+         buttons take the whole line and the row's own TITLE is squeezed to a
+         couple of pixels and reads as one letter per line. Measured live: an
+         untouched row's title was 1.8px wide. Giving the name its own full
+         line fixes every action row on the board, not just the pushed ones. */
+      .lane-row .lr-head .lr-name { flex: 1 0 100%; }
     }
 
     /* STICKY MINI-NAV */
@@ -688,7 +696,7 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v23 · 2026-08-29-14:45:00 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v24 · 2026-08-29-15:15:00 MT</div><!-- DEPLOY_STAMP_END -->
 
 
 
@@ -1870,7 +1878,14 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       return;
     }
     setSync('saving', 'Saving');
-    sb.rpc('y0_upsert', { p_board: BOARD_ID, p_item: item, p_value: value, p_token: BOARD_TOKEN })
+    // RETURNS the write promise (2026-08-29). Additive: every existing caller
+    // ignores the return value and is unaffected. A caller that wants to
+    // CONFIRM its own write by reading the row back has to wait for the write
+    // to finish first -- issuing the confirming read alongside it races the
+    // commit and reports NOT SAVED on a write that saved perfectly. That is
+    // the exact class of lying signal this page exists to prevent, and it was
+    // caught live in QA before it ever reached him.
+    return sb.rpc('y0_upsert', { p_board: BOARD_ID, p_item: item, p_value: value, p_token: BOARD_TOKEN })
       .then(function(res){
         if (res.error){
           setSync('error', 'Save failed');
@@ -3811,7 +3826,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     var rec = { v: 1, from: from, to: newDate, reason: reason, ts: new Date().toISOString(), by: 'boubacar' };
     t.disabled = true;
     if (sEl){ sEl.className = 'lr-notestatus'; sEl.textContent = 'Saving...'; }
-    persist(pushKey(pid), JSON.stringify(rec));
+    var written = persist(pushKey(pid), JSON.stringify(rec));
 
     // The reason ALSO lands in his notes trail on this row, so his own
     // reasoning sits with everything else he has written about it rather than
@@ -3825,12 +3840,15 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
 
     // A 200 is a claim, not proof. Read the row back off the board and confirm
     // this exact push came out of it before telling him it is recorded.
-    var confirm = sb
-      ? sb.from('y0_money_map_state').select('value')
-          .eq('board_id', BOARD_ID).eq('item_id', pushKey(pid))
-      : Promise.resolve({ error: { message: 'the database client never loaded on this page' } });
-
-    Promise.resolve(confirm).then(function(res){
+    // AFTER the write resolves, never alongside it: a confirming read that
+    // races its own commit reports NOT SAVED on a write that saved fine, which
+    // would train him to distrust the one message that has to be trustworthy.
+    Promise.resolve(written).then(function(){
+      return sb
+        ? sb.from('y0_money_map_state').select('value')
+            .eq('board_id', BOARD_ID).eq('item_id', pushKey(pid))
+        : { error: { message: 'the database client never loaded on this page' } };
+    }).then(function(res){
       t.disabled = false;
       var sf = document.querySelector('[data-pushstatus="' + CSS.escape(pid) + '"]');
       var rows = (res && res.data) || [];
