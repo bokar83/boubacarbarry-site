@@ -120,6 +120,12 @@
     .lic-hook { flex-basis: 100%; font-size: 0.75rem; color: var(--muted); line-height: 1.45; }
     .lic-body { padding: 0.15rem 0 0.5rem; }
     .lic-open { display: inline-block; font-size: 0.72rem; font-weight: 700; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 0.35rem 0.6rem; text-decoration: none; margin-bottom: 0.45rem; }
+    /* Paste blocks inside a daily row. Same copy-box look as the comments
+       panel, just labelled, because he reads these on a phone and needs to see
+       at a glance which of the three he is about to send. */
+    .mm-paste { margin-top: 0.7rem; border-top: 1px solid var(--line); padding-top: 0.6rem; }
+    .mm-plbl { font: 800 0.66rem/1.3 inherit; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ember-bright, var(--ember)); margin: 0.6rem 0 0.3rem; }
+    .mm-phint { font-size: 0.72rem; opacity: 0.75; margin: 0.25rem 0 0.2rem; }
     .lic-copywrap { position: relative; }
     .lic-cbtn { position: absolute; top: 0.4rem; right: 0.4rem; z-index: 2; appearance: none; -webkit-appearance: none; cursor: pointer; font: 800 0.6rem/1 inherit; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); background: var(--card-2); border: 1px solid var(--line); border-radius: 999px; padding: 0.35rem 0.6rem; min-height: 28px; }
     .lic-cbtn.copied { background: #4f7d52; border-color: #4f7d52; color: #fff; }
@@ -1906,6 +1912,43 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       }
     });
   });
+  // ---- COPY BUTTONS ON ROWS THAT DID NOT EXIST AT LOAD (2026-08-29) ------
+  // The loop above binds every .lic-cbtn present in the HTML when the page
+  // loads. The daily rows are different: they are built in JS after the board
+  // data arrives, so a button inside one is never in the DOM at binding time
+  // and a load-time listener can never reach it. Binding at render instead
+  // would re-bind on every re-render, and this board re-renders on every write
+  // from every device.
+  //
+  // So these use ONE delegated listener on the document, which works no matter
+  // when the button appeared and cannot double-fire. They carry their own class
+  // so the static buttons above keep their existing handler untouched.
+  //
+  // This matters more than it looks: a copy box he cannot copy from is worse
+  // than no copy box, because it looks like it works until he taps it with a
+  // half-written message already in his clipboard.
+  document.addEventListener('click', function(ev){
+    var btn = ev.target && ev.target.closest ? ev.target.closest('.mm-cbtn') : null;
+    if (!btn) return;
+    ev.preventDefault();
+    var pre = document.getElementById(btn.getAttribute('data-mm-target'));
+    if (!pre) return;
+    var text = pre.textContent;
+    var done = function(){
+      btn.textContent = 'Copied'; btn.classList.add('copied');
+      setTimeout(function(){ btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try { document.execCommand('copy'); } catch(e){}
+      document.body.removeChild(ta); done();
+    }
+  });
+
   // Count line: "N ready" becomes "N of 5 posted" as he ticks them.
   (function licCount(){
     var out = document.getElementById('licCount');
@@ -2071,8 +2114,20 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     var m = LANE_RE.exec(String(value || ''));
     return m ? m[1].toLowerCase() : 'unassigned';
   }
+  // The rank marker is MACHINERY, not content. It lives inside the row value
+  // because that is the only place this board stores anything, but he should
+  // never read "*** RANK 4" on a card: the rank already renders as the "His #4"
+  // chip in the row head, so leaving the raw marker in the text showed him the
+  // same fact twice, once in a form written for a parser. Stripped here, next
+  // to the LANE line, for exactly the same reason and in exactly the same way.
+  var RANK_LINE_RE = /^[ \t]*\*\*\*[ \t]*RANK[ \t]+\d+[ \t]*$/im;
   function rlStripLane(value){
-    return String(value || '').replace(LANE_RE, '').replace(/^\n+/, '');
+    return String(value || '')
+      .replace(LANE_RE, '')
+      .replace(RANK_LINE_RE, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/^\n+/, '')
+      .replace(/\n+$/, '');
   }
   function rlLaneChip(value){
     var lane = rlLaneOf(value);
@@ -2177,7 +2232,9 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
             'Not likes. Comments that say something only you could say, in your own voice. This is the reputation engine, and it is the cheapest one you own. ' +
             '<span class="dep"><b>Expected outcome:</b> profile views, and replies from people who now recognise your name before you ever ask them for anything. ' +
             '<b>If a comment gets a reply from the author:</b> answer it the same day, and do not turn it into a pitch. ' +
-            '<b>If you miss a day:</b> it does not stack. Do today\'s three to five and move on.</span></div>' },
+            '<b>If you miss a day:</b> it does not stack. Do today\'s three to five and move on. ' +
+            '<b>Today\'s written comments:</b> <a href="https://boubacarbarry.com/review/linkedin-comments/" target="_blank" rel="noopener">the comments page</a>, ' +
+            'name, post link and the comment text, already through the voice and quality gates.</span></div>' },
     { base: 'act-daily-li-pga',
       name: 'Comment on LinkedIn posts, the ghostwriting side',
       html: '<div class="act-top"><span class="lane key">Every day</span><span class="lane pga">Ghostwriting</span><span class="owner bou">You</span></div>' +
@@ -2185,7 +2242,9 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
             'Different audience, different lane, same rule: say the thing only you would say. ' +
             '<span class="dep"><b>Expected outcome:</b> the second audience learns your name without a single cold message. ' +
             '<b>If someone replies:</b> answer the same day. ' +
-            '<b>If you miss a day:</b> it does not stack.</span></div>' },
+            '<b>If you miss a day:</b> it does not stack. ' +
+            '<b>Today\'s written comments:</b> <a href="https://boubacarbarry.com/review/linkedin-comments/" target="_blank" rel="noopener">the comments page</a>, ' +
+            'name, post link and the comment text, already through the voice and quality gates.</span></div>' },
     // The three rows below are the rest of the PGA daily card from the
     // 2026-08-17 coaching call with Devin Bray. They had no home at all once
     // /daily-targets/ was retired: only the comment half of that card made it
@@ -2214,7 +2273,28 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
             '<span class="dep"><b>Expected outcome:</b> a connection turns into a conversation, which is the step that quietly decides whether all the commenting was worth anything. ' +
             '<b>If someone answers:</b> log their words verbatim in the Notes on this row, then lead with being current on the tech, and aim at a real conversation inside three to four messages. ' +
             '<b>If nothing came due today:</b> tick it anyway. Zero is a finished day, not a skipped one. ' +
-            '<b>If you miss a day:</b> it does not stack, but a thanks that is three days late is where the earlier work goes to die.</span></div>' },
+            '<b>If you miss a day:</b> it does not stack, but a thanks that is three days late is where the earlier work goes to die.</span>' +
+            // 2026-08-29, his ask: "For the things in Seed I need the copy of
+            // the text I need to put in there for the seeding. Wherever I need
+            // to paste in items or respond to people, I need the body of the
+            // text to be there in a code box I can copy and paste."
+            // The row named the steps and gave him nothing to send, so the
+            // wording was being reinvented on every message. These three went
+            // through the voice and humanizer gates and cleared the bar.
+            '<div class="mm-paste">' +
+              '<div class="mm-plbl">1. Thanks, right after they accept</div>' +
+              '<div class="lic-copywrap"><button type="button" class="lic-cbtn mm-cbtn" data-mm-target="mm-seed-thanks">Copy</button>' +
+              '<pre class="lic-pre" id="mm-seed-thanks">Hey [First Name], thanks for connecting. Good to be in touch.</pre></div>' +
+              '<div class="mm-phint">Swap [First Name] before you send.</div>' +
+              '<div class="mm-plbl">2. The seeding question, once thanked</div>' +
+              '<div class="lic-copywrap"><button type="button" class="lic-cbtn mm-cbtn" data-mm-target="mm-seed-question">Copy</button>' +
+              '<pre class="lic-pre" id="mm-seed-question">Curious, what\'s keeping you from posting more these days? Time, or not sure what\'s worth putting out there?</pre></div>' +
+              '<div class="mm-phint">Paste as-is. The point is that the answer arrives in their words, so do not diagnose it for them.</div>' +
+              '<div class="mm-plbl">3. Only once they answer</div>' +
+              '<div class="lic-copywrap"><button type="button" class="lic-cbtn mm-cbtn" data-mm-target="mm-seed-followon">Copy</button>' +
+              '<pre class="lic-pre" id="mm-seed-followon">Makes sense, that\'s the hard part for a lot of founders. I spend most of my days tracking what\'s shifting in fintech and AI. Worth comparing notes sometime?</pre></div>' +
+              '<div class="mm-phint">Log their answer verbatim in the Notes on this row. That is the input nothing else can give you.</div>' +
+            '</div></div>' },
     { base: 'act-daily-pga-forward-call',
       name: 'Write down one forward call, dated',
       html: '<div class="act-top"><span class="lane key">Every day &middot; five minutes</span><span class="lane pga">Ghostwriting</span><span class="owner bou">You</span></div>' +
