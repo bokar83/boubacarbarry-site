@@ -2041,6 +2041,21 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   // ---- initial load from Supabase: fetch all, render, then subscribe realtime ----
   // ---- Revenue lanes: render every status-* and kpi-* row live from `state` ----
   function rlEsc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[m]; }); }
+  // A row's raw database value, rendered so the two things he asked for on
+  // 2026-08-29 actually work: "Should be TLDR and links to items I may need."
+  // Rows now carry short DO / LINK / TL;DR text, so line breaks have to survive
+  // (they collapse in HTML by default) and a URL sitting in the text has to be
+  // TAPPABLE rather than something he copies by hand on a phone.
+  // Escape FIRST, then linkify, so nothing in the value can inject markup.
+  function rlValueHtml(v){
+    var h = rlEsc(v);
+    h = h.replace(/(https?:\/\/[^\s<]+[^\s<.,;:)\]"'])|(mailto:[^\s<]+[^\s<.,;:)\]"'])/g, function(u){
+      var label = u.replace(/^https?:\/\//, '').replace(/^mailto:/, '');
+      var ext = u.indexOf('mailto:') === 0 ? '' : ' target="_blank" rel="noopener"';
+      return '<a href="' + u + '"' + ext + '>' + label + '</a>';
+    });
+    return h.replace(/\n/g, '<br>');
+  }
   function rlLabel(id, prefix){
     var s = id.slice(prefix.length).replace(/-/g, ' ').trim();
     return s.replace(/\b\w/g, function(m){ return m.toUpperCase(); });
@@ -2065,7 +2080,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     if (!isKpi){ var chip = rlStatusChip(value); chipHtml = '<span class="lr-status ' + chip.cls + '">' + rlEsc(chip.label) + '</span>'; }
     return '<div class="lane-row"><div class="lr-head">' + tag +
       '<span class="lr-name">' + rlEsc(name) + '</span>' + chipHtml +
-      '</div><div class="lr-body"><div class="lr-next">' + rlEsc(value) + '</div></div></div>';
+      '</div><div class="lr-body"><div class="lr-next">' + rlValueHtml(value) + '</div></div></div>';
   }
   // ---- DATED ACTIONS -----------------------------------------------------
   // Any status-* / kpi-* row whose item_id ends in -YYYY-MM-DD is a dated
@@ -2561,7 +2576,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       '</div>' +
       '<div class="lr-body">' +
         (function(){
-          var full = seed ? seed.html : '<div class="lr-next">' + rlEsc(value) + '</div>';
+          var full = seed ? seed.html : '<div class="lr-next">' + rlValueHtml(value) + '</div>';
           if (!brief) return full;
           return pinBriefHtml(id, full) || full;   // no brief on file: render as before
         })() +
