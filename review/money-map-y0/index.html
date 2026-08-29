@@ -243,12 +243,33 @@
     .lr-notestatus { font-size: 0.7rem; font-weight: 800; width: 100%; color: var(--faint); }
     .lr-notestatus.bad { color: var(--red); }
     .lr-notestatus.ok { color: var(--green); }
+    /* PUSH: a deliberate deferral. Deliberately NOT red -- a push is
+       engagement, and the badge that marks it must not read like the overdue
+       badge sitting next to it. */
+    .lr-pushed { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.18rem 0.5rem; border-radius: 5px; background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); flex-shrink: 0; }
+    .lr-pushbtn { font-size: 0.6rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.22rem 0.5rem; border-radius: 5px; border: 1px solid var(--line); background: var(--card-2); color: var(--muted); cursor: pointer; }
+    .lr-pushbtn:hover { color: var(--ink-strong); border-color: var(--green); }
+    .lr-pushbtn.on { color: var(--green); border-color: var(--green); }
+    .lr-pushnote { font-size: 0.8rem; line-height: 1.55; color: var(--ink); border-left: 3px solid var(--green); padding: 0.1rem 0 0.35rem 0.6rem; margin-top: 0.55rem; }
+    .lr-pushnote .lr-pushwhen { font-size: 0.63rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
+    .lr-pushform { border-top: 1px dashed var(--line-soft); margin-top: 0.55rem; padding-top: 0.6rem; display: flex; flex-direction: column; gap: 0.45rem; }
+    .lr-pushform[hidden] { display: none; }
+    .lr-pushrow { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
+    .lr-pushlbl { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; font-size: 0.7rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .lr-pushform input[type=date] { font: inherit; font-size: 0.82rem; padding: 0.4rem 0.5rem; border-radius: 8px; border: 1px solid var(--line); background: var(--card-2); color: var(--ink); color-scheme: dark; }
+    .lr-pushform textarea { min-height: 3.2rem; font: inherit; font-size: 0.82rem; padding: 0.45rem 0.55rem; border-radius: 8px; border: 1px solid var(--line); background: var(--card-2); color: var(--ink); resize: vertical; }
+    .lr-pushform button { font-size: 0.68rem; font-weight: 850; padding: 0.5rem 0.8rem; border-radius: 8px; border: 1px solid var(--ember-bright); background: var(--ember-bright); color: #160a04; cursor: pointer; }
+    .lr-pushform button.ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+    .lr-pushform button.ghost:hover { color: var(--ink-strong); border-color: var(--ember-bright); }
+    .lr-pushform button[disabled] { opacity: 0.55; cursor: default; }
     .sync.error .dot { background: #fff; }
     .sync.error { color: #fff; background: var(--red); border-color: var(--red); }
     @media (max-width: 520px) {
       .todayact { padding: 0.75rem 0.7rem 0.85rem; margin: 0.8rem 0 1.1rem; }
       .ta-head h2 { font-size: 0.95rem; }
       .lr-notebtn { margin-left: 0; }
+      .lr-pushlbl { width: 100%; }
+      .lr-pushform input[type=date] { flex: 1; min-width: 8rem; }
     }
 
     /* STICKY MINI-NAV */
@@ -667,7 +688,7 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v22 · 2026-08-29-14:10:00 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v23 · 2026-08-29-14:45:00 MT</div><!-- DEPLOY_STAMP_END -->
 
 
 
@@ -2456,7 +2477,62 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     var base = itemDate(id);
     if (!base) return null;
     var m = SURFACES_RE.exec(String(v == null ? '' : v).slice(0, 400));
-    return (m && m[1] > base) ? m[1] : base;
+    return applyPush(id, (m && m[1] > base) ? m[1] : base);
+  }
+
+  // ---- PUSH: A DELIBERATE DEFERRAL, WHICH IS NOT A SKIP (2026-08-29) ------
+  // His words, and the whole design is in them: "items that are pushed are
+  // better than items that are skipped as a skip item. It means I did not
+  // touch it at all. I didn't put notes, I didn't check it off or anything at
+  // all. Items that are pushed are meetings I looked at and have a deliberate
+  // reason why I'm pushing it out. I need to have an explanation in there with
+  // a new date that the item is due on now."
+  //
+  // TWO BEHAVIOURS THAT LOOK ALIKE ON SCREEN AND MEAN OPPOSITE THINGS. They
+  // are kept apart in the DATA, not just in the wording:
+  //
+  //   UNTOUCHED CARRYOVER is the rollover directly below. Nothing was done,
+  //   nothing was written, the row returns tomorrow with its age climbing. It
+  //   writes NOTHING to the database and it requires NO note, deliberately:
+  //   there is no decision to record, and demanding an explanation for it
+  //   would put a tax on the days he never opened the board at all. That path
+  //   is untouched by this feature.
+  //
+  //   PUSH is a decision. He read the row, chose to defer it, and said why and
+  //   until when. So it gets a record: push-<row id>, holding
+  //   {v, from, to, reason, ts, by}. THE EXISTENCE OF THAT ROW IS THE MARKER.
+  //   No column was added and no other row was touched; this is the same
+  //   additive item-id convention done-, conv- and licomment- already use on
+  //   this flat key-value board.
+  //
+  // BOTH FIELDS ARE REQUIRED BY THE DATABASE, NOT BY THIS SCREEN. A CHECK
+  // constraint on y0_money_map_state (y0_push_needs_reason_and_date) rejects
+  // any push- row that is not valid JSON, or has no reason, or has no real
+  // date, or whose date is not LATER than the one it came from -- whichever
+  // writer sends it: this page's y0_upsert call, the server-side
+  // apply_state_updates writer, or psql by hand. The checks below only save
+  // him a round trip. They are not the guarantee.
+  //
+  // The audit trail needs no new machinery: the trigger already on the table
+  // writes every push AND every undo into y0_money_map_state_history with the
+  // old value, the new value and the timestamp.
+  function pushKey(id){ return 'push-' + id; }
+  function pushOf(id){
+    var raw = state[pushKey(id)];
+    if (raw === undefined || raw === null) raw = lsGet(pushKey(id));
+    if (!raw) return null;
+    var p; try { p = JSON.parse(raw); } catch(e){ return null; }
+    // A tombstone is an undo he made on purpose. It parses fine and simply
+    // does not count, which is a different thing from a row that is broken.
+    if (!p || typeof p !== 'object' || p.del) return null;
+    if (!p.to || !String(p.reason || '').trim()) return null;
+    return p;
+  }
+  // A push only ever moves a row FORWARD. Taking the later of the two dates
+  // means a stale push can never drag a row back onto a day that has passed.
+  function applyPush(id, base){
+    var p = pushOf(id);
+    return (p && p.to > base) ? p.to : base;
   }
   // ---- A SEQUENCE DOES NOT STACK (2026-08-27) ---------------------------
   // A dated plan written as "DAY 3 of 28" is a schedule, not twenty-eight
@@ -2711,6 +2787,42 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
            ' to tick them.</div>';
   }
 
+  // ---- INBOX REPLY PROGRESS, same mechanism, same board (2026-08-29) -----
+  // His words this morning: "for the Next Action Inbox Replies Daily section I
+  // expect to go to another page, see the emails and responses already
+  // prepared so that I can copy and paste or adjust to respond to the
+  // messages. Too generic right now."
+  //
+  // So the replies page ticks each sent reply under inboxreply-<date>-<slug>
+  // and writes inboxreply-roster, exactly as the comments page does. This row
+  // then DERIVES its count off rows already in state. One store, one truth,
+  // nothing to keep in sync by hand.
+  //
+  // A count and nothing else renders here. No sender names, no reply text, no
+  // thread links. The replies page owns the batch; this row owns whether he is
+  // through it. Same deliberate split as the comments row above.
+  function inboxReplyProgress(){
+    var raw = state['inboxreply-roster'];
+    if (!raw) return null;
+    var ids;
+    try { ids = JSON.parse(raw); } catch(e){ return null; }
+    if (!ids || !ids.length) return null;
+    var done = 0;
+    ids.forEach(function(i){ if (state[i] === '1') done++; });
+    return { done: done, total: ids.length };
+  }
+  function inboxReplyLine(){
+    var p = inboxReplyProgress();
+    if (!p) return '';
+    var txt = p.done === p.total
+      ? ('<b>All ' + p.total + ' prepared replies are ticked.</b> Nothing rolls over.')
+      : ('<b>' + p.done + ' of ' + p.total + ' replied.</b> ' +
+         'The other ' + (p.total - p.done) + ' roll over to tomorrow under the same names.');
+    return '<div class="lr-next" style="margin-top:8px">' + txt +
+           ' <a href="https://boubacarbarry.com/review/inbox-replies/" target="_blank" rel="noopener">Open the replies page</a>' +
+           ' to copy them and tick them.</div>';
+  }
+
   function rlActRow(id, value, kind, rolledFrom, brief){
     var seed  = SEED_BY_ID[id];
     var isKpi = (kind === 'kpi');
@@ -2734,6 +2846,15 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     if (seed && seed.deadline && !done){
       age += '<span class="lr-deadline">by ' + prettyDate(seed.deadline) + '</span>';
     }
+    // A pushed row wears it on its face. He has to be able to tell, at a
+    // glance and without opening anything, that this one was LOOKED AT and
+    // moved on purpose rather than left untouched. That distinction is the
+    // entire feature, so it cannot live only inside a panel.
+    var pushed = pushOf(id);
+    var pushable = !(seed && seed.daily);
+    if (pushed && !done){
+      age += '<span class="lr-pushed">pushed to ' + prettyDate(pushed.to) + '</span>';
+    }
     // Seed rows carry their own hand-authored lane chip inside seed.html
     // already (the CW/SW/IC/PGA/Studio chip system built 2026-08-19 and
     // earlier); only non-seed, database-driven rows need the new LANE: tag,
@@ -2748,6 +2869,8 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
         tag + (seed ? '' : rlLaneChip(value)) + (rankOf(id) ? '<span class="lr-rank">His #' + rankOf(id) + '</span>' : '') +
         age + '<span class="lr-name">' + (seed ? name : rlEsc(name)) + '</span>' +
         '<button type="button" class="lr-notebtn' + (n ? ' has' : '') + '" data-notes="' + rlEsc(id) + '">Notes' + (n ? ' (' + n + ')' : '') + '</button>' +
+        (pushable ? '<button type="button" class="lr-pushbtn' + (pushed ? ' on' : '') + '" data-push="' + rlEsc(id) + '">' +
+                      (pushed ? 'Pushed' : 'Push') + '</button>' : '') +
       '</div>' +
       '<div class="lr-body">' +
         (function(){
@@ -2756,15 +2879,47 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
           return pinBriefHtml(id, full) || full;   // no brief on file: render as before
         })() +
         (String(id).indexOf('act-daily-li-') === 0 ? liCommentLine() : '') +
+        (String(id).indexOf('inbox-replies') !== -1 ? inboxReplyLine() : '') +
+        (pushed ? '<div class="lr-pushnote"><b>Pushed to ' + rlEsc(prettyDate(pushed.to)) + '.</b> ' +
+                    rlEsc(String(pushed.reason)) +
+                    (pushed.ts ? ' <span class="lr-pushwhen">recorded ' + rlEsc(noteClock(pushed.ts)) + '</span>' : '') +
+                  '</div>' : '') +
+        (pushable ? '<div class="lr-pushform" data-pushwrap="' + rlEsc(id) + '" hidden></div>' : '') +
         '<div class="lr-notes" data-noteswrap="' + rlEsc(id) + '"' + (open ? '' : ' hidden') + '>' + (open ? notesHtml(id) : '') + '</div>' +
       '</div></div>';
+  }
+
+  // The push form. Both fields are demanded here AND by the database; see the
+  // long note at pushOf(). The date defaults to tomorrow, because "pushes it
+  // to the next day" is his own default, and he can pick any later day.
+  function pushFormHtml(id){
+    var p = pushOf(id);
+    var t = new Date(); t.setDate(t.getDate() + 1);
+    var def = (p && p.to) ? p.to : dkey(t);
+    return '<div class="lr-pushrow">' +
+        '<label class="lr-pushlbl">New date it is due on' +
+          '<input type="date" data-pushdate="' + rlEsc(id) + '" value="' + rlEsc(def) + '" min="' + rlEsc(dkey(t)) + '">' +
+        '</label>' +
+      '</div>' +
+      '<textarea data-pushreason="' + rlEsc(id) + '" rows="2" placeholder="Why you are pushing it. Required -- this is what makes it a push and not a skip."></textarea>' +
+      '<div class="lr-pushrow">' +
+        '<button type="button" data-pushsave="' + rlEsc(id) + '">Push it</button>' +
+        '<button type="button" class="ghost" data-pushcancel="' + rlEsc(id) + '">Cancel</button>' +
+        (p ? '<button type="button" class="ghost" data-pushundo="' + rlEsc(id) + '">Undo the push</button>' : '') +
+      '</div>' +
+      '<span class="lr-notestatus" data-pushstatus="' + rlEsc(id) + '"></span>' +
+      (p ? '<div class="lr-notestatus">Already pushed to ' + rlEsc(prettyDate(p.to)) +
+           '. Saving again replaces it, and both versions stay in the history.</div>' : '');
   }
 
   // A re-render blows away a half-typed note. Realtime fires a render on every
   // write from any device, so this is not hypothetical. Defer instead.
   var renderPending = false;
   function noteEditInProgress(){
-    var els = document.querySelectorAll('textarea[data-noteinput]');
+    // A half-typed PUSH REASON is exactly as expensive to lose as a half-typed
+    // note, and realtime fires a render on every write from any device, so the
+    // same guard has to cover both.
+    var els = document.querySelectorAll('textarea[data-noteinput], textarea[data-pushreason]');
     for (var i = 0; i < els.length; i++){ if (els[i].value.trim() || els[i] === document.activeElement) return true; }
     return false;
   }
@@ -2821,14 +2976,21 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       else if (kind === 'status') undatedStatus.push(k);
       else undatedKpi.push(k);
     }
+    // A hand-written seed and a lead-time row take their date from the seed,
+    // not from an id, so the push has to be applied here too or a pushed seed
+    // would keep landing on the day he just pushed it off. Daily rows are
+    // deliberately left alone: a daily is not pushable, because a missed daily
+    // does not stack in the first place.
     SEEDS.forEach(function(sd){
-      (byDay[sd.date] = byDay[sd.date] || []).push({ id: sd.id, v: '', kind: 'status', seeded: true });
+      var d = applyPush(sd.id, sd.date);
+      (byDay[d] = byDay[d] || []).push({ id: sd.id, v: '', kind: 'status', seeded: true });
     });
     dailyRecords().forEach(function(sd){
       (byDay[sd.date] = byDay[sd.date] || []).push({ id: sd.id, v: '', kind: 'status', seeded: true, daily: true });
     });
     leadRecords().forEach(function(sd){
-      (byDay[sd.date] = byDay[sd.date] || []).push({ id: sd.id, v: '', kind: 'status', seeded: true });
+      var d = applyPush(sd.id, sd.date);
+      (byDay[d] = byDay[d] || []).push({ id: sd.id, v: '', kind: 'status', seeded: true });
     });
     undatedStatus.sort(); undatedKpi.sort();
     return { undatedStatus: undatedStatus, undatedKpi: undatedKpi, byDay: byDay };
@@ -2973,13 +3135,14 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       tldr: 'Page is dated at the top -- confirm it says today before using it.'
     },
     'kpi-next-action-inbox-replies-daily': {
-      action: 'Clear replies that need a human answer.',
+      action: 'Send the replies that are already written for you.',
       links: [
-        { label: 'LinkedIn', href: 'https://www.linkedin.com/messaging/' },
-        { label: 'bokar83 Gmail', href: 'https://mail.google.com/mail/u/0/#inbox' },
-        { label: 'Catalyst Works mail', href: 'https://mail.google.com/a/catalystworks.consulting' }
+        { label: 'Today’s replies, written and ready', href: 'https://boubacarbarry.com/review/inbox-replies/' },
+        { label: 'LinkedIn', href: 'https://www.linkedin.com/messaging/', ghost: true },
+        { label: 'bokar83 Gmail', href: 'https://mail.google.com/mail/u/0/#inbox', ghost: true },
+        { label: 'Catalyst Works mail', href: 'https://mail.google.com/a/catalystworks.consulting', ghost: true }
       ],
-      tldr: 'Check all three inboxes for anything waiting on you.'
+      tldr: 'Every reply is drafted and voice-scored on the page. Copy, adjust if you want, send, tick.'
     }
   };
 
@@ -3592,6 +3755,107 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
         if (st){ st.className = 'lr-notestatus bad'; st.textContent = 'NOT SAVED: could not reach the server. Copy your text somewhere before you leave this page.'; }
       });
     }
+  });
+
+  // ---- PUSH CONTROLS (2026-08-29) ----------------------------------------
+  // Its own delegated listener, so nothing above it has to change.
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t || !t.getAttribute) return;
+
+    var openId = t.getAttribute('data-push');
+    if (openId){
+      var w = document.querySelector('.lr-pushform[data-pushwrap="' + CSS.escape(openId) + '"]');
+      if (!w) return;
+      if (w.hidden){ w.innerHTML = pushFormHtml(openId); w.hidden = false; }
+      else { w.hidden = true; w.innerHTML = ''; }
+      return;
+    }
+
+    var cancelId = t.getAttribute('data-pushcancel');
+    if (cancelId){
+      var wc = document.querySelector('.lr-pushform[data-pushwrap="' + CSS.escape(cancelId) + '"]');
+      if (wc){ wc.hidden = true; wc.innerHTML = ''; }
+      return;
+    }
+
+    // An undo has to be possible, so a push written by mistake is not a trap.
+    // It is a tombstone, never a delete: the original push and the undo both
+    // stay in the history table.
+    var undoId = t.getAttribute('data-pushundo');
+    if (undoId){
+      persist(pushKey(undoId), JSON.stringify({ v: 1, del: 1 }));
+      var wu = document.querySelector('.lr-pushform[data-pushwrap="' + CSS.escape(undoId) + '"]');
+      if (wu){ wu.hidden = true; wu.innerHTML = ''; }
+      renderRevLanes();
+      return;
+    }
+
+    var pid = t.getAttribute('data-pushsave');
+    if (!pid) return;
+
+    var dEl = document.querySelector('input[data-pushdate="' + CSS.escape(pid) + '"]');
+    var rEl = document.querySelector('textarea[data-pushreason="' + CSS.escape(pid) + '"]');
+    var sEl = document.querySelector('[data-pushstatus="' + CSS.escape(pid) + '"]');
+    var newDate = dEl ? String(dEl.value || '').trim() : '';
+    var reason  = rEl ? String(rEl.value || '').trim() : '';
+    function bad(msg){ if (sEl){ sEl.className = 'lr-notestatus bad'; sEl.textContent = msg; } }
+
+    // Both required. The database rejects a push missing either one whichever
+    // writer sends it, so these three checks only save him a round trip.
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)){ bad('Pick the new date this is due on.'); return; }
+    if (newDate <= dkey(new Date())){ bad('A push moves it forward. Pick a date after today.'); return; }
+    if (reason.length < 3){ bad('Write why you are pushing it. That is what makes this a push and not a skip.'); return; }
+
+    var from = itemDate(pid) || dkey(new Date());
+    var rec = { v: 1, from: from, to: newDate, reason: reason, ts: new Date().toISOString(), by: 'boubacar' };
+    t.disabled = true;
+    if (sEl){ sEl.className = 'lr-notestatus'; sEl.textContent = 'Saving...'; }
+    persist(pushKey(pid), JSON.stringify(rec));
+
+    // The reason ALSO lands in his notes trail on this row, so his own
+    // reasoning sits with everything else he has written about it rather than
+    // only inside a record he has to open a form to see. No second notes
+    // system: this is the same endpoint the Notes button already writes to.
+    fetch(NOTES_API + '/note', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: pid,
+        note_text: 'PUSHED to ' + newDate + '. ' + reason })
+    }).then(function(){ return loadNotes(); }).catch(function(){});
+
+    // A 200 is a claim, not proof. Read the row back off the board and confirm
+    // this exact push came out of it before telling him it is recorded.
+    var confirm = sb
+      ? sb.from('y0_money_map_state').select('value')
+          .eq('board_id', BOARD_ID).eq('item_id', pushKey(pid))
+      : Promise.resolve({ error: { message: 'the database client never loaded on this page' } });
+
+    Promise.resolve(confirm).then(function(res){
+      t.disabled = false;
+      var sf = document.querySelector('[data-pushstatus="' + CSS.escape(pid) + '"]');
+      var rows = (res && res.data) || [];
+      var back = null;
+      try { back = rows.length ? JSON.parse(rows[0].value) : null; } catch(err){ back = null; }
+      if ((res && res.error) || !back || back.to !== newDate || String(back.reason) !== reason){
+        if (sf){
+          sf.className = 'lr-notestatus bad';
+          sf.textContent = 'NOT SAVED: the push is not in the database on a fresh read' +
+            ((res && res.error) ? ' (' + (res.error.message || 'read failed') + ')' : '') +
+            '. Nothing has moved. Try again before you leave this page.';
+        }
+        return;
+      }
+      if (sf){ sf.className = 'lr-notestatus ok'; sf.textContent = 'Pushed to ' + prettyDate(newDate) + '. Confirmed by reading it back from the database.'; }
+      var wsave = document.querySelector('.lr-pushform[data-pushwrap="' + CSS.escape(pid) + '"]');
+      setTimeout(function(){
+        if (wsave){ wsave.hidden = true; wsave.innerHTML = ''; }
+        renderRevLanes();
+      }, 1200);
+    }).catch(function(){
+      t.disabled = false;
+      var sf2 = document.querySelector('[data-pushstatus="' + CSS.escape(pid) + '"]');
+      if (sf2){ sf2.className = 'lr-notestatus bad'; sf2.textContent = 'NOT SAVED: could not reach the database to confirm it. Nothing has moved.'; }
+    });
   });
 
   // ---- CONVERSATION LOG (MVP, 2026-08-20) --------------------------------
