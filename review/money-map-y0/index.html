@@ -2666,6 +2666,39 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     return h;
   }
 
+  // ---- LINKEDIN COMMENT PROGRESS, read off the same board (2026-08-29) ---
+  // The comments page ticks each posted comment under licomment-<batch-date>-
+  // <name>, on THIS board, through the same y0_upsert path everything else
+  // here uses. It also writes licomment-roster: the ids in the batch that is
+  // currently open. So the count below is DERIVED from rows this page already
+  // has in state, not a second number written somewhere and kept in sync by
+  // hand. Nothing to drift.
+  //
+  // Deliberately a count and nothing more. No comment text, no names, no post
+  // links render here. The comments page owns the batch; this row owns whether
+  // he is through it.
+  function liCommentProgress(){
+    var raw = state['licomment-roster'];
+    if (!raw) return null;
+    var ids;
+    try { ids = JSON.parse(raw); } catch(e){ return null; }
+    if (!ids || !ids.length) return null;
+    var done = 0;
+    ids.forEach(function(i){ if (state[i] === '1') done++; });
+    return { done: done, total: ids.length };
+  }
+  function liCommentLine(){
+    var p = liCommentProgress();
+    if (!p) return '';
+    var txt = p.done === p.total
+      ? ('<b>All ' + p.total + ' of the written comments are ticked.</b> Nothing rolls over.')
+      : ('<b>' + p.done + ' of ' + p.total + ' written comments ticked.</b> ' +
+         'The other ' + (p.total - p.done) + ' roll over to tomorrow under the same names.');
+    return '<div class="lr-next" style="margin-top:8px">' + txt +
+           ' <a href="https://boubacarbarry.com/review/linkedin-comments/" target="_blank" rel="noopener">Open the comments page</a>' +
+           ' to tick them.</div>';
+  }
+
   function rlActRow(id, value, kind, rolledFrom, brief){
     var seed  = SEED_BY_ID[id];
     var isKpi = (kind === 'kpi');
@@ -2710,6 +2743,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
           if (!brief) return full;
           return pinBriefHtml(id, full) || full;   // no brief on file: render as before
         })() +
+        (String(id).indexOf('act-daily-li-') === 0 ? liCommentLine() : '') +
         '<div class="lr-notes" data-noteswrap="' + rlEsc(id) + '"' + (open ? '' : ' hidden') + '>' + (open ? notesHtml(id) : '') + '</div>' +
       '</div></div>';
   }

@@ -106,6 +106,51 @@
   .copy-btn:hover{border-color:var(--accent); color:var(--accent);}
   .copy-btn.copied{border-color:var(--good); color:var(--good);}
 
+  /* ---- POSTED TICKS (2026-08-29) ------------------------------------
+     Same mechanism as the Money Map's action rows: a plain checkbox whose
+     state is written straight to the y0 board in Supabase through the
+     y0_upsert RPC. No new store, no new endpoint, no second system.
+     Visual pattern copied from .lr-check on the Money Map so a tick looks
+     the same wherever he meets one. */
+  .tick-row{
+    display:flex; align-items:center; gap:11px;
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:10px; padding:11px 14px; margin:0 0 14px;
+  }
+  .tick-row.done{border-color:var(--good);}
+  .lic-tick{
+    appearance:none; -webkit-appearance:none; cursor:pointer;
+    width:1.5rem; height:1.5rem; min-width:1.5rem; margin:0; flex:none;
+    border:2px solid var(--text-dim); border-radius:6px;
+    background:var(--card); position:relative;
+    transition:border-color .15s, background .15s;
+  }
+  .lic-tick:checked{background:var(--good); border-color:var(--good);}
+  .lic-tick:checked::after{
+    content:''; position:absolute; left:.45rem; top:.14rem;
+    width:.32rem; height:.68rem; border:solid #06210f;
+    border-width:0 3px 3px 0; transform:rotate(45deg);
+  }
+  .lic-tick:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .tick-label{cursor:pointer; font-size:.92rem; font-weight:600; user-select:none;}
+  .tick-row.done .tick-label{color:var(--good);}
+  .tick-when{margin-left:auto; color:var(--text-dim); font-size:.8rem; white-space:nowrap;}
+
+  #tickProgress{
+    background:var(--bg2); border:1px solid var(--accent);
+    border-radius:10px; padding:12px 15px; margin:0 0 14px;
+    font-weight:650;
+  }
+  /* A failed save has to be impossible to miss. A tick that did not reach
+     the database while the screen looks fine is the exact failure this page
+     is supposed to prevent, so it takes over the top of the page rather
+     than whispering in a corner. */
+  #tickAlarm{
+    background:#2a1414; border:1px solid var(--bad); color:#ffdcdc;
+    border-radius:10px; padding:14px 16px; margin:16px 0; font-size:.92rem;
+  }
+  #tickAlarm b{display:block; margin:0 0 6px; color:var(--bad);}
+
   @media (max-width:768px){
     .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
     .nav-links{display:none; flex-direction:column; align-items:stretch;
@@ -127,6 +172,7 @@
     details > summary::before{display:none;}
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
 </head>
 <body>
 <!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-08-29-12:36:17 MT</div><!-- DEPLOY_STAMP_END -->
@@ -161,6 +207,8 @@
     <div class="meta">Saturday 2026-08-29 &middot; Three ready to paste, restructured into three lanes. Nothing posted yet.</div>
   </header>
 
+  <div id="tickAlarm" hidden></div>
+
   <details class="tldr" id="tldr" open>
     <summary><h2>TL;DR</h2></summary>
     <div class="sec-body">
@@ -184,6 +232,11 @@
     <div class="sec-body">
       <p class="post-link"><a href="https://www.linkedin.com/posts/paulrubensteinhr_not-my-usual-beat-here-i-spend-most-of-my-activity-7497740905873817600-zd3Q" target="_blank" rel="noopener">https://www.linkedin.com/posts/paulrubensteinhr_not-my-usual-beat-here-i-spend-most-of-my-activity-7497740905873817600-zd3Q</a></p>
       <p class="note"><strong>Posted 2026-08-24.</strong> He answered a Fortune "Office Hours" reader question about a coworker who went over two levels of management to get a remote move approved, then came back and vented to the team. The department head asked the group how they would feel if the guy got his way anyway. Two people said they would not care. The reader stayed quiet, and wrote in asking whether that was right. Rubenstein's answer: trusting someone and respecting how they operate are not the same thing, and staying neutral is usually a trap.</p>
+      <div class="tick-row" data-tickrow="licomment-2026-08-26-rubenstein">
+        <input type="checkbox" class="lic-tick" id="tick-licomment-2026-08-26-rubenstein" data-item="licomment-2026-08-26-rubenstein" aria-label="Posted my comment to Paul Rubenstein">
+        <label class="tick-label" for="tick-licomment-2026-08-26-rubenstein">Posted my comment to Paul Rubenstein</label>
+        <span class="tick-when" data-tickwhen="licomment-2026-08-26-rubenstein"></span>
+      </div>
       <div class="comment-block">
         <button type="button" class="copy-btn" data-copy-target="comment-1">Copy</button>
         <pre><code id="comment-1">The neutral-is-a-trap half is the one I would put in bold. The department head asked because he wanted signal, and in a room like that no answer still gets read as no objection. Your trust and respect split is what makes it possible to say the thing out loud without making it personal.</code></pre>
@@ -196,6 +249,11 @@
     <div class="sec-body">
       <p class="post-link"><a href="https://www.linkedin.com/posts/trentcotton_ai-in-hr-news-week-ending-august-21-2026-activity-7496542805369069569-fRqE" target="_blank" rel="noopener">https://www.linkedin.com/posts/trentcotton_ai-in-hr-news-week-ending-august-21-2026-activity-7496542805369069569-fRqE</a></p>
       <p class="note"><strong>Posted 2026-08-21, 27 comments already.</strong> His argument: AI adoption is a people, leadership and operating-model problem, workers who use AI daily feel more secure not less, a policy sitting in a shared drive will not carry the load, and the biggest gap sits with managers who need a new playbook for teams where humans and AI share the workflow.</p>
+      <div class="tick-row" data-tickrow="licomment-2026-08-26-cotton">
+        <input type="checkbox" class="lic-tick" id="tick-licomment-2026-08-26-cotton" data-item="licomment-2026-08-26-cotton" aria-label="Posted my comment to Trent Cotton">
+        <label class="tick-label" for="tick-licomment-2026-08-26-cotton">Posted my comment to Trent Cotton</label>
+        <span class="tick-when" data-tickwhen="licomment-2026-08-26-cotton"></span>
+      </div>
       <div class="comment-block">
         <button type="button" class="copy-btn" data-copy-target="comment-2">Copy</button>
         <pre><code id="comment-2">The manager gap is the right place to point. From my experience the hard part isn't deciding what to delegate to AI, it's naming who owns the check when the check doesn't happen. And your line about a policy in a shared drive not carrying the load deserves its own post.</code></pre>
@@ -208,6 +266,11 @@
     <div class="sec-body">
       <p class="post-link"><a href="https://www.linkedin.com/posts/russellsarder_ai-aicerts-aiskills-activity-7498117707456884736-YWUr" target="_blank" rel="noopener">https://www.linkedin.com/posts/russellsarder_ai-aicerts-aiskills-activity-7498117707456884736-YWUr</a></p>
       <p class="note"><strong>Posted 2026-08-25, dated inside the post itself.</strong> OpenAI enterprise data on weekly active Codex users since February 2026: Legal 108x, Sales 41x, People and Recruiting 41x, Marketing 26x, Healthcare 24x, Finance 20x, Project Management 18x, Engineering 5x. His read: AI literacy is becoming role-specific, and the goal is not turning every professional into an AI engineer.</p>
+      <div class="tick-row" data-tickrow="licomment-2026-08-26-sarder">
+        <input type="checkbox" class="lic-tick" id="tick-licomment-2026-08-26-sarder" data-item="licomment-2026-08-26-sarder" aria-label="Posted my comment to Russell Sarder">
+        <label class="tick-label" for="tick-licomment-2026-08-26-sarder">Posted my comment to Russell Sarder</label>
+        <span class="tick-when" data-tickwhen="licomment-2026-08-26-sarder"></span>
+      </div>
       <div class="comment-block">
         <button type="button" class="copy-btn" data-copy-target="comment-3">Copy</button>
         <pre><code id="comment-3">People and Recruiting at 41x sitting next to Engineering at 5x is the pairing worth staring at. Role-specific is the right read, and the part that makes it hold is teaching which decisions the role still doesn't hand over. A recruiter can learn a prompt in an afternoon, but knowing when a shortlist is wrong takes years.</code></pre>
@@ -239,7 +302,9 @@
   <details class="sec" id="sec-6" open>
     <summary><h2>After you post</h2></summary>
     <div class="sec-body">
-      <p>Tick each one off as you post it. This page is the record for today's batch.</p>
+      <div id="tickProgress">Nothing ticked yet.</div>
+      <p>Tick each one off as you post it, on the box above that comment. The tick saves straight to your board the moment you click it, so it is there on your phone too, and you never have to tell anyone you posted it.</p>
+      <p><strong>You do not have to finish the batch.</strong> Post two and tick two. Anything still unticked stays yours tomorrow: the next build carries the unticked ones forward under the same name and drops the ones you already did, so nothing is lost and nothing gets handed to you twice.</p>
       <p><strong>Already commented on, do not reuse:</strong> Paul Rubenstein, Trent Cotton, Russell Sarder (today) &middot; Amy Heitmeyer Neubelt, Gael De Talhouet, Heidi Carson, Kathi Enderes (8/25) &middot; Kristy McCann, Megan Bickle, Marcus Lowe, Joshua Hales, Nora Hanifi Commis, Simon Taylor, Alex Johnson, Jason Mikula, Ryan Metcalf, Nik Milanovic, Dave Ulrich, Josh Bersin, Allie K. Miller, Hung Lee, Ethan Mollick, Laszlo Bock, David Green, Meghan M. Biro (earlier). None of today's three repeats any of them.</p>
     </div>
   </details>
@@ -289,6 +354,183 @@
     var t = document.getElementById(a.getAttribute('href').slice(1));
     if (t && t.tagName === 'DETAILS') { t.open = true; }
   });
+
+  // ---- POSTED TICKS -> the y0 board (2026-08-29) ------------------------
+  // His instruction: once he sends a comment he clicks a box, it saves to the
+  // database, and he never has to tell the system by hand again. Partial days
+  // are the normal case, not the exception, so the unticked ones have to stay
+  // his tomorrow.
+  //
+  // WHY NO NEW STORE. The Money Map already ticks LinkedIn comments this exact
+  // way (its 2026-08-20 batch used data-item="licomment-<date>-<name>"), so the
+  // key convention, the table, the write path and the realtime fan-out to his
+  // phone all already exist. A second store would be a second truth. This is
+  // the same y0_upsert RPC every other control he ticks already uses.
+  //
+  // HOW ROLLOVER WORKS, and why it needs no rollover code. An item id is dated
+  // by the batch the comment was WRITTEN in, never by the day he happens to be
+  // looking at the page. So a comment carried forward from 2026-08-26 keeps the
+  // id licomment-2026-08-26-<name>. Ticking it is therefore permanent and
+  // person-specific: the next build reads these keys, drops the ones already
+  // ticked, and carries the rest forward under the SAME id. Nothing is lost
+  // because the row survives the day, and nothing is handed to him twice
+  // because a ticked id never comes back.
+  (function () {
+    var SB_URL     = 'https://jscucboftaoaphticqci.supabase.co';
+    var SB_ANON    = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
+    var BOARD_ID   = 'y0';
+    var BOARD_TOKEN= 'y0_5RLZllwfaHb_pO7qPHcBJGlgcwkwKL2Q';
+    var LS         = 'y0mm-';   // same namespace as the Money Map, deliberately
+
+    var boxes = Array.prototype.slice.call(document.querySelectorAll('.lic-tick[data-item]'));
+    if (!boxes.length) { return; }
+    var ROSTER = boxes.map(function (b) { return b.getAttribute('data-item'); });
+
+    var sb = null;
+    try { sb = window.supabase.createClient(SB_URL, SB_ANON, { realtime: { params: { eventsPerSecond: 5 } } }); } catch (e) { sb = null; }
+
+    var alarmEl = document.getElementById('tickAlarm');
+    function alarm(html) {
+      if (!alarmEl) { return; }
+      if (!html) { alarmEl.hidden = true; alarmEl.innerHTML = ''; return; }
+      alarmEl.innerHTML = html; alarmEl.hidden = false;
+    }
+    function esc(t) {
+      return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function lsGet(k) { try { return localStorage.getItem(LS + k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(LS + k, v); } catch (e) {} }
+
+    function stamp(iso) {
+      if (!iso) { return ''; }
+      try {
+        return 'ticked ' + new Date(iso).toLocaleString('en-US',
+          { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      } catch (e) { return 'ticked'; }
+    }
+
+    function paint(item, on, when) {
+      var box = document.querySelector('.lic-tick[data-item="' + item + '"]');
+      if (box) { box.checked = !!on; }
+      var row = document.querySelector('[data-tickrow="' + item + '"]');
+      if (row) { row.classList.toggle('done', !!on); }
+      var w = document.querySelector('[data-tickwhen="' + item + '"]');
+      if (w) { w.textContent = on ? stamp(when || lsGet('ts-' + item)) : ''; }
+      progress();
+    }
+
+    function progress() {
+      var el = document.getElementById('tickProgress');
+      if (!el) { return; }
+      var done = boxes.filter(function (b) { return b.checked; }).length;
+      var n = boxes.length;
+      if (!done) {
+        el.textContent = 'Nothing ticked yet. ' + n + ' waiting.';
+      } else if (done === n) {
+        el.textContent = 'All ' + n + ' ticked. Nothing rolls over.';
+      } else {
+        el.textContent = done + ' of ' + n + ' ticked. The other ' + (n - done) +
+          ' roll over to tomorrow under the same names.';
+      }
+    }
+
+    // The roster is what lets the Money Map say "2 of 3 done" without knowing
+    // anything about this page's contents. It is the ONLY thing this page tells
+    // the board beyond the ticks themselves.
+    function writeRoster() {
+      var want = JSON.stringify(ROSTER);
+      if (lsGet('licomment-roster') === want) { return; }
+      push('licomment-roster', want, true);
+    }
+
+    function push(item, value, quiet) {
+      lsSet(item, value);
+      lsSet('ts-' + item, new Date().toISOString());
+      if (!sb) {
+        if (!quiet) {
+          alarm('<b>THAT TICK IS NOT SAVED.</b>The database client never loaded on this page, so ' +
+            esc(item) + ' exists in this browser and nowhere else. It is not on your phone and it will ' +
+            'not survive clearing this browser. Reload the page and tick it again.');
+        }
+        return;
+      }
+      sb.rpc('y0_upsert', { p_board: BOARD_ID, p_item: item, p_value: value, p_token: BOARD_TOKEN })
+        .then(function (res) {
+          if (res.error) {
+            if (!quiet) {
+              alarm('<b>SAVE FAILED. THAT TICK IS NOT IN THE DATABASE.</b>The board rejected the write for ' +
+                esc(item) + ': ' + esc(res.error.message || res.error.hint || 'rejected with no reason given') +
+                '. It is held in this browser only. Reload and tick it again. If it fails twice, the save path ' +
+                'is broken and needs fixing before you rely on this page.');
+            }
+          } else if (!quiet) {
+            alarm(null);
+          }
+        })
+        .catch(function () {
+          if (!quiet) {
+            alarm('<b>NOT SAVED. YOU ARE OFFLINE.</b>The tick on ' + esc(item) + ' never left this device. ' +
+              'It is not in the database and not on your phone. Reconnect and reload, then check it is still ticked.');
+          }
+        });
+    }
+
+    // Offline-first paint, then the real board overwrites it.
+    boxes.forEach(function (b) {
+      var item = b.getAttribute('data-item');
+      if (lsGet(item) === '1') { paint(item, true, lsGet('ts-' + item)); }
+      b.addEventListener('change', function () {
+        paint(item, b.checked, new Date().toISOString());
+        push(item, b.checked ? '1' : '0');
+      });
+    });
+    progress();
+
+    if (!sb) {
+      alarm('<b>THIS PAGE CANNOT REACH YOUR BOARD.</b>The database client did not load, so ticking a box here ' +
+        'saves nothing anywhere but this browser. Reload before you rely on it.');
+      return;
+    }
+
+    // A read that fails must never look like a board where nothing is ticked.
+    sb.from('y0_money_map_state').select('item_id,value,updated_at').eq('board_id', BOARD_ID)
+      .then(function (res) {
+        if (res.error) {
+          alarm('<b>YOUR BOARD COULD NOT BE READ.</b>Boxes below may show as unticked when you already ticked them. ' +
+            'Nothing has been deleted. Reload before ticking anything, so you do not re-post a comment you already posted.');
+          return;
+        }
+        var rows = res.data || [];
+        var seen = {};
+        rows.forEach(function (r) { seen[r.item_id] = r; });
+        ROSTER.forEach(function (item) {
+          var r = seen[item];
+          var on = !!(r && r.value === '1');
+          lsSet(item, on ? '1' : '0');
+          if (r && r.updated_at) { lsSet('ts-' + item, r.updated_at); }
+          paint(item, on, r && r.updated_at);
+        });
+        alarm(null);
+        writeRoster();
+
+        // Same board, another device: his phone and this laptop stay in step.
+        sb.channel('licomment-ticks')
+          .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'y0_money_map_state', filter: 'board_id=eq.' + BOARD_ID },
+            function (payload) {
+              var row = payload['new'] || payload.old;
+              if (!row || ROSTER.indexOf(row.item_id) === -1) { return; }
+              var on = (payload.eventType !== 'DELETE') && row.value === '1';
+              lsSet(row.item_id, on ? '1' : '0');
+              paint(row.item_id, on, row.updated_at);
+            })
+          .subscribe();
+      })
+      .catch(function () {
+        alarm('<b>YOUR BOARD COULD NOT BE REACHED.</b>Boxes below may show as unticked when you already ticked them. ' +
+          'Nothing has been deleted. Reload before ticking anything.');
+      });
+  })();
 
   Array.prototype.slice.call(document.querySelectorAll('.copy-btn')).forEach(function (btn) {
     btn.addEventListener('click', function () {
