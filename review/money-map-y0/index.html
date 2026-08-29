@@ -2316,7 +2316,28 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   // Hand-written seeds keep their own historical key. Daily rows use the
   // done-<id> convention, which is also what keeps them working before
   // SEED_BY_ID has been populated for a past date.
-  function doneKey(id){ var s = SEED_BY_ID[id]; return (s && !s.daily) ? id : ('done-' + id); }
+  //
+  // ---- A PINNED RECURRING KPI RESETS EVERY MORNING (2026-08-29) ---------
+  // His words, Sat Aug 29: "it should be clear of anything done because I
+  // have yet to do anything today ... Each day needs to start fresh." Two of
+  // his five pinned priority items are recurring habits, not one-off sends
+  // -- their own ids say so ("...-linkedin-comments-daily",
+  // "...-inbox-replies-daily"). Those two were sharing the SAME dateless
+  // done-<id> flag with the one-off pinned items (Norm Smallwood, the
+  // LinkedIn reconnect sends), so ticking "today's comments" once ever left
+  // it struck through on every future morning. A one-off keeps its single
+  // permanent flag (correct: once genuinely sent, it stays sent). A
+  // recurring pinned item now gets its own dated flag each day, exactly the
+  // same convention DAILY_SEEDS already uses for the rest of the board's
+  // daily rows -- nothing is deleted, every day's tick is still its own row
+  // in the database, and yesterday's tick simply does not answer for today.
+  var PIN_RECURRING_RE = /-daily$/;
+  function doneKey(id){
+    var s = SEED_BY_ID[id];
+    if (s && !s.daily) return id;
+    if (PIN_RECURRING_RE.test(String(id))) return 'done-' + id + '-' + dkey(new Date());
+    return 'done-' + id;
+  }
   function isDone(id){
     var v = state[doneKey(id)];
     if (v === undefined || v === null) v = lsGet(doneKey(id));
@@ -2963,15 +2984,30 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       // Every row carrying a "*** RANK n" marker, wherever it lives on the
       // board and whatever its date, in the order HE gave. This renders FIRST,
       // above the work-type sections, because an order he cannot see is an
-      // order the board does not have. A ranked row that is already DONE stays
-      // here with its tick showing, so the first thing he sees is the win and
-      // not an inference from a footnote.
+      // order the board does not have.
+      //
+      // CORRECTED 2026-08-29: the line above used to read "a ranked row that
+      // is already DONE stays here with its tick showing" -- that was
+      // deliberate on 2026-08-26 and is exactly what he flagged as wrong on
+      // 2026-08-29: a finished ONE-OFF (Norm Smallwood, a LinkedIn reconnect
+      // send) kept sitting in a block titled "Your order for today" with a
+      // DONE badge from days ago, which is what made "2 of 5 done" and the
+      // page's own "0 done today" header contradict each other in the same
+      // screenshot. A one-off that is genuinely finished needs no further
+      // action, so it now drops out of this block entirely (its rank marker,
+      // its PIN_BRIEF entry and its full history in Supabase are untouched --
+      // this only changes what renders for TODAY). A RECURRING pinned item
+      // (id ends "-daily") always stays: it resets every morning via the
+      // dated doneKey above, so it is due again regardless of yesterday's
+      // tick, exactly the way every other daily row on this board already
+      // works.
       var pinned = [], pinnedIds = {};
       (function collectPinned(){
         function consider(id, v, kind){
           if (pinnedIds[id]) return;
           var rk = rankOf(id);
           if (!rk) return;
+          if (isDone(id) && !PIN_RECURRING_RE.test(String(id))) return;
           pinnedIds[id] = 1;
           pinned.push({ id: id, v: v, kind: kind, rank: rk });
         }
