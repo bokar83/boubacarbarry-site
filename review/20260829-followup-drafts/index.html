@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Follow-ups you owe</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent2:#7fe0b8; --accent-visited:#B87333;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover, a:active{color:#FFB08A;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  .sec-body h3{font-size:1rem;margin:22px 0 6px;color:var(--accent2);}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; white-space:pre-wrap; word-break:break-word;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  .post-meta{color:var(--text-dim); font-size:.92rem; margin:0 0 10px;}
+  .post-link{word-break:break-all;}
+  .score-line{color:var(--accent2); font-weight:650; font-size:.9rem; margin:10px 0 0;}
+  .comment-block{position:relative;}
+  .copy-btn{
+    appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:8px; padding:7px 14px; font-size:.85rem; margin:0 0 8px;
+  }
+  .copy-btn:hover{border-color:var(--accent); color:var(--accent);}
+  .copy-btn.copied{border-color:var(--good); color:var(--good);}
+
+  /* ---- POSTED TICKS (2026-08-29) ------------------------------------
+     Same mechanism as the Money Map's action rows: a plain checkbox whose
+     state is written straight to the y0 board in Supabase through the
+     y0_upsert RPC. No new store, no new endpoint, no second system.
+     Visual pattern copied from .lr-check on the Money Map so a tick looks
+     the same wherever he meets one. */
+  .tick-row{
+    display:flex; align-items:center; gap:11px;
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:10px; padding:11px 14px; margin:0 0 14px;
+  }
+  .tick-row.done{border-color:var(--good);}
+  .lic-tick{
+    appearance:none; -webkit-appearance:none; cursor:pointer;
+    width:1.5rem; height:1.5rem; min-width:1.5rem; margin:0; flex:none;
+    border:2px solid var(--text-dim); border-radius:6px;
+    background:var(--card); position:relative;
+    transition:border-color .15s, background .15s;
+  }
+  .lic-tick:checked{background:var(--good); border-color:var(--good);}
+  .lic-tick:checked::after{
+    content:''; position:absolute; left:.45rem; top:.14rem;
+    width:.32rem; height:.68rem; border:solid #06210f;
+    border-width:0 3px 3px 0; transform:rotate(45deg);
+  }
+  .lic-tick:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .tick-label{cursor:pointer; font-size:.92rem; font-weight:600; user-select:none;}
+  .tick-row.done .tick-label{color:var(--good);}
+  .tick-when{margin-left:auto; color:var(--text-dim); font-size:.8rem; white-space:nowrap;}
+
+  #tickProgress{
+    background:var(--bg2); border:1px solid var(--accent);
+    border-radius:10px; padding:12px 15px; margin:0 0 14px;
+    font-weight:650;
+  }
+  /* A failed save has to be impossible to miss. A tick that did not reach
+     the database while the screen looks fine is the exact failure this page
+     is supposed to prevent, so it takes over the top of the page rather
+     than whispering in a corner. */
+  #tickAlarm{
+    background:#2a1414; border:1px solid var(--bad); color:#ffdcdc;
+    border-radius:10px; padding:14px 16px; margin:16px 0; font-size:.92rem;
+  }
+  #tickAlarm b{display:block; margin:0 0 6px; color:var(--bad);}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Follow-ups you owe</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#guinea">The three Guinea calls</a>
+      <a href="#andrea">Andrea Stone</a>
+      <a href="#kim">Kim Floor</a>
+      <a href="#kristen">Kristen Lavelett</a>
+      <a href="#tamtam">Starlink, Guinea market access</a>
+      <a href="#sourcing">Where this came from</a>
+    </div>
+  </div>
+</nav>
+
+<header class="mast">
+  <div class="wrap">
+    <h1>Follow-ups you owe</h1>
+    <div class="meta">Written 2026-08-29 &middot; seven people, seven drafts &middot; every one of these is a row on your board that told you to send something and never showed you what</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="tickAlarm" hidden></div>
+  <div id="tickProgress">Nothing ticked yet.</div>
+
+  <details class="tldr" id="tldr" open>
+    <summary>TL;DR</summary>
+    <div class="sec-body">
+      <p>Your board had twelve open rows telling you to pitch, send, email or reply to somebody, with no draft attached to any of them. Five of those already had approved copy written weeks ago that was simply never linked, and those rows now point at it. The seven below had nothing, so they are written here.</p>
+      <p><b>Start with the three Guinea calls.</b> You promised all three of them a follow-up and the week you promised starts Monday.</p>
+      <p><b>Read before Andrea Stone.</b> Her original message from June is older than this page could reach, so open the thread and read what she actually asked before you send the draft.</p>
+    </div>
+  </details>
+
+  <!-- ============================ GUINEA ============================== -->
+  <details class="sec" id="guinea" open>
+    <summary>The three Guinea calls &mdash; you promised all three a follow-up this week</summary>
+    <div class="sec-body">
+      <p class="post-meta">All three came out of the Aug 25 outreach and all three ended with you saying you would come back to schedule. The week of September 1 is the week you named. Three different openings on purpose, because three people who move in the same circles should not receive the same sentence.</p>
+
+      <h3>1. Ibrahim Bah &mdash; President, African Bank of Diaspora</h3>
+      <p><a href="https://linkedin.com/in/ibrahim-bah-2160845a" target="_blank" rel="noopener">His profile</a></p>
+      <div class="tick-row" data-tickrow="followup-2026-08-29-ibrahim-bah">
+        <input type="checkbox" class="ir-tick" id="tick-followup-2026-08-29-ibrahim-bah" data-item="followup-2026-08-29-ibrahim-bah" aria-label="Sent the Ibrahim Bah follow-up">
+        <label class="tick-label" for="tick-followup-2026-08-29-ibrahim-bah">Sent</label>
+        <span class="tick-when" data-tickwhen="followup-2026-08-29-ibrahim-bah"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="fu-ibrahim">Copy</button>
+        <pre class="reply-pre" id="fu-ibrahim">Ibrahim, I said I would come back to you this week to put a time on the calendar, so here I am.
+
+What does the first half of September look like on your side? I will work around your time zone. Thirty minutes is plenty for a first conversation.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 92.</p>
+
+      <h3>2. Kade Camara &mdash; Deputy Director General, Guinea Development Board</h3>
+      <p class="post-meta"><b>She.</b> An earlier draft got this wrong and wrote Mr. Camara. Do not repeat it.</p>
+      <p><a href="https://linkedin.com/in/kadecamara" target="_blank" rel="noopener">Her profile</a></p>
+      <div class="tick-row" data-tickrow="followup-2026-08-29-kade-camara">
+        <input type="checkbox" class="ir-tick" id="tick-followup-2026-08-29-kade-camara" data-item="followup-2026-08-29-kade-camara" aria-label="Sent the Kade Camara follow-up">
+        <label class="tick-label" for="tick-followup-2026-08-29-kade-camara">Sent</label>
+        <span class="tick-when" data-tickwhen="followup-2026-08-29-kade-camara"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="fu-kade">Copy</button>
+        <pre class="reply-pre" id="fu-kade">Kade, I told you I would come back about scheduling, and I am a few days later than I meant to be.
+
+Early September works well on my end. Send me two or three windows that suit you in Conakry time and I will take whichever is easiest for you.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 93.</p>
+
+      <h3>3. Jaye Connolly &mdash; Chairman and CEO, RippleNami</h3>
+      <p><a href="https://linkedin.com/in/jaye-connolly-830b50" target="_blank" rel="noopener">Her profile</a></p>
+      <div class="tick-row" data-tickrow="followup-2026-08-29-jaye-connolly">
+        <input type="checkbox" class="ir-tick" id="tick-followup-2026-08-29-jaye-connolly" data-item="followup-2026-08-29-jaye-connolly" aria-label="Sent the Jaye Connolly follow-up">
+        <label class="tick-label" for="tick-followup-2026-08-29-jaye-connolly">Sent</label>
+        <span class="tick-when" data-tickwhen="followup-2026-08-29-jaye-connolly"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="fu-jaye">Copy</button>
+        <pre class="reply-pre" id="fu-jaye">Jaye, I owe you a time rather than another message.
+
+Would thirty minutes the week of September 1 work, or is later in the month cleaner for you? I will fit your calendar either way.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 93. Check her thread before you send. A notification suggested she wrote to you again on Aug 26 and that message was not readable from here, so she may already have answered something.</p>
+    </div>
+  </details>
+
+  <!-- ============================ ANDREA ============================== -->
+  <details class="sec" id="andrea" open>
+    <summary>Andrea Stone &mdash; she wrote to you in June and has never been answered</summary>
+    <div class="sec-body">
+      <p class="post-meta">Founder of Ascenta HR. She messaged you first on 2026-06-23. That is more than nine weeks. What exists on file for her is a workshop invite for a session that has already happened, which is worse than nothing, so this is written fresh as an actual answer to a person.</p>
+      <p class="post-meta"><b>Do this first:</b> open the thread and read what she actually said. Her message is older than anything readable from this build, so the draft below acknowledges the silence without claiming to answer a question it has not seen. If she asked something specific, answer it in the second paragraph.</p>
+      <p><a href="https://linkedin.com/in/andrea-stone-shrm-scp-650b9231b" target="_blank" rel="noopener">Her profile</a> &middot; <a href="https://www.linkedin.com/messaging/" target="_blank" rel="noopener">Open messages</a></p>
+      <div class="tick-row" data-tickrow="followup-2026-08-29-andrea-stone">
+        <input type="checkbox" class="ir-tick" id="tick-followup-2026-08-29-andrea-stone" data-item="followup-2026-08-29-andrea-stone" aria-label="Sent the Andrea Stone reply">
+        <label class="tick-label" for="tick-followup-2026-08-29-andrea-stone">Sent</label>
+        <span class="tick-when" data-tickwhen="followup-2026-08-29-andrea-stone"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="fu-andrea">Copy</button>
+        <pre class="reply-pre" id="fu-andrea">Andrea, you wrote to me in June and I never came back to you. That one is on me.
+
+Let me answer it properly now rather than let it get older. I have been heads down on the AI side of my practice since then, building and running the thing rather than reading about it, and it is finally doing what I wanted it to do.
+
+If you still want to talk, I have time this week or next. Either way I would like to hear what you are building at Ascenta.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 93. It leads with what is better now rather than with the apology, and it stops after one line of ownership.</p>
+    </div>
+  </details>
+
+  <!-- ============================== KIM =============================== -->
+  <details class="sec" id="kim">
+    <summary>Kim Floor &mdash; hand her the referral kit</summary>
+    <div class="sec-body">
+      <p class="post-meta">The kit itself has existed since Aug 4 and is live. What never got written was the message that hands it over. Due date on the board was 2026-08-27.</p>
+      <p><a href="https://boubacarbarry.com/review/archive/20260804-kim-referral-handout/" target="_blank" rel="noopener">The referral kit, card front and back plus the forwardable version</a></p>
+      <div class="tick-row" data-tickrow="followup-2026-08-29-kim-floor">
+        <input type="checkbox" class="ir-tick" id="tick-followup-2026-08-29-kim-floor" data-item="followup-2026-08-29-kim-floor" aria-label="Sent the Kim Floor handoff">
+        <label class="tick-label" for="tick-followup-2026-08-29-kim-floor">Sent</label>
+        <span class="tick-when" data-tickwhen="followup-2026-08-29-kim-floor"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="fu-kim">Copy</button>
+        <pre class="reply-pre" id="fu-kim">Kim, here is the referral card I mentioned. One card, front and back, plus a version you can forward if sending is easier than handing it over.
+
+There is a line on there for what to say when you pass it along, so you are never stuck explaining what I do.
+
+If the wording sounds wrong coming out of your mouth, tell me and I will change it. It has to sound like you, not like me.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 93. Paste the kit link under it.</p>
+    </div>
+  </details>
+
+  <!-- ============================ KRISTEN ============================= -->
+  <details class="sec" id="kristen">
+    <summary>Kristen Lavelett, Downtown Alliance SLC &mdash; follow up on the idea already sent</summary>
+    <div class="sec-body">
+      <p class="post-meta">Board row dated 2026-08-19. You already sent her the idea for their members, and nothing came back. This is the nudge, written to make a no as easy as a yes so it stops occupying a row.</p>
+      <div class="tick-row" data-tickrow="followup-2026-08-29-kristen-lavelett">
+        <input type="checkbox" class="ir-tick" id="tick-followup-2026-08-29-kristen-lavelett" data-item="followup-2026-08-29-kristen-lavelett" aria-label="Sent the Kristen Lavelett follow-up">
+        <label class="tick-label" for="tick-followup-2026-08-29-kristen-lavelett">Sent</label>
+        <span class="tick-when" data-tickwhen="followup-2026-08-29-kristen-lavelett"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="fu-kristen">Copy</button>
+        <pre class="reply-pre" id="fu-kristen">Kristen, following up on the idea I sent over for your members. No rush if it is still working its way through.
+
+If it is not the right fit for Downtown Alliance, tell me straight and I will stop nudging. If it is, half an hour on the phone and I can walk you through what it would actually look like.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 92.</p>
+    </div>
+  </details>
+
+  <!-- ============================ TAMTAM ============================== -->
+  <details class="sec" id="tamtam">
+    <summary>Starlink, Guinea market access &mdash; approved copy, one recipient per send</summary>
+    <div class="sec-body">
+      <p class="post-meta">Board row due 2026-09-03. The message was written on 2026-07-27 and scored 93. It has been sitting in a file you do not read, which is why the row looked like it had nothing behind it. Here it is where you can reach it.</p>
+      <p class="post-meta"><b>Send instruction, from the original:</b> one recipient per send, never both names on one email. Ryan MacWilliams first. For the second send, change the salutation to Ben and change nothing else.</p>
+      <p class="post-meta"><b>Two things to settle before this goes:</b> the temperature-check call to your government contact was Move 2 of your own plan and is still open, and the line about not asking for equity, exclusivity or money is the kind of sentence that tells a reader what the message is not. It survived the original gate as a deliberate disarming move for a market-access desk. Your call whether it stays.</p>
+      <div class="tick-row" data-tickrow="followup-2026-08-29-tamtam-starlink">
+        <input type="checkbox" class="ir-tick" id="tick-followup-2026-08-29-tamtam-starlink" data-item="followup-2026-08-29-tamtam-starlink" aria-label="Sent the Starlink market access approach">
+        <label class="tick-label" for="tick-followup-2026-08-29-tamtam-starlink">Sent</label>
+        <span class="tick-when" data-tickwhen="followup-2026-08-29-tamtam-starlink"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="fu-tamtam">Copy</button>
+        <pre class="reply-pre" id="fu-tamtam">Subject: Guinea
+
+Ryan,
+
+Guinea has been on your coming-soon list for a while and it hasn't moved. I know why.
+
+I'm Guinean-American, born in Conakry, based in Utah. Under Guinea's 2015 telecom law the minister signs the licence, not the regulator. ARPT only instructs the file. That's why applications there stall at instruction and never reach a desk that can say yes, and it's why your April 2025 cease notice landed in a vacuum instead of starting a conversation.
+
+I have direct relationships on both sides of that gap.
+
+Guinea is worth the trouble. 183 million tonnes of bauxite exported last year, Simandou ramping now, and Rio Tinto already running Starlink at Gudai-Darri. The demand is enterprise and it's sitting there.
+
+I'm not asking for equity, exclusivity, or money. Twenty minutes with whoever owns Guinea, and I'll show you exactly where the file is stuck.
+
+Boubacar Barry
+Conakry / Salt Lake City</pre>
+      </div>
+      <p class="score-line">Voice 93, scored 2026-07-27, carried here word for word rather than rewritten.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sourcing">
+    <summary>Where this came from</summary>
+    <div class="sec-body">
+      <p>Your board was audited on 2026-08-29 for every open row whose instruction was to pitch, send, email, message or reply to somebody. Twelve failed the test of linking to the words they were telling you to send.</p>
+      <p><b>Five were not missing copy at all, only a link.</b> Those rows now point at the page that already held the approved draft: the Profit and Purpose ghostwriter DM, the Kaiti Norton byline pitch, the review-season sequence, the Weekly Signal issue, and the Kim Floor kit.</p>
+      <p><b>Seven had nothing, and are written above.</b> Six are new drafts through the voice gate. The Starlink message is not new, it was approved in July and simply carried here.</p>
+      <p><b>Nothing on this page invents a person or a reason to contact them.</b> Every name here is a row that already existed on your board with a reason already attached. Where the original message could not be read, the page says so instead of guessing at it.</p>
+      <p>An audit script now runs this check on demand, so a new row that says send with no draft behind it gets flagged rather than discovered by you on a Saturday morning.</p>
+    </div>
+  </details>
+
+</div>
+
+<footer class="foot"><div class="wrap">
+  Written 2026-08-29. Ticks live on the y0 board, not in this browser.
+</div></footer>
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+
+  // ---- SENT TICKS -> the y0 board (2026-08-29) --------------------------
+  // His instruction this morning: he wants to open one page, see the reply
+  // already written for each thread, copy it, send it, and tick it. Partial
+  // days are the normal case, so whatever he does not get to has to still be
+  // his tomorrow, under the same name, without anyone re-deciding it.
+  //
+  // WHY NO NEW STORE. The Money Map already ticks daily items on this board
+  // through y0_upsert, and the LinkedIn comments page ticks its batch the same
+  // way. Same table, same write path, same realtime fan-out to his phone. A
+  // second store would be a second truth.
+  //
+  // HOW ROLLOVER WORKS, and why it needs no rollover code. An item id is dated
+  // by the day the reply was WRITTEN, never by the day he happens to be
+  // looking. So a reply carried forward from today keeps the id
+  // inboxreply-2026-08-29-<slug>. Ticking it is permanent and thread-specific:
+  // the next build reads these keys, drops the ones already ticked, and
+  // carries the rest forward under the SAME id. Nothing is lost, and nothing
+  // is handed to him twice.
+  (function () {
+    var SB_URL     = 'https://jscucboftaoaphticqci.supabase.co';
+    var SB_ANON    = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
+    var BOARD_ID   = 'y0';
+    var BOARD_TOKEN= 'y0_5RLZllwfaHb_pO7qPHcBJGlgcwkwKL2Q';
+    var LS         = 'y0mm-';   // same namespace as the Money Map, deliberately
+
+    var boxes = Array.prototype.slice.call(document.querySelectorAll('.ir-tick[data-item]'));
+    if (!boxes.length) { return; }
+    var ROSTER = boxes.map(function (b) { return b.getAttribute('data-item'); });
+
+    var sb = null;
+    try { sb = window.supabase.createClient(SB_URL, SB_ANON, { realtime: { params: { eventsPerSecond: 5 } } }); } catch (e) { sb = null; }
+
+    var alarmEl = document.getElementById('tickAlarm');
+    function alarm(html) {
+      if (!alarmEl) { return; }
+      if (!html) { alarmEl.hidden = true; alarmEl.innerHTML = ''; return; }
+      alarmEl.innerHTML = html; alarmEl.hidden = false;
+    }
+    function esc(t) {
+      return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function lsGet(k) { try { return localStorage.getItem(LS + k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(LS + k, v); } catch (e) {} }
+
+    function stamp(iso) {
+      if (!iso) { return ''; }
+      try {
+        return 'ticked ' + new Date(iso).toLocaleString('en-US',
+          { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      } catch (e) { return 'ticked'; }
+    }
+
+    function paint(item, on, when) {
+      var box = document.querySelector('.ir-tick[data-item="' + item + '"]');
+      if (box) { box.checked = !!on; }
+      var row = document.querySelector('[data-tickrow="' + item + '"]');
+      if (row) { row.classList.toggle('done', !!on); }
+      var w = document.querySelector('[data-tickwhen="' + item + '"]');
+      if (w) { w.textContent = on ? stamp(when || lsGet('ts-' + item)) : ''; }
+      progress();
+    }
+
+    function progress() {
+      var el = document.getElementById('tickProgress');
+      if (!el) { return; }
+      var done = boxes.filter(function (b) { return b.checked; }).length;
+      var n = boxes.length;
+      if (!done) {
+        el.textContent = 'Nothing ticked yet. ' + n + ' waiting.';
+      } else if (done === n) {
+        el.textContent = 'All ' + n + ' ticked. Nothing rolls over.';
+      } else {
+        el.textContent = done + ' of ' + n + ' ticked. The other ' + (n - done) +
+          ' roll over to tomorrow under the same names.';
+      }
+    }
+
+    // The roster is what lets the Money Map say "2 of 3 done" without knowing
+    // anything about this page's contents. It is the ONLY thing this page tells
+    // the board beyond the ticks themselves.
+    function writeRoster() {
+      var want = JSON.stringify(ROSTER);
+      if (lsGet('followup-roster') === want) { return; }
+      push('followup-roster', want, true);
+    }
+
+    function push(item, value, quiet) {
+      lsSet(item, value);
+      lsSet('ts-' + item, new Date().toISOString());
+      if (!sb) {
+        if (!quiet) {
+          alarm('<b>THAT TICK IS NOT SAVED.</b>The database client never loaded on this page, so ' +
+            esc(item) + ' exists in this browser and nowhere else. It is not on your phone and it will ' +
+            'not survive clearing this browser. Reload the page and tick it again.');
+        }
+        return;
+      }
+      sb.rpc('y0_upsert', { p_board: BOARD_ID, p_item: item, p_value: value, p_token: BOARD_TOKEN })
+        .then(function (res) {
+          if (res.error) {
+            if (!quiet) {
+              alarm('<b>SAVE FAILED. THAT TICK IS NOT IN THE DATABASE.</b>The board rejected the write for ' +
+                esc(item) + ': ' + esc(res.error.message || res.error.hint || 'rejected with no reason given') +
+                '. It is held in this browser only. Reload and tick it again. If it fails twice, the save path ' +
+                'is broken and needs fixing before you rely on this page.');
+            }
+          } else if (!quiet) {
+            alarm(null);
+          }
+        })
+        .catch(function () {
+          if (!quiet) {
+            alarm('<b>NOT SAVED. YOU ARE OFFLINE.</b>The tick on ' + esc(item) + ' never left this device. ' +
+              'It is not in the database and not on your phone. Reconnect and reload, then check it is still ticked.');
+          }
+        });
+    }
+
+    // Offline-first paint, then the real board overwrites it.
+    boxes.forEach(function (b) {
+      var item = b.getAttribute('data-item');
+      if (lsGet(item) === '1') { paint(item, true, lsGet('ts-' + item)); }
+      b.addEventListener('change', function () {
+        paint(item, b.checked, new Date().toISOString());
+        push(item, b.checked ? '1' : '0');
+      });
+    });
+    progress();
+
+    if (!sb) {
+      alarm('<b>THIS PAGE CANNOT REACH YOUR BOARD.</b>The database client did not load, so ticking a box here ' +
+        'saves nothing anywhere but this browser. Reload before you rely on it.');
+      return;
+    }
+
+    // A read that fails must never look like a board where nothing is ticked.
+    sb.from('y0_money_map_state').select('item_id,value,updated_at').eq('board_id', BOARD_ID)
+      .then(function (res) {
+        if (res.error) {
+          alarm('<b>YOUR BOARD COULD NOT BE READ.</b>Boxes below may show as unticked when you already ticked them. ' +
+            'Nothing has been deleted. Reload before ticking anything, so you do not re-post a reply you already sent.');
+          return;
+        }
+        var rows = res.data || [];
+        var seen = {};
+        rows.forEach(function (r) { seen[r.item_id] = r; });
+        ROSTER.forEach(function (item) {
+          var r = seen[item];
+          var on = !!(r && r.value === '1');
+          lsSet(item, on ? '1' : '0');
+          if (r && r.updated_at) { lsSet('ts-' + item, r.updated_at); }
+          paint(item, on, r && r.updated_at);
+        });
+        alarm(null);
+        writeRoster();
+
+        // Same board, another device: his phone and this laptop stay in step.
+        sb.channel('followup-ticks')
+          .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'y0_money_map_state', filter: 'board_id=eq.' + BOARD_ID },
+            function (payload) {
+              var row = payload['new'] || payload.old;
+              if (!row || ROSTER.indexOf(row.item_id) === -1) { return; }
+              var on = (payload.eventType !== 'DELETE') && row.value === '1';
+              lsSet(row.item_id, on ? '1' : '0');
+              paint(row.item_id, on, row.updated_at);
+            })
+          .subscribe();
+      })
+      .catch(function () {
+        alarm('<b>YOUR BOARD COULD NOT BE REACHED.</b>Boxes below may show as unticked when you already ticked them. ' +
+          'Nothing has been deleted. Reload before ticking anything.');
+      });
+  })();
+
+  Array.prototype.slice.call(document.querySelectorAll('.copy-btn')).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var targetId = btn.getAttribute('data-copy-target');
+      var el = document.getElementById(targetId);
+      if (!el) { return; }
+      var text = el.textContent;
+      var done = function () {
+        var original = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function () {
+          btn.textContent = original === 'Copied' ? 'Copy' : original;
+          btn.classList.remove('copied');
+        }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, done);
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try { document.execCommand('copy'); } catch (err) {}
+        document.body.removeChild(ta);
+        done();
+      }
+    });
+  });
+})();
+</script>
+
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
+
+
