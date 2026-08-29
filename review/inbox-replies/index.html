@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Replies waiting on you</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent2:#7fe0b8; --accent-visited:#B87333;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover, a:active{color:#FFB08A;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  .sec-body h3{font-size:1rem;margin:22px 0 6px;color:var(--accent2);}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; white-space:pre-wrap; word-break:break-word;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  .post-meta{color:var(--text-dim); font-size:.92rem; margin:0 0 10px;}
+  .post-link{word-break:break-all;}
+  .score-line{color:var(--accent2); font-weight:650; font-size:.9rem; margin:10px 0 0;}
+  .comment-block{position:relative;}
+  .copy-btn{
+    appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:8px; padding:7px 14px; font-size:.85rem; margin:0 0 8px;
+  }
+  .copy-btn:hover{border-color:var(--accent); color:var(--accent);}
+  .copy-btn.copied{border-color:var(--good); color:var(--good);}
+
+  /* ---- POSTED TICKS (2026-08-29) ------------------------------------
+     Same mechanism as the Money Map's action rows: a plain checkbox whose
+     state is written straight to the y0 board in Supabase through the
+     y0_upsert RPC. No new store, no new endpoint, no second system.
+     Visual pattern copied from .lr-check on the Money Map so a tick looks
+     the same wherever he meets one. */
+  .tick-row{
+    display:flex; align-items:center; gap:11px;
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:10px; padding:11px 14px; margin:0 0 14px;
+  }
+  .tick-row.done{border-color:var(--good);}
+  .lic-tick{
+    appearance:none; -webkit-appearance:none; cursor:pointer;
+    width:1.5rem; height:1.5rem; min-width:1.5rem; margin:0; flex:none;
+    border:2px solid var(--text-dim); border-radius:6px;
+    background:var(--card); position:relative;
+    transition:border-color .15s, background .15s;
+  }
+  .lic-tick:checked{background:var(--good); border-color:var(--good);}
+  .lic-tick:checked::after{
+    content:''; position:absolute; left:.45rem; top:.14rem;
+    width:.32rem; height:.68rem; border:solid #06210f;
+    border-width:0 3px 3px 0; transform:rotate(45deg);
+  }
+  .lic-tick:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .tick-label{cursor:pointer; font-size:.92rem; font-weight:600; user-select:none;}
+  .tick-row.done .tick-label{color:var(--good);}
+  .tick-when{margin-left:auto; color:var(--text-dim); font-size:.8rem; white-space:nowrap;}
+
+  #tickProgress{
+    background:var(--bg2); border:1px solid var(--accent);
+    border-radius:10px; padding:12px 15px; margin:0 0 14px;
+    font-weight:650;
+  }
+  /* A failed save has to be impossible to miss. A tick that did not reach
+     the database while the screen looks fine is the exact failure this page
+     is supposed to prevent, so it takes over the top of the page rather
+     than whispering in a corner. */
+  #tickAlarm{
+    background:#2a1414; border:1px solid var(--bad); color:#ffdcdc;
+    border-radius:10px; padding:14px 16px; margin:16px 0; font-size:.92rem;
+  }
+  #tickAlarm b{display:block; margin:0 0 6px; color:var(--bad);}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Replies waiting on you</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#li">LinkedIn messages</a>
+      <a href="#personal">bokar83 mailbox</a>
+      <a href="#cw">Catalyst Works mailbox</a>
+      <a href="#settled">Already settled</a>
+      <a href="#after">After you send</a>
+      <a href="#sourcing">Where this came from</a>
+    </div>
+  </div>
+</nav>
+
+<header class="mast">
+  <div class="wrap">
+    <h1>Replies waiting on you</h1>
+    <div class="meta">Batch written Saturday 2026-08-29 &middot; LinkedIn, bokar83, Catalyst Works &middot; every reply below is drafted and voice-scored, copy it, change anything you want, send it, tick it</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="tickAlarm" hidden></div>
+  <div id="tickProgress">Nothing ticked yet.</div>
+
+  <details class="tldr" id="tldr" open>
+    <summary>TL;DR</summary>
+    <div class="sec-body">
+      <p>Six replies are written for you. Two on LinkedIn, one in your personal mailbox, three vendor declines in the Catalyst Works mailbox. Copy the box, change anything that does not sound like you, send it, tick it here.</p>
+      <p><b>Carla Cherry is the one with a clock on it.</b> She offered Monday 11am PT or Tuesday 9am PT and has been waiting since Thursday. Tuesday is already taken on your calendar, Monday is clear. Answer that one first.</p>
+      <p>Anything you leave unticked rolls over to tomorrow under the same name. Nothing is lost, nothing comes back twice.</p>
+    </div>
+  </details>
+
+  <!-- ============================== LI ================================ -->
+  <details class="sec" id="li" open>
+    <summary>LinkedIn messages &mdash; 2 waiting on you</summary>
+    <div class="sec-body">
+      <p class="post-meta">Zero unread. These two are read and unanswered, which is the worse category: they think you saw it and chose not to reply.</p>
+
+      <h3>1. Carla Cherry &mdash; she offered you two times and is waiting</h3>
+      <p class="post-meta">Thu Aug 28, her words: <i>"Hello Boubacar. Sounds good. How does Monday at 11 am PT work for you for a call to discuss further? Or Tuesday at 9 am PT?"</i></p>
+      <p class="post-meta"><b>Take Monday.</b> Monday 11am PT is noon your time, and the only thing on your calendar then is the optional clinic with Devin. Tuesday 9am PT is 10am your time, where you already have Mary Julian and the morning sprint. Answering with the time that is actually free is faster than a round trip.</p>
+      <p><a href="https://www.linkedin.com/messaging/" target="_blank" rel="noopener">Open LinkedIn messages</a></p>
+      <div class="tick-row" data-tickrow="inboxreply-2026-08-29-carla-cherry">
+        <input type="checkbox" class="ir-tick" id="tick-inboxreply-2026-08-29-carla-cherry" data-item="inboxreply-2026-08-29-carla-cherry" aria-label="Replied to Carla Cherry">
+        <label class="tick-label" for="tick-inboxreply-2026-08-29-carla-cherry">Replied and held the time</label>
+        <span class="tick-when" data-tickwhen="inboxreply-2026-08-29-carla-cherry"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="reply-carla">Copy</button>
+        <pre class="reply-pre" id="reply-carla">Carla, Monday at 11 PT works. I will hold that.
+
+Send whichever link you prefer and I will be on it. Looking forward to the conversation.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 92. Block noon Monday on your calendar in the same move, before the deep work block claims it.</p>
+
+      <h3>2. Dave Aditya &mdash; he answered you and told you what to do next</h3>
+      <p class="post-meta">Wed Aug 27, his words: <i>"Our recruiting is overwhelmed at the moment. We have over 700 applicants. But I've forwarded your profile to our Ops leader, if he's interested he'd follow up. Additionally, please go to our careers page and apply to the most relevant position. That's your best chance of getting an interview."</i></p>
+      <p class="post-meta">He did you a favour and he named the next step. A thank you costs nothing and the application is the part that actually moves it.</p>
+      <div class="tick-row" data-tickrow="inboxreply-2026-08-29-dave-aditya">
+        <input type="checkbox" class="ir-tick" id="tick-inboxreply-2026-08-29-dave-aditya" data-item="inboxreply-2026-08-29-dave-aditya" aria-label="Replied to Dave Aditya">
+        <label class="tick-label" for="tick-inboxreply-2026-08-29-dave-aditya">Replied</label>
+        <span class="tick-when" data-tickwhen="inboxreply-2026-08-29-dave-aditya"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="reply-dave">Copy</button>
+        <pre class="reply-pre" id="reply-dave">Dave, thank you for passing my profile along, and for telling me straight about the volume. Seven hundred is a lot to move through.
+
+I will apply through the careers page today so I am in the system properly instead of sitting in your inbox.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 93. The message promises you will apply today, so do that part or change the sentence.</p>
+    </div>
+  </details>
+
+  <!-- ============================ PERSONAL ============================ -->
+  <details class="sec" id="personal" open>
+    <summary>bokar83 mailbox &mdash; 1 waiting on you</summary>
+    <div class="sec-body">
+
+      <h3>3. Emily Gibson, Mountain Heights Academy &mdash; test accommodations</h3>
+      <p class="post-meta">She replied Thu Aug 28 to your note about your daughter's vision. She is offering breaks during the MAP reading test and asking to be kept posted. Nothing urgent, but she went first and it should not sit.</p>
+      <p><a href="https://mail.google.com/mail/u/0/#inbox/1a0456bda8f7d05b" target="_blank" rel="noopener">Open the thread</a></p>
+      <div class="tick-row" data-tickrow="inboxreply-2026-08-29-gibson">
+        <input type="checkbox" class="ir-tick" id="tick-inboxreply-2026-08-29-gibson" data-item="inboxreply-2026-08-29-gibson" aria-label="Replied to Emily Gibson">
+        <label class="tick-label" for="tick-inboxreply-2026-08-29-gibson">Replied</label>
+        <span class="tick-when" data-tickwhen="inboxreply-2026-08-29-gibson"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="reply-gibson">Copy</button>
+        <pre class="reply-pre" id="reply-gibson">Emily, thank you for this. The breaks during the test will help.
+
+I will keep you posted after the eye appointment and let you know what they recommend. If anything changes before the next testing window you will hear it from me.
+
+I appreciate you offering the accommodation before I had to ask for it.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 93. Your daughter's name is left out on purpose, this is a web page. Put it back in the email if you want it there.</p>
+
+    </div>
+  </details>
+
+  <!-- ============================== CW ================================ -->
+  <details class="sec" id="cw">
+    <summary>Catalyst Works mailbox &mdash; 3 waiting, all three are vendors selling to you</summary>
+    <div class="sec-body">
+      <p class="post-meta"><b>Read this before you spend time here.</b> Everything real in that mailbox back to Aug 25 is answered or filed. What is left needing a human is three cold vendor pitches. None is a prospect and none is urgent. Declines are written because a two line no costs you less than the same sender following up for another three weeks. Skipping all three is also a defensible answer, and this section is folded shut for that reason.</p>
+
+      <h3>4. Nicole Harris, Primordial &mdash; HR software pitch, second message</h3>
+      <p class="post-meta">Cold. Two messages, Aug 25 and Aug 28, pitching an HR, IT and finance tool with a first month free.</p>
+      <div class="tick-row" data-tickrow="inboxreply-2026-08-29-harris">
+        <input type="checkbox" class="ir-tick" id="tick-inboxreply-2026-08-29-harris" data-item="inboxreply-2026-08-29-harris" aria-label="Answered Nicole Harris">
+        <label class="tick-label" for="tick-inboxreply-2026-08-29-harris">Declined</label>
+        <span class="tick-when" data-tickwhen="inboxreply-2026-08-29-harris"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="reply-harris">Copy</button>
+        <pre class="reply-pre" id="reply-harris">Nicole, thank you for following up. This is not a fit for me. I am not evaluating HR tooling this year.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 92.</p>
+
+      <h3>5. Sue Zeinab, BairesDev &mdash; referral partner offer</h3>
+      <p class="post-meta">Cold, Aug 26. Wants you to refer engineering staffing work for a 5 percent commission.</p>
+      <div class="tick-row" data-tickrow="inboxreply-2026-08-29-zeinab">
+        <input type="checkbox" class="ir-tick" id="tick-inboxreply-2026-08-29-zeinab" data-item="inboxreply-2026-08-29-zeinab" aria-label="Answered Sue Zeinab">
+        <label class="tick-label" for="tick-inboxreply-2026-08-29-zeinab">Declined</label>
+        <span class="tick-when" data-tickwhen="inboxreply-2026-08-29-zeinab"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="reply-zeinab">Copy</button>
+        <pre class="reply-pre" id="reply-zeinab">Sue, thank you for the offer. I am going to pass. I do not refer engineering staffing, and I will not put my name on a recommendation I cannot stand behind.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 93.</p>
+
+      <h3>6. Victoria Mitchell, Scalafaimy &mdash; lead generation service</h3>
+      <p class="post-meta">Cold, Aug 26. Offering to run lead generation for Catalyst Works.</p>
+      <div class="tick-row" data-tickrow="inboxreply-2026-08-29-mitchell">
+        <input type="checkbox" class="ir-tick" id="tick-inboxreply-2026-08-29-mitchell" data-item="inboxreply-2026-08-29-mitchell" aria-label="Answered Victoria Mitchell">
+        <label class="tick-label" for="tick-inboxreply-2026-08-29-mitchell">Declined</label>
+        <span class="tick-when" data-tickwhen="inboxreply-2026-08-29-mitchell"></span>
+      </div>
+      <div class="comment-block">
+        <button type="button" class="copy-btn" data-copy-target="reply-mitchell">Copy</button>
+        <pre class="reply-pre" id="reply-mitchell">Victoria, thank you for reaching out. Not a fit. I build my own lead generation.
+
+Boubacar</pre>
+      </div>
+      <p class="score-line">Voice 92.</p>
+    </div>
+  </details>
+
+  <!-- =========================== SETTLED ============================== -->
+  <details class="sec" id="settled">
+    <summary>Already settled, listed so nobody hands them back to you</summary>
+    <div class="sec-body">
+      <p><b>Sumieya Mohammed, Edwards.</b> Not open. Your phone screen for Req-48917 is on the calendar for Tue Sep 1 at 12:00, with her as an attendee. Nothing to send.</p>
+      <p><b>Mary E. Julian.</b> Not open. You already told her <i>"Thanks so much Mary! I grabbed a slot on Tuesday for us"</i> and the invite is accepted for Tue Sep 1 at 10:00. <b>One thing worth a look:</b> that slot sits on top of your 10:00 sprint block on Tuesday morning, so one of the two has to move.</p>
+      <p><b>Alex Dotter, SLCC Miller Conference Center.</b> Settled. The room move to Sep 24 is confirmed on both sides.</p>
+      <p><b>Sarah Taylor.</b> You answered her Aug 28 and agreed to reconnect in a couple of weeks. Ball is on her side.</p>
+      <p class="score-line">Both of the first two were on the draft list this morning and were pulled after checking Google Calendar. That is now a standing step: a thread carrying a booking link or a calendar invite gets checked against Calendar before anyone calls it unanswered, because the reply can happen entirely inside Calendar and never appear as an email.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="after">
+    <summary>After you send</summary>
+    <div class="sec-body">
+      <p>Tick each one here. The tick goes straight to your board, so the Money Map row updates itself and your phone stays in step with this laptop.</p>
+      <p>Anything you leave unticked comes back tomorrow under the same name, with the same draft. Anything ticked never comes back.</p>
+      <p>If a save fails you will see a red banner at the top of this page. That banner means the tick is in this browser and nowhere else, so reload and tick it again before you trust it.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sourcing">
+    <summary>Where this came from</summary>
+    <div class="sec-body">
+      <p><b>LinkedIn.</b> Read live in the browser on 2026-08-29, logged in as you. Zero unread. The ten most recent conversations were read in full and filtered to the ones where the other person sent the last message. <b>One honest limit:</b> clicking and scrolling inside that page are blocked in this browser session by an extension conflict, so conversations older than Aug 26 were not opened. If something older is still waiting on you, this page has not seen it.</p>
+      <p><b>Personal mailbox.</b> Read live across the last 21 days, promotions, social and updates excluded, then filtered to threads where somebody else sent the last message, then cross-checked against Google Calendar.</p>
+      <p><b>Catalyst Works mailbox.</b> Read through the daily triage on the server in dry run, so nothing in the mailbox moved. It reports 33 threads needing action today, of which everything but the three above is LinkedIn notification mail, vendor blasts or DMARC reports.</p>
+      <p><b>Every draft</b> was written against a message that actually exists, quoted above in the sender's own words, and put through the voice gate before it reached this page. No message and no person on this page was invented.</p>
+    </div>
+  </details>
+
+</div>
+
+<footer class="foot"><div class="wrap">
+  Written 2026-08-29. Rebuilt each batch. Ticks live on the y0 board, not in this browser.
+</div></footer>
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+
+  // ---- SENT TICKS -> the y0 board (2026-08-29) --------------------------
+  // His instruction this morning: he wants to open one page, see the reply
+  // already written for each thread, copy it, send it, and tick it. Partial
+  // days are the normal case, so whatever he does not get to has to still be
+  // his tomorrow, under the same name, without anyone re-deciding it.
+  //
+  // WHY NO NEW STORE. The Money Map already ticks daily items on this board
+  // through y0_upsert, and the LinkedIn comments page ticks its batch the same
+  // way. Same table, same write path, same realtime fan-out to his phone. A
+  // second store would be a second truth.
+  //
+  // HOW ROLLOVER WORKS, and why it needs no rollover code. An item id is dated
+  // by the day the reply was WRITTEN, never by the day he happens to be
+  // looking. So a reply carried forward from today keeps the id
+  // inboxreply-2026-08-29-<slug>. Ticking it is permanent and thread-specific:
+  // the next build reads these keys, drops the ones already ticked, and
+  // carries the rest forward under the SAME id. Nothing is lost, and nothing
+  // is handed to him twice.
+  (function () {
+    var SB_URL     = 'https://jscucboftaoaphticqci.supabase.co';
+    var SB_ANON    = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
+    var BOARD_ID   = 'y0';
+    var BOARD_TOKEN= 'y0_5RLZllwfaHb_pO7qPHcBJGlgcwkwKL2Q';
+    var LS         = 'y0mm-';   // same namespace as the Money Map, deliberately
+
+    var boxes = Array.prototype.slice.call(document.querySelectorAll('.ir-tick[data-item]'));
+    if (!boxes.length) { return; }
+    var ROSTER = boxes.map(function (b) { return b.getAttribute('data-item'); });
+
+    var sb = null;
+    try { sb = window.supabase.createClient(SB_URL, SB_ANON, { realtime: { params: { eventsPerSecond: 5 } } }); } catch (e) { sb = null; }
+
+    var alarmEl = document.getElementById('tickAlarm');
+    function alarm(html) {
+      if (!alarmEl) { return; }
+      if (!html) { alarmEl.hidden = true; alarmEl.innerHTML = ''; return; }
+      alarmEl.innerHTML = html; alarmEl.hidden = false;
+    }
+    function esc(t) {
+      return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function lsGet(k) { try { return localStorage.getItem(LS + k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(LS + k, v); } catch (e) {} }
+
+    function stamp(iso) {
+      if (!iso) { return ''; }
+      try {
+        return 'ticked ' + new Date(iso).toLocaleString('en-US',
+          { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      } catch (e) { return 'ticked'; }
+    }
+
+    function paint(item, on, when) {
+      var box = document.querySelector('.ir-tick[data-item="' + item + '"]');
+      if (box) { box.checked = !!on; }
+      var row = document.querySelector('[data-tickrow="' + item + '"]');
+      if (row) { row.classList.toggle('done', !!on); }
+      var w = document.querySelector('[data-tickwhen="' + item + '"]');
+      if (w) { w.textContent = on ? stamp(when || lsGet('ts-' + item)) : ''; }
+      progress();
+    }
+
+    function progress() {
+      var el = document.getElementById('tickProgress');
+      if (!el) { return; }
+      var done = boxes.filter(function (b) { return b.checked; }).length;
+      var n = boxes.length;
+      if (!done) {
+        el.textContent = 'Nothing ticked yet. ' + n + ' waiting.';
+      } else if (done === n) {
+        el.textContent = 'All ' + n + ' ticked. Nothing rolls over.';
+      } else {
+        el.textContent = done + ' of ' + n + ' ticked. The other ' + (n - done) +
+          ' roll over to tomorrow under the same names.';
+      }
+    }
+
+    // The roster is what lets the Money Map say "2 of 3 done" without knowing
+    // anything about this page's contents. It is the ONLY thing this page tells
+    // the board beyond the ticks themselves.
+    function writeRoster() {
+      var want = JSON.stringify(ROSTER);
+      if (lsGet('inboxreply-roster') === want) { return; }
+      push('inboxreply-roster', want, true);
+    }
+
+    function push(item, value, quiet) {
+      lsSet(item, value);
+      lsSet('ts-' + item, new Date().toISOString());
+      if (!sb) {
+        if (!quiet) {
+          alarm('<b>THAT TICK IS NOT SAVED.</b>The database client never loaded on this page, so ' +
+            esc(item) + ' exists in this browser and nowhere else. It is not on your phone and it will ' +
+            'not survive clearing this browser. Reload the page and tick it again.');
+        }
+        return;
+      }
+      sb.rpc('y0_upsert', { p_board: BOARD_ID, p_item: item, p_value: value, p_token: BOARD_TOKEN })
+        .then(function (res) {
+          if (res.error) {
+            if (!quiet) {
+              alarm('<b>SAVE FAILED. THAT TICK IS NOT IN THE DATABASE.</b>The board rejected the write for ' +
+                esc(item) + ': ' + esc(res.error.message || res.error.hint || 'rejected with no reason given') +
+                '. It is held in this browser only. Reload and tick it again. If it fails twice, the save path ' +
+                'is broken and needs fixing before you rely on this page.');
+            }
+          } else if (!quiet) {
+            alarm(null);
+          }
+        })
+        .catch(function () {
+          if (!quiet) {
+            alarm('<b>NOT SAVED. YOU ARE OFFLINE.</b>The tick on ' + esc(item) + ' never left this device. ' +
+              'It is not in the database and not on your phone. Reconnect and reload, then check it is still ticked.');
+          }
+        });
+    }
+
+    // Offline-first paint, then the real board overwrites it.
+    boxes.forEach(function (b) {
+      var item = b.getAttribute('data-item');
+      if (lsGet(item) === '1') { paint(item, true, lsGet('ts-' + item)); }
+      b.addEventListener('change', function () {
+        paint(item, b.checked, new Date().toISOString());
+        push(item, b.checked ? '1' : '0');
+      });
+    });
+    progress();
+
+    if (!sb) {
+      alarm('<b>THIS PAGE CANNOT REACH YOUR BOARD.</b>The database client did not load, so ticking a box here ' +
+        'saves nothing anywhere but this browser. Reload before you rely on it.');
+      return;
+    }
+
+    // A read that fails must never look like a board where nothing is ticked.
+    sb.from('y0_money_map_state').select('item_id,value,updated_at').eq('board_id', BOARD_ID)
+      .then(function (res) {
+        if (res.error) {
+          alarm('<b>YOUR BOARD COULD NOT BE READ.</b>Boxes below may show as unticked when you already ticked them. ' +
+            'Nothing has been deleted. Reload before ticking anything, so you do not re-post a reply you already sent.');
+          return;
+        }
+        var rows = res.data || [];
+        var seen = {};
+        rows.forEach(function (r) { seen[r.item_id] = r; });
+        ROSTER.forEach(function (item) {
+          var r = seen[item];
+          var on = !!(r && r.value === '1');
+          lsSet(item, on ? '1' : '0');
+          if (r && r.updated_at) { lsSet('ts-' + item, r.updated_at); }
+          paint(item, on, r && r.updated_at);
+        });
+        alarm(null);
+        writeRoster();
+
+        // Same board, another device: his phone and this laptop stay in step.
+        sb.channel('inboxreply-ticks')
+          .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'y0_money_map_state', filter: 'board_id=eq.' + BOARD_ID },
+            function (payload) {
+              var row = payload['new'] || payload.old;
+              if (!row || ROSTER.indexOf(row.item_id) === -1) { return; }
+              var on = (payload.eventType !== 'DELETE') && row.value === '1';
+              lsSet(row.item_id, on ? '1' : '0');
+              paint(row.item_id, on, row.updated_at);
+            })
+          .subscribe();
+      })
+      .catch(function () {
+        alarm('<b>YOUR BOARD COULD NOT BE REACHED.</b>Boxes below may show as unticked when you already ticked them. ' +
+          'Nothing has been deleted. Reload before ticking anything.');
+      });
+  })();
+
+  Array.prototype.slice.call(document.querySelectorAll('.copy-btn')).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var targetId = btn.getAttribute('data-copy-target');
+      var el = document.getElementById(targetId);
+      if (!el) { return; }
+      var text = el.textContent;
+      var done = function () {
+        var original = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(function () {
+          btn.textContent = original === 'Copied' ? 'Copy' : original;
+          btn.classList.remove('copied');
+        }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, done);
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try { document.execCommand('copy'); } catch (err) {}
+        document.body.removeChild(ta);
+        done();
+      }
+    });
+  });
+})();
+</script>
+
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
+
+
