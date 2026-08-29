@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codename Registry -- full list for review</title>
+<!--
+  CANONICAL REVIEW-PAGE TEMPLATE for boubacarbarry.com/review/<slug>/
+
+  Start every review page from this file. It is compliant with the layout hard standard out
+  of the box, and scripts/validate-review-page.ps1 (which publish-review.ps1 runs on every
+  publish and REFUSES to ship past) is written against exactly this structure.
+
+  THE FIVE RULES, Boubacar verbatim 2026-08-11:
+    1. TL;DR at the very top, sections underneath it.
+    2. The TL;DR itself is collapsible.
+    3. Every section collapsible with a toggle.
+    4. A back-to-top button on every page.
+    5. Hamburger nav on mobile, normal nav on desktop, floating if practical.
+
+  THE REASON, which matters more than the list:
+    "I don't want to have to read 30 pages of a TL;DR to get to the content every single
+     time. I need to be able to just quickly jump into this after future reviews."
+    => Design for the SECOND visit. Rules 4 and the fold-state memory that makes the second
+       visit fast are AUTO-INJECTED at publish time by scripts/inject-review-furniture.ps1,
+       so do not hand-roll a back-to-top button here -- you would get two.
+
+  WHAT YOU EDIT: the {{PLACEHOLDERS}}, the nav links, and the <section> blocks. Keep the
+  <details><summary><h2>...</h2></summary> shape on every section; that shape IS the check.
+
+  STANDS ALONE ON PURPOSE: no external CSS, no external JS, no fonts, no CDN. He opens these
+  on a phone on bad wifi, and a shared include that fails to load would take the furniture
+  down with the page. Duplicated bytes are the cheaper trade.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,300&display=swap');
+  h1{font-family: Georgia, "Fraunces", serif; font-style: italic; font-weight: 300; letter-spacing:-0.01em;}
+  h1 em{color:#FF9966; font-style:italic;}
+  .cn-grid{display:grid; grid-template-columns:1fr; gap:14px;}
+  .cn-card{border:1px solid var(--border); border-radius:10px; padding:14px 16px; background:#11141b;}
+  .cn-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .cn-name{font-family:monospace; font-size:1.05rem; font-weight:700; color:var(--accent);}
+  .cn-status{font-size:.78rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em;}
+  .cn-entity{margin-bottom:6px;}
+  .cn-row{margin-bottom:6px; font-size:.92rem;}
+  .cn-not{color:var(--text-dim);}
+  .cn-reason{font-style:italic; color:#c9b8a8;}
+
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-29-11:18:56 MT</div><!-- DEPLOY_STAMP_END -->
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Codename Registry</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#sec-1">Approved 2026-08-29 (new)</a>
+      <a href="#sec-2">Archived (reversible)</a>
+      <a href="#sec-3">Split / narrowed 2026-08-29</a>
+      <a href="#sec-4">Active revenue / business lanes</a>
+      <a href="#sec-5">Platform &amp; infrastructure</a>
+      <a href="#sec-6">Personal / idea-stage / deferred</a>
+      <a href="#sec-7">Master tracker</a>
+      <a href="#sec-8">Satellite (external repo)</a>
+      <a href="#sec-9">Shipped / closed</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Codename Registry -- full list for review</h1>
+    <div class="meta">Every agentsHQ codename, its entity, status, scope, and naming reason &middot; 2026-08-29</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      
+      <p>Every codename registered in <code>docs/roadmap/README.md</code>, what business or platform it belongs to, its status, what it covers, what it explicitly does <strong>not</strong> cover, and why the name was chosen where that reason is on record.</p>
+      <p><strong>Approved 2026-08-29:</strong> <code>agora</code> (in-person workshops), <code>sextant</code> (Signal Works, split out of <code>harvest</code>), <code>caravan</code> (named-counterparty partnerships -- HQ Core, Jacob Posel, Luke Pierce). <code>harvest</code> now covers Catalyst Works consulting only. <code>haw</code> (Human at Work) is archived, reversibly.</p>
+      <p>Where no reason for a name is on record, this page says so plainly rather than inventing one -- several older codenames predate any naming convention.</p>
+
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1" open>
+    <summary><h2>Approved 2026-08-29 (new)</h2></summary>
+    <div class="sec-body">
+      <div class="cn-grid">
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">agora</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> <strong>Catalyst Works</strong> (in-person events)</div>
+        <div class="cn-row"><strong>Covers:</strong> the in-person workshops — the September 24 session and the ones after it: room, insurance, ticketing, the ad set, the page, the run of show</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> online products; the Human at Work catalog; ongoing consulting delivery (that is <code>harvest</code>)</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> the public square where teaching happened -- workshops are people gathering in person.</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">sextant</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> <strong>Signal Works</strong> (its own business, split out of <code>harvest</code> 2026-08-29)</div>
+        <div class="cn-row"><strong>Covers:</strong> Signal Works: productized AI-presence offer — geolisted.co landing page, <code>signal_works/</code> in the repo</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> Catalyst Works consulting (that is <code>harvest</code>); the in-person workshops (that is <code>agora</code>)</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> the instrument that finds your position from a signal.</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">caravan</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> cross-cutting / personal (no single business owns it)</div>
+        <div class="cn-row"><strong>Covers:</strong> live opportunities and partnerships with named counterparties — HQ Core, Jacob Posel, Luke Pierce, and future collaboration plays</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> cold outreach (that is the owning business lane's job); anyone already a client</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> fits the trade-route family with <code>timbuktu</code> and <code>baobab</code> -- people travelling together toward something.</div>
+      </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>Archived (reversible)</h2></summary>
+    <div class="sec-body">
+      <div class="cn-grid">
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">haw</span>
+          <span class="cn-status">archived 2026-08-29 (reversible — see haw.md for revival condition)</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> <strong>Human at Work</strong> (humanatwork.ai)</div>
+        <div class="cn-row"><strong>Covers:</strong> GTM for the humanatwork.ai product catalog: traffic + conversion. Implementation owner is the Lighthouse lane</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> consulting delivery; ghostwriting; the Studio channels; and, while archived, no active execution of any kind</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>Split / narrowed 2026-08-29</h2></summary>
+    <div class="sec-body">
+      <div class="cn-grid">
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">harvest</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> <strong>Catalyst Works</strong> (consulting only, since the 2026-08-29 split)</div>
+        <div class="cn-row"><strong>Covers:</strong> Catalyst Works consulting: Boubacar in the room, his time is the product. Inner Circle is its curriculum input. Recurring in-person events split out to <code>agora</code>, Signal Works split out to <code>sextant</code></div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> Signal Works (that is <code>sextant</code>); in-person workshops (that is <code>agora</code>); Ghost Works; Human at Work; Studio</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>Active revenue / business lanes</h2></summary>
+    <div class="sec-body">
+      <div class="cn-grid">
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">ghost</span>
+          <span class="cn-status">active, validation track</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> <strong>Ghost Works</strong> (its own business)</div>
+        <div class="cn-row"><strong>Covers:</strong> Ghost Works ghostwriting SKU validation; PGA is its curriculum input</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> Catalyst Works consulting; Signal Works; Human at Work products</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">studio</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> <strong>Studio</strong> (faceless agency)</div>
+        <div class="cn-row"><strong>Covers:</strong> faceless branded channels run by agents as adjacent revenue</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> Catalyst Works, Signal Works, Ghost Works or Human at Work content</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">bara-sandbox</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> internal</div>
+        <div class="cn-row"><strong>Covers:</strong> simulated client engagement sandbox for SW + CW, agent-run, internal only</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> real client engagements; anything client-visible</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>Platform &amp; infrastructure</h2></summary>
+    <div class="sec-body">
+      <div class="cn-grid">
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">atlas</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> agentsHQ platform</div>
+        <div class="cn-row"><strong>Covers:</strong> the autonomy layer that runs the pipeline while the laptop is off</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> revenue work of any kind; governance rules (that is compass)</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">atlas-second-brain</span>
+          <span class="cn-status">superseded 2026-08-24</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> agentsHQ platform</div>
+        <div class="cn-row"><strong>Covers:</strong> second-brain phase A spec. Live successor: <code>docs/governance/second-brain-standard-sys531.md</code></div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> current retrieval work — do not build against this</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">echo</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> agentsHQ platform</div>
+        <div class="cn-row"><strong>Covers:</strong> async partnership substrate: agent proposes, human acks, neither blocks</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> synchronous chat; the Gate's merge authority</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">compass</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> agentsHQ governance</div>
+        <div class="cn-row"><strong>Covers:</strong> where rules live, how they enforce, how they retire, anti-sprawl. <strong>Owns <code>docs/ROUTING.md</code> and the decision ledger</strong></div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> building anything revenue-bearing</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">beacon</span>
+          <span class="cn-status">planning</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> agentsHQ platform</div>
+        <div class="cn-row"><strong>Covers:</strong> agent-monitoring dashboard: live visibility into concurrent agent activity</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> the Gate; the task board; the Money Map</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">second-brain-graph</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> agentsHQ platform</div>
+        <div class="cn-row"><strong>Covers:</strong> memory-graph gap analysis, dream-cycle automation, graph explorer</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> the routing rule and the decision ledger (that is compass)</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">forge</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> agentsHQ meta</div>
+        <div class="cn-row"><strong>Covers:</strong> Path B pattern library: cloneable templates for self-running assets</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> any single asset built from a template — that belongs to its own lane</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> the sword-makers-reuse-the-forge framing, locked 2026-05-27.</div>
+      </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>Personal / idea-stage / deferred</h2></summary>
+    <div class="sec-body">
+      <div class="cn-grid">
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">timbuktu</span>
+          <span class="cn-status">active, idea-stage</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> personal / authority</div>
+        <div class="cn-row"><strong>Covers:</strong> the book corpus: verbatim quotes, stories, lived-experience anchors. <strong>Also the home of the mini-books track</strong></div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> client deliverables; social posts (those are content-board work)</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> the Africa-as-cradle-of-learning framing, locked 2026-05-27.</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">homelab</span>
+          <span class="cn-status">deferred to 2026-11-14+</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> personal</div>
+        <div class="cn-row"><strong>Covers:</strong> own-the-compute local AI workstation build</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> the VPS; any client infrastructure</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">atelier</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> agentsHQ / personal</div>
+        <div class="cn-row"><strong>Covers:</strong> portfolio of small focused apps built fast. First app: Baobab</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> client work, content channels, the platform itself</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">baobab</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> Atelier app-1</div>
+        <div class="cn-row"><strong>Covers:</strong> AI roleplay simulator: pitches, panels, client sessions, council voices. Private beta, Boubacar only</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> the Council skill itself; any other Atelier app</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>Master tracker</h2></summary>
+    <div class="sec-body">
+      <div class="cn-grid">
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">lighthouse</span>
+          <span class="cn-status">active</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> <strong>MASTER</strong></div>
+        <div class="cn-row"><strong>Covers:</strong> the master revenue sprint and single-pane. Every other roadmap feeds in</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> being a place to do work — it tracks, it does not execute</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>Satellite (external repo)</h2></summary>
+    <div class="sec-body">
+      <div class="cn-grid">
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">dashboards4sale</span>
+          <span class="cn-status">satellite-external</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> satellite venture</div>
+        <div class="cn-row"><strong>Covers:</strong> multilingual budget dashboards as a standalone product</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> anything inside this repo; code lives in its own repo</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> reason not recorded</div>
+      </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-9" open>
+    <summary><h2>Shipped / closed</h2></summary>
+    <div class="sec-body">
+      <div class="cn-grid">
+      <div class="cn-card">
+        <div class="cn-head">
+          <span class="cn-name">7day-challenge</span>
+          <span class="cn-status">shipped 2026-05-24</span>
+        </div>
+        <div class="cn-entity"><strong>Entity:</strong> Signal Works</div>
+        <div class="cn-row"><strong>Covers:</strong> AI Agency 7-Day Client Challenge, 2026-05-18 → 05-24. Outreach + offer-positioning lens. Renamed from <code>inner-circle</code> same day</div>
+        <div class="cn-row cn-not"><strong>Does NOT cover:</strong> anything ongoing; it is closed and never reused. <strong>Not <code>sextant</code></strong> — this was a one-time challenge, <code>sextant</code> is the standing Signal Works lane</div>
+        <div class="cn-row cn-reason"><strong>Why this name:</strong> Renamed from <code>inner-circle</code> the same day (2026-05-18) because the old codename did not tie to the challenge itself; the new name matches the mechanic (a 7-day challenge).</div>
+      </div>
+      </div>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Source of truth: <code>docs/roadmap/README.md</code> Codename Registry, agentsHQ repo. Ledger: <code>docs/decisions/log/2026-08.md</code>. Generated 2026-08-29 for review; the registry file itself remains authoritative if this page ever drifts.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
