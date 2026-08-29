@@ -16,3 +16,15 @@ version bumps alone told nobody what actually changed.
 ## v20 and earlier
 No changelog entry exists for these versions. See the git commit history against this file
 (`git log -- review/money-map-y0/index.html` in the boubacarbarry-site repo) for the raw record.
+
+## v22 -- 2026-08-29
+Fixed the two counters that disagreed in the same block: "2 done today" beside
+"0 of 21 on this list". Root cause: this morning's TL;DR row rewrite stripped the
+`CADENCE: DAILY` / `STATUS: STANDING` marker from five rows, and two more `-daily`
+rows never carried it, so those rows stopped landing on today's list. They stayed
+tickable (the tick keys off the id) but became uncountable (the list keyed off the
+text), so ticking one moved his order block and left the header at zero.
+Two changes: an id ending `-daily` is now treated as recurring regardless of its
+text, so the tick logic and the list logic ask the same question; and the header
+now names the gap when work finished today was carried from an earlier day.
+The seven rows were repaired in the database through the controlled writer.

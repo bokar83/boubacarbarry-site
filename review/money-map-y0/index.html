@@ -667,7 +667,7 @@
   </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v21 · 2026-08-29-13:37:39 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v22 · 2026-08-29-14:10:00 MT</div><!-- DEPLOY_STAMP_END -->
 
 
 
@@ -2542,7 +2542,19 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   function countLine(doneT, doneOnList, listLen){
     if (!REMOTE_OK) return 'count unavailable, board not read';
     var a = doneT + ' done today';
-    return listLen ? (a + ' · ' + doneOnList + ' of ' + listLen + ' on this list') : a;
+    if (!listLen) return a;
+    // The two numbers measure different things on purpose, and side by side with
+    // no explanation they read as a contradiction -- his words on 2026-08-29,
+    // seeing "2 done today" next to "0 of 21 on this list": "there's a
+    // discrepancy. You got to fix that." The gap is always the same thing: work
+    // finished today that was DATED an earlier day, which counts in the first
+    // number and then leaves this list. It is now named where he reads it,
+    // rather than in a footnote further down the page.
+    var line = a + ' · ' + doneOnList + ' of ' + listLen + ' on this list';
+    if (doneT > doneOnList){
+      line += ' (' + (doneT - doneOnList) + ' of today’s finished work was carried from an earlier day, so it is not on this list)';
+    }
+    return line;
   }
 
   function prettyDate(ds){
@@ -2777,7 +2789,25 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       // a one-off it read as one more overdue item every single day. It now
       // behaves exactly like the seeded daily rows: it lands on today, it
       // shows once, and a missed day does not stack.
-      if (STANDING_RE.test(String(val).slice(0, 400))){
+      // ---- AN ID THAT ENDS "-daily" IS A DAILY, MARKER OR NOT (2026-08-29) -
+      // The page had TWO different answers to "is this row recurring?" and they
+      // disagreed. doneKey() above asks the ID (PIN_RECURRING_RE, /-daily$/) and
+      // resets the tick every morning. This function asked the row's TEXT
+      // (STANDING_RE) and, on a no, refused to put the row on today at all.
+      //
+      // So a row whose id ends "-daily" but whose text lost or never carried
+      // "CADENCE: DAILY" was recurring for ticking and invisible for counting:
+      // it rendered only in his pinned order, never in today's list, and
+      // ticking it moved the pinned counter while the header stayed at zero.
+      // That is exactly what he saw on 2026-08-29: "2 done today" beside
+      // "0 of 21 on this list", in the same block, about the same tick.
+      //
+      // The text marker is free-text and a batch rewrite can drop it -- one did,
+      // that morning, to five rows. The id cannot be dropped by a rewrite. So
+      // the id is now the structural signal and the text is a hint, and the two
+      // functions ask the SAME question, which is the only way they can never
+      // disagree again.
+      if (PIN_RECURRING_RE.test(k) || STANDING_RE.test(String(val).slice(0, 400))){
         (byDay[dkey(new Date())] = byDay[dkey(new Date())] || []).push({ id: k, v: val, kind: kind, daily: true });
         continue;
       }
