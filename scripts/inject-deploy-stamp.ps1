@@ -10,11 +10,17 @@
 # writes a fresh one (refreshed timestamp), so it is safe to run repeatedly.
 #
 # Usage: .\scripts\inject-deploy-stamp.ps1 <path-to-html-file> [<version>]
-#   version: "v3", "3", or omitted (defaults to v1). A bare number gets a "v" prefix.
+#   version: "v3", "3", or omitted. When omitted, AUTO-BUMPS: reads the file's existing
+#   stamp (if any) and increments the numeric version by 1, rather than resetting to v1.
+#   This closes the original failure mode (SYS-fix 2026-08-29, money-map-y0 sat at v17
+#   through an unrelated same-day fix because the caller has to remember to pass a bumped
+#   number by hand, and on a page that is edited by direct commit rather than through
+#   publish-review.ps1, nobody was calling this script at all). A file with no existing
+#   stamp still defaults to v1 on first run.
 
 param(
     [Parameter(Mandatory)][string]$HtmlFile,
-    [string]$Version = "v1"
+    [string]$Version
 )
 
 Set-StrictMode -Version Latest
@@ -23,6 +29,22 @@ $ErrorActionPreference = "Stop"
 if (-not (Test-Path $HtmlFile)) {
     Write-Error "HTML file not found: $HtmlFile"
     exit 1
+}
+
+$VersionExplicit = $PSBoundParameters.ContainsKey('Version') -and [bool]$Version
+
+if (-not $VersionExplicit) {
+    # Auto-bump: pull the numeric version out of the file's current stamp, +1.
+    $existingRaw = Get-Content $HtmlFile -Raw -Encoding UTF8
+    $bumped = 1
+    # Match "...>v17 <anything>2026-..." -- deliberately agnostic about the separator
+    # character (middle-dot vs its HTML entity vs anything else) since only the leading
+    # v-number matters here.
+    if ($existingRaw -match '(?s)<!-- DEPLOY_STAMP_START -->.*?>\s*v(\d+)\b') {
+        $bumped = [int]$Matches[1] + 1
+    }
+    $Version = "v$bumped"
+    Write-Host "No -Version passed -- auto-bumped from existing stamp to $Version."
 }
 
 # Normalize version -> always "v<n>" form.
