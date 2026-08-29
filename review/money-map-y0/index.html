@@ -1408,6 +1408,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     <summary><span class="chev">&#9656;</span><span class="s-title">Revenue lanes (live)</span><span class="toggle-hint"></span></summary>
     <div class="sec-body">
       <p class="lede">Every revenue lane and KPI, read live from the money map. Motion switches show where each lane stands right now; KPIs show the targets and counters. Anything you change in the board shows here the moment it updates.</p>
+      <div id="wl-filter-bar" class="wl-filter-bar" role="group" aria-label="Filter by work lane"></div>
       <div id="revlanes-body" class="rl"><div class="rl-empty">Syncing lanes from the money map...</div></div>
     </div>
     <style>
@@ -1420,6 +1421,13 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       .rl .lr-status.st-bad { background:var(--red-soft); color:var(--red); border:1px solid var(--red-border); }
       .rl .lr-status.st-neut { background:var(--card-2); color:var(--muted); border:1px solid var(--line); }
       .rl .rl-empty { color:var(--faint); font-size:0.85rem; padding:0.4rem 0; }
+      /* Work-lane chip: what item/roadmap this action is tied to (2026-08-29). */
+      .wl-chip { display:inline-block; font-size:0.58rem; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; padding:0.1rem 0.4rem; border-radius:4px; background:var(--purple-soft); color:var(--purple); border:1px solid transparent; white-space:nowrap; }
+      .wl-chip.unassigned { background:var(--red-soft); color:var(--red); border:1px dashed var(--red-border); }
+      .wl-filter-bar { display:flex; flex-wrap:wrap; gap:0.35rem; margin:0 0 0.7rem; }
+      .wl-filter-bar button { font-size:0.68rem; font-weight:700; padding:0.28rem 0.6rem; border-radius:999px; border:1px solid var(--line); background:var(--card-2); color:var(--muted); cursor:pointer; }
+      .wl-filter-bar button.active { background:var(--ember); color:#fff; border-color:transparent; }
+      .wl-hidden { display:none !important; }
     </style>
   </details>
 
@@ -2038,6 +2046,39 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     });
   })();
 
+  // ---- LANE TAG (2026-08-29): what work is this action tied to? ----------
+  // His own words: "I see a lot of actions but I don't see what they're tied
+  // to... the action needs to have a tag or card so we can track what actions
+  // are tied to what items." A row carries its lane as a "LANE: <codename>"
+  // line inside the existing free-text value (no schema change to the flat
+  // board_id|item_id|value|updated_at KV table). Parsed out here, rendered as
+  // a short chip, and stripped from the displayed body so it never shows up
+  // twice. Codenames are the SAME ones used in docs/roadmap/README.md plus
+  // two proposed to Boubacar but not yet roadmap-registered (workshops,
+  // cowrie) -- see the handoff for why. Unknown/missing lane renders as
+  // UNASSIGNED, on purpose, never guessed.
+  var LANE_RE = /^\s*LANE:\s*([a-z0-9][a-z0-9-]*)\s*$/im;
+  var LANE_LABEL = {
+    'harvest': 'Harvest', 'ghost': 'Ghost', 'studio': 'Studio', 'atlas': 'Atlas',
+    'compass': 'Compass', 'echo': 'Echo', 'atelier': 'Atelier', 'forge': 'Forge',
+    'baobab': 'Baobab', 'tamtam': 'Tamtam', 'timbuktu': 'Timbuktu',
+    'homelab': 'Homelab', 'lighthouse': 'Lighthouse', 'haw': 'HAW',
+    'bara-sandbox': 'Bara Sandbox', 'second-brain-graph': 'Second Brain',
+    'workshops': 'Workshops', 'cowrie': 'Cowrie', 'unassigned': 'Unassigned'
+  };
+  function rlLaneOf(value){
+    var m = LANE_RE.exec(String(value || ''));
+    return m ? m[1].toLowerCase() : 'unassigned';
+  }
+  function rlStripLane(value){
+    return String(value || '').replace(LANE_RE, '').replace(/^\n+/, '');
+  }
+  function rlLaneChip(value){
+    var lane = rlLaneOf(value);
+    var label = LANE_LABEL[lane] || lane;
+    var cls = (lane === 'unassigned') ? 'wl-chip unassigned' : 'wl-chip';
+    return '<span class="' + cls + '" data-wl="' + rlEsc(lane) + '">' + rlEsc(label) + '</span>';
+  }
   // ---- initial load from Supabase: fetch all, render, then subscribe realtime ----
   // ---- Revenue lanes: render every status-* and kpi-* row live from `state` ----
   function rlEsc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[m]; }); }
@@ -2078,9 +2119,10 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     var tag = isKpi ? '<span class="lr-tag t-kpi">KPI</span>' : '<span class="lr-tag t-status">LANE</span>';
     var chipHtml = '';
     if (!isKpi){ var chip = rlStatusChip(value); chipHtml = '<span class="lr-status ' + chip.cls + '">' + rlEsc(chip.label) + '</span>'; }
-    return '<div class="lane-row"><div class="lr-head">' + tag +
+    return '<div class="lane-row" data-wlrow="' + rlEsc(rlLaneOf(value)) + '"><div class="lr-head">' + tag +
+      rlLaneChip(value) +
       '<span class="lr-name">' + rlEsc(name) + '</span>' + chipHtml +
-      '</div><div class="lr-body"><div class="lr-next">' + rlValueHtml(value) + '</div></div></div>';
+      '</div><div class="lr-body"><div class="lr-next">' + rlValueHtml(rlStripLane(value)) + '</div></div></div>';
   }
   // ---- DATED ACTIONS -----------------------------------------------------
   // Any status-* / kpi-* row whose item_id ends in -YYYY-MM-DD is a dated
@@ -2565,18 +2607,24 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     if (seed && seed.deadline && !done){
       age += '<span class="lr-deadline">by ' + prettyDate(seed.deadline) + '</span>';
     }
+    // Seed rows carry their own hand-authored lane chip inside seed.html
+    // already (the CW/SW/IC/PGA/Studio chip system built 2026-08-19 and
+    // earlier); only non-seed, database-driven rows need the new LANE: tag,
+    // so a row never shows two competing chips.
+    var wlLane = seed ? null : rlLaneOf(value);
     return '<div class="lane-row act-row' + (done ? ' done' : '') + (rolledFrom ? ' rolled' : '') +
-      ((seed && seed.deadline && !done) ? ' deadline' : '') + '" data-act="' + rlEsc(id) + '">' +
+      ((seed && seed.deadline && !done) ? ' deadline' : '') + '" data-act="' + rlEsc(id) + '"' +
+      (wlLane ? ' data-wlrow="' + rlEsc(wlLane) + '"' : '') + '>' +
       '<div class="lr-head">' +
         '<input type="checkbox" class="lr-check" data-done="' + rlEsc(id) + '"' + (done ? ' checked' : '') +
           ' aria-label="Mark done: ' + rlEsc(name.replace(/&[a-z#0-9]+;/gi, '')) + '">' +
-        tag + (rankOf(id) ? '<span class="lr-rank">His #' + rankOf(id) + '</span>' : '') +
+        tag + (seed ? '' : rlLaneChip(value)) + (rankOf(id) ? '<span class="lr-rank">His #' + rankOf(id) + '</span>' : '') +
         age + '<span class="lr-name">' + (seed ? name : rlEsc(name)) + '</span>' +
         '<button type="button" class="lr-notebtn' + (n ? ' has' : '') + '" data-notes="' + rlEsc(id) + '">Notes' + (n ? ' (' + n + ')' : '') + '</button>' +
       '</div>' +
       '<div class="lr-body">' +
         (function(){
-          var full = seed ? seed.html : '<div class="lr-next">' + rlValueHtml(value) + '</div>';
+          var full = seed ? seed.html : '<div class="lr-next">' + rlValueHtml(rlStripLane(value)) + '</div>';
           if (!brief) return full;
           return pinBriefHtml(id, full) || full;   // no brief on file: render as before
         })() +
@@ -3229,8 +3277,59 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     var allDated = [];
     dates.forEach(function(d){ byDay[d].forEach(function(r){ allDated.push(r.id); }); });
     registerNoteItems(allDated);
+
+    buildWlFilterBar();
+    applyWlFilter();
   }
   window.__y0_renderRevLanes = renderRevLanes;
+
+  // ---- LANE FILTER (2026-08-29) -------------------------------------------
+  // Cheapest version that genuinely works: one global filter over EVERY row
+  // this page renders that carries a lane (today's actions, coming up,
+  // earlier, closed, and the undated revenue-lanes list below), driven off
+  // the same data-wlrow attribute rlRow/rlActRow already stamp on each row.
+  // Deliberately NOT scoped to one section, so "show me only tamtam" or
+  // "only cowrie" works everywhere on the page at once. A full per-section
+  // grouped view is a bigger build and is written into the enhancement PRD
+  // instead of half-built here.
+  var WL_FILTER = 'all';
+  function buildWlFilterBar(){
+    var bar = document.getElementById('wl-filter-bar');
+    if (!bar) return;
+    var counts = {};
+    Array.prototype.forEach.call(document.querySelectorAll('[data-wlrow]'), function(el){
+      var lane = el.getAttribute('data-wlrow') || 'unassigned';
+      counts[lane] = (counts[lane] || 0) + 1;
+    });
+    var lanes = Object.keys(counts).sort(function(a, b){
+      if (a === 'unassigned') return 1;
+      if (b === 'unassigned') return -1;
+      return counts[b] - counts[a];
+    });
+    if (!lanes.length){ bar.innerHTML = ''; return; }
+    var total = lanes.reduce(function(s, l){ return s + counts[l]; }, 0);
+    var h = '<button type="button" data-wlf="all" class="' + (WL_FILTER === 'all' ? 'active' : '') + '">All (' + total + ')</button>';
+    lanes.forEach(function(l){
+      var label = LANE_LABEL[l] || l;
+      h += '<button type="button" data-wlf="' + rlEsc(l) + '" class="' + (WL_FILTER === l ? 'active' : '') + '">' + rlEsc(label) + ' (' + counts[l] + ')</button>';
+    });
+    bar.innerHTML = h;
+  }
+  function applyWlFilter(){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-wlrow]'), function(el){
+      var show = (WL_FILTER === 'all') || (el.getAttribute('data-wlrow') === WL_FILTER);
+      el.classList.toggle('wl-hidden', !show);
+    });
+  }
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('[data-wlf]');
+    if (!btn) return;
+    WL_FILTER = btn.getAttribute('data-wlf');
+    Array.prototype.forEach.call(document.querySelectorAll('#wl-filter-bar button'), function(b){
+      b.classList.toggle('active', b.getAttribute('data-wlf') === WL_FILTER);
+    });
+    applyWlFilter();
+  });
 
   // Reflect a done-flip in both copies of the row (Today + the list below)
   // without a full re-render, so a realtime tick from his phone never eats a
