@@ -1,0 +1,38 @@
+#!/bin/sh
+# pre-commit: re-stamp any staged review/**/index.html with a fresh deploy
+# stamp (scripts/inject-deploy-stamp.ps1) before the commit is created.
+#
+# WHY THIS EXISTS (2026-08-30): review/money-map-y0/index.html was committed
+# twice in one day (bc42dab, 026057a) via a direct `git commit` rather than
+# through scripts/publish-review.ps1 (the only caller of the injector), so
+# the on-page "last published" stamp sat stale at v24/2026-08-29 while the
+# file itself kept changing -- exactly the freshness signal the stamp exists
+# to give. This hook is the backstop: ANY commit that touches a review page's
+# HTML re-stamps it automatically, regardless of which script (or no script)
+# staged the change.
+#
+# Idempotent + safe to re-run: inject-deploy-stamp.ps1 strips its own old
+# marker block before writing a fresh one every time.
+
+set -e
+
+repo_root=$(git rev-parse --show-toplevel)
+staged_review_html=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^review/.*/index\.html$' || true)
+
+if [ -z "$staged_review_html" ]; then
+    exit 0
+fi
+
+pwsh_bin=$(command -v pwsh || command -v powershell || true)
+if [ -z "$pwsh_bin" ]; then
+    echo "pre-commit: pwsh/powershell not found on PATH -- skipping deploy-stamp refresh." >&2
+    echo "pre-commit: run scripts/inject-deploy-stamp.ps1 by hand before pushing." >&2
+    exit 0
+fi
+
+echo "$staged_review_html" | while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    echo "pre-commit: refreshing deploy stamp on $f"
+    "$pwsh_bin" -NoProfile -File "$repo_root/scripts/inject-deploy-stamp.ps1" "$repo_root/$f"
+    git add "$f"
+done
