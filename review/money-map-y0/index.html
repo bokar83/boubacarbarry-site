@@ -2423,15 +2423,16 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
             '<span class="dep"><b>Expected outcome:</b> the counter above reads five or more before any building happens. ' +
             '<b>Tick this once the day\'s touches are out</b>, and log the number itself in the ask counter, which is the gate and the streak. ' +
             '<b>If you miss a day:</b> it does not stack. The streak takes the hit and the next day starts clean.</span></div>' },
-    { base: 'act-daily-brandon',
-      name: 'Send Brandon the daily note',
-      html: '<div class="act-top"><span class="lane key">Every day</span><span class="lane cw">CW</span><span class="owner bou">You</span></div>' +
-            '<div class="act-text"><strong>Text Brandon. Every day, whatever the day held.</strong> ' +
-            'He is the accountability partner, which only works if the bad days get sent too. ' +
-            'Lead with the momentum and put a question back to him. ' +
-            '<span class="dep"><b>Expected outcome:</b> the day is spoken out loud to another human, which is the entire mechanism. ' +
-            '<b>If the day was thin:</b> send it anyway. A day with two people saying no is still a finished day and it still gets reported. ' +
-            '<b>If you miss a day:</b> it does not stack. Send today\'s.</span></div>' },
+    // REMOVED 2026-08-30 (Boubacar direct: "We do not send Brandon an end of day
+    // note."). This row duplicated the real, already-tracked recurring Brandon
+    // accountability message (Money Map row kpi-next-action-brandon-daily,
+    // rewritten each morning) and framed it as an END-OF-DAY report ("whatever
+    // the day held", "if the day was thin: send it anyway"), which is not how
+    // that message actually works -- it goes out in the morning, not as a
+    // look-back on the day. Historical done-act-daily-brandon-* rows in
+    // y0_money_map_state are left in place (archive, never delete); this only
+    // stops a new one from being generated today and every day going forward.
+    // See memory/feedback_no_brandon_end_of_day_note_2026_08_30.md.
     // 2026-08-29. Three faceless-channel warm-ups, approved together
     // ("approve the 3 channels and land the money map rows"). Kept short on
     // purpose, his own instruction the same day: TL;DR only, no note blocks --
@@ -3380,7 +3381,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   ];
   // First rule that matches wins, so the order of this list IS the taxonomy.
   var ACT_RULES = [
-    { key:'close',    re:/act-daily-brandon|-log$/ },
+    { key:'close',    re:/-log$/ },
     { key:'linkedin', re:/act-daily-li-/ },
     { key:'pga',      re:/pga|ghostwrit/i },
     { key:'channels', re:/warmup|warm-up|tiktok|instagram|x-youtube|youtube-handles|branding-mismatch|brand1/i },
@@ -4547,15 +4548,30 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     return;
   }
 
-  var state = readState();
   var restored = false;
-  details.forEach(function (d, i) {
+
+  // FIRST visit (no stored value) -> leave the author's markup alone, which the
+  // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+  // Pulled out to a named function and exposed on window (fix 2026-08-30) so
+  // code elsewhere that REBUILDS a section's <details> after the initial load
+  // -- e.g. money-map-y0's renderRevLanes(), which regenerates the "today's
+  // actions" groups every time a note save finishes a deferred re-render --
+  // can wire the freshly created element into this SAME fold memory instead
+  // of it silently defaulting open/closed. Before this fix the call site
+  // referenced window.__rf_register, but nothing ever defined it, so the
+  // `if (window.__rf_register)` guard there was always false: a group he had
+  // manually opened or closed lost that state on every rebuild, which is what
+  // read to him as "saving a note collapses the whole section."
+  function registerDetail(d, i) {
     var k = keyFor(d, i);
     d.setAttribute('data-rf-key', k);
-    // FIRST visit (no stored value) -> leave the author's markup alone, which the
-    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
-    if (Object.prototype.hasOwnProperty.call(state, k)) {
-      d.open = !!state[k];
+    // Read fresh, not the page-load snapshot in the outer `state` var: a
+    // group he toggled mid-session already wrote through to localStorage via
+    // the listener below, and a later rebuild has to see that write, not the
+    // value from when the page first loaded.
+    var live = readState();
+    if (Object.prototype.hasOwnProperty.call(live, k)) {
+      d.open = !!live[k];
       restored = true;
     }
     d.addEventListener('toggle', function () {
@@ -4564,7 +4580,20 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       writeState(s);
       syncFoldLabel();
     });
-  });
+    // A rebuild replaces the old node with a new one carrying the same
+    // rf-key. Swap it in place so "Collapse all" and anyOpen() keep seeing
+    // the live element instead of a detached one left over from before the
+    // rebuild.
+    var existingIdx = -1;
+    for (var j = 0; j < details.length; j++) {
+      if (details[j] !== d && details[j].getAttribute('data-rf-key') === k) { existingIdx = j; break; }
+    }
+    if (existingIdx >= 0) { details[existingIdx] = d; }
+    else if (details.indexOf(d) === -1) { details.push(d); }
+  }
+  window.__rf_register = registerDetail;
+
+  details.forEach(registerDetail);
 
   // ---- expand all / collapse all -----------------------------------------------
   var foldBtn = document.getElementById('rf-foldall');
