@@ -58,6 +58,24 @@
     .tag.y0 { background: #1f5d3f; color: #fff; border-color: transparent; }
     h1 { font-size: 1.85rem; font-weight: 850; letter-spacing: -0.035em; margin: 0.55rem 0 0.25rem; line-height: 1.08; color: var(--ink-strong); }
     .sub { color: var(--muted); font-size: 0.92rem; max-width: 62ch; }
+
+    /* ---- SHARED 12-WEEK PROGRESS GRAPH -- keep the Y0 + Y1 copies of this
+       block in sync (no shared-include mechanism exists in this static repo,
+       so this is deliberate, commented duplication, not drift). Basic
+       fill-only version, 2026-08-30 -- per-week color-by-outcome is a
+       documented future enhancement, not built here (see
+       memory/project_money_map_weekly_status_color_enhancement_2026_08_30.md
+       in agentsHQ). Never hardcodes a cycle's own dates: it reads
+       year-start-date / cycle-status from the same cycle-registry rows
+       already loaded into `state`, so this generalizes to y2/y3/... with
+       zero code changes, only a new registry row. ---- */
+    .wk12 { margin: 0.9rem 0 0.2rem; }
+    .wk12-track { display: flex; gap: 0.3rem; }
+    .wk12-seg { flex: 1 1 0; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--faint); transition: background 0.2s, border-color 0.2s, color 0.2s; }
+    .wk12-seg.filled { background: var(--ember); border-color: var(--ember); color: #141210; font-weight: 850; }
+    .wk12-seg.current { background: var(--ember-bright); border-color: var(--ember-bright); box-shadow: 0 0 0 2px rgba(255,122,69,0.35); color: #141210; }
+    .wk12-cap { margin-top: 0.4rem; font-size: 0.72rem; color: var(--muted); text-align: center; }
+    @media (max-width: 420px) { .wk12-seg { font-size: 0.58rem; border-radius: 5px; } .wk12-track { gap: 0.2rem; } }
     .doc-meta { font-size: 0.74rem; color: var(--faint); margin-top: 0.55rem; }
 
     /* SYNC STATUS PILL */
@@ -729,6 +747,12 @@
          notes failure must never be able to overwrite, or be overwritten by,
          a board failure. Both are data loss and both have to stay on screen. -->
     <div class="stale-banner notes-alarm" id="notesAlarm" hidden></div>
+
+    <!-- SHARED 12-WEEK PROGRESS GRAPH -- keep in sync with money-map-y1/index.html -->
+    <div class="wk12" id="wk12Bar" role="img" aria-label="12-week cycle progress">
+      <div class="wk12-track" id="wk12Track"></div>
+      <div class="wk12-cap" id="wk12Cap">&nbsp;</div>
+    </div>
   </header>
 
   <nav class="mini" id="jumpnav" aria-label="Jump">
@@ -1801,6 +1825,55 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   window.__y0_weekFor = function(s){ var a = String(s).split('-'); return weekFor(new Date(+a[0], +a[1] - 1, +a[2])); };
 
   var activeWeek = CURRENT_WEEK;   // declared up front: render functions run before the week-strip block
+
+  // ---- SHARED 12-WEEK PROGRESS GRAPH (keep this function in sync with the
+  // copy in review/money-map-y1/index.html). Basic fill-only version --
+  // per-week color-by-outcome is a documented future enhancement, not built
+  // here. Reads year-start-date / cycle-status straight from the `state`
+  // object this page already hydrates from Supabase -- never hardcodes a
+  // cycle's own dates, so this generalizes to y2/y3/... with zero code
+  // changes. `fallbackStatus` ('closed' for this archived Y0 board) is a
+  // per-page config value used only until/if the registry rows load, not a
+  // hardcoded date.
+  function renderWk12Bar(fallbackStatus){
+    var track = document.getElementById('wk12Track');
+    var cap = document.getElementById('wk12Cap');
+    if (!track) return;
+    var s = (typeof state !== 'undefined' && state) ? state : {};
+    var status = s['cycle-status'] || fallbackStatus || '';
+    function parseDateStr2(str){
+      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(str||''));
+      return m ? new Date(+m[1], +m[2]-1, +m[3]) : null;
+    }
+    var start = parseDateStr2(s['year-start-date']);
+    var now = new Date();
+    var filled, label;
+    if (status === 'closed'){
+      filled = 12; label = 'Closed · all 12 weeks complete';
+    } else if (!start || now < start){
+      filled = 0; label = 'Not started yet';
+    } else {
+      var wk = Math.floor((now - start) / 604800000) + 1;
+      filled = Math.max(0, Math.min(12, wk));
+      label = 'Week ' + filled + ' of 12 underway';
+    }
+    var mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var html = '';
+    for (var i = 1; i <= 12; i++){
+      var cls = 'wk12-seg';
+      if (i <= filled) cls += ' filled';
+      if (i === filled && status !== 'closed' && filled > 0) cls += ' current';
+      var dateLabel = '';
+      if (start){
+        var d = new Date(start.getTime() + (i-1)*604800000);
+        dateLabel = mos[d.getMonth()] + ' ' + d.getDate();
+      }
+      html += '<div class="' + cls + '" title="Week ' + i + (dateLabel ? ' · starts ' + dateLabel : '') + '">' + i + '</div>';
+    }
+    track.innerHTML = html;
+    if (cap) cap.textContent = label;
+  }
+  renderWk12Bar('closed'); // initial paint before any Supabase round trip -- Y0 is archived/closed
 
   // ---- live header date + week number, from the single source above ----
   (function(){
@@ -4308,6 +4381,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     renderConv();
     renderRevLanes();
     recomputeScorecard();
+    renderWk12Bar('closed');
   }
 
   if (sb){

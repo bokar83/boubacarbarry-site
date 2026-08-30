@@ -64,6 +64,24 @@
     .archive-note { margin-top: 0.85rem; padding: 0.7rem 0.9rem; border-radius: 10px; border: 1px solid var(--line); background: var(--card-2); font-size: 0.8rem; color: var(--muted); }
     .archive-note a { font-weight: 700; }
 
+    /* ---- SHARED 12-WEEK PROGRESS GRAPH -- keep the Y0 + Y1 copies of this
+       block in sync (no shared-include mechanism exists in this static repo,
+       so this is deliberate, commented duplication, not drift). Basic
+       fill-only version, 2026-08-30 -- per-week color-by-outcome is a
+       documented future enhancement, not built here (see
+       memory/project_money_map_weekly_status_color_enhancement_2026_08_30.md
+       in agentsHQ). Never hardcodes a cycle's own dates: it reads
+       year-start-date / cycle-status from the same cycle-registry rows
+       already loaded into `state`, so this generalizes to y2/y3/... with
+       zero code changes, only a new registry row. ---- */
+    .wk12 { margin: 0.9rem 0 0.2rem; }
+    .wk12-track { display: flex; gap: 0.3rem; }
+    .wk12-seg { flex: 1 1 0; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--faint); transition: background 0.2s, border-color 0.2s, color 0.2s; }
+    .wk12-seg.filled { background: var(--ember); border-color: var(--ember); color: #141210; font-weight: 850; }
+    .wk12-seg.current { background: var(--ember-bright); border-color: var(--ember-bright); box-shadow: 0 0 0 2px rgba(255,122,69,0.35); color: #141210; }
+    .wk12-cap { margin-top: 0.4rem; font-size: 0.72rem; color: var(--muted); text-align: center; }
+    @media (max-width: 420px) { .wk12-seg { font-size: 0.58rem; border-radius: 5px; } .wk12-track { gap: 0.2rem; } }
+
     section { margin-top: 1.7rem; padding-top: 1.1rem; border-top: 1px solid var(--line); }
     .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.9rem; }
     .lede { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.7rem; max-width: 62ch; }
@@ -117,6 +135,12 @@
     <div id="freshness" class="freshness" data-state="unknown">Board freshness: <span class="fr-strong">checking&hellip;</span></div>
     <div id="staleBanner" class="stale-banner" hidden></div>
     <div class="archive-note">Year Zero is closed and kept exactly as it ended, for the record: <a href="/review/money-map-y0/">boubacarbarry.com/review/money-map-y0/</a>. This page is now the live one.</div>
+
+    <!-- SHARED 12-WEEK PROGRESS GRAPH -- keep in sync with money-map-y0/index.html -->
+    <div class="wk12" id="wk12Bar" role="img" aria-label="12-week cycle progress">
+      <div class="wk12-track" id="wk12Track"></div>
+      <div class="wk12-cap" id="wk12Cap">&nbsp;</div>
+    </div>
   </div>
 
   <section>
@@ -247,6 +271,49 @@ year-review-date          | 2026-11-24  (day after close, review only)<button cl
     return new Date(+m[1], +m[2]-1, +m[3]);
   }
 
+  // ---- SHARED 12-WEEK PROGRESS GRAPH (keep this function in sync with the
+  // copy in review/money-map-y0/index.html). Basic fill-only version --
+  // per-week color-by-outcome is a documented future enhancement, not built
+  // here. Reads year-start-date / cycle-status straight from the already-
+  // loaded cycle-registry `state` object -- never hardcodes a cycle's own
+  // dates, so this generalizes to y2/y3/... with zero code changes.
+  // `fallbackStatus` lets a page assert its own known state (e.g. 'closed'
+  // for an archived board) if the registry hasn't loaded yet or lacks a
+  // cycle-status row -- that is a per-page config value, not a hardcoded date.
+  function renderWk12Bar(fallbackStatus){
+    var track = document.getElementById('wk12Track');
+    var cap = document.getElementById('wk12Cap');
+    if (!track) return;
+    var status = state['cycle-status'] || fallbackStatus || '';
+    var start = parseDateStr(state['year-start-date'], YEAR_START);
+    var now = new Date();
+    var filled, label;
+    if (status === 'closed'){
+      filled = 12; label = 'Closed · all 12 weeks complete';
+    } else if (!start || now < start){
+      filled = 0; label = 'Not started yet';
+    } else {
+      var wk = Math.floor((now - start) / 604800000) + 1;
+      filled = Math.max(0, Math.min(12, wk));
+      label = 'Week ' + filled + ' of 12 underway';
+    }
+    var mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var html = '';
+    for (var i = 1; i <= 12; i++){
+      var cls = 'wk12-seg';
+      if (i <= filled) cls += ' filled';
+      if (i === filled && status !== 'closed' && filled > 0) cls += ' current';
+      var dateLabel = '';
+      if (start){
+        var d = new Date(start.getTime() + (i-1)*604800000);
+        dateLabel = mos[d.getMonth()] + ' ' + d.getDate();
+      }
+      html += '<div class="' + cls + '" title="Week ' + i + (dateLabel ? ' · starts ' + dateLabel : '') + '">' + i + '</div>';
+    }
+    track.innerHTML = html;
+    if (cap) cap.textContent = label;
+  }
+
   function renderHeaderAndWeek(){
     var start = parseDateStr(state['year-start-date'], YEAR_START);
     var end = parseDateStr(state['year-end-date'], YEAR_END);
@@ -301,6 +368,8 @@ year-review-date          | 2026-11-24  (day after close, review only)<button cl
     var convN = parseInt(state[convKey], 10); if (isNaN(convN)) convN = 0;
     var cc = document.getElementById('convCount'); if (cc) cc.textContent = String(convN);
     var cdEl = document.getElementById('convDate'); if (cdEl) cdEl.textContent = days[now.getDay()] + ' ' + mos[now.getMonth()] + ' ' + now.getDate();
+
+    renderWk12Bar();
   }
 
   function applyToDom(item, value){
