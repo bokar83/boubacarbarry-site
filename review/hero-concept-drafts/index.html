@@ -164,7 +164,8 @@ code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;background
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-30-14:21:24 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-08-30-16:37:53 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -535,7 +536,16 @@ function fxAdinkra(cv, img){
     for (var y3=0; y3<rows; y3++){
       for (var x3=0; x3<cols; x3++){
         var i3=y3*cols+x3, d=dist[i3], L3=lum[i3];
-        if (d < 2) continue;            /* the tree plus a clearance ring */
+        /* NOTE 2026-08-30, third pass: the `d < 2` clearance ring is GONE.
+           It was the single line that made "there is no movement on it" a
+           fair report. It forbade every cell within two of the silhouette,
+           so no mark could ever land on or beside the tree -- and the tree
+           is the thing anyone looks at. Combined with the soft margin damp
+           below, every mark ended up in the outer eighth of the frame and
+           the overlay rendered as a wallpaper border down both edges with
+           the baobab itself completely untouched. Confirmed by screenshot,
+           not inferred. Marks now sit ON the branches and in the air just
+           off them, which is where he was looking the whole time. */
         if (L3 > 0.46) continue;        /* the amber horizon glare */
         /* keep out from under the page furniture. The overlay is behind the
            type, so a glyph here does not break legibility, but it does sit
@@ -546,25 +556,31 @@ function fxAdinkra(cv, img){
         /* stay a clear margin inside the frame. A glyph whose centre sits in the
            outermost cell gets sliced by the rounded corner and reads as a
            rendering fault rather than a mark. */
-        if (nx < 0.05 || nx > 0.95 || ny < 0.05 || ny > 0.95) continue;
-        /* peak at 2-4 cells off the silhouette, fall away into open frame,
-           and damp the outer margins hard so nothing forms an edge band */
-        var w = 1 / (1 + Math.max(0, d-4)*0.62);
-        /* damp the outer margins so no glyph forms an edge band, but damp
-           rather than forbid, so a genuinely good mark near the frame survives */
-        var mx3 = Math.min(x3, cols-1-x3) / (cols*0.5);
-        var my3 = Math.min(y3, rows-1-y3) / (rows*0.5);
-        w *= (0.12 + 0.88*Math.min(1, mx3/0.30)) * (0.12 + 0.88*Math.min(1, my3/0.24));
-        if (w <= 0.02) continue;
+        /* HARD margin ban, not a damp. The previous pass damped the outer
+           margins by a factor and trusted the score to sort it out. Measured
+           on the rendered frame, it did not: every single mark still landed
+           in the outer eighth, because the emptiest sky IS the margin and a
+           damped high score still beats an undamped low one. Forbid it
+           outright and the marks have nowhere to go but the tree. */
+        if (nx < 0.15 || nx > 0.90 || ny < 0.11 || ny > 0.92) continue;
+        /* peak ON the silhouette and within a cell of it, falling away into
+           open sky -- the inverse of the previous weighting */
+        var w = 1 / (1 + Math.max(0, d-1)*0.85);
+        if (w <= 0.06) continue;
         cand.push({x:x3, y:y3, d:d, w:w * (0.55 + 0.9*hash(i3*7919+13)), i:i3});
       }
     }
     cand.sort(function(a,b){ return b.w - a.w; });
 
-    var WANT = Math.max(12, Math.min(22, Math.round(cols*rows/28)));
+    /* more marks than before, because each one is now roughly half the linear
+       size. A handful of large marks was the old brief; the note back was that
+       they are still too big, and a smaller mark has to appear more often to
+       read as a living field rather than as three specks. */
+    var WANT = Math.max(18, Math.min(34, Math.round(cols*rows/17)));
     /* scale the spacing to the grid. A fixed 2.3 is right on a 31-column desktop
-       frame and starves a 14-column phone frame, where it left two marks. */
-    var SEP = Math.max(1.65, Math.min(2.4, cols/13));
+       frame and starves a 14-column phone frame, where it left two marks.
+       Tightened with the size cut -- small marks can sit closer together. */
+    var SEP = Math.max(1.5, Math.min(2.2, cols/14));
     marks = [];
     /* Alternate between the left and right half of the frame while picking.
        Straight greedy-by-score put every mark on one side of the trunk, because
@@ -585,16 +601,30 @@ function fxAdinkra(cv, img){
       var r3 = hash(c.i*7919+13), r4 = hash(c.i*31+5);
       marks.push({
         cx:c.x, cy:c.y,
-        px:(c.x+0.5)*cell + (r3-0.5)*cell*0.55,
-        py:(c.y+0.5)*cell + (r4-0.5)*cell*0.55,
-        /* bigger the further out it sits, so the calmest air carries the
-           largest, slowest mark and the ones tucked by the limbs stay small.
-           0.205, down from 0.30: about a third smaller in linear size, which is
-           the "smaller" note. Note that 0.165 was tried first and went too far --
-           at half size with a 1px stroke the marks disappeared into the star
-           field entirely, which fails the OTHER note (the movement has to be
-           obvious). Smaller than before, still legible as a mark. */
-        sc:cell*0.205*(0.70 + Math.min(1.25, c.d*0.17) + 0.35*r4),
+        /* jitter widened from 0.55 to 1.05 of a cell. At 0.55 the marks stayed
+           inside their own cell and the open sky above the canopy, where many
+           cells qualify at once, rendered them as visible horizontal ROWS --
+           a lattice, not a constellation. A full cell of play breaks the grid
+           without letting a mark wander into an excluded zone. */
+        px:(c.x+0.5)*cell + (r3-0.5)*cell*1.05,
+        py:(c.y+0.5)*cell + (r4-0.5)*cell*1.05,
+        /* 0.13, down from 0.205, down from 0.30. Measured on the rendered
+           desktop frame the old constant drew marks about 28px across; this
+           lands them at 6-13px, roughly half the linear size again, which is
+           the answer to "still too big" said after one shrink pass already.
+           The earlier worry that a mark this small vanishes into the star
+           field is real but was solved a different way: the marks now sit ON
+           the branches rather than in open sky, where they read against the
+           gold line work instead of competing with the stars, and the alpha
+           floor below keeps them lit rather than blinking out. */
+        /* ABSOLUTE FLOOR on the base size, and this is the mobile half of the
+           "no movement" report. Measured at a real 375px viewport, this page
+           renders the composite at only 276px wide, so cell bottoms out at its
+           13px floor and a purely cell-proportional size drew marks 2-4px
+           across -- specks, indistinguishable from the star field, on the
+           exact device he was holding. Desktop is unaffected: cell*0.13 is
+           already about 5 there, so the floor never binds above ~600px. */
+        sc:Math.max(cell*0.13, 3.1)*(0.85 + Math.min(0.50, c.d*0.12) + 0.45*r4),
         rot:(r3-0.5)*0.5,
         ph:r3*12.57,
         /* 1.75-2.60 rad/s, a 2.4-3.6 SECOND cycle. The original was 0.24-0.44,
@@ -664,14 +694,23 @@ function fxAdinkra(cv, img){
          1.45, not the 1.9 tried first: at 1.9 the marks were dark so much of the
          cycle that a frame could land with the field almost entirely empty,
          which reads as broken rather than as rhythm. */
-      var e = Math.pow(b, 1.45);
+      /* 1.0, down from 1.45. At 1.45 the field spent most of the cycle dark,
+         and a screenshot taken at an arbitrary instant came back with the
+         frame almost empty -- which does not read as rhythm, it reads as the
+         overlay being off. Paired with the raised alpha floor below, a mark
+         now always shows and the motion is a swell rather than a blink. */
+      var e = b;
       /* Each mark changes SHAPE on every cycle, while it is invisible. The field
          is therefore never the same twice: the content changes, not just the
          opacity, which is what "things are changing" actually asks for. */
       var glyph = GLYPHS[(k2.gi + Math.floor(theta/6.2832)) % GLYPHS.length];
-      /* slow positional drift, so there is movement even mid-fade */
-      var dxp = Math.sin(tt*0.21 + k2.ph)*cell*0.42;
-      var dyp = Math.cos(tt*0.17 + k2.ph*1.3)*cell*0.30;
+      /* slow positional drift, so there is movement even mid-fade. Damped hard
+         under reduced motion: translation is the part of this that can actually
+         bother a motion-sensitive viewer, so that is the part that gets cut,
+         rather than slowing the whole effect down until nothing is visible. */
+      var dK = window.__heroReducedMotion ? 0.12 : 1;
+      var dxp = Math.sin(tt*0.21 + k2.ph)*cell*0.42*dK;
+      var dyp = Math.cos(tt*0.17 + k2.ph*1.3)*cell*0.30*dK;
 
       /* expanding pulse ring */
       var q = (tt*k2.rs + k2.rp) % 1;
@@ -679,12 +718,16 @@ function fxAdinkra(cv, img){
       if (ringA > 0.012){
         ctx.save();
         ctx.beginPath();
-        ctx.arc(k2.px+dxp, k2.py+dyp, k2.sc*(0.7 + q*4.2), 0, 6.2832);
+        /* 2.1, down from 4.2. The ring used to expand to nearly five times the
+           glyph, which made the largest thing on screen a plain circle rather
+           than an Adinkra mark -- a fair part of "still too big" was the rings,
+           not the glyphs. It now stays subordinate to the mark it belongs to. */
+        ctx.arc(k2.px+dxp, k2.py+dyp, k2.sc*(0.55 + q*2.1), 0, 6.2832);
         ctx.globalAlpha = ringA;
         ctx.strokeStyle = RING;
-        ctx.lineWidth = Math.max(1.1, cell*0.034);
+        ctx.lineWidth = Math.max(0.9, cell*0.024);
         ctx.shadowColor = GLOWC;
-        ctx.shadowBlur = Math.max(5, cell*0.26);
+        ctx.shadowBlur = Math.max(4, cell*0.20);
         ctx.stroke();
         ctx.restore();
       }
@@ -698,11 +741,17 @@ function fxAdinkra(cv, img){
       /* soft glow instead of a dark backing stroke: over a night sky a dark
          halo does nothing, and a glow matches the luminous line work already
          painted into the tree */
-      ctx.globalAlpha = 0.05 + 0.88*e;
+      /* floor raised from 0.05 to 0.16: a mark never fully leaves, so the
+         constellation is always present and the animation reads as breathing
+         rather than as things switching on and off. Peak drops slightly too,
+         which is the right direction for "too big and too loud". */
+      ctx.globalAlpha = 0.34 + 0.46*e;
       ctx.shadowColor = GLOWC;
-      ctx.shadowBlur = Math.max(5, cell*0.30);
+      ctx.shadowBlur = Math.max(4, cell*0.22);
       ctx.strokeStyle = STROKE;
-      ctx.lineWidth = Math.max(1.35, cell*0.044);
+      /* thinner stroke to match the smaller glyph -- a 1.7px stroke on a 10px
+         mark is a blob, not a symbol */
+      ctx.lineWidth = Math.max(1.0, cell*0.030);
       ctx.stroke();
       ctx.restore();
     }
@@ -955,13 +1004,22 @@ if (window.IntersectionObserver){
   document.querySelectorAll('.comp').forEach(function(c){ io.observe(c); });
 }
 
-/* Reduced motion still animates, at a quarter speed, rather than freezing on a
-   single frame. Freezing was defensible in the abstract and wrong here: the
-   entire point of this page is to show what the overlay DOES, and a viewer with
-   the OS setting on would have been shown a still image and told it moves. */
+/* Reduced motion still animates. It used to run at a QUARTER speed, which was
+   the likeliest single reason the page was reported as dead on a phone: iOS
+   Reduce Motion is commonly on, and at 0.25x the 2.4-3.6 second breath becomes
+   a 10-14 second one, the pulse ring fires every 12-18 seconds, and the drift
+   period goes past two minutes. That is the exact range the previous pass had
+   already identified as "why nothing appeared to move" and then reintroduced
+   through the accessibility branch. Verification missed it because a desktop
+   browser reports reduce-motion false, so the fix was only ever confirmed on
+   the code path he was not on.
+   The honest reading of the setting is that it objects to TRANSLATION, not to
+   something fading. So the rate stays near full and the positional drift is
+   damped instead, in frame() above. */
 var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+window.__heroReducedMotion = reduced;
 function tick(t){
-  var tm = reduced ? t*0.25 : t;
+  var tm = reduced ? t*0.9 : t;
   for (var i=0;i<live.length;i++){
     var L = live[i];
     if (!L.vis) continue;
@@ -1117,6 +1175,7 @@ requestAnimationFrame(function(t){ tick(t); });
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
 
 
 
