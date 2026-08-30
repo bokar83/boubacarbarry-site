@@ -109,6 +109,23 @@ details>summary:hover{background:#221D18}
 .comp .mini{display:flex;gap:clamp(10px,1.6vw,22px);font-size:clamp(9px,1.05vw,12px);letter-spacing:.16em;text-transform:uppercase;opacity:.72}
 .comp .line{max-width:22ch;font-size:clamp(17px,3.1vw,40px);line-height:1.18;letter-spacing:-.015em;margin:0}
 
+/* The plate is a still image standing in for what would be a looped video in a
+   real build, and a still base under a moving overlay still reads as "not
+   moving" -- the reference site's scene itself drifts and grows. So the plate
+   gets a slow camera: a 26s scale and pan that never returns to where it
+   started within a glance. Scoped to concept 1; concept 2 resolves its own
+   whole frame and does not need it. */
+@keyframes plateDrift{
+  0%   { transform:scale(1.00) translate(0,0); }
+  50%  { transform:scale(1.055) translate(-1.1%,-0.8%); }
+  100% { transform:scale(1.015) translate(0.9%,0.4%); }
+}
+#c1 .comp img.plate{
+  animation:plateDrift 26s ease-in-out infinite alternate;
+  transform-origin:52% 58%;
+  will-change:transform;
+}
+
 /* overlay switch (concept 1 only) */
 .fxswitch{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .fxswitch .fxlabel{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-right:2px}
@@ -176,7 +193,7 @@ code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;background
         <li><span class="k">2 &middot; Reveal through static.</span> The Fouta Djallon at dawn, buried under a field of noise that resolves into the painting, then dissolves and does it again. Unchanged.</li>
         <li><span class="k">No wordmark, no location line.</span> Both mocks now have an empty upper-left corner waiting for a real logo, and neither carries a place name above the headline.</li>
         <li><span class="k">The base art is a still image.</span> In a finished build this is a looping video. The movement you see is the overlay, which is the part that carries the effect anyway.</li>
-        <li><span class="k">The movement on the baobab was real in the code and invisible on the screen.</span> It ran every frame, on the right element, with nothing switched off. The problem was the numbers: a fourteen to twenty-six second breath, moving under one percent of the frame, at a fifth opacity. Measured on the live page, the lit pixels changed by 0.7 percent over four and a half seconds. Two screenshots three seconds apart came back identical and they were right to. It now breathes on a three to six second cycle, fades out and back rather than shimmering in a narrow band, and throws a pulse ring.</li>
+        <li><span class="k">The movement on the baobab was real in the code and invisible on the screen.</span> It ran every frame, on the right element, with nothing switched off. The problem was the numbers: a fourteen to twenty-six second breath, moving under one percent of the frame, at a fifth opacity. Measured on the live page, the lit pixels changed by 0.7 percent over four and a half seconds. Two screenshots three seconds apart came back identical and they were right to. It now runs on a two to four second cycle, marks arrive and vanish instead of shimmering in a narrow band, and each one throws a pulse ring and comes back as a different shape. The painting itself also drifts and grows on a slow camera now, because a still base under a moving overlay still reads as a still frame.</li>
         <li><span class="k">The big glyphs are gone, and there is a switch above the first mock.</span> Option A is the same marks about a third smaller and moved off gold onto a pale silver. Option B drops the drawn shapes for small monospace characters that follow the tree, closer to what you pointed at. Flip between them on the same plate.</li>
         <li><span class="k">Next.</span> Tell me which concept, and for the baobab, A or B. Nothing here is a committed direction.</li>
       </ul>
@@ -210,7 +227,7 @@ code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;background
         <div><b>Art</b><span>One baobab at night, star field and Milky Way behind it, amber horizon low on the frame. Gold circuitry already painted into the trunk and the limbs.</span></div>
         <div><b>Overlay</b><span>Two options on the same plate, switchable above. A, the marks you already saw, now about a third smaller and moved off gold onto a pale cool silver. B, small monospace characters instead of drawn shapes.</span></div>
         <div><b>Technique</b><span>A places marks in the QUIET parts of the frame, pushed off the tree, so they answer the painted line work instead of stacking on it. B does the opposite on purpose: the characters cling to the silhouette, because a 9px character at a quarter opacity cannot fight the branches the way a drawn glyph can.</span></div>
-        <div><b>Movement</b><span>Each mark fades right out and back in on a three to six second breath, staggered, and throws an expanding ring. B churns its characters and runs a soft band down the frame every few seconds. Both are meant to be noticed without looking for them.</span></div>
+        <div><b>Movement</b><span>The plate itself now drifts and grows on a slow twenty six second camera, so the scene is moving and not just the overlay. On top of that, marks arrive and vanish on a two to four second cycle, drift as they go, throw an expanding ring, and change shape each time they come back, so the field is never the same twice. B churns its characters and runs a soft band down the frame. You should catch all of it inside a second or two of looking.</span></div>
         <div><b>Mood</b><span>Still, nocturnal, patient. The tech signal is already in the painting; the overlay is what surrounds it.</span></div>
       </div>
 
@@ -579,17 +596,19 @@ function fxAdinkra(cv, img){
         sc:cell*0.205*(0.70 + Math.min(1.25, c.d*0.17) + 0.35*r4),
         rot:(r3-0.5)*0.5,
         ph:r3*12.57,
-        /* 1.05-1.90 rad/s, a 3.3-6.0 SECOND breath. The old 0.24-0.44 was a
-           14-26 second period, which is why nothing appeared to move: in any
-           3 second look each mark advanced through ~10% of one cycle. */
-        sp:1.05 + r4*0.85,
+        /* 1.75-2.60 rad/s, a 2.4-3.6 SECOND cycle. The original was 0.24-0.44,
+           a 14-26 second period, which is why nothing appeared to move: in a
+           two second glance a mark advanced through under a tenth of a cycle.
+           At this rate a mark completes a full appear-and-vanish inside the
+           couple of seconds someone actually looks at the frame. */
+        sp:1.75 + r4*0.85,
         /* the pulse ring runs on its own clock, 2.9-4.5s per emission */
         rp:r4*1.0,
         rs:0.22 + r3*0.12,
         /* step the glyph index by 7 across a set of 10: coprime, so all ten
            shapes get used before any repeats. Picking by hash gave a frame of
            near-identical crosses, because the hash clusters at low indices. */
-        g:GLYPHS[(marks.length*7 + Math.floor(r4*3)) % GLYPHS.length]
+        gi:(marks.length*7 + Math.floor(r4*3)) % GLYPHS.length
       });
     }
   }
@@ -634,9 +653,24 @@ function fxAdinkra(cv, img){
     var tt = t/1000;
     for (var m=0;m<marks.length;m++){
       var k2=marks[m];
-      /* independent breath, staggered by phase so the set never pulses in unison */
-      var b = 0.5 + 0.5*Math.sin(tt*k2.sp + k2.ph);
-      var e = b*b*(3-2*b);   /* smoothstep: longer at the ends, snappier through the middle */
+      /* independent cycle, staggered by phase so the set never pulses in unison */
+      var theta = tt*k2.sp + k2.ph;
+      var b = 0.5 + 0.5*Math.sin(theta);
+      /* pow, not smoothstep. Smoothstep spends most of its time mid-range, which
+         is a breath. Raising the power holds the mark near dark for most of the
+         cycle and then brings it up hard, which is a mark APPEARING and going
+         again -- the constellation read, and the thing you catch in a glance.
+         1.45, not the 1.9 tried first: at 1.9 the marks were dark so much of the
+         cycle that a frame could land with the field almost entirely empty,
+         which reads as broken rather than as rhythm. */
+      var e = Math.pow(b, 1.45);
+      /* Each mark changes SHAPE on every cycle, while it is invisible. The field
+         is therefore never the same twice: the content changes, not just the
+         opacity, which is what "things are changing" actually asks for. */
+      var glyph = GLYPHS[(k2.gi + Math.floor(theta/6.2832)) % GLYPHS.length];
+      /* slow positional drift, so there is movement even mid-fade */
+      var dxp = Math.sin(tt*0.21 + k2.ph)*cell*0.42;
+      var dyp = Math.cos(tt*0.17 + k2.ph*1.3)*cell*0.30;
 
       /* expanding pulse ring */
       var q = (tt*k2.rs + k2.rp) % 1;
@@ -644,7 +678,7 @@ function fxAdinkra(cv, img){
       if (ringA > 0.012){
         ctx.save();
         ctx.beginPath();
-        ctx.arc(k2.px, k2.py, k2.sc*(0.7 + q*4.2), 0, 6.2832);
+        ctx.arc(k2.px+dxp, k2.py+dyp, k2.sc*(0.7 + q*4.2), 0, 6.2832);
         ctx.globalAlpha = ringA;
         ctx.strokeStyle = RING;
         ctx.lineWidth = Math.max(1.1, cell*0.034);
@@ -655,13 +689,15 @@ function fxAdinkra(cv, img){
       }
 
       ctx.save();
-      ctx.translate(k2.px, k2.py);
-      ctx.rotate(k2.rot + Math.sin(tt*0.55 + k2.ph)*0.14);
-      ctx.beginPath(); k2.g(ctx, k2.sc*(0.87 + 0.26*e));
+      ctx.translate(k2.px+dxp, k2.py+dyp);
+      ctx.rotate(k2.rot + Math.sin(tt*0.55 + k2.ph)*0.18);
+      /* the mark also grows as it arrives, so it reads as coming toward you
+         rather than simply getting brighter in place */
+      ctx.beginPath(); glyph(ctx, k2.sc*(0.62 + 0.55*e));
       /* soft glow instead of a dark backing stroke: over a night sky a dark
          halo does nothing, and a glow matches the luminous line work already
          painted into the tree */
-      ctx.globalAlpha = 0.04 + 0.80*e;
+      ctx.globalAlpha = 0.05 + 0.88*e;
       ctx.shadowColor = GLOWC;
       ctx.shadowBlur = Math.max(5, cell*0.30);
       ctx.strokeStyle = STROKE;
