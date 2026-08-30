@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Maturity Review</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #eef1f3;
+    --panel: #ffffff;
+    --ink: #141a20;
+    --ink-soft: #4b5560;
+    --ink-faint: #7d868f;
+    --rule: #d4dade;
+    --accent: #0d7d84;
+    --accent-soft: #dcedee;
+    --has: #1f7a4d;
+    --has-bg: #e2f0e7;
+    --partial: #9a6a12;
+    --partial-bg: #f4ead2;
+    --lacks: #a13636;
+    --lacks-bg: #f5dfdf;
+    --code-bg: #eef2f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1418;
+      --panel: #161c21;
+      --ink: #e7ecee;
+      --ink-soft: #aab4ba;
+      --ink-faint: #7c868c;
+      --rule: #2a3239;
+      --accent: #4fc1c9;
+      --accent-soft: #17282a;
+      --has: #6fce9a;
+      --has-bg: #16281f;
+      --partial: #e0b458;
+      --partial-bg: #2c250f;
+      --lacks: #e08080;
+      --lacks-bg: #2c1818;
+      --code-bg: #10161a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1418;
+    --panel: #161c21;
+    --ink: #e7ecee;
+    --ink-soft: #aab4ba;
+    --ink-faint: #7c868c;
+    --rule: #2a3239;
+    --accent: #4fc1c9;
+    --accent-soft: #17282a;
+    --has: #6fce9a;
+    --has-bg: #16281f;
+    --partial: #e0b458;
+    --partial-bg: #2c250f;
+    --lacks: #e08080;
+    --lacks-bg: #2c1818;
+    --code-bg: #10161a;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 68px; }
+  html, body { background: var(--bg); }
+  body {
+    color: var(--ink);
+    font-family: "Source Sans 3", system-ui, sans-serif;
+    font-size: 16.5px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0 0 120px;
+  }
+  .page { max-width: 800px; margin: 0 auto; padding: 0 22px; }
+
+  .nav-bar {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule); padding: 10px 0;
+  }
+  .nav-inner { max-width: 800px; margin: 0 auto; padding: 0 22px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .nav-title { font-family: "JetBrains Mono", monospace; font-weight: 600; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-right: auto; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: 6px; }
+  .nav-links a { color: var(--ink-soft); text-decoration: none; font-family: "JetBrains Mono", monospace; font-size: 11px; border: 1px solid var(--rule); border-radius: 999px; padding: 5px 10px; background: var(--panel); white-space: nowrap; }
+  .nav-links a:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-toggle { display: none; appearance: none; cursor: pointer; background: var(--panel); color: var(--ink); border: 1px solid var(--rule); border-radius: 8px; padding: 7px 11px; font-size: 1rem; min-width: 40px; min-height: 36px; }
+  @media (max-width: 720px) {
+    .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+    .nav-links { display: none; flex-direction: column; align-items: stretch; gap: 6px; width: 100%; margin-top: 8px; }
+    .nav-bar.open .nav-links { display: flex; }
+    .nav-links a { text-align: left; }
+  }
+
+  header.masthead { padding: 40px 0 28px; border-bottom: 1px solid var(--rule); }
+  .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 0 0 16px; }
+  h1.title { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-size: clamp(1.9rem, 4.6vw, 2.7rem); line-height: 1.12; letter-spacing: -.01em; margin: 0 0 14px; text-wrap: balance; }
+  .dek { font-size: 1.02rem; color: var(--ink-soft); max-width: 60ch; margin: 0 0 18px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px 20px; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-faint); }
+
+  /* Level ladder */
+  .ladder { display: flex; flex-direction: column; gap: 6px; margin: 26px 0 0; }
+  .rung { display: grid; grid-template-columns: 46px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--rule); background: var(--panel); }
+  .rung .lvl { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 13px; color: var(--ink-faint); }
+  .rung .desc { font-size: .92rem; color: var(--ink-soft); }
+  .rung .desc strong { color: var(--ink); font-weight: 600; }
+  .rung.here { border-color: var(--accent); background: var(--accent-soft); }
+  .rung.here .lvl { color: var(--accent); }
+  .rung .tag { font-family: "JetBrains Mono", monospace; font-size: 10.5px; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .rung.here .tag { background: var(--accent); color: var(--panel); }
+  .rung .tag.aspirational { background: var(--partial-bg); color: var(--partial); }
+
+  details.tldr, details.chapter { border-bottom: 1px solid var(--rule); }
+  details.tldr { padding: 26px 0; background: var(--accent-soft); margin: 0 -22px; padding-left: 22px; padding-right: 22px; }
+  details.chapter { padding: 36px 0; }
+  details.chapter:last-of-type { border-bottom: none; }
+  summary.chapter-head { display: flex; align-items: baseline; gap: 12px; cursor: pointer; list-style: none; user-select: none; }
+  summary.chapter-head::-webkit-details-marker { display: none; }
+  summary.chapter-head::before { content: "\25B8"; color: var(--accent); font-size: .85rem; transition: transform .15s ease; flex: none; transform: translateY(1px); }
+  details[open] > summary.chapter-head::before { transform: rotate(90deg) translateY(0); }
+  .chapter-no { font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--accent); border: 1px solid var(--rule); border-radius: 3px; padding: 2px 7px; flex-shrink: 0; }
+  h2.chapter-title { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 600; font-size: 1.4rem; margin: 0; text-wrap: balance; }
+  .chapter-body { margin-top: 18px; }
+  .chapter-body p { margin: 0 0 15px; max-width: 70ch; }
+  .chapter-body p:last-child { margin-bottom: 0; }
+  .chapter-body ul, .chapter-body ol { margin: 0 0 15px; padding-left: 22px; max-width: 70ch; }
+  .chapter-body li { margin-bottom: 9px; }
+  code { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 4px; padding: 1px 5px; font-family: "JetBrains Mono", monospace; font-size: .87em; }
+  cite.src { font-family: "JetBrains Mono", monospace; font-style: normal; font-size: .82em; color: var(--ink-faint); background: var(--code-bg); border: 1px solid var(--rule); padding: 1px 5px; border-radius: 3px; }
+
+  /* Status pill */
+  .pill { display: inline-flex; align-items: center; font-family: "JetBrains Mono", monospace; font-size: 10.5px; font-weight: 600; letter-spacing: .03em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .pill.has { background: var(--has-bg); color: var(--has); }
+  .pill.partial { background: var(--partial-bg); color: var(--partial); }
+  .pill.lacks { background: var(--lacks-bg); color: var(--lacks); }
+
+  /* Gap table */
+  .tablewrap { overflow-x: auto; margin: 4px 0 18px; }
+  table.gaps { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  table.gaps th, table.gaps td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  table.gaps th { font-family: "JetBrains Mono", monospace; font-size: .7rem; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; }
+
+  /* Priority cards */
+  .prio { display: grid; grid-template-columns: 52px 1fr; gap: 14px; padding: 16px 18px; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; margin-bottom: 14px; }
+  .prio-badge { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 1.1rem; color: var(--accent); text-align: center; padding-top: 2px; }
+  .prio-title { font-weight: 600; margin-bottom: 6px; font-size: 1.02rem; }
+  .prio-body { color: var(--ink-soft); font-size: .93rem; }
+  .prio-body p { margin: 0 0 10px; max-width: none; }
+  .prio-body p:last-child { margin-bottom: 0; }
+  .prio.skip { opacity: .82; }
+  .prio.skip .prio-badge { color: var(--lacks); }
+
+  footer.colophon { padding-top: 36px; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--ink-faint); text-align: center; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } summary.chapter-head::before { transition: none; } }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-08-30-10:57:34 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Agent Maturity Review</span>
+    <button type="button" class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">Framework</a>
+      <a href="#sec-2">Memory (paper)</a>
+      <a href="#sec-3">A2A (paper)</a>
+      <a href="#sec-4">Memory (us)</a>
+      <a href="#sec-5">A2A (us)</a>
+      <a href="#sec-6">Gaps</a>
+      <a href="#sec-7">Recommendations</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Whitepaper Review &middot; Google &ldquo;Introduction to Agents&rdquo;</p>
+    <h1 class="title">Where agentsHQ sits on the maturity ladder, and the two moves that matter</h1>
+    <p class="dek">A full read of Google's agent-maturity whitepaper, cross-checked against agentsHQ's actual memory system and agent-to-agent messaging code &mdash; not the docs about them.</p>
+    <div class="meta-row">
+      <span>2026-08-30</span>
+      <span>100% of the source document read (1,197 lines)</span>
+      <span>Focus: memory &amp; A2A</span>
+    </div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary class="chapter-head"><h2 class="chapter-title">TL;DR</h2></summary>
+    <div class="chapter-body">
+      <p>The paper's own ladder only goes to <strong>Level 4</strong>, and its Conclusion calls Level 3 &ldquo;the frontier of automation&rdquo; today &mdash; Level 4 is presented as aspirational. agentsHQ is a genuine <strong>Level 3</strong> system already, with one authentic Level 4 piece most published systems don't have: the human-correction-becomes-a-permanent-rule learning loop your memory system already runs.</p>
+      <p>The two areas asked about are exactly the two weakest Level 3 pillars. Memory <strong>pushes</strong> everything into context eagerly and rations it against a byte cap; the paper says long-term memory should be something an agent can <strong>actively query</strong>, like a RAG system over a vector database &mdash; that retrieval layer doesn't exist over your memory files today. Agent-to-agent messaging exists and works, but it's pull-only, one-shot (capped at one reply per lane by design), and has no capability registry &mdash; a dispatcher has to already know who owns what.</p>
+      <p>Three concrete, incremental fixes close most of the gap: add semantic search over the memory corpus (pgvector, already-idle infrastructure exists for it), add a lightweight lane/capability registry, and link messages to tasks so a delegation can actually be tracked and replied to more than once. No platform rewrite, no A2A protocol adoption &mdash; those solve a cross-organization problem you don't have.</p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-1" open>
+    <summary class="chapter-head"><span class="chapter-no">01</span><h2 class="chapter-title">The paper's maturity framework</h2></summary>
+    <div class="chapter-body">
+      <p>The paper defines <strong>Level 0 through Level 4</strong> &mdash; there is no Level 5 in this document. <cite class="src">lines 43-51, 289-385</cite></p>
+      <div class="ladder">
+        <div class="rung"><span class="lvl">L0</span><span class="desc"><strong>Core Reasoning System</strong> &mdash; the model alone, no tools, no memory</span></div>
+        <div class="rung"><span class="lvl">L1</span><span class="desc"><strong>Connected Problem-Solver</strong> &mdash; tool use / RAG, reaches outside training data</span></div>
+        <div class="rung"><span class="lvl">L2</span><span class="desc"><strong>Strategic Problem-Solver</strong> &mdash; context engineering, actively curates context per step</span></div>
+        <div class="rung here"><span class="lvl">L3</span><span class="desc"><strong>Collaborative Multi-Agent System</strong> &mdash; a coordinator delegates to specialist agents</span><span class="tag">agentsHQ is here</span></div>
+        <div class="rung"><span class="lvl">L4</span><span class="desc"><strong>Self-Evolving System</strong> &mdash; identifies its own capability gaps and creates new tools or agents on the fly</span><span class="tag aspirational">paper calls this aspirational</span></div>
+      </div>
+      <p style="margin-top:18px">The paper's own Conclusion calls L3 &ldquo;currently constrained by the reasoning limitations of today's LMs&rdquo; and names it the practical frontier. <cite class="src">lines 365, 915</cite></p>
+      <p><strong>Honest fit caveat:</strong> the paper's L3/L4 assume a cloud-native platform &mdash; Gemini Enterprise Agent Platform, ADK, Agent Gateway, Agent Registry, SPIFFE identity. agentsHQ is Claude Code CLI + Postgres + markdown skills. Several L3/L4 markers are platform features that don't transfer. The ones that do &mdash; memory retrieval, agent discovery, task-oriented messaging, agent identity, the learning loop &mdash; are what this review scores.</p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-2" open>
+    <summary class="chapter-head"><span class="chapter-no">02</span><h2 class="chapter-title">What the paper says about memory</h2></summary>
+    <div class="chapter-body">
+      <p>Memory is an orchestration-layer concern in this paper, kept deliberately brief &mdash; it defers to a dedicated agent-memory whitepaper elsewhere in the series. <cite class="src">line 485</cite></p>
+      <ul>
+        <li>An agent is framed as &ldquo;a system dedicated to the art of context window curation&rdquo; &mdash; a loop of assembling context, prompting, observing, and re-assembling for the next step. <cite class="src">line 199</cite></li>
+        <li><strong>Short-term memory</strong> = the active scratchpad, the running action/observation history of the current loop &mdash; implemented as state, artifacts, sessions, or threads. <cite class="src">line 487</cite></li>
+        <li><strong>Long-term memory</strong>, the load-bearing line: &ldquo;architecturally, this is almost always implemented as another specialized tool &mdash; a RAG system connected to a vector database or search engine. The orchestrator gives the agent the ability to pre-fetch <em>and to actively query its own history</em>.&rdquo; <cite class="src">line 489</cite></li>
+        <li>Retrieval substrate named: vector databases or knowledge graphs, plus NL2SQL for structured data. <cite class="src">line 433</cite></li>
+        <li>Memory is the fuel for learning: agents learn from session logs, traces, and memory capturing successes, failures, and decision trajectories &mdash; crucially including human-in-the-loop corrections as authoritative signal. <cite class="src">line 777</cite></li>
+      </ul>
+      <p>The paper says nothing about memory conflict resolution, staleness/TTL, or byte budgeting &mdash; those are agentsHQ's own problems to solve, not addressed by the source.</p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-3" open>
+    <summary class="chapter-head"><span class="chapter-no">03</span><h2 class="chapter-title">What the paper says about A2A</h2></summary>
+    <div class="chapter-body">
+      <ul>
+        <li><strong>&ldquo;Agents are not tools.&rdquo;</strong> Connecting an agent to data/APIs (MCP) is a different problem from connecting an agent to another agent &mdash; A2A is &ldquo;typically for additional problem solving,&rdquo; not transactional requests. <cite class="src">lines 585, 613</cite></li>
+        <li>The core challenge is twofold: <strong>discovery</strong> (how does my agent find others and know what they can do?) and <strong>communication</strong> (how do we ensure they speak the same language?). Without a standard you get &ldquo;a tangled web of brittle, custom API integrations.&rdquo;</li>
+        <li><strong>Agent Card</strong> &mdash; the discovery primitive: a JSON &ldquo;digital business card&rdquo; advertising capabilities, network endpoint, and required credentials. <cite class="src">line 613</cite></li>
+        <li><strong>Task-oriented, asynchronous architecture</strong> &mdash; the communication primitive: a client agent sends a task request to a server agent, which provides streaming updates over a long-running connection, rather than simple request-response. Named explicitly as what enables Level 3 collaboration. <cite class="src">line 615</cite></li>
+        <li>Named multi-agent patterns: <strong>Coordinator</strong> (manager routes and aggregates), <strong>Sequential</strong> (assembly line), <strong>Iterative Refinement</strong> (generator + critic loop), <strong>HITL</strong> (deliberate human-approval pause). <cite class="src">lines 491-511</cite></li>
+        <li><strong>Agent Identity</strong> as a third class of principal &mdash; distinct from user (OAuth) and service account (IAM), a cryptographically verifiable identity so permissions contain the blast radius. <cite class="src">lines 649-679</cite></li>
+        <li>A mandatory <strong>governance control plane</strong> (Agent Gateway) that all traffic passes through, plus a central <strong>Agent Registry</strong> indexing every agent/tool/skill with security review before publication. <cite class="src">lines 731-753</cite></li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-4" open>
+    <summary class="chapter-head"><span class="chapter-no">04</span><h2 class="chapter-title">agentsHQ's memory system, verified</h2></summary>
+    <div class="chapter-body">
+      <p><strong>Storage:</strong> 1,981 flat markdown files in <code>memory/</code>, each with frontmatter (<code>tier: always-load | archive</code>, <code>index_line:</code>) read by <code>scripts/build_memory_index.py</code>.</p>
+      <p><strong>Loading is push, not pull.</strong> <code>memory/MEMORY.md</code> is a generated index held under a 24,400-byte cap <em>by construction</em> &mdash; overflow rows route to <code>memory/MEMORY_LOADER_OVERFLOW.md</code>, injected by a SessionStart hook. Everything a session gets is eagerly pushed at session start, none of it queried on demand.</p>
+      <p><strong>Hand zone:</strong> four sections are DB-backed in Postgres (<code>memory_handzone</code> table), regenerated into the file. One stale doc found in passing: <code>docs/governance/memory-handzone-db-backed-sys264.md</code> still says &ldquo;NOT yet cut over&rdquo; while CLAUDE.md says cutover happened 2026-07-13.</p>
+      <p><strong>Retrieval &mdash; the weak point, verified directly:</strong> <code>skills/second-brain-query/ask.sh</code> is <strong>tsvector lexical search only</strong> &mdash; its own header says so. A prior live audit (<code>docs/governance/second-brain-retrieval-verdict-2026-08-20.md</code>) found two natural-language queries returned zero results, the one hit that did return scored 0.0164 relevance on a superseded file, and the corpus was 4 days stale. Its own verdict: &ldquo;it works, and it is pointed at the wrong shelf.&rdquo;</p>
+      <p>The only embedding-based recall in the repo (<code>skills/atlas-memory</code>, MiniLM + sqlite-vec) indexes <strong>session transcripts</strong>, not memory files &mdash; and its MCP connection was down this session. <strong>Conclusion, independently verified: there is no semantic/vector search over the memory corpus today.</strong></p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-5" open>
+    <summary class="chapter-head"><span class="chapter-no">05</span><h2 class="chapter-title">agentsHQ's A2A system, verified</h2></summary>
+    <div class="chapter-body">
+      <p><code>skills/agent_comms.py</code> (532 lines, read in full), backed by a Postgres <code>agent_messages</code> table.</p>
+      <ul>
+        <li><strong>Pull-only, by the module's own docstring:</strong> &ldquo;a message arrives when the recipient polls <code>fetch_inbox()</code>. No daemon, no push, no pub/sub, no threading.&rdquo;</li>
+        <li><strong>Near-real-time is a poll loop, not push:</strong> an opt-in watcher SSHes to the VPS every 3 seconds to check a sentinel file. No webhook, no long-lived connection. One real push exists &mdash; <code>urgent=True</code> fires a Telegram alert &mdash; but that's agent-to-<em>human</em>, not agent-to-agent.</li>
+        <li><strong>Multi-turn dialogue is structurally blocked:</strong> <code>reply_message()</code> uses a dedup key of exactly one reply per lane per original message, by design. No <code>thread_id</code> column exists. No negotiation, no back-and-forth is possible today.</li>
+        <li><strong>No agent identity:</strong> <code>from_lane</code> is unauthenticated free text. Any caller can send as any lane.</li>
+        <li><strong>No discovery / no Agent Card:</strong> lane names are hardcoded strings scattered across docstrings and docs, not a queryable capability manifest.</li>
+        <li><strong>A real task-lifecycle state machine exists &mdash; in a separate, unjoined system.</strong> <code>skills/coordination</code> has claim/complete/lease-renew/fail with TTL leases. None of it links to <code>agent_messages</code> &mdash; a delegation message carries no task id and no trackable status.</li>
+        <li><strong>What is genuinely strong:</strong> the Coordinator, Sequential, Iterative-Refinement (critic), and HITL patterns the paper names are all real and working &mdash; Agent-tool dispatch, the worktree&rarr;Gate deploy chain, `karpathy`/`council`/`code-review` as critic agents, and the Tier-C damage-list human-approval gate.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-6" open>
+    <summary class="chapter-head"><span class="chapter-no">06</span><h2 class="chapter-title">Gap analysis</h2></summary>
+    <div class="chapter-body">
+      <div class="tablewrap">
+        <table class="gaps">
+          <thead><tr><th>Capability</th><th>Status</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr><td>Tool use / RAG grounding (L1)</td><td><span class="pill has">HAS</span></td><td>MCP fleet, Postgres, web, Drive, Gmail</td></tr>
+            <tr><td>Context engineering (L2)</td><td><span class="pill has">HAS &mdash; strong</span></td><td>build_memory_index.py, hooks, token-efficiency SOP</td></tr>
+            <tr><td>Coordinator / Sequential / Iterative-refinement / HITL patterns (L3)</td><td><span class="pill has">HAS</span></td><td>Agent dispatch, Gate chain, karpathy/council/code-review, Tier-C approval gate</td></tr>
+            <tr><td>A2A communication channel</td><td><span class="pill partial">PARTIAL</span></td><td>agent_comms.py exists; pull-only, one-shot, no streaming/long-running task</td></tr>
+            <tr><td>A2A discovery / Agent Card</td><td><span class="pill lacks">LACKS</span></td><td>No capability registry; lane names are string literals</td></tr>
+            <tr><td>Task-oriented async w/ status</td><td><span class="pill partial">PARTIAL &mdash; disjointed</span></td><td>coordination has the state machine; agent_messages has no task link</td></tr>
+            <tr><td>Multi-turn negotiation</td><td><span class="pill lacks">LACKS</span></td><td>reply_message dedup caps at one reply per lane</td></tr>
+            <tr><td>Agent identity (3rd principal)</td><td><span class="pill lacks">LACKS</span></td><td>from_lane is unauthenticated free text</td></tr>
+            <tr><td>Governance control plane / registry</td><td><span class="pill partial">PARTIAL</span></td><td>Gate is a merge chokepoint, not an A2A traffic chokepoint; no agent registry</td></tr>
+            <tr><td>Long-term memory: pre-fetch</td><td><span class="pill has">HAS &mdash; best-in-class</span></td><td>Always-load index + overflow hook injection</td></tr>
+            <tr><td>Long-term memory: actively query</td><td><span class="pill partial">PARTIAL / weak</span></td><td>tsvector-only, stale corpus, documented zero-result failures</td></tr>
+            <tr><td>Vector/semantic memory retrieval</td><td><span class="pill lacks">LACKS</span></td><td>Embeddings exist only over transcripts; that MCP was down this session</td></tr>
+            <tr><td>Dynamic tool/agent creation (L4)</td><td><span class="pill partial">PARTIAL</span></td><td>skill-creator, absorb pipeline acquire capability &mdash; human-triggered, human-gated</td></tr>
+            <tr><td>Learning Agent: correction &rarr; reusable rule (L4)</td><td><span class="pill has">HAS &mdash; genuinely</span></td><td>feedback_*.md files, tier: always-load, injected every session</td></tr>
+            <tr><td>Agent Gym / simulation</td><td><span class="pill lacks">LACKS</span></td><td>Nothing built</td></tr>
+            <tr><td>Eval set + LM-judge regression gate</td><td><span class="pill lacks">LACKS</span></td><td>Audits/Council are qualitative; no golden set, no scored gate</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Where agentsHQ actually sits:</strong> a solid, in-places-excellent Level 3, with one authentic Level 4 component most published systems lack &mdash; the correction-to-durable-rule learning loop. The two areas asked about are, precisely, the two weakest Level 3 pillars.</p>
+      <p><strong>The single most important structural finding:</strong> the paper says long-term memory should be something an agent can actively query. agentsHQ inverted this &mdash; it pushes memory eagerly into every context window and rations it against a byte cap. That inversion is the direct cause of the loader-cap fights, the CLAUDE.md mirror sections, and the recurring &ldquo;rule didn't load&rdquo; incidents. It is an architecture problem, not a tuning problem &mdash; it gets more expensive as memory grows, since every byte is paid on every one of ~401 weekly dispatches.</p>
+    </div>
+  </details>
+
+  <details class="chapter" id="sec-7" open>
+    <summary class="chapter-head"><span class="chapter-no">07</span><h2 class="chapter-title">Prioritized recommendations</h2></summary>
+    <div class="chapter-body">
+      <p>Ranked by movement toward the paper's L3/L4 bar and feasibility on the actual stack. No rewrites &mdash; every item extends something that already exists.</p>
+
+      <div class="prio">
+        <div class="prio-badge">P0</div>
+        <div><div class="prio-title">Semantic retrieval over memory: flip push to pull</div>
+        <div class="prio-body">
+          <p>Add pgvector to orc-postgres and embed the existing memory corpus; blend with the current tsvector rank rather than replacing it. Extend <code>second-brain-query/ask.sh</code> with a <code>--semantic</code> path.</p>
+          <p>Three things must ship with it or it repeats the 2026-08-20 failure: fix the corpus itself (add LIVE_STATE.md, governance docs, handoffs &mdash; retrieval that can't see your sources of truth keeps returning superseded files), make staleness an alarm not a footnote, and down-rank archived/superseded files as a ranking signal.</p>
+          <p><strong>Free adjacent win:</strong> the atlas-memory MCP (working semantic recall over session transcripts) was disconnected this session &mdash; reconnect it, it's already built and paid for.</p>
+        </div></div>
+      </div>
+
+      <div class="prio">
+        <div class="prio-badge">P1</div>
+        <div><div class="prio-title">Agent Card registry &mdash; a <code>lanes</code> table</div>
+        <div class="prio-body">
+          <p>One migration: lane, description, capabilities (JSONB), owner machine, active claims, last-seen. Expose via <code>agent_comms lanes [--capability x]</code>. Populate last-seen automatically on every inbox fetch &mdash; free liveness tracking, zero discipline required.</p>
+          <p>Smallest change, largest compounding effect: today a dispatcher must already know that a given lane exists and owns a given area &mdash; that's why rules like &ldquo;hands off UpWork&rdquo; had to become hard-coded prose instead of a lookup.</p>
+        </div></div>
+      </div>
+
+      <div class="prio">
+        <div class="prio-badge">P2</div>
+        <div><div class="prio-title">Join messages to tasks; add real threads</div>
+        <div class="prio-body">
+          <p>Add a <code>task_uid</code> column linking to the existing coordination state machine (already has claim/renew/fail/complete with lease heartbeats &mdash; just not wired to the message bus). Add a <code>thread_id</code> and relax the reply dedup from per-message to per-turn, so multi-turn dialogue is possible by design instead of blocked by design.</p>
+          <p>Not recommended alongside this: a push/websocket layer. The 3-second poll is adequate for lanes operating on human timescales; a daemon adds an always-on failure mode for latency nobody is waiting on.</p>
+        </div></div>
+      </div>
+
+      <div class="prio">
+        <div class="prio-badge">P3</div>
+        <div><div class="prio-title">Minimal agent identity</div>
+        <div class="prio-body">
+          <p>Record actual sender (hostname, session id, a per-lane token) alongside every claim, and flag a mismatch rather than trusting free-text <code>from_lane</code>. Do the cheap version; skip SPIFFE-grade cryptographic identity &mdash; not warranted at this scale, but the <code>urgent</code> Telegram-escalation path in particular deserves this before something is forged into it.</p>
+        </div></div>
+      </div>
+
+      <div class="prio">
+        <div class="prio-badge">P4</div>
+        <div><div class="prio-title">Golden eval set + LM-as-judge regression gate</div>
+        <div class="prio-body">
+          <p>Hundreds of <code>feedback_*.md</code> incident files already exist as an unlabeled golden dataset. Convert ~30 high-frequency ones into scenario/expected-behavior pairs and run a judge model on a schedule &mdash; turns &ldquo;did the agent follow the rule&rdquo; from something caught by a human noticing into something the system measures.</p>
+        </div></div>
+      </div>
+
+      <div class="prio">
+        <div class="prio-badge">P5</div>
+        <div><div class="prio-title">Formalize the Learning Agent loop already running informally</div>
+        <div class="prio-body">
+          <p>The correction-to-rule loop works but depends on someone remembering to run it at checkpoint. Make it an explicit dispatch after any correction: draft the memory file, check it against existing rules for contradiction/supersession (no such check exists today), then file it.</p>
+        </div></div>
+      </div>
+
+      <div class="prio skip">
+        <div class="prio-badge">&times;</div>
+        <div><div class="prio-title">Explicitly not recommended</div>
+        <div class="prio-body">
+          <p><strong>Agent Gym / simulation:</strong> presumes offline platform + synthetic-data infrastructure that costs more than the lanes it optimizes. <strong>AP2/x402 payments:</strong> nothing in this system transacts autonomously, and money deliberately stays on the human side. <strong>Full A2A protocol / Agent Gateway adoption:</strong> built for cross-organization interoperability between separately-built agents &mdash; your lanes share one repo, one Postgres, one operator. The three Postgres changes above take the useful ideas (Agent Card, task-oriented messaging, identity) without the platform rewrite.</p>
+        </div></div>
+      </div>
+
+      <p style="margin-top:4px"><strong>Sequencing:</strong> P0 and P1 are independent and can run in parallel. P2 depends on P1. P3 depends on P1. P4 and P5 are independent of everything and can start any time.</p>
+    </div>
+  </details>
+
+  <footer class="colophon">Source read in full (100%, 1,197 lines) &middot; every agentsHQ claim grounded in a file read this session &middot; no code changed</footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible. A floating
+     control always overlaps something mid-scroll -- that is the point of floating -- but at
+     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
+     which is the minimum comfortable tap target. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top -------------------------------------------------------------
+  var topBtn = document.getElementById('rf-top');
+  function onScroll() {
+    if (!topBtn) { return; }
+    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
+      topBtn.classList.add('rf-show');
+    } else {
+      topBtn.classList.remove('rf-show');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
