@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Year One Money Map (Y1)</title>
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #141210; --panel: #1c1916; --card: #221e1a; --card-2: #2a251f;
+      --ink: #ece2d2; --ink-strong: #fbf4e8; --muted: #a59783; --faint: #7e7263;
+      --line: rgba(236, 226, 210, 0.12); --line-soft: rgba(236, 226, 210, 0.07);
+      --ember: #e3622f; --ember-bright: #ff7a45; --clay: #c4471d;
+      --green: #4fbf86; --green-soft: rgba(79, 191, 134, 0.12); --green-border: rgba(79, 191, 134, 0.4);
+      --amber: #e8a13a; --amber-soft: rgba(232, 161, 58, 0.12); --amber-border: rgba(232, 161, 58, 0.4);
+      --red: #f06b4d; --red-soft: rgba(240,107,77,0.12); --red-border: rgba(240,107,77,0.4);
+      --brass: #c19a6b;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(900px 400px at 8% -6%, rgba(227, 98, 47, 0.10), transparent 60%),
+        radial-gradient(800px 380px at 100% 0%, rgba(79, 191, 134, 0.06), transparent 55%);
+      background-attachment: fixed; color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 780px; margin: 0 auto; padding: 1.4rem 1.1rem 6rem; position: relative; z-index: 1; }
+    a { color: var(--ember-bright); text-decoration: underline; }
+    a:visited { color: var(--brass); }
+    a:hover, a:active { color: #ffa477; }
+
+    .tag { display: inline-block; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.2rem 0.55rem; border-radius: 999px; background: #2c2722; color: var(--ink-strong); margin-right: 0.35rem; vertical-align: middle; border: 1px solid var(--line); }
+    .tag.plan { background: var(--ember); color: #fff; border-color: transparent; }
+    .tag.y1 { background: #1f5d3f; color: #fff; border-color: transparent; }
+    h1 { font-size: 1.85rem; font-weight: 850; letter-spacing: -0.035em; margin: 0.55rem 0 0.25rem; line-height: 1.08; color: var(--ink-strong); }
+    h2 { font-size: 1.1rem; font-weight: 800; color: var(--ink-strong); margin: 0 0 0.5rem; }
+    .sub { color: var(--muted); font-size: 0.92rem; max-width: 62ch; }
+    .doc-meta { font-size: 0.74rem; color: var(--faint); margin-top: 0.55rem; }
+
+    .sync { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.22rem 0.6rem; border-radius: 999px; border: 1px solid var(--line); background: var(--card-2); color: var(--muted); margin-top: 0.6rem; }
+    .sync .dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--faint); transition: background 0.2s; }
+    .sync.live .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .sync.live { color: var(--green); border-color: var(--green-border); }
+    .sync.saving .dot { background: var(--amber); }
+    .sync.saving { color: var(--amber); }
+    .sync.offline .dot, .sync.error .dot { background: var(--red); }
+    .sync.offline, .sync.error { color: var(--red); border-color: var(--red-border); }
+
+    .freshness { display: block; margin-top: 0.5rem; font-size: 0.76rem; line-height: 1.55; color: var(--muted); max-width: 60ch; }
+    .freshness .fr-strong { color: var(--ink); font-weight: 700; }
+    .freshness[data-state="stale"] { color: var(--amber); }
+    .freshness[data-state="stale"] .fr-strong { color: var(--amber); }
+    .freshness[data-state="down"] { color: var(--red); font-weight: 700; }
+    .freshness[data-state="down"] .fr-strong { color: var(--red); }
+
+    .stale-banner { margin: 0.85rem 0 0; padding: 0.75rem 0.95rem; border-radius: 10px; border: 2px solid var(--red-border); background: var(--red-soft); color: var(--red); font-size: 0.85rem; line-height: 1.6; max-width: 68ch; }
+    .stale-banner b { color: var(--red); display: block; font-size: 0.95rem; letter-spacing: 0.02em; margin-bottom: 0.25rem; }
+    .stale-banner.warn { border-color: var(--amber-border); background: var(--amber-soft); color: var(--amber); }
+    .stale-banner.warn b { color: var(--amber); }
+    .stale-banner[hidden] { display: none; }
+
+    .archive-note { margin-top: 0.85rem; padding: 0.7rem 0.9rem; border-radius: 10px; border: 1px solid var(--line); background: var(--card-2); font-size: 0.8rem; color: var(--muted); }
+    .archive-note a { font-weight: 700; }
+
+    section { margin-top: 1.7rem; padding-top: 1.1rem; border-top: 1px solid var(--line); }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.9rem; }
+    .lede { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.7rem; max-width: 62ch; }
+
+    /* HERO / week+day counter */
+    .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+    @media (max-width: 480px) { .hero-grid { grid-template-columns: 1fr; } }
+    .stat { background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; padding: 0.8rem 0.95rem; }
+    .stat .stat-label { font-size: 0.62rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); margin-bottom: 0.3rem; }
+    .stat .stat-value { font-size: 1.5rem; font-weight: 850; color: var(--ink-strong); letter-spacing: -0.02em; }
+    .stat .stat-sub { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* week strip */
+    .week-strip { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.8rem 0; }
+    .week-chip { flex: 1 1 5.2rem; text-align: center; font-size: 0.68rem; font-weight: 800; padding: 0.5rem 0.3rem; border-radius: 8px; border: 1px solid var(--line); background: var(--card-2); color: var(--muted); }
+    .week-chip.now { border-color: var(--ember); color: var(--ember-bright); background: rgba(227,98,47,0.12); }
+    .week-chip.past { color: var(--faint); opacity: 0.65; }
+    .week-chip .wk-date { display: block; font-size: 0.58rem; font-weight: 700; color: var(--faint); margin-top: 0.15rem; }
+
+    /* conversations tracker */
+    .conv-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+    .conv-num-btn { width: 2.1rem; height: 2.1rem; border-radius: 8px; border: 1px solid var(--line); background: var(--card-2); color: var(--ink-strong); font-size: 1rem; font-weight: 800; cursor: pointer; }
+    .conv-num-btn:hover { border-color: var(--ember); color: var(--ember-bright); }
+    .conv-count { font-size: 1.4rem; font-weight: 850; color: var(--ink-strong); min-width: 2.4rem; text-align: center; }
+    .conv-target { font-size: 0.78rem; color: var(--muted); }
+
+    /* notes */
+    textarea.notes-box { width: 100%; min-height: 6rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-family: inherit; font-size: 0.85rem; padding: 0.6rem 0.7rem; resize: vertical; }
+    textarea.notes-box:focus { outline: 2px solid var(--ember); outline-offset: 1px; }
+    .notes-saved { font-size: 0.7rem; color: var(--faint); margin-top: 0.35rem; }
+
+    /* copy box */
+    .code-box { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 0.65rem 2.6rem 0.65rem 0.75rem; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.78rem; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+    .copy-btn { position: absolute; top: 0.45rem; right: 0.45rem; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.28rem 0.5rem; border-radius: 6px; border: 1px solid var(--line); background: var(--card-2); color: var(--ink); cursor: pointer; }
+    .copy-btn:hover { border-color: var(--ember); color: var(--ember-bright); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green-border); }
+
+    #backToTop { position: fixed; right: 1rem; bottom: 1rem; width: 2.6rem; height: 2.6rem; border-radius: 50%; border: 1px solid var(--line); background: var(--card-2); color: var(--ink); font-size: 1.1rem; cursor: pointer; z-index: 5; }
+    footer.pagefoot { margin-top: 2.2rem; font-size: 0.7rem; color: var(--faint); text-align: center; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="doc-header">
+    <span class="tag plan">Year One Money Map</span><span class="tag y1">Y1</span>
+    <h1>Year One Money Map (Y1)</h1>
+    <p class="sub">A clean 12-week restart. Not a continuation of Year Zero, not backdated to it &mdash; its own window, its own goal, its own board.</p>
+    <div class="doc-meta" id="dhDate">&hellip;</div>
+    <div id="syncPill" class="sync offline"><span class="dot"></span><span id="syncText">Connecting&hellip;</span></div>
+    <div id="freshness" class="freshness" data-state="unknown">Board freshness: <span class="fr-strong">checking&hellip;</span></div>
+    <div id="staleBanner" class="stale-banner" hidden></div>
+    <div class="archive-note">Year Zero is closed and kept exactly as it ended, for the record: <a href="/review/money-map-y0/">boubacarbarry.com/review/money-map-y0/</a>. This page is now the live one.</div>
+  </div>
+
+  <section>
+    <h2>Where the window stands</h2>
+    <p class="lede">Every number below is read from the stored anchor row, not computed backward from today. If the board cannot be reached, this says so instead of guessing.</p>
+    <div class="hero-grid">
+      <div class="stat">
+        <div class="stat-label">Week</div>
+        <div class="stat-value" id="weekValue">&mdash;</div>
+        <div class="stat-sub" id="weekSub">of 12, started Tue Sep 1</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Days left</div>
+        <div class="stat-value" id="daysLeftValue">&mdash;</div>
+        <div class="stat-sub">to Mon Nov 23, 2026</div>
+      </div>
+    </div>
+    <div class="week-strip" id="weekStrip"></div>
+  </section>
+
+  <section>
+    <h2>The number</h2>
+    <p class="lede">$5,000 MRR by the close of a 12-week window that opened 2026-09-01. Twelve weeks counted inclusively from that Tuesday closes Monday 2026-11-23, not the 24th &mdash; 2026-11-24 is the day-after review date, not the boundary itself. The target dollar figure and the anchor are his, not authored here (the Chief-of-Staff office never sets a target, rule D-6); this page only persists and displays what he gave, corrected for the off-by-one in the close date.</p>
+    <div class="card">
+      <div class="hero-grid">
+        <div class="stat">
+          <div class="stat-label">Collected</div>
+          <div class="stat-value" id="collectedValue">$0</div>
+          <div class="stat-sub">of $5,000 target</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Required run rate</div>
+          <div class="stat-value" id="runRateValue">&mdash;</div>
+          <div class="stat-sub">per week to land it</div>
+        </div>
+      </div>
+      <div style="margin-top:0.7rem;">
+        <label style="font-size:0.72rem; color:var(--muted); display:block; margin-bottom:0.3rem;">Update collected revenue ($)</label>
+        <input type="text" id="collectedInput" inputmode="numeric" placeholder="0" style="width:100%; background:var(--panel); border:1px solid var(--line); border-radius:8px; color:var(--ink); padding:0.5rem 0.6rem; font-size:0.9rem;">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Today's conversations</h2>
+    <p class="lede">The live mechanic (reversed 2026-08-20, carried into Year One as-is): five good business conversations a day, ask added later once the muscle exists. A conversation counts on its own merits.</p>
+    <div class="card">
+      <div class="conv-row">
+        <button class="conv-num-btn" id="convMinus" aria-label="decrease">&minus;</button>
+        <div class="conv-count" id="convCount">0</div>
+        <button class="conv-num-btn" id="convPlus" aria-label="increase">+</button>
+        <div class="conv-target">of 5 today</div>
+      </div>
+      <div class="conv-target" id="convDate">&mdash;</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Notes</h2>
+    <p class="lede">Appendable, timestamped, kept regardless of anything else on this page. Your reasoning at the time is data too.</p>
+    <div class="card">
+      <textarea class="notes-box" id="notesBox" placeholder="Type a note and it saves on blur, timestamped."></textarea>
+      <div class="notes-saved" id="notesSaved">Not yet saved.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Anchor + goal, for anything else that needs to read it</h2>
+    <p class="lede">The Atlas Mission Control header widget (and anything else) reads these same rows from the shared, permanent Money Map store &mdash; board <code>y1</code>. Every 12-week cycle (Y0, Y1, Y2, ...) lives in this one store forever, scoped by its own board id, never a new table per year.</p>
+    <div class="code-box" id="anchorBox">item_id                   | value
+year-start-date           | 2026-09-01
+year-end-date             | 2026-11-23
+kpi-revenue-goal-target   | 5000
+kpi-revenue-goal-date     | 2026-11-23
+year-review-date          | 2026-11-24  (day after close, review only)<button class="copy-btn" id="anchorCopy" type="button">Copy</button></div>
+  </section>
+
+  <footer class="pagefoot">Year One Money Map &middot; live board: y1, shared Money Map store &middot; Year Zero archive stays put, unedited.</footer>
+</div>
+
+<button id="backToTop" aria-label="Back to top">&uarr;</button>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
+        integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug"
+        crossorigin="anonymous"></script>
+<script>
+(function(){
+  // ---- Config (publishable/anon key only; never the service key) ----
+  var SB_URL = 'https://jscucboftaoaphticqci.supabase.co';
+  var SB_ANON = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
+  var BOARD_ID = 'y1';
+  // Board-scoped write token. Not a service key; gates the y0_upsert RPC so a
+  // random visitor with the anon key alone cannot write. Same table + RPC as
+  // Y0 -- the board_id ('y1') is what scopes these rows, not a separate
+  // table (corrected 2026-08-29; see orchestrator/migrations/
+  // 069_unify_money_map_cycles.sql in agentsHQ).
+  var BOARD_TOKEN = 'y1_X6Am6LKqhmIpKbr41eWh57RBM8iboPxV';
+  var LS = 'y1mm-';
+
+  var sb = null;
+  try { sb = window.supabase.createClient(SB_URL, SB_ANON, { realtime: { params: { eventsPerSecond: 5 } } }); } catch(e){ sb = null; }
+
+  var pill = document.getElementById('syncPill'), pillText = document.getElementById('syncText');
+  function setSync(state, label){ if(!pill) return; pill.className = 'sync ' + state; pillText.textContent = label; }
+
+  var state = {};
+  var stateTs = {};
+  var REMOTE_OK = false;
+
+  function lsGet(k){ try { return localStorage.getItem(LS + k); } catch(e){ return null; } }
+  function lsSet(k, v){ try { localStorage.setItem(LS + k, v); } catch(e){} }
+
+  function dkey(d){ return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2); }
+
+  // ---- Anchor + goal: LITERAL fallback constants, matching the persisted
+  // DB row exactly (never computed backward from "today" or "12 weeks before
+  // deadline" -- that anti-pattern is the known defect in
+  // orchestrator/cos_office/goal.py's _weeks_elapsed()). The DB row is the
+  // real source of truth; these are only what renders before the first
+  // successful read, or if the read fails outright. ----
+  var YEAR_START = new Date(2026, 8, 1);   // 2026-09-01, local midnight
+  var YEAR_END   = new Date(2026, 10, 23); // 2026-11-23, local midnight -- 12 weeks inclusive from Tue 2026-09-01; 11-24 is a review date, not the close
+  var GOAL_TARGET = 5000;
+
+  function parseDateStr(s, fallback){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s||''));
+    if (!m) return fallback;
+    return new Date(+m[1], +m[2]-1, +m[3]);
+  }
+
+  function renderHeaderAndWeek(){
+    var start = parseDateStr(state['year-start-date'], YEAR_START);
+    var end = parseDateStr(state['year-end-date'], YEAR_END);
+    var now = new Date();
+    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+        mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var dh = document.getElementById('dhDate');
+    var wk = Math.floor((now - start) / 604800000) + 1;
+    var wkClamped = wk; if (wkClamped < 1) wkClamped = 1; if (wkClamped > 12) wkClamped = 12;
+    if (dh) dh.textContent = days[now.getDay()] + ' ' + mos[now.getMonth()] + ' ' + now.getDate() + (wk >= 1 && wk <= 12 ? ' · Week ' + wkClamped + ' of 12' : (wk < 1 ? ' · window not started' : ' · window closed'));
+    var wv = document.getElementById('weekValue'); if (wv) wv.textContent = (wk < 1) ? 'not started' : (wk > 12 ? '12 (closed)' : String(wkClamped));
+    var ws = document.getElementById('weekSub');
+    if (ws) ws.textContent = 'of 12, started ' + days[start.getDay()] + ' ' + mos[start.getMonth()] + ' ' + start.getDate();
+
+    var daysLeft = Math.ceil((end - now) / 86400000);
+    var dl = document.getElementById('daysLeftValue');
+    if (dl) dl.textContent = daysLeft < 0 ? 'ended' : String(daysLeft);
+
+    // week strip, 12 chips, dates derived from the stored start date only
+    var strip = document.getElementById('weekStrip');
+    if (strip){
+      strip.innerHTML = '';
+      for (var i = 1; i <= 12; i++){
+        var chipStart = new Date(start.getTime() + (i-1)*604800000);
+        var cls = 'week-chip' + (i === wkClamped && wk >= 1 && wk <= 12 ? ' now' : (i < wkClamped ? ' past' : ''));
+        var div = document.createElement('div');
+        div.className = cls;
+        div.innerHTML = 'W' + i + '<span class="wk-date">' + mos[chipStart.getMonth()] + ' ' + chipStart.getDate() + '</span>';
+        strip.appendChild(div);
+      }
+    }
+
+    // revenue KPI
+    var target = parseFloat(state['kpi-revenue-goal-target']) || GOAL_TARGET;
+    var collected = parseFloat(state['collected-revenue']) || 0;
+    var cv = document.getElementById('collectedValue'); if (cv) cv.textContent = '$' + collected.toLocaleString();
+    var ci = document.getElementById('collectedInput'); if (ci && document.activeElement !== ci) ci.value = collected ? String(collected) : '';
+    var weeksLeft = Math.max(daysLeft, 0) / 7;
+    var rr = document.getElementById('runRateValue');
+    if (rr){
+      if (weeksLeft > 0 && daysLeft >= 0){
+        var remaining = Math.max(target - collected, 0);
+        rr.textContent = '$' + Math.ceil(remaining / weeksLeft).toLocaleString();
+      } else {
+        rr.textContent = daysLeft < 0 ? 'window closed' : '—';
+      }
+    }
+
+    // conversations today
+    var today = dkey(now);
+    var convKey = 'conv-count-' + today;
+    var convN = parseInt(state[convKey], 10); if (isNaN(convN)) convN = 0;
+    var cc = document.getElementById('convCount'); if (cc) cc.textContent = String(convN);
+    var cdEl = document.getElementById('convDate'); if (cdEl) cdEl.textContent = days[now.getDay()] + ' ' + mos[now.getMonth()] + ' ' + now.getDate();
+  }
+
+  function applyToDom(item, value){
+    if (item === 'notes-log'){
+      var nb = document.getElementById('notesBox');
+      var ns = document.getElementById('notesSaved');
+      if (ns) ns.textContent = value ? 'Last saved to the board.' : 'Not yet saved.';
+      return;
+    }
+    renderHeaderAndWeek();
+  }
+
+  var saveFailure = null;
+
+  function showBanner(html, warn){
+    var b = document.getElementById('staleBanner');
+    if (!b) return;
+    b.innerHTML = html;
+    b.className = 'stale-banner' + (warn ? ' warn' : '');
+    b.hidden = false;
+  }
+  function hideBanner(){ var b = document.getElementById('staleBanner'); if (b) b.hidden = true; }
+  function rlEsc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+
+  function renderSaveFailure(){
+    if (!saveFailure) return;
+    var who = '<b>' + rlEsc(saveFailure.item) + '</b>';
+    if (saveFailure.rejected){
+      showBanner('<b>SAVE FAILED. WHAT YOU JUST CHANGED IS NOT IN THE DATABASE.</b>' +
+        'The board REJECTED the write for ' + who + ': ' + rlEsc(saveFailure.reason) + '. Reload and try again.', false);
+    } else {
+      showBanner('<b>NOT SAVING RIGHT NOW. YOU ARE OFFLINE.</b>' +
+        'The change to ' + who + ' never left this device. It will go up when you reconnect and reload.', true);
+    }
+  }
+  function setSaveFailure(item, reason, rejected){ saveFailure = { item: item, reason: reason, rejected: !!rejected }; renderSaveFailure(); }
+  function clearSaveFailure(){ if (saveFailure){ saveFailure = null; hideBanner(); } }
+
+  function persist(item, value){
+    state[item] = value;
+    lsSet(item, value);
+    stateTs[item] = new Date().toISOString();
+    if (!sb){
+      setSync('error', 'Not saving');
+      setSaveFailure(item, 'the database client never loaded on this page', true);
+      return;
+    }
+    setSync('saving', 'Saving');
+    return sb.rpc('y0_upsert', { p_board: BOARD_ID, p_item: item, p_value: value, p_token: BOARD_TOKEN })
+      .then(function(res){
+        if (res.error){
+          setSync('error', 'Save failed');
+          setSaveFailure(item, (res.error.message || res.error.hint || 'rejected with no reason given'), true);
+        } else {
+          setSync('live', 'Synced');
+          clearSaveFailure();
+        }
+      })
+      .catch(function(){
+        setSync('offline', 'Offline (not saved)');
+        setSaveFailure(item, 'no connection', false);
+      });
+  }
+
+  function renderFreshness(){
+    var el = document.getElementById('freshness');
+    if (!el) return;
+    if (!REMOTE_OK){
+      el.setAttribute('data-state', 'down');
+      el.innerHTML = 'Board freshness: <span class="fr-strong">could not read the board.</span> Numbers below may be stale defaults, not live data.';
+      return;
+    }
+    var newest = null;
+    Object.keys(stateTs).forEach(function(k){
+      var t = new Date(stateTs[k]);
+      if (!newest || t > newest) newest = t;
+    });
+    if (!newest){
+      el.setAttribute('data-state', 'ok');
+      el.innerHTML = 'Board freshness: <span class="fr-strong">read OK, board is empty except the seeded anchor + goal rows.</span>';
+      return;
+    }
+    var ageH = (Date.now() - newest.getTime()) / 3600000;
+    var state_ = ageH > 48 ? 'stale' : 'ok';
+    el.setAttribute('data-state', state_);
+    el.innerHTML = 'Board freshness: <span class="fr-strong">newest row is ' + (ageH < 1 ? 'under an hour' : Math.round(ageH) + 'h') + ' old.</span>';
+  }
+
+  function hydrate(){
+    if (!sb){ setSync('error', 'No client'); renderFreshness(); renderHeaderAndWeek(); return; }
+    setSync('saving', 'Loading');
+    sb.from('y0_money_map_state').select('item_id,value,updated_at').eq('board_id', BOARD_ID)
+      .then(function(res){
+        if (res.error){
+          REMOTE_OK = false;
+          setSync('offline', 'Read failed');
+        } else {
+          REMOTE_OK = true;
+          (res.data || []).forEach(function(row){
+            state[row.item_id] = row.value;
+            if (row.updated_at) stateTs[row.item_id] = row.updated_at;
+          });
+          setSync('live', 'Synced');
+        }
+        renderFreshness();
+        renderHeaderAndWeek();
+        var nb = document.getElementById('notesBox');
+        if (nb && state['notes-log']) nb.value = state['notes-log'];
+        var ns = document.getElementById('notesSaved');
+        if (ns) ns.textContent = state['notes-log'] ? 'Last saved to the board.' : 'Not yet saved.';
+      })
+      .catch(function(){
+        REMOTE_OK = false;
+        setSync('offline', 'Offline');
+        renderFreshness();
+        renderHeaderAndWeek();
+      });
+
+    try {
+      sb.channel('y1-mm-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'y0_money_map_state', filter: 'board_id=eq.' + BOARD_ID }, function(payload){
+          var row = payload.new || payload.old;
+          if (!row) return;
+          state[row.item_id] = row.value;
+          if (row.updated_at) stateTs[row.item_id] = row.updated_at;
+          applyToDom(row.item_id, row.value);
+        })
+        .subscribe();
+    } catch(e){}
+  }
+
+  // ---- wire controls ----
+  document.addEventListener('DOMContentLoaded', function(){
+    hydrate();
+    setInterval(renderHeaderAndWeek, 60000);
+
+    var collectedInput = document.getElementById('collectedInput');
+    if (collectedInput){
+      collectedInput.addEventListener('change', function(){
+        var v = (collectedInput.value || '').replace(/[^0-9.]/g, '');
+        persist('collected-revenue', v || '0');
+        renderHeaderAndWeek();
+      });
+    }
+
+    var plus = document.getElementById('convPlus'), minus = document.getElementById('convMinus');
+    function convKeyToday(){ return 'conv-count-' + dkey(new Date()); }
+    function bumpConv(delta){
+      var k = convKeyToday();
+      var n = parseInt(state[k], 10); if (isNaN(n)) n = 0;
+      n = Math.max(0, n + delta);
+      persist(k, String(n));
+      renderHeaderAndWeek();
+    }
+    if (plus) plus.addEventListener('click', function(){ bumpConv(1); });
+    if (minus) minus.addEventListener('click', function(){ bumpConv(-1); });
+
+    var notesBox = document.getElementById('notesBox');
+    if (notesBox){
+      notesBox.addEventListener('blur', function(){
+        var stamp = new Date().toISOString();
+        var existing = state['notes-log'] || '';
+        var v = notesBox.value;
+        if (v && v !== existing){
+          persist('notes-log', v);
+          var ns = document.getElementById('notesSaved');
+          if (ns) ns.textContent = 'Saved ' + stamp.slice(0,16).replace('T',' ') + ' UTC.';
+        }
+      });
+    }
+
+    var copyBtn = document.getElementById('anchorCopy');
+    if (copyBtn){
+      copyBtn.addEventListener('click', function(){
+        var box = document.getElementById('anchorBox');
+        var text = box ? box.textContent.replace(/Copy\s*$/, '').trim() : '';
+        function done(){ copyBtn.textContent = 'Copied'; copyBtn.classList.add('copied'); setTimeout(function(){ copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 1500); }
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(done).catch(function(){});
+        } else {
+          try {
+            var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta); done();
+          } catch(e){}
+        }
+      });
+    }
+
+    var backTop = document.getElementById('backToTop');
+    if (backTop) backTop.addEventListener('click', function(){ window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  });
+})();
+</script>
+</body>
+</html>
