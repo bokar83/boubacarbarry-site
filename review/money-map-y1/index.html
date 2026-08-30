@@ -185,7 +185,7 @@
 
   <section>
     <h2>Anchor + goal, for anything else that needs to read it</h2>
-    <p class="lede">The Atlas Mission Control header widget (and anything else) reads these same rows &mdash; table <code>y1_money_map_state</code>, board <code>y1</code>, project <code>jscucboftaoaphticqci</code>.</p>
+    <p class="lede">The Atlas Mission Control header widget (and anything else) reads these same rows from the shared, permanent Money Map store &mdash; board <code>y1</code>. Every 12-week cycle (Y0, Y1, Y2, ...) lives in this one store forever, scoped by its own board id, never a new table per year.</p>
     <div class="code-box" id="anchorBox">item_id                   | value
 year-start-date           | 2026-09-01
 year-end-date             | 2026-11-23
@@ -194,7 +194,7 @@ kpi-revenue-goal-date     | 2026-11-23
 year-review-date          | 2026-11-24  (day after close, review only)<button class="copy-btn" id="anchorCopy" type="button">Copy</button></div>
   </section>
 
-  <footer class="pagefoot">Year One Money Map &middot; live board: y1_money_map_state &middot; Year Zero archive stays put, unedited.</footer>
+  <footer class="pagefoot">Year One Money Map &middot; live board: y1, shared Money Map store &middot; Year Zero archive stays put, unedited.</footer>
 </div>
 
 <button id="backToTop" aria-label="Back to top">&uarr;</button>
@@ -208,8 +208,11 @@ year-review-date          | 2026-11-24  (day after close, review only)<button cl
   var SB_URL = 'https://jscucboftaoaphticqci.supabase.co';
   var SB_ANON = 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S';
   var BOARD_ID = 'y1';
-  // Board-scoped write token. Not a service key; gates the y1_upsert RPC so a
-  // random visitor with the anon key alone cannot write. Same pattern as y0.
+  // Board-scoped write token. Not a service key; gates the y0_upsert RPC so a
+  // random visitor with the anon key alone cannot write. Same table + RPC as
+  // Y0 -- the board_id ('y1') is what scopes these rows, not a separate
+  // table (corrected 2026-08-29; see orchestrator/migrations/
+  // 069_unify_money_map_cycles.sql in agentsHQ).
   var BOARD_TOKEN = 'y1_X6Am6LKqhmIpKbr41eWh57RBM8iboPxV';
   var LS = 'y1mm-';
 
@@ -346,7 +349,7 @@ year-review-date          | 2026-11-24  (day after close, review only)<button cl
       return;
     }
     setSync('saving', 'Saving');
-    return sb.rpc('y1_upsert', { p_board: BOARD_ID, p_item: item, p_value: value, p_token: BOARD_TOKEN })
+    return sb.rpc('y0_upsert', { p_board: BOARD_ID, p_item: item, p_value: value, p_token: BOARD_TOKEN })
       .then(function(res){
         if (res.error){
           setSync('error', 'Save failed');
@@ -389,7 +392,7 @@ year-review-date          | 2026-11-24  (day after close, review only)<button cl
   function hydrate(){
     if (!sb){ setSync('error', 'No client'); renderFreshness(); renderHeaderAndWeek(); return; }
     setSync('saving', 'Loading');
-    sb.from('y1_money_map_state').select('item_id,value,updated_at').eq('board_id', BOARD_ID)
+    sb.from('y0_money_map_state').select('item_id,value,updated_at').eq('board_id', BOARD_ID)
       .then(function(res){
         if (res.error){
           REMOTE_OK = false;
@@ -418,7 +421,7 @@ year-review-date          | 2026-11-24  (day after close, review only)<button cl
 
     try {
       sb.channel('y1-mm-live')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'y1_money_map_state', filter: 'board_id=eq.' + BOARD_ID }, function(payload){
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'y0_money_map_state', filter: 'board_id=eq.' + BOARD_ID }, function(payload){
           var row = payload.new || payload.old;
           if (!row) return;
           state[row.item_id] = row.value;
