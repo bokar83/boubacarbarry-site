@@ -199,6 +199,13 @@
     details.ta-grp.grp-carried > summary { border-style: dashed; }
     details.ta-grp.grp-carried .grp-lbl { color: var(--muted); }
     details.ta-grp.grp-carried[open] .grp-lbl { color: var(--ink-strong); }
+    /* Stale / Archived Items (2026-08-30): a closed record, dimmer than an
+       open carried-over row on purpose -- it is decided, not waiting. */
+    details.ta-grp.grp-archived > summary { border-style: dotted; opacity: 0.8; }
+    details.ta-grp.grp-archived .grp-lbl { color: var(--faint); }
+    details.ta-grp.grp-archived[open] .grp-lbl { color: var(--muted); }
+    .archived-row { opacity: 0.72; }
+    .archived-row .lr-name { text-decoration: line-through; text-decoration-color: var(--faint); }
     /* Nice-to-have: present, tickable, and visibly owed on no day at all. */
     details.ta-grp.grp-nice > summary { border-style: dotted; opacity: 0.86; }
     details.ta-grp.grp-nice .grp-lbl { color: var(--muted); }
@@ -268,6 +275,7 @@
     .lr-pushbtn { font-size: 0.6rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.22rem 0.5rem; border-radius: 5px; border: 1px solid var(--line); background: var(--card-2); color: var(--muted); cursor: pointer; }
     .lr-pushbtn:hover { color: var(--ink-strong); border-color: var(--green); }
     .lr-pushbtn.on { color: var(--green); border-color: var(--green); }
+    .lr-archivebtn:hover { color: var(--amber); border-color: var(--amber); }
     .lr-pushnote { font-size: 0.8rem; line-height: 1.55; color: var(--ink); border-left: 3px solid var(--green); padding: 0.1rem 0 0.35rem 0.6rem; margin-top: 0.55rem; }
     .lr-pushnote .lr-pushwhen { font-size: 0.63rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
     .lr-pushform { border-top: 1px dashed var(--line-soft); margin-top: 0.55rem; padding-top: 0.6rem; display: flex; flex-direction: column; gap: 0.45rem; }
@@ -2623,6 +2631,67 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     var p = pushOf(id);
     return (p && p.to > base) ? p.to : base;
   }
+  // ---- ARCHIVE (2026-08-30, decision D-20260830-07) ---------------------
+  // The other half of "every carried-over item ends up with a real due-date
+  // OR an archived status, no third state." A structured flag, not a
+  // freeform note: `archive-<id>` holds JSON { v, ts, reason, by }, same
+  // shape and same never-delete discipline as push-<id> above -- an undo
+  // writes a { del: 1 } tombstone, both versions survive in the history
+  // table via the existing trigger. No date is required to archive; the
+  // reason is optional (his own words on Reschedule are the ones that made
+  // the date mandatory there -- Archive carries no equivalent quote, and
+  // the locked spec is explicit that Archive needs no date and only an
+  // optional note).
+  function archiveKey(id){ return 'archive-' + id; }
+  function archiveOf(id){
+    var raw = state[archiveKey(id)];
+    if (raw === undefined || raw === null) raw = lsGet(archiveKey(id));
+    if (!raw) return null;
+    var a; try { a = JSON.parse(raw); } catch(e){ return null; }
+    if (!a || typeof a !== 'object' || a.del) return null;
+    return a;
+  }
+  function isArchived(id){ return !!archiveOf(id); }
+  // Every currently-archived row, database-driven and seeded alike, most
+  // recently archived first. This is the ONLY place archived rows are
+  // collected for display -- collectActs() above excludes them from
+  // due/carried entirely, so this is the sole path back into view.
+  function archivedRows(){
+    var out = [];
+    for (var k in state){
+      if (!Object.prototype.hasOwnProperty.call(state, k)) continue;
+      if (k.indexOf('done-') === 0 || k.indexOf('push-') === 0 || k.indexOf('archive-') === 0) continue;
+      var kind = (k.indexOf('status-') === 0) ? 'status' : (k.indexOf('kpi-') === 0 ? 'kpi' : null);
+      if (!kind) continue;
+      if (!isArchived(k)) continue;
+      out.push({ id: k, v: state[k], kind: kind });
+    }
+    SEEDS.forEach(function(sd){ if (isArchived(sd.id)) out.push({ id: sd.id, v: '', kind: 'status', seeded: true }); });
+    leadRecords().forEach(function(sd){ if (isArchived(sd.id)) out.push({ id: sd.id, v: '', kind: 'status', seeded: true }); });
+    out.sort(function(a, b){
+      var ta = (archiveOf(a.id) || {}).ts || '';
+      var tb = (archiveOf(b.id) || {}).ts || '';
+      return ta < tb ? 1 : (ta > tb ? -1 : 0); // most recently archived first
+    });
+    return out;
+  }
+  // A dedicated, deliberately minimal renderer for the archived bucket --
+  // not rlActRow, because an archived row is a closed record, not an open
+  // action: no Notes, no Reschedule, no checkbox, only who archived it, why,
+  // and a way back.
+  function archivedRowHtml(r){
+    var seed = SEED_BY_ID[r.id];
+    var isKpi = (r.kind === 'kpi');
+    var name  = seed ? seed.name
+                     : rlLabel(r.id, isKpi ? 'kpi-' : 'status-').replace(/\s+\d{4} \d{2} \d{2}$/, '');
+    var a = archiveOf(r.id) || {};
+    return '<div class="lane-row act-row archived-row" data-act="' + rlEsc(r.id) + '">' +
+      '<div class="lr-head"><span class="lr-name">' + (seed ? name : rlEsc(name)) + '</span>' +
+        '<button type="button" class="lr-pushbtn" data-unarchive="' + rlEsc(r.id) + '">Unarchive</button>' +
+      '</div>' +
+      '<div class="lr-body"><div class="lr-pushnote"><b>Archived' + (a.ts ? ' ' + rlEsc(noteClock(a.ts)) : '') + '.</b> ' +
+        (a.reason ? rlEsc(a.reason) : 'No note left.') + '</div></div></div>';
+  }
   // ---- A SEQUENCE DOES NOT STACK (2026-08-27) ---------------------------
   // A dated plan written as "DAY 3 of 28" is a schedule, not twenty-eight
   // independent tasks. Miss two days of a course and the rollover put day 1,
@@ -2942,7 +3011,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     var pushed = pushOf(id);
     var pushable = !(seed && seed.daily);
     if (pushed && !done){
-      age += '<span class="lr-pushed">pushed to ' + prettyDate(pushed.to) + '</span>';
+      age += '<span class="lr-pushed">rescheduled to ' + prettyDate(pushed.to) + '</span>';
     }
     // Seed rows carry their own hand-authored lane chip inside seed.html
     // already (the CW/SW/IC/PGA/Studio chip system built 2026-08-19 and
@@ -2959,7 +3028,8 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
         age + '<span class="lr-name">' + (seed ? name : rlEsc(name)) + '</span>' +
         '<button type="button" class="lr-notebtn' + (n ? ' has' : '') + '" data-notes="' + rlEsc(id) + '">Notes' + (n ? ' (' + n + ')' : '') + '</button>' +
         (pushable ? '<button type="button" class="lr-pushbtn' + (pushed ? ' on' : '') + '" data-push="' + rlEsc(id) + '">' +
-                      (pushed ? 'Pushed' : 'Push') + '</button>' : '') +
+                      (pushed ? 'Rescheduled' : 'Reschedule') + '</button>' : '') +
+        (pushable ? '<button type="button" class="lr-pushbtn lr-archivebtn" data-archive="' + rlEsc(id) + '">Archive</button>' : '') +
       '</div>' +
       '<div class="lr-body">' +
         (function(){
@@ -2969,11 +3039,12 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
         })() +
         (String(id).indexOf('act-daily-li-') === 0 ? liCommentLine() : '') +
         (String(id).indexOf('inbox-replies') !== -1 ? inboxReplyLine() : '') +
-        (pushed ? '<div class="lr-pushnote"><b>Pushed to ' + rlEsc(prettyDate(pushed.to)) + '.</b> ' +
+        (pushed ? '<div class="lr-pushnote"><b>Rescheduled to ' + rlEsc(prettyDate(pushed.to)) + '.</b> ' +
                     rlEsc(String(pushed.reason)) +
                     (pushed.ts ? ' <span class="lr-pushwhen">recorded ' + rlEsc(noteClock(pushed.ts)) + '</span>' : '') +
                   '</div>' : '') +
         (pushable ? '<div class="lr-pushform" data-pushwrap="' + rlEsc(id) + '" hidden></div>' : '') +
+        (pushable ? '<div class="lr-pushform" data-archivewrap="' + rlEsc(id) + '" hidden></div>' : '') +
         '<div class="lr-notes" data-noteswrap="' + rlEsc(id) + '"' + (open ? '' : ' hidden') + '>' + (open ? notesHtml(id) : '') + '</div>' +
       '</div></div>';
   }
@@ -2990,15 +3061,32 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
           '<input type="date" data-pushdate="' + rlEsc(id) + '" value="' + rlEsc(def) + '" min="' + rlEsc(dkey(t)) + '">' +
         '</label>' +
       '</div>' +
-      '<textarea data-pushreason="' + rlEsc(id) + '" rows="2" placeholder="Why you are pushing it. Required -- this is what makes it a push and not a skip."></textarea>' +
+      '<textarea data-pushreason="' + rlEsc(id) + '" rows="2" placeholder="Why you are rescheduling it. Required -- this is what makes it a reschedule and not a skip."></textarea>' +
       '<div class="lr-pushrow">' +
-        '<button type="button" data-pushsave="' + rlEsc(id) + '">Push it</button>' +
+        '<button type="button" data-pushsave="' + rlEsc(id) + '">Reschedule it</button>' +
         '<button type="button" class="ghost" data-pushcancel="' + rlEsc(id) + '">Cancel</button>' +
-        (p ? '<button type="button" class="ghost" data-pushundo="' + rlEsc(id) + '">Undo the push</button>' : '') +
+        (p ? '<button type="button" class="ghost" data-pushundo="' + rlEsc(id) + '">Undo the reschedule</button>' : '') +
       '</div>' +
       '<span class="lr-notestatus" data-pushstatus="' + rlEsc(id) + '"></span>' +
-      (p ? '<div class="lr-notestatus">Already pushed to ' + rlEsc(prettyDate(p.to)) +
+      (p ? '<div class="lr-notestatus">Already rescheduled to ' + rlEsc(prettyDate(p.to)) +
            '. Saving again replaces it, and both versions stay in the history.</div>' : '');
+  }
+
+  // The archive form. No date required -- Archive is the other of the two
+  // exactly-one outcomes a carried-over item can land on (decision
+  // D-20260830-07): Reschedule demands a real due-date, Archive demands
+  // nothing but a click, with an optional note for why. Reversible, like the
+  // push undo above: an undo writes a tombstone, nothing is ever deleted.
+  function archiveFormHtml(id){
+    var a = archiveOf(id);
+    return '<textarea data-archivereason="' + rlEsc(id) + '" rows="2" placeholder="Optional -- why you are archiving this."></textarea>' +
+      '<div class="lr-pushrow">' +
+        '<button type="button" data-archivesave="' + rlEsc(id) + '">Archive it</button>' +
+        '<button type="button" class="ghost" data-archivecancel="' + rlEsc(id) + '">Cancel</button>' +
+      '</div>' +
+      '<span class="lr-notestatus" data-archivestatus="' + rlEsc(id) + '"></span>' +
+      (a ? '<div class="lr-notestatus">Already archived' + (a.ts ? ' ' + rlEsc(noteClock(a.ts)) : '') +
+           '. Saving again replaces the note, and both versions stay in the history.</div>' : '');
   }
 
   // A re-render blows away a half-typed note. Realtime fires a render on every
@@ -3025,6 +3113,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       if (k.indexOf('done-') === 0) continue;         // tick flags are not rows
       var val = state[k];
       if (val == null || String(val).indexOf('superseded-by-per-channel-rows') === 0) continue; // hide tombstones
+      if (isArchived(k)) continue; // archived (2026-08-30): out of due/carried entirely, rendered only in its own bucket
       var kind = (k.indexOf('status-') === 0) ? 'status' : (k.indexOf('kpi-') === 0 ? 'kpi' : null);
       if (!kind) continue;
       // ---- A STANDING DAILY IS NOT A DEBT (2026-08-27) ------------------
@@ -3071,6 +3160,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     // deliberately left alone: a daily is not pushable, because a missed daily
     // does not stack in the first place.
     SEEDS.forEach(function(sd){
+      if (isArchived(sd.id)) return; // a hand-authored seed can be archived too (2026-08-30)
       var d = applyPush(sd.id, sd.date);
       (byDay[d] = byDay[d] || []).push({ id: sd.id, v: '', kind: 'status', seeded: true });
     });
@@ -3078,6 +3168,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       (byDay[sd.date] = byDay[sd.date] || []).push({ id: sd.id, v: '', kind: 'status', seeded: true, daily: true });
     });
     leadRecords().forEach(function(sd){
+      if (isArchived(sd.id)) return;
       var d = applyPush(sd.id, sd.date);
       (byDay[d] = byDay[d] || []).push({ id: sd.id, v: '', kind: 'status', seeded: true });
     });
@@ -3112,7 +3203,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
   // where nobody can mistake it for an ask. The test reads only the FIRST line
   // of the value, so a live row that merely mentions the word "closed" later
   // in its text is untouched.
-  var TOMBSTONE_RE = /^\s*(CLOSED|SUPERSEDED|MERGED|POINTER ROW|CORRECTED AND CLOSED|DUPLICATE)\b/i;
+  var TOMBSTONE_RE = /^\s*(CLOSED|SUPERSEDED|MERGED|POINTER ONLY|POINTER ROW|CORRECTED AND CLOSED|DUPLICATE)\b/i;
   // ---- A FINISHED ROW THAT WAS NEVER TICKED (2026-08-27) ----------------
   // A row can announce its own completion in its text and still never have a
   // tick against it, because whoever wrote the outcome into the row did not
@@ -3156,7 +3247,18 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     // rendered an empty card that read like an unfinished task. A record with
     // no content is never an action.
     if (!s.trim()) return true;
-    return TOMBSTONE_RE.test(s.split('\n')[0]);
+    var lines = s.split('\n');
+    if (TOMBSTONE_RE.test(lines[0])) return true;
+    // ---- A LANE: LINE HIDES THE MARKER ON THE LINE BEHIND IT (2026-08-30) -
+    // Found live during the carryover sweep (decision D-20260830-07): every
+    // newer row opens with "LANE: <name>" before its own status word, so
+    // "MERGED", "CLOSED quietly", "SUPERSEDED" and "POINTER ONLY" were never
+    // on line 0 and this check never saw them. 17 of the 68 items sitting in
+    // the carried-over backlog were already dead by their own words and only
+    // looked open because of this. The LANE: line is metadata, not the row's
+    // real opening word, so the marker is also checked one line behind it.
+    if (/^LANE:\s*\S+\s*$/i.test(lines[0]) && lines[1] && TOMBSTONE_RE.test(lines[1])) return true;
+    return false;
   }
 
   // ---- HIS OWN ORDER (2026-08-26) ---------------------------------------
@@ -3576,12 +3678,27 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       var carriedOpen = carriedList.filter(function(r){ return !pinnedIds[r.id]; });
       setCount(carriedOpen.length);
       if (carriedOpen.length){
-        var oldest = carriedOpen[0].rolledFrom;
+        // ---- ROLLING 20-ITEM VISIBLE CAP (2026-08-30, decision D-20260830-07)
+        // Every carried-over row stays in the database no matter how many
+        // pile up. The PAGE only ever renders the oldest 20 at a time --
+        // carriedOpen is already sorted oldest-rolledFrom-first by
+        // todayRows() above, so a straight slice is the honest "oldest 20"
+        // cut. As the visible 20 clear (done / rescheduled / archived), the
+        // next-oldest backlog row rotates into view on the next render. If
+        // there are 35 pending, showing exactly 20 here is correct, not a
+        // bug -- there is deliberately no "show all" toggle, because that
+        // would defeat the entire point of the cap.
+        var CARRIED_CAP = 20;
+        var carriedVisible = carriedOpen.slice(0, CARRIED_CAP);
+        var carriedHiddenN = carriedOpen.length - carriedVisible.length;
+        var oldest = carriedVisible[0].rolledFrom;
         var cbuck = {};
-        carriedOpen.forEach(function(r){ (cbuck[actGroup(r.id)] = cbuck[actGroup(r.id)] || []).push(r); });
+        carriedVisible.forEach(function(r){ (cbuck[actGroup(r.id)] = cbuck[actGroup(r.id)] || []).push(r); });
         var cbody = '<div class="ta-sub" style="margin:0 0 0.6rem;font-size:0.76rem;">' +
-                    'These were due on an earlier day and are still open. This is a backlog to <b>decide on</b>, not a list to finish today: do it, re-date it, or write one line saying why it is not happening. The oldest reaches back to ' +
-                    rlEsc(prettyDate(oldest)) + '.</div>';
+                    'These were due on an earlier day and are still open. Every one needs exactly one decision: <b>Reschedule</b> it to a real date, or <b>Archive</b> it. Nothing may simply keep carrying over. The oldest shown reaches back to ' +
+                    rlEsc(prettyDate(oldest)) + '.' +
+                    (carriedHiddenN ? ' Showing the oldest ' + carriedVisible.length + ' of ' + carriedOpen.length + '; the other ' + carriedHiddenN + ' stay in the database and rotate into view as these clear.' : '') +
+                    '</div>';
         ACT_GROUPS.forEach(function(g){
           var rows = cbuck[g.key];
           if (!rows || !rows.length) return;
@@ -3589,8 +3706,33 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
                    rows.map(function(r){ return rlActRow(r.id, r.v, r.kind, r.rolledFrom); }).join('');
         });
         thtml += grpHtml('ta-grp-carried', false,
-                         'Carried over from earlier days · not today\'s work',
-                         0, carriedOpen.length, cbody, 'grp-carried');
+                         'Carried over &middot; needs a Reschedule or Archive decision' +
+                         (carriedHiddenN ? ' (showing 20 of ' + carriedOpen.length + ')' : ''),
+                         0, carriedVisible.length, cbody, 'grp-carried');
+      }
+      // ---- STALE / ARCHIVED ITEMS, ITS OWN SECTION, SHUT (2026-08-30) ---
+      // Only genuinely ARCHIVED rows land here -- an item with a real future
+      // reschedule date is not stale, it is just a normal pending row sorted
+      // by its new date, and it never reaches this bucket at all. An overdue
+      // row nobody has acted on yet stays visible in "Carried over" above,
+      // deliberately never auto-reclassified as stale: silently hiding an
+      // unactioned overdue row here would be the opposite of what he wants.
+      // Archived, not deleted -- capped to the 20 most recently archived for
+      // display; every archived row still lives in the database forever.
+      var archived = archivedRows();
+      if (archived.length){
+        var ARCHIVE_CAP = 20;
+        var archivedVisible = archived.slice(0, ARCHIVE_CAP);
+        var archivedHiddenN = archived.length - archivedVisible.length;
+        var abody = '<div class="ta-sub" style="margin:0 0 0.6rem;font-size:0.76rem;">' +
+                    'Decided and set aside, not deleted. Unarchive any of these to bring it back as an open item.' +
+                    (archivedHiddenN ? ' Showing the ' + archivedVisible.length + ' most recently archived of ' + archived.length + '.' : '') +
+                    '</div>' +
+                    archivedVisible.map(archivedRowHtml).join('');
+        thtml += grpHtml('ta-grp-archived',
+                         false,
+                         'Stale / Archived Items' + (archivedHiddenN ? ' (showing 20 of ' + archived.length + ')' : ''),
+                         0, archivedVisible.length, abody, 'grp-archived');
       }
       // ---- NICE TO HAVE, ITS OWN SECTION, SHUT, NEVER COUNTED -----------
       // See isNice() above for why this tier exists. These rows are real and
@@ -3893,8 +4035,8 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     // Both required. The database rejects a push missing either one whichever
     // writer sends it, so these three checks only save him a round trip.
     if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)){ bad('Pick the new date this is due on.'); return; }
-    if (newDate <= dkey(new Date())){ bad('A push moves it forward. Pick a date after today.'); return; }
-    if (reason.length < 3){ bad('Write why you are pushing it. That is what makes this a push and not a skip.'); return; }
+    if (newDate <= dkey(new Date())){ bad('A reschedule moves it forward. Pick a date after today.'); return; }
+    if (reason.length < 3){ bad('Write why you are rescheduling it. That is what makes this a reschedule and not a skip.'); return; }
 
     var from = itemDate(pid) || dkey(new Date());
     var rec = { v: 1, from: from, to: newDate, reason: reason, ts: new Date().toISOString(), by: 'boubacar' };
@@ -3909,7 +4051,7 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     fetch(NOTES_API + '/note', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: pid,
-        note_text: 'PUSHED to ' + newDate + '. ' + reason })
+        note_text: 'RESCHEDULED to ' + newDate + '. ' + reason })
     }).then(function(){ return loadNotes(); }).catch(function(){});
 
     // A 200 is a claim, not proof. Read the row back off the board and confirm
@@ -3931,13 +4073,13 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
       if ((res && res.error) || !back || back.to !== newDate || String(back.reason) !== reason){
         if (sf){
           sf.className = 'lr-notestatus bad';
-          sf.textContent = 'NOT SAVED: the push is not in the database on a fresh read' +
+          sf.textContent = 'NOT SAVED: the reschedule is not in the database on a fresh read' +
             ((res && res.error) ? ' (' + (res.error.message || 'read failed') + ')' : '') +
             '. Nothing has moved. Try again before you leave this page.';
         }
         return;
       }
-      if (sf){ sf.className = 'lr-notestatus ok'; sf.textContent = 'Pushed to ' + prettyDate(newDate) + '. Confirmed by reading it back from the database.'; }
+      if (sf){ sf.className = 'lr-notestatus ok'; sf.textContent = 'Rescheduled to ' + prettyDate(newDate) + '. Confirmed by reading it back from the database.'; }
       var wsave = document.querySelector('.lr-pushform[data-pushwrap="' + CSS.escape(pid) + '"]');
       setTimeout(function(){
         if (wsave){ wsave.hidden = true; wsave.innerHTML = ''; }
@@ -3946,6 +4088,90 @@ Want the link?</span><span class="dep"><b>Channel:</b> email, the only one on fi
     }).catch(function(){
       t.disabled = false;
       var sf2 = document.querySelector('[data-pushstatus="' + CSS.escape(pid) + '"]');
+      if (sf2){ sf2.className = 'lr-notestatus bad'; sf2.textContent = 'NOT SAVED: could not reach the database to confirm it. Nothing has moved.'; }
+    });
+  });
+
+  // ---- ARCHIVE click handlers (2026-08-30, decision D-20260830-07) ------
+  // Mirrors the reschedule handler above exactly: open/cancel the form,
+  // save with a verify-after-write read-back (a 200 is a claim, not proof),
+  // and an undo that tombstones rather than deletes. No date is required;
+  // the reason is optional and, when given, also lands in the notes trail.
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t || !t.getAttribute) return;
+
+    var openId = t.getAttribute('data-archive');
+    if (openId){
+      var w = document.querySelector('.lr-pushform[data-archivewrap="' + CSS.escape(openId) + '"]');
+      if (!w) return;
+      if (w.hidden){ w.innerHTML = archiveFormHtml(openId); w.hidden = false; }
+      else { w.hidden = true; w.innerHTML = ''; }
+      return;
+    }
+
+    var cancelId = t.getAttribute('data-archivecancel');
+    if (cancelId){
+      var wc = document.querySelector('.lr-pushform[data-archivewrap="' + CSS.escape(cancelId) + '"]');
+      if (wc){ wc.hidden = true; wc.innerHTML = ''; }
+      return;
+    }
+
+    var unarchiveId = t.getAttribute('data-unarchive');
+    if (unarchiveId){
+      persist(archiveKey(unarchiveId), JSON.stringify({ v: 1, del: 1 }));
+      renderRevLanes();
+      return;
+    }
+
+    var aid = t.getAttribute('data-archivesave');
+    if (!aid) return;
+
+    var arEl = document.querySelector('textarea[data-archivereason="' + CSS.escape(aid) + '"]');
+    var asEl = document.querySelector('[data-archivestatus="' + CSS.escape(aid) + '"]');
+    var areason = arEl ? String(arEl.value || '').trim() : '';
+    var rec = { v: 1, ts: new Date().toISOString(), reason: areason, by: 'boubacar' };
+    t.disabled = true;
+    if (asEl){ asEl.className = 'lr-notestatus'; asEl.textContent = 'Saving...'; }
+    var awritten = persist(archiveKey(aid), JSON.stringify(rec));
+
+    if (areason){
+      fetch(NOTES_API + '/note', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: aid,
+          note_text: 'ARCHIVED. ' + areason })
+      }).then(function(){ return loadNotes(); }).catch(function(){});
+    }
+
+    Promise.resolve(awritten).then(function(){
+      return sb
+        ? sb.from('y0_money_map_state').select('value')
+            .eq('board_id', BOARD_ID).eq('item_id', archiveKey(aid))
+        : { error: { message: 'the database client never loaded on this page' } };
+    }).then(function(res){
+      t.disabled = false;
+      var sf = document.querySelector('[data-archivestatus="' + CSS.escape(aid) + '"]');
+      var rows = (res && res.data) || [];
+      var back = null;
+      try { back = rows.length ? JSON.parse(rows[0].value) : null; } catch(err){ back = null; }
+      if ((res && res.error) || !back || back.ts !== rec.ts){
+        if (sf){
+          sf.className = 'lr-notestatus bad';
+          sf.textContent = 'NOT SAVED: the archive is not in the database on a fresh read' +
+            ((res && res.error) ? ' (' + (res.error.message || 'read failed') + ')' : '') +
+            '. Nothing has moved. Try again before you leave this page.';
+        }
+        return;
+      }
+      if (sf){ sf.className = 'lr-notestatus ok'; sf.textContent = 'Archived. Confirmed by reading it back from the database.'; }
+      var wsave = document.querySelector('.lr-pushform[data-archivewrap="' + CSS.escape(aid) + '"]');
+      setTimeout(function(){
+        if (wsave){ wsave.hidden = true; wsave.innerHTML = ''; }
+        renderRevLanes();
+      }, 900);
+    }).catch(function(){
+      t.disabled = false;
+      var sf2 = document.querySelector('[data-archivestatus="' + CSS.escape(aid) + '"]');
       if (sf2){ sf2.className = 'lr-notestatus bad'; sf2.textContent = 'NOT SAVED: could not reach the database to confirm it. Nothing has moved.'; }
     });
   });
