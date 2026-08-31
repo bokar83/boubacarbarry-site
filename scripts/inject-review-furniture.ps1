@@ -93,13 +93,24 @@ $startMarker
   #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
   #rf-top{opacity:0;pointer-events:none;}
   #rf-top.rf-show{opacity:1;pointer-events:auto;}
-  /* Phone: shrink the controls so they cover as little body text as possible. A floating
-     control always overlaps something mid-scroll -- that is the point of floating -- but at
-     375px the full-size pills sat across a table, so they get compact here. Still 40px tall,
-     which is the minimum comfortable tap target. */
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old `opacity:.93` on the shared button rule below used to silently win over
+     `#rf-top{opacity:0}` (higher specificity: `#rf-controls button` beats a bare `#rf-top`
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
   @media (max-width:560px){
     #rf-controls{right:10px;bottom:12px;gap:6px;}
-    #rf-controls button{padding:0 11px;font-size:12px;opacity:.93;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
   }
   @media (prefers-color-scheme: light){
     #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
@@ -115,15 +126,15 @@ $startMarker
 (function () {
   'use strict';
 
-  // ---- back to top -------------------------------------------------------------
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
   var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
   function onScroll() {
-    if (!topBtn) { return; }
-    if ((window.pageYOffset || document.documentElement.scrollTop) > 320) {
-      topBtn.classList.add('rf-show');
-    } else {
-      topBtn.classList.remove('rf-show');
-    }
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
