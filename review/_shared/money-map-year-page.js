@@ -229,7 +229,8 @@
             '<summary><span class="mm-chev">&#9656;</span><span class="mm-hero-badge">#1 right now</span>' +
               '<span class="mm-sec-meta" id="mmHeroMeta"></span>' +
               '<span class="mm-hero-line" id="mmHeroLine">Reading the board&hellip;</span></summary>' +
-            '<div class="mm-sec-body"><div class="mm-hero-why" id="mmHeroWhy"></div><div id="mmHeroRes"></div></div>' +
+            '<div class="mm-sec-body"><div class="mm-hero-why" id="mmHeroWhy"></div><div id="mmHeroRes"></div>' +
+              '<div id="mmHeroCtl"></div></div>' +
           '</details>' +
 
           '<details class="mm-sec" id="sec-work" open>' +
@@ -385,7 +386,15 @@
     // -------------------------------------------------------------------
     function renderHero() {
       var line = el('mmHeroLine'), why = el('mmHeroWhy'), meta = el('mmHeroMeta'), res = el('mmHeroRes');
+      var ctl = el('mmHeroCtl');
+      // The hero repaints on EVERY realtime write from any device, including
+      // renders that renderAll deliberately withholds from the lists. Its
+      // control bar now carries typeable forms, so it needs the same
+      // half-typed-text protection the lists have: drop the handle and every
+      // `if (ctl)` below becomes a no-op, leaving what he is typing alone.
+      if (ctl && editInProgress()) ctl = null;
       if (!line) return;
+      if (ctl) ctl.innerHTML = '';
       if (!remoteOk) {
         line.textContent = 'Could not read the board, so there is no #1 to show.';
         if (why) why.textContent = readError ? ('The read failed: ' + readError) : '';
@@ -421,6 +430,25 @@
           }
         }
         res.innerHTML = (match && ownerOf(match) !== 'agent') ? resourcePanelHtml(match, String(match.key)) : '';
+      }
+
+      // The #1 tile gets THE SAME four controls as every list tile, from the
+      // same function. renderLists deliberately filters this row out of the
+      // ranked list so it is not read twice -- which meant that until this
+      // was wired, the day's single most important item was the ONE item on
+      // the whole page he could not tick, note, reschedule or archive.
+      if (ctl) {
+        if (match) {
+          ctl.innerHTML = controlsHtml(String(match.key));
+        } else {
+          // No ranked row carries this exact text, so there is no item id to
+          // write against. Say that rather than drawing controls that would
+          // write to a key nothing else reads.
+          ctl.innerHTML = '<div class="mm-stat-note">This #1 was written straight to ' +
+            '<code>cos-top-priority</code> and does not match a ranked row, so it has no ' +
+            'item of its own to tick, note or reschedule. Find it in the list below, or ' +
+            're-run the publisher so the two agree.</div>';
+        }
       }
     }
 
@@ -774,6 +802,63 @@
         '<div class="mm-agent-rows">' + rowsHtml + '</div></details>';
     }
 
+    // -------------------------------------------------------------------
+    // THE control bar. ONE function, every tile type.
+    // -------------------------------------------------------------------
+    // Read this before adding a new tile type anywhere on this page.
+    //
+    // These four controls -- Done, Notes, Reschedule, Archive -- went missing
+    // three separate times on 2026-08-31, and each time the diagnosis was
+    // different, because there were two independent ways for a row to reach
+    // the screen and only one of them ever carried controls:
+    //
+    //   1. The ranked list tiles got the bar, but it was emitted INSIDE the
+    //      collapsed <details> body. Forty rows rendered showing a checkbox
+    //      and nothing else. Present in the DOM, invisible on the page, which
+    //      from his side is the same thing as missing -- and the reason two
+    //      verification passes "confirmed" a bar he could not see.
+    //   2. The #1 tile (renderHero) never had the bar AT ALL. It shares no
+    //      code with itemHtml. And because renderLists FILTERS the hero row
+    //      out of the ranked list so it does not appear twice, the single
+    //      most important item on the board had no Done, no Notes, no
+    //      Reschedule and no Archive anywhere on the page. That was a real,
+    //      total loss of function, not a visibility problem.
+    //
+    // So: the bar lives here, once, and it renders OUTSIDE the <details> so
+    // it is visible without expanding anything. Any new tile type calls this.
+    // Do not inline a second copy -- that duplication is the whole bug.
+    function controlsHtml(k) {
+      k = String(k);
+      var done = isDone(k);
+      var pushed = pushOf(k);
+      var arch = archiveOf(k);
+      var n = (NOTES[k] || []).length;
+
+      return '<div class="mm-ctl">' +
+          '<label class="mm-ctl-done"><input type="checkbox" data-done="' + esc(k) + '"' + (done ? ' checked' : '') + '> Done</label>' +
+          '<button type="button" class="mm-ctl-btn' + (n ? ' has' : '') + '" data-notes="' + esc(k) + '">Notes' + (n ? ' (' + n + ')' : '') + '</button>' +
+          '<button type="button" class="mm-ctl-btn' + (pushed ? ' on' : '') + '" data-push="' + esc(k) + '">' +
+            (pushed ? 'Rescheduled' : 'Reschedule') + '</button>' +
+          (arch
+            ? '<button type="button" class="mm-ctl-btn" data-unarchive="' + esc(k) + '">Unarchive</button>'
+            : '<button type="button" class="mm-ctl-btn arch" data-archive="' + esc(k) + '">Archive</button>') +
+        '</div>' +
+
+        (pushed ? '<div class="mm-marknote"><b>Rescheduled to ' + esc(prettyDate(pushed.to)) + '.</b> ' +
+                    esc(String(pushed.reason || '')) +
+                    (pushed.ts ? ' <span class="mm-when-sm">recorded ' + esc(noteClock(pushed.ts)) + '</span>' : '') +
+                  '</div>' : '') +
+        (arch ? '<div class="mm-marknote"><b>Archived' + (arch.ts ? ' ' + esc(noteClock(arch.ts)) : '') + '.</b> ' +
+                  esc(String(arch.reason || 'No reason recorded.')) + '</div>' : '') +
+
+        '<div class="mm-form" data-pushwrap="' + esc(k) + '"' + (formOpen[k] === 'push' ? '' : ' hidden') + '>' +
+          (formOpen[k] === 'push' ? pushFormHtml(k) : '') + '</div>' +
+        '<div class="mm-form" data-archivewrap="' + esc(k) + '"' + (formOpen[k] === 'archive' ? '' : ' hidden') + '>' +
+          (formOpen[k] === 'archive' ? archiveFormHtml(k) : '') + '</div>' +
+        '<div class="mm-notes-panel" data-noteswrap="' + esc(k) + '"' + (NOTES_OPEN[k] ? '' : ' hidden') + '>' +
+          (NOTES_OPEN[k] ? notesHtml(k) : '') + '</div>';
+    }
+
     function itemHtml(item) {
       // `headline` is picked server-side by the publisher, which knows to skip
       // this board's scaffolding lines ("DATE SET:", "STATUS:", "DAY 3 of 10")
@@ -799,7 +884,6 @@
       var done = isDone(k);
       var pushed = pushOf(k);
       var arch = archiveOf(k);
-      var n = (NOTES[k] || []).length;
 
       // A rescheduled or archived row wears it on its face, collapsed. He has
       // to be able to tell at a glance that a row was LOOKED AT and moved on
@@ -808,7 +892,13 @@
       if (pushed) badges += '<span class="mm-mark push">moved to ' + esc(prettyDate(pushed.to)) + '</span>';
       if (arch) badges += '<span class="mm-mark arch">archived</span>';
 
-      return '<details class="mm-item' + (done ? ' is-done' : '') + (arch ? ' is-arch' : '') + '"' +
+      var stateCls = (done ? ' is-done' : '') + (arch ? ' is-arch' : '');
+
+      // The <details> holds the READING (title, first move, resource, facts).
+      // The control bar is its SIBLING, not its child, so the four controls
+      // are on screen without him expanding forty rows to find them.
+      return '<div class="mm-row' + stateCls + '" data-rowkey="' + esc(k) + '">' +
+        '<details class="mm-item' + stateCls + '"' +
           ' data-itemkey="' + esc(k) + '"' + (itemOpen[k] ? ' open' : '') + '>' +
         '<summary>' +
           '<input type="checkbox" class="mm-check" data-done="' + esc(k) + '"' + (done ? ' checked' : '') +
@@ -823,31 +913,9 @@
           resourcePanelHtml(item, k) +
           '<div class="mm-full">' + esc(item.title || '') + '</div>' +
           '<div class="mm-facts">' + esc(facts.filter(Boolean).join(' · ')) + ' · ' + esc(k) + '</div>' +
-
-          '<div class="mm-ctl">' +
-            '<label class="mm-ctl-done"><input type="checkbox" data-done="' + esc(k) + '"' + (done ? ' checked' : '') + '> Done</label>' +
-            '<button type="button" class="mm-ctl-btn' + (n ? ' has' : '') + '" data-notes="' + esc(k) + '">Notes' + (n ? ' (' + n + ')' : '') + '</button>' +
-            '<button type="button" class="mm-ctl-btn' + (pushed ? ' on' : '') + '" data-push="' + esc(k) + '">' +
-              (pushed ? 'Rescheduled' : 'Reschedule') + '</button>' +
-            (arch
-              ? '<button type="button" class="mm-ctl-btn" data-unarchive="' + esc(k) + '">Unarchive</button>'
-              : '<button type="button" class="mm-ctl-btn arch" data-archive="' + esc(k) + '">Archive</button>') +
-          '</div>' +
-
-          (pushed ? '<div class="mm-marknote"><b>Rescheduled to ' + esc(prettyDate(pushed.to)) + '.</b> ' +
-                      esc(String(pushed.reason || '')) +
-                      (pushed.ts ? ' <span class="mm-when-sm">recorded ' + esc(noteClock(pushed.ts)) + '</span>' : '') +
-                    '</div>' : '') +
-          (arch ? '<div class="mm-marknote"><b>Archived' + (arch.ts ? ' ' + esc(noteClock(arch.ts)) : '') + '.</b> ' +
-                    esc(String(arch.reason || 'No reason recorded.')) + '</div>' : '') +
-
-          '<div class="mm-form" data-pushwrap="' + esc(k) + '"' + (formOpen[k] === 'push' ? '' : ' hidden') + '>' +
-            (formOpen[k] === 'push' ? pushFormHtml(k) : '') + '</div>' +
-          '<div class="mm-form" data-archivewrap="' + esc(k) + '"' + (formOpen[k] === 'archive' ? '' : ' hidden') + '>' +
-            (formOpen[k] === 'archive' ? archiveFormHtml(k) : '') + '</div>' +
-          '<div class="mm-notes-panel" data-noteswrap="' + esc(k) + '"' + (NOTES_OPEN[k] ? '' : ' hidden') + '>' +
-            (NOTES_OPEN[k] ? notesHtml(k) : '') + '</div>' +
-        '</div></details>';
+        '</div></details>' +
+        controlsHtml(k) +
+      '</div>';
     }
 
     function renderList(hostId, metaId, rows, key, emptyMsg) {
@@ -1091,8 +1159,13 @@
         var k = t.getAttribute('data-done');
         var on = !!t.checked;
         var val = on ? '1' : '0';
+        // The card border and the strike-through now live on the wrapper as
+        // well as the <details>, because the control bar is a sibling of the
+        // <details>, not a child of it. Both carry the class.
         var tile = document.querySelector('.mm-item[data-itemkey="' + cssEsc(k) + '"]');
         if (tile) tile.classList.toggle('is-done', on);
+        var row = document.querySelector('.mm-row[data-rowkey="' + cssEsc(k) + '"]');
+        if (row) row.classList.toggle('is-done', on);
         // Keep the twin boxes (summary + body) in step immediately.
         Array.prototype.forEach.call(document.querySelectorAll('input[data-done="' + cssEsc(k) + '"]'), function (b) { b.checked = on; });
 
