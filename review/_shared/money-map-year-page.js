@@ -413,8 +413,16 @@
       } else {
         clearBanner();
       }
-      var revenue = wl.items.filter(function (i) { return i.revenue; });
-      var general = wl.items.filter(function (i) { return !i.revenue; });
+      // The day's #1 already has its own tile above. Listing it again as rank 1
+      // makes the top of the work list a repeat of the thing he just read.
+      // Matched on the text rather than on the rank, because the hero comes
+      // from `cos-top-priority` and the list from `cos-worklist`: they agree
+      // today and are allowed to disagree, and on a day they disagree BOTH
+      // belong on the page.
+      var heroText = (state['cos-top-priority'] || '').trim();
+      var rows = wl.items.filter(function (i) { return !heroText || (i.title || '').trim() !== heroText; });
+      var revenue = rows.filter(function (i) { return i.revenue; });
+      var general = rows.filter(function (i) { return !i.revenue; });
       renderList('mmWorkList', 'mmWorkMeta', general, 'work', '');
       renderList('mmRevList', 'mmRevMeta', revenue, 'rev', '');
       var nm = el('mmNotesMeta');
