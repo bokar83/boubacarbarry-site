@@ -93,6 +93,73 @@
     var readError = null;
     var expanded = {};          // section key -> showing all rows
     var sb = null;
+
+    // ---- PER-ITEM CONTROLS (2026-08-31) ---------------------------------
+    // Ported verbatim in behaviour from the Year Zero page, which has carried
+    // these four controls since the weekend of 2026-08-28..30 and had them
+    // ratified in decision D-20260830-06. They live HERE, in the shared
+    // component, so y1 and every later cycle get them without anyone
+    // remembering to copy a page: the exact failure that cost a working
+    // morning on day one of the Year One sprint.
+    //
+    //   Done      -> done-<key> = '1' | '0'   in the same board KV store
+    //   Reschedule-> push-<key>  = JSON { v, from, to, reason, ts, by }
+    //                REQUIRES a real future date. His words: "I can only skip
+    //                if I add a note with a new due date."
+    //   Archive   -> archive-<key> = JSON { v, ts, reason, by }
+    //                No date. Optional reason. Reversible via a tombstone.
+    //   Notes     -> the content-review-decisions notes store, append-only,
+    //                NOT gated behind skip or archive. A note on a live row is
+    //                a first-class thing he can write any day.
+    //
+    // Every write is followed by a READ-BACK before anything on screen says
+    // "saved". A 200 is a claim, not proof, and a silent failure on a board he
+    // actually runs his day off is worse than no feature at all.
+    var NOTES_API = cfg.notesApi || 'https://agentshq.boubacarbarry.com/api/orc/content-review-decisions';
+    var NOTES_SLUG = cfg.notesSlug || ('money-map-' + BOARD);
+    var NOTES = {};             // item key -> [ { note_text, created_at }, ... ]
+    var NOTES_OPEN = {};        // item key -> true while its notes panel is open
+    var notesLoaded = false;
+    var notesReadError = null;
+    var registered = {};        // item keys already self-registered with the notes store
+    var itemOpen = {};          // item key -> its <details> tile is expanded
+    var formOpen = {};          // item key -> 'push' | 'archive' | null
+
+    function doneKey(k) { return 'done-' + k; }
+    function pushKey(k) { return 'push-' + k; }
+    function archiveKey(k) { return 'archive-' + k; }
+
+    function isDone(k) { return state[doneKey(k)] === '1'; }
+
+    // A JSON marker row, tolerant of a row that is not JSON at all and of the
+    // { del: 1 } tombstone an undo writes. Nothing is ever deleted from this
+    // store, so "not set" and "explicitly undone" both have to read as absent.
+    function markerOf(rowKey) {
+      var raw = state[rowKey];
+      if (!raw) return null;
+      var o = null;
+      try { o = JSON.parse(raw); } catch (e) { return null; }
+      if (!o || typeof o !== 'object' || o.del) return null;
+      return o;
+    }
+    function pushOf(k) {
+      var o = markerOf(pushKey(k));
+      return (o && o.to) ? o : null;
+    }
+    function archiveOf(k) { return markerOf(archiveKey(k)); }
+
+    function noteClock(iso) {
+      try {
+        return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      } catch (e) { return String(iso).slice(0, 16).replace('T', ' '); }
+    }
+    function prettyDate(ds) {
+      var p = String(ds || '').split('-');
+      if (p.length !== 3) return String(ds || '');
+      var d = new Date(+p[0], +p[1] - 1, +p[2]);
+      return DAYS[d.getDay()] + ' ' + MOS[d.getMonth()] + ' ' + d.getDate();
+    }
+
     try {
       sb = root.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnon, {
         realtime: { params: { eventsPerSecond: 5 } }
@@ -343,6 +410,113 @@
       return '<span class="mm-when' + cls + '">' + esc(txt) + '</span>';
     }
 
+    // ---- NOTES store (same stack every other review page uses) -----------
+    // A read is believed ONLY when the transport succeeded AND the server said
+    // ok AND the body has the shape this page reads. A 401 answers with valid
+    // JSON that parses fine and has no `notes` key; trusting that once made
+    // Year Zero render "No notes yet" over a database full of his notes.
+    function loadNotes(attempt) {
+      attempt = attempt || 1;
+      return fetch(NOTES_API + '/state?page_slug=' + encodeURIComponent(NOTES_SLUG), { cache: 'no-store' })
+        .then(function (r) {
+          return r.json().catch(function () { return null; })
+            .then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
+        })
+        .then(function (o) {
+          if (!o.ok || !o.j || o.j.ok !== true || !Object.prototype.hasOwnProperty.call(o.j, 'notes')) {
+            var why = (o.j && (o.j.error || o.j.detail)) || ('HTTP ' + o.status);
+            if (attempt < 2) return loadNotes(attempt + 1);
+            notesLoaded = false;
+            notesReadError = String(why);
+            return;
+          }
+          var next = {};
+          (o.j.notes || []).forEach(function (n) { (next[n.item_id] = next[n.item_id] || []).push(n); });
+          NOTES = next;
+          notesLoaded = true;
+          notesReadError = null;
+        })
+        .catch(function () {
+          if (attempt < 2) return loadNotes(attempt + 1);
+          notesLoaded = false;
+          notesReadError = 'could not reach the notes server';
+        });
+    }
+
+    // Idempotent server-side ON CONFLICT DO NOTHING registration. Safe on
+    // every render; a failure un-registers so the next render retries rather
+    // than silently never registering that row again.
+    function registerNoteItems(rows) {
+      var fresh = rows.filter(function (r) { return !registered[r.key]; });
+      if (!fresh.length) return;
+      fresh.forEach(function (r) { registered[r.key] = true; });
+      fetch(NOTES_API + '/run', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          page_slug: NOTES_SLUG,
+          items: fresh.map(function (r) {
+            return { item_id: r.key, item_label: (r.headline || r.title || r.key).slice(0, 180) };
+          })
+        })
+      })
+        .then(function (r) { if (!r.ok) fresh.forEach(function (x) { delete registered[x.key]; }); })
+        .catch(function () { fresh.forEach(function (x) { delete registered[x.key]; }); });
+    }
+
+    function notesHtml(k) {
+      var list = NOTES[k] || [], h = '';
+      if (!notesLoaded) {
+        h += '<div class="mm-stat-note bad">NOTES NOT READ' + (notesReadError ? ' (' + esc(notesReadError) + ')' : '') +
+             '. This list is NOT what is in the database and may be missing notes you already wrote. ' +
+             'Nothing was deleted. Reload before writing anything here.</div>';
+      }
+      list.forEach(function (n) {
+        h += '<div class="mm-note"><span class="mm-note-ts">' + esc(noteClock(n.created_at)) + '</span>' + esc(n.note_text) + '</div>';
+      });
+      if (!list.length && notesLoaded) h += '<div class="mm-stat-note">No notes yet on this one.</div>';
+      h += '<div class="mm-noteform">' +
+             '<textarea data-noteinput="' + esc(k) + '" rows="2" placeholder="What happened, what you decided, or what you are waiting on."></textarea>' +
+             '<div class="mm-formrow"><button type="button" data-notesave="' + esc(k) + '">Add note</button></div>' +
+             '<span class="mm-stat-note" data-notestatus="' + esc(k) + '"></span>' +
+           '</div>';
+      return h;
+    }
+
+    // Reschedule demands a real FUTURE date and a reason. Both are checked
+    // here only to save him a round trip; the ratified spec (D-20260830-06) is
+    // that a skip without a new due date is not a skip at all.
+    function pushFormHtml(k) {
+      var p = pushOf(k);
+      var t = new Date(); t.setDate(t.getDate() + 1);
+      var def = (p && p.to) ? p.to : dkey(t);
+      return '<label class="mm-formlbl">New date it is due on' +
+          '<input type="date" data-pushdate="' + esc(k) + '" value="' + esc(def) + '" min="' + esc(dkey(t)) + '">' +
+        '</label>' +
+        '<textarea data-pushreason="' + esc(k) + '" rows="2" placeholder="Why you are moving it. Required -- this is what makes it a reschedule and not a drop."></textarea>' +
+        '<div class="mm-formrow">' +
+          '<button type="button" data-pushsave="' + esc(k) + '">Reschedule it</button>' +
+          '<button type="button" class="ghost" data-pushcancel="' + esc(k) + '">Cancel</button>' +
+          (p ? '<button type="button" class="ghost" data-pushundo="' + esc(k) + '">Undo the reschedule</button>' : '') +
+        '</div>' +
+        '<span class="mm-stat-note" data-pushstatus="' + esc(k) + '"></span>' +
+        (p ? '<div class="mm-stat-note">Already rescheduled to ' + esc(prettyDate(p.to)) +
+             '. Saving again replaces it, and both versions stay in the history.</div>' : '');
+    }
+
+    // Archive takes no date and needs no reason. The other of exactly two
+    // outcomes a carried-over item can land on.
+    function archiveFormHtml(k) {
+      var a = archiveOf(k);
+      return '<textarea data-archivereason="' + esc(k) + '" rows="2" placeholder="Optional -- why you are archiving this."></textarea>' +
+        '<div class="mm-formrow">' +
+          '<button type="button" data-archivesave="' + esc(k) + '">Archive it</button>' +
+          '<button type="button" class="ghost" data-archivecancel="' + esc(k) + '">Cancel</button>' +
+        '</div>' +
+        '<span class="mm-stat-note" data-archivestatus="' + esc(k) + '"></span>' +
+        (a ? '<div class="mm-stat-note">Already archived' + (a.ts ? ' ' + esc(noteClock(a.ts)) : '') +
+             '. Saving again replaces the note, and both versions stay in the history.</div>' : '');
+    }
+
     function itemHtml(item) {
       // `headline` is picked server-side by the publisher, which knows to skip
       // this board's scaffolding lines ("DATE SET:", "STATUS:", "DAY 3 of 10")
@@ -358,17 +532,57 @@
       var move = item.first_move
         ? '<div class="mm-move"><b>First move:</b> ' + esc(item.first_move) + '</div>'
         : '<div class="mm-move blank"><b>No first move on this row.</b> Add a <code>FIRST-MOVE:</code> line to it rather than guessing one.</div>';
-      return '<details class="mm-item">' +
+      var k = String(item.key);
+      var done = isDone(k);
+      var pushed = pushOf(k);
+      var arch = archiveOf(k);
+      var n = (NOTES[k] || []).length;
+
+      // A rescheduled or archived row wears it on its face, collapsed. He has
+      // to be able to tell at a glance that a row was LOOKED AT and moved on
+      // purpose, rather than left untouched, without opening anything.
+      var badges = '';
+      if (pushed) badges += '<span class="mm-mark push">moved to ' + esc(prettyDate(pushed.to)) + '</span>';
+      if (arch) badges += '<span class="mm-mark arch">archived</span>';
+
+      return '<details class="mm-item' + (done ? ' is-done' : '') + (arch ? ' is-arch' : '') + '"' +
+          ' data-itemkey="' + esc(k) + '"' + (itemOpen[k] ? ' open' : '') + '>' +
         '<summary>' +
+          '<input type="checkbox" class="mm-check" data-done="' + esc(k) + '"' + (done ? ' checked' : '') +
+            ' aria-label="Mark done: ' + esc(first) + '">' +
           '<span class="mm-rank">#' + item.rank + '</span>' +
           '<span class="mm-tier ' + esc(item.tier || 'COULD') + '">' + esc(item.tier || '') + '</span>' +
           (item.lane ? '<span class="mm-lane">' + esc(item.lane) + '</span>' : '') +
-          whenLabel(item) +
+          whenLabel(item) + badges +
           '<span class="mm-item-title">' + esc(first) + '</span>' +
         '</summary>' +
         '<div class="mm-item-body">' + move +
           '<div class="mm-full">' + esc(item.title || '') + '</div>' +
-          '<div class="mm-facts">' + esc(facts.filter(Boolean).join(' · ')) + ' · ' + esc(item.key) + '</div>' +
+          '<div class="mm-facts">' + esc(facts.filter(Boolean).join(' · ')) + ' · ' + esc(k) + '</div>' +
+
+          '<div class="mm-ctl">' +
+            '<label class="mm-ctl-done"><input type="checkbox" data-done="' + esc(k) + '"' + (done ? ' checked' : '') + '> Done</label>' +
+            '<button type="button" class="mm-ctl-btn' + (n ? ' has' : '') + '" data-notes="' + esc(k) + '">Notes' + (n ? ' (' + n + ')' : '') + '</button>' +
+            '<button type="button" class="mm-ctl-btn' + (pushed ? ' on' : '') + '" data-push="' + esc(k) + '">' +
+              (pushed ? 'Rescheduled' : 'Reschedule') + '</button>' +
+            (arch
+              ? '<button type="button" class="mm-ctl-btn" data-unarchive="' + esc(k) + '">Unarchive</button>'
+              : '<button type="button" class="mm-ctl-btn arch" data-archive="' + esc(k) + '">Archive</button>') +
+          '</div>' +
+
+          (pushed ? '<div class="mm-marknote"><b>Rescheduled to ' + esc(prettyDate(pushed.to)) + '.</b> ' +
+                      esc(String(pushed.reason || '')) +
+                      (pushed.ts ? ' <span class="mm-when-sm">recorded ' + esc(noteClock(pushed.ts)) + '</span>' : '') +
+                    '</div>' : '') +
+          (arch ? '<div class="mm-marknote"><b>Archived' + (arch.ts ? ' ' + esc(noteClock(arch.ts)) : '') + '.</b> ' +
+                    esc(String(arch.reason || 'No reason recorded.')) + '</div>' : '') +
+
+          '<div class="mm-form" data-pushwrap="' + esc(k) + '"' + (formOpen[k] === 'push' ? '' : ' hidden') + '>' +
+            (formOpen[k] === 'push' ? pushFormHtml(k) : '') + '</div>' +
+          '<div class="mm-form" data-archivewrap="' + esc(k) + '"' + (formOpen[k] === 'archive' ? '' : ' hidden') + '>' +
+            (formOpen[k] === 'archive' ? archiveFormHtml(k) : '') + '</div>' +
+          '<div class="mm-notes-panel" data-noteswrap="' + esc(k) + '"' + (NOTES_OPEN[k] ? '' : ' hidden') + '>' +
+            (NOTES_OPEN[k] ? notesHtml(k) : '') + '</div>' +
         '</div></details>';
     }
 
@@ -386,6 +600,9 @@
       }
       host.innerHTML = html;
       if (meta) meta.textContent = rows.length + ' item' + (rows.length === 1 ? '' : 's');
+      // Self-register the rendered rows with the notes store so a note he
+      // writes on any of them has somewhere to land. Idempotent server side.
+      registerNoteItems(shown);
     }
 
     function renderLists() {
@@ -433,7 +650,25 @@
       if (nm) nm.textContent = state['notes-log'] ? 'has notes' : 'empty';
     }
 
-    function renderAll() { renderTracker(); renderHero(); renderLists(); }
+    // A re-render blows away a half-typed note or reschedule reason, and
+    // realtime fires a render on every write from ANY device, so this is not
+    // hypothetical. Defer the list repaint instead; the tracker and hero carry
+    // no typing and are always safe to repaint.
+    var renderPending = false;
+    function editInProgress() {
+      var els = document.querySelectorAll('.mm-form textarea, .mm-noteform textarea, .mm-form input[type=date]');
+      for (var i = 0; i < els.length; i++) {
+        if (String(els[i].value || '').trim() || els[i] === document.activeElement) return true;
+      }
+      return false;
+    }
+    function renderAll() {
+      renderTracker();
+      renderHero();
+      if (editInProgress()) { renderPending = true; return; }
+      renderPending = false;
+      renderLists();
+    }
 
     // -------------------------------------------------------------------
     // Writes
@@ -469,6 +704,9 @@
     // Read
     // -------------------------------------------------------------------
     function hydrate() {
+      // The notes read runs alongside the board read; the list repaints once
+      // it lands so every Notes button shows a real count, not a zero.
+      loadNotes().then(function () { renderLists(); });
       if (!sb) { setSync('error', 'No client'); remoteOk = false; readError = 'the database client never loaded'; renderAll(); return; }
       setSync('saving', 'Loading');
       sb.from(TABLE).select('item_id,value,updated_at').eq('board_id', BOARD)
@@ -539,6 +777,289 @@
       });
     }
 
+    // -------------------------------------------------------------------
+    // Per-item controls: Done, Notes, Reschedule, Archive
+    // -------------------------------------------------------------------
+    // One delegated listener set, so rows re-rendered by realtime keep
+    // working. Every write is confirmed by READING THE ROW BACK before
+    // anything says "saved".
+    function readBack(itemId) {
+      if (!sb) return Promise.resolve({ error: { message: 'the database client never loaded on this page' } });
+      return sb.from(TABLE).select('value').eq('board_id', BOARD).eq('item_id', itemId);
+    }
+    function statusEl(attr, k) { return document.querySelector('[' + attr + '="' + cssEsc(k) + '"]'); }
+    function cssEsc(s) {
+      if (root.CSS && root.CSS.escape) return root.CSS.escape(s);
+      return String(s).replace(/["\\]/g, '\\$&');
+    }
+    function say(el2, cls, msg) { if (el2) { el2.className = 'mm-stat-note' + (cls ? ' ' + cls : ''); el2.textContent = msg; } }
+
+    function wireItemControls() {
+      // The Done box sits inside a <summary>. Without a capture-phase guard a
+      // tick would also fold the tile shut under his finger.
+      document.addEventListener('click', function (ev) {
+        var t = ev.target;
+        if (t && t.tagName === 'INPUT' && t.hasAttribute && t.hasAttribute('data-done') && t.closest('summary')) {
+          ev.stopPropagation();
+        }
+      }, true);
+
+      // Remember which tiles he had open, so a realtime repaint does not shut
+      // the row he is working in.
+      document.addEventListener('toggle', function (ev) {
+        var d = ev.target;
+        if (!d || !d.classList || !d.classList.contains('mm-item')) return;
+        var k = d.getAttribute('data-itemkey');
+        if (k) itemOpen[k] = d.open;
+      }, true);
+
+      // ---- DONE ---------------------------------------------------------
+      document.addEventListener('change', function (ev) {
+        var t = ev.target;
+        if (!t || !t.hasAttribute || !t.hasAttribute('data-done')) return;
+        var k = t.getAttribute('data-done');
+        var on = !!t.checked;
+        var val = on ? '1' : '0';
+        var tile = document.querySelector('.mm-item[data-itemkey="' + cssEsc(k) + '"]');
+        if (tile) tile.classList.toggle('is-done', on);
+        // Keep the twin boxes (summary + body) in step immediately.
+        Array.prototype.forEach.call(document.querySelectorAll('input[data-done="' + cssEsc(k) + '"]'), function (b) { b.checked = on; });
+
+        Promise.resolve(persist(doneKey(k), val))
+          .then(function () { return readBack(doneKey(k)); })
+          .then(function (res) {
+            var rows = (res && res.data) || [];
+            var back = rows.length ? rows[0].value : null;
+            if ((res && res.error) || back !== val) {
+              banner('<b>THAT TICK IS NOT IN THE DATABASE.</b>The board does not read back <b>' + esc(k) +
+                     '</b> as ' + (on ? 'done' : 'not done') +
+                     ((res && res.error) ? ' (' + esc(res.error.message || 'read failed') + ')' : '') +
+                     '. It is only on this screen. Reload and tick it again.', false);
+              return;
+            }
+            clearBanner();
+            setSync('live', 'Synced');
+          })
+          .catch(function () {
+            banner('<b>THAT TICK IS NOT CONFIRMED.</b>Could not reach the database to read <b>' + esc(k) +
+                   '</b> back. Do not assume it is recorded.', false);
+          });
+      });
+
+      // ---- NOTES / RESCHEDULE / ARCHIVE, one click listener --------------
+      document.addEventListener('click', function (ev) {
+        var t = ev.target;
+        if (!t || !t.getAttribute) return;
+        var k;
+
+        // --- notes panel toggle
+        k = t.getAttribute('data-notes');
+        if (k) {
+          var wrap = document.querySelector('.mm-notes-panel[data-noteswrap="' + cssEsc(k) + '"]');
+          if (!wrap) return;
+          var opening = wrap.hidden;
+          NOTES_OPEN[k] = opening;
+          if (opening) { wrap.innerHTML = notesHtml(k); wrap.hidden = false; }
+          else { wrap.hidden = true; wrap.innerHTML = ''; }
+          return;
+        }
+
+        // --- save a note
+        k = t.getAttribute('data-notesave');
+        if (k) {
+          var ta = document.querySelector('textarea[data-noteinput="' + cssEsc(k) + '"]');
+          var st = statusEl('data-notestatus', k);
+          var text = ta ? String(ta.value || '').trim() : '';
+          if (!text) { say(st, 'bad', 'Write something first.'); return; }
+          t.disabled = true;
+          say(st, '', 'Saving...');
+          fetch(NOTES_API + '/note', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: k, note_text: text })
+          })
+            .then(function (r) { return r.json().catch(function () { return null; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (o) {
+              t.disabled = false;
+              if (!o.ok || !o.j || o.j.ok !== true) {
+                say(statusEl('data-notestatus', k), 'bad',
+                  'NOT SAVED: ' + ((o.j && (o.j.detail || o.j.error)) || 'the server rejected it') +
+                  '. Copy your text somewhere before you leave this page.');
+                return;
+              }
+              if (ta) ta.value = '';
+              say(statusEl('data-notestatus', k), '', 'Saved. Confirming against the database...');
+              // A 200 is a claim. Re-read the store and find this exact text.
+              return loadNotes().then(function () {
+                var w = document.querySelector('.mm-notes-panel[data-noteswrap="' + cssEsc(k) + '"]');
+                if (w) w.innerHTML = notesHtml(k);
+                var stf = statusEl('data-notestatus', k);
+                if (!notesLoaded) {
+                  say(stf, 'bad', 'The server accepted it, but the notes store could not be re-read to confirm it. Keep a copy of your text.');
+                  return;
+                }
+                var back = (NOTES[k] || []).some(function (n) { return (n.note_text || '') === text; });
+                if (!back) {
+                  say(stf, 'bad', 'NOT SAVED: the server said ok but the note is not in the database on a fresh read. Copy your text somewhere.');
+                  return;
+                }
+                say(stf, 'ok', 'Saved. Confirmed by reading it back from the database.');
+                var btns = document.querySelectorAll('.mm-ctl-btn[data-notes="' + cssEsc(k) + '"]');
+                Array.prototype.forEach.call(btns, function (b) {
+                  b.className = 'mm-ctl-btn has'; b.textContent = 'Notes (' + (NOTES[k] || []).length + ')';
+                });
+              });
+            })
+            .catch(function () {
+              t.disabled = false;
+              say(statusEl('data-notestatus', k), 'bad', 'NOT SAVED: could not reach the server. Copy your text somewhere before you leave this page.');
+            });
+          return;
+        }
+
+        // --- reschedule form open / cancel / undo
+        k = t.getAttribute('data-push');
+        if (k) {
+          var pw = document.querySelector('.mm-form[data-pushwrap="' + cssEsc(k) + '"]');
+          if (!pw) return;
+          if (pw.hidden) { formOpen[k] = 'push'; pw.innerHTML = pushFormHtml(k); pw.hidden = false; }
+          else { formOpen[k] = null; pw.hidden = true; pw.innerHTML = ''; }
+          return;
+        }
+        k = t.getAttribute('data-pushcancel');
+        if (k) {
+          var pc = document.querySelector('.mm-form[data-pushwrap="' + cssEsc(k) + '"]');
+          formOpen[k] = null;
+          if (pc) { pc.hidden = true; pc.innerHTML = ''; }
+          return;
+        }
+        k = t.getAttribute('data-pushundo');
+        if (k) {
+          formOpen[k] = null;
+          persist(pushKey(k), JSON.stringify({ v: 1, del: 1 }));
+          renderLists();
+          return;
+        }
+
+        // --- reschedule save: the date is MANDATORY (D-20260830-06)
+        k = t.getAttribute('data-pushsave');
+        if (k) {
+          var dEl = document.querySelector('input[data-pushdate="' + cssEsc(k) + '"]');
+          var rEl = document.querySelector('textarea[data-pushreason="' + cssEsc(k) + '"]');
+          var ps = statusEl('data-pushstatus', k);
+          var newDate = dEl ? String(dEl.value || '').trim() : '';
+          var reason = rEl ? String(rEl.value || '').trim() : '';
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) { say(ps, 'bad', 'Pick the new date this is due on.'); return; }
+          if (newDate <= dkey(new Date())) { say(ps, 'bad', 'A reschedule moves it forward. Pick a date after today.'); return; }
+          if (reason.length < 3) { say(ps, 'bad', 'Write why you are moving it. That is what makes this a reschedule and not a drop.'); return; }
+
+          var prev = pushOf(k);
+          var rec = {
+            v: 1,
+            from: (prev && prev.to) ? prev.to : dkey(new Date()),
+            to: newDate, reason: reason,
+            ts: new Date().toISOString(), by: 'boubacar'
+          };
+          t.disabled = true;
+          say(ps, '', 'Saving...');
+          var written = persist(pushKey(k), JSON.stringify(rec));
+
+          // The reason also lands in his notes trail on this row. Same store
+          // the Notes button writes to; no second notes system.
+          fetch(NOTES_API + '/note', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: k, note_text: 'RESCHEDULED to ' + newDate + '. ' + reason })
+          }).then(function () { return loadNotes(); }).catch(function () {});
+
+          Promise.resolve(written).then(function () { return readBack(pushKey(k)); })
+            .then(function (res) {
+              t.disabled = false;
+              var sf = statusEl('data-pushstatus', k);
+              var rows = (res && res.data) || [];
+              var back = null;
+              try { back = rows.length ? JSON.parse(rows[0].value) : null; } catch (e) { back = null; }
+              if ((res && res.error) || !back || back.to !== newDate || String(back.reason) !== reason) {
+                say(sf, 'bad', 'NOT SAVED: the reschedule is not in the database on a fresh read' +
+                  ((res && res.error) ? ' (' + (res.error.message || 'read failed') + ')' : '') +
+                  '. Nothing has moved. Try again before you leave this page.');
+                return;
+              }
+              say(sf, 'ok', 'Rescheduled to ' + prettyDate(newDate) + '. Confirmed by reading it back from the database.');
+              setTimeout(function () { formOpen[k] = null; renderLists(); }, 1200);
+            })
+            .catch(function () {
+              t.disabled = false;
+              say(statusEl('data-pushstatus', k), 'bad', 'NOT SAVED: could not reach the database to confirm it. Nothing has moved.');
+            });
+          return;
+        }
+
+        // --- archive form open / cancel / unarchive
+        k = t.getAttribute('data-archive');
+        if (k) {
+          var aw = document.querySelector('.mm-form[data-archivewrap="' + cssEsc(k) + '"]');
+          if (!aw) return;
+          if (aw.hidden) { formOpen[k] = 'archive'; aw.innerHTML = archiveFormHtml(k); aw.hidden = false; }
+          else { formOpen[k] = null; aw.hidden = true; aw.innerHTML = ''; }
+          return;
+        }
+        k = t.getAttribute('data-archivecancel');
+        if (k) {
+          var ac = document.querySelector('.mm-form[data-archivewrap="' + cssEsc(k) + '"]');
+          formOpen[k] = null;
+          if (ac) { ac.hidden = true; ac.innerHTML = ''; }
+          return;
+        }
+        k = t.getAttribute('data-unarchive');
+        if (k) {
+          formOpen[k] = null;
+          persist(archiveKey(k), JSON.stringify({ v: 1, del: 1 }));
+          renderLists();
+          return;
+        }
+
+        // --- archive save: NO date required, reason optional
+        k = t.getAttribute('data-archivesave');
+        if (k) {
+          var arEl = document.querySelector('textarea[data-archivereason="' + cssEsc(k) + '"]');
+          var as = statusEl('data-archivestatus', k);
+          var areason = arEl ? String(arEl.value || '').trim() : '';
+          var arec = { v: 1, ts: new Date().toISOString(), reason: areason, by: 'boubacar' };
+          t.disabled = true;
+          say(as, '', 'Saving...');
+          var awritten = persist(archiveKey(k), JSON.stringify(arec));
+
+          if (areason) {
+            fetch(NOTES_API + '/note', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: k, note_text: 'ARCHIVED. ' + areason })
+            }).then(function () { return loadNotes(); }).catch(function () {});
+          }
+
+          Promise.resolve(awritten).then(function () { return readBack(archiveKey(k)); })
+            .then(function (res) {
+              t.disabled = false;
+              var sf = statusEl('data-archivestatus', k);
+              var rows = (res && res.data) || [];
+              var back = null;
+              try { back = rows.length ? JSON.parse(rows[0].value) : null; } catch (e) { back = null; }
+              if ((res && res.error) || !back || back.ts !== arec.ts) {
+                say(sf, 'bad', 'NOT SAVED: the archive is not in the database on a fresh read' +
+                  ((res && res.error) ? ' (' + (res.error.message || 'read failed') + ')' : '') +
+                  '. Nothing has moved. Try again before you leave this page.');
+                return;
+              }
+              say(sf, 'ok', 'Archived. Confirmed by reading it back from the database.');
+              setTimeout(function () { formOpen[k] = null; renderLists(); }, 900);
+            })
+            .catch(function () {
+              t.disabled = false;
+              say(statusEl('data-archivestatus', k), 'bad', 'NOT SAVED: could not reach the database to confirm it. Nothing has moved.');
+            });
+          return;
+        }
+      });
+    }
+
     function sections() { return Array.prototype.slice.call(document.querySelectorAll('.mm-sec')); }
 
     function wire() {
@@ -571,6 +1092,8 @@
           renderLists();
         }
       });
+
+      wireItemControls();
 
       var ci = el('mmCollectedInput');
       if (ci) ci.addEventListener('change', function () {
