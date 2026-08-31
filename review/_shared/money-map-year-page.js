@@ -344,7 +344,11 @@
     }
 
     function itemHtml(item) {
-      var first = (item.title || '').split('\n')[0] || '(this row has no text)';
+      // `headline` is picked server-side by the publisher, which knows to skip
+      // this board's scaffolding lines ("DATE SET:", "STATUS:", "DAY 3 of 10")
+      // and prefer the row's own ACTION line. The first-line fallback is only
+      // for a worklist published before that field existed.
+      var first = item.headline || (item.title || '').split('\n')[0] || '(this row has no text)';
       var facts = [];
       if (item.target != null) facts.push('target ' + item.target + (item.actual != null ? ', actual ' + item.actual : ', actual not recorded'));
       if (item.blocked_on) facts.push('blocked on ' + item.blocked_on);
