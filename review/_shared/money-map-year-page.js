@@ -489,10 +489,16 @@
             '<b class="p">planned</b><b class="d">done</b><b class="m">moved</b><b class="a">archived</b><b class="k">asks</b>' +
           '</span></div>' +
         '<div class="mm-days-strip">' + cells + '</div>' +
-        '<div class="mm-days-note">Counted straight off the board, nothing kept in a second place. ' +
+        '<div class="mm-days-note" id="mmDaysNote">Counted straight off the board, nothing kept in a second place. ' +
         'Moved and archived count only what YOU did, never an agent sweep. ' +
         'The store keeps one marker per row, so a row moved twice counts once, on the later day, ' +
         'and a row ticked, unticked and re-ticked counts on the last day you touched it.</div>';
+
+      // On a phone the strip is wider than the screen and scrolls inside its
+      // own box. Left alone it opens on the OLDEST day, so the one cell that
+      // matters -- today -- starts off screen. Park it at the right end.
+      var strip = host.querySelector('.mm-days-strip');
+      if (strip) { try { strip.scrollLeft = strip.scrollWidth; } catch (e) {} }
     }
 
     // -------------------------------------------------------------------
