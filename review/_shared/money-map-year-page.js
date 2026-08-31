@@ -119,6 +119,13 @@
     var NOTES_SLUG = cfg.notesSlug || ('money-map-' + BOARD);
     var NOTES = {};             // item key -> [ { note_text, created_at }, ... ]
     var NOTES_OPEN = {};        // item key -> true while its notes panel is open
+    // REVIEW comes off the SAME /state read as NOTES (one fetch, no new call)
+    // -- the 061 endpoint already returns {ok, items, notes} and only the
+    // notes half was read before this build. item key -> {decision,
+    // item_label, edited_text, facets} for a row registered on this page.
+    var REVIEW = {};
+    var REVIEW_EDIT_OPEN = {};  // item key -> true while its edit widget is open
+    var REVIEW_SHOW_ORIG = {};  // item key -> true while showing the original+diff
     var notesLoaded = false;
     var notesReadError = null;
     var registered = {};        // item keys already self-registered with the notes store
@@ -147,6 +154,17 @@
       return (o && o.to) ? o : null;
     }
     function archiveOf(k) { return markerOf(archiveKey(k)); }
+
+    // ---- ACT MARKER (2026-08-31, money-map-actionable-items) --------------
+    // `act-<key>` carries the owner + resource state + resource content for
+    // an item -- see docs/prds/money-map-actionable-items/PRD.md S8.1. The
+    // publisher (`scripts/publish_money_map_worklist.py`) reads this SAME row
+    // server-side to classify owner; the template's copy below reads it again
+    // client-side so a fresh approve/edit shows immediately without waiting
+    // for the next publish run (ranking/classification stay server-only --
+    // this is a live read of the same marker, never a second classifier).
+    function actKey(k) { return 'act-' + k; }
+    function actOf(k) { return markerOf(actKey(k)); }
 
     function noteClock(iso) {
       try {
@@ -211,7 +229,7 @@
             '<summary><span class="mm-chev">&#9656;</span><span class="mm-hero-badge">#1 right now</span>' +
               '<span class="mm-sec-meta" id="mmHeroMeta"></span>' +
               '<span class="mm-hero-line" id="mmHeroLine">Reading the board&hellip;</span></summary>' +
-            '<div class="mm-sec-body"><div class="mm-hero-why" id="mmHeroWhy"></div></div>' +
+            '<div class="mm-sec-body"><div class="mm-hero-why" id="mmHeroWhy"></div><div id="mmHeroRes"></div></div>' +
           '</details>' +
 
           '<details class="mm-sec" id="sec-work" open>' +
@@ -229,6 +247,8 @@
               '<p class="mm-lede">The same ranking, filtered to the lanes that make money.</p>' +
               '<div id="mmRevList"></div></div>' +
           '</details>' +
+
+          '<div id="mmAgentDrawer"></div>' +
 
           '<details class="mm-sec" id="sec-notes">' +
             '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Notes and reference</span>' +
@@ -364,12 +384,13 @@
     // Hero -- the day's #1, straight off the board. Never authored here.
     // -------------------------------------------------------------------
     function renderHero() {
-      var line = el('mmHeroLine'), why = el('mmHeroWhy'), meta = el('mmHeroMeta');
+      var line = el('mmHeroLine'), why = el('mmHeroWhy'), meta = el('mmHeroMeta'), res = el('mmHeroRes');
       if (!line) return;
       if (!remoteOk) {
         line.textContent = 'Could not read the board, so there is no #1 to show.';
         if (why) why.textContent = readError ? ('The read failed: ' + readError) : '';
         if (meta) meta.textContent = 'read failed';
+        if (res) res.innerHTML = '';
         return;
       }
       var top = state['cos-top-priority'];
@@ -377,6 +398,7 @@
         line.textContent = 'No #1 has been published to this board yet.';
         if (why) why.innerHTML = 'The morning run writes <code>cos-top-priority</code>. Nothing has written it for board <code>' + esc(BOARD) + '</code>.';
         if (meta) meta.textContent = 'not set';
+        if (res) res.innerHTML = '';
         return;
       }
       line.textContent = top;
@@ -384,6 +406,22 @@
       var d = state['cos-top-priority-date'] || '';
       var today = dkey(new Date());
       if (meta) meta.textContent = d ? (d === today ? 'set today' : 'set ' + d + ', not today') : 'no date';
+
+      // The #1 tile is the FIRST thing he reads. If the ranked list carries a
+      // row whose title matches this exact text, its resource (READY draft,
+      // review widget, or honest gap) renders right here too -- so the day's
+      // top priority never makes him scroll to find what he needs to act.
+      if (res) {
+        var wl = readWorklist();
+        var heroTrim = String(top).trim();
+        var match = null;
+        if (wl.items) {
+          for (var i = 0; i < wl.items.length; i++) {
+            if ((wl.items[i].title || '').trim() === heroTrim) { match = wl.items[i]; break; }
+          }
+        }
+        res.innerHTML = (match && ownerOf(match) !== 'agent') ? resourcePanelHtml(match, String(match.key)) : '';
+      }
     }
 
     // -------------------------------------------------------------------
@@ -433,6 +471,7 @@
           var next = {};
           (o.j.notes || []).forEach(function (n) { (next[n.item_id] = next[n.item_id] || []).push(n); });
           NOTES = next;
+          REVIEW = (o.j.items && typeof o.j.items === 'object') ? o.j.items : {};
           notesLoaded = true;
           notesReadError = null;
         })
@@ -517,6 +556,204 @@
              '. Saving again replaces the note, and both versions stay in the history.</div>' : '');
     }
 
+    // -------------------------------------------------------------------
+    // Resource panel (2026-08-31, money-map-actionable-items PRD S8.3/8.4)
+    // -------------------------------------------------------------------
+    // A cheap word-level diff for the "show original" toggle on a NEEDS
+    // REVIEW resource -- current-vs-original only, per PRD S17 (edit HISTORY
+    // diffing is parked for phase 2). Standard LCS on whitespace-split
+    // tokens; texts here are capped (8000 chars server-side), so the O(n*m)
+    // table is small in practice.
+    function wordDiff(a, b) {
+      var A = String(a || '').split(/(\s+)/);
+      var B = String(b || '').split(/(\s+)/);
+      var n = A.length, m = B.length;
+      var dp = [];
+      var i, j;
+      for (i = 0; i <= n; i++) { dp.push(new Array(m + 1).fill(0)); }
+      for (i = n - 1; i >= 0; i--) {
+        for (j = m - 1; j >= 0; j--) {
+          dp[i][j] = (A[i] === B[j]) ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+        }
+      }
+      var out = '', i2 = 0, j2 = 0;
+      while (i2 < n && j2 < m) {
+        if (A[i2] === B[j2]) { out += esc(A[i2]); i2++; j2++; }
+        else if (dp[i2 + 1][j2] >= dp[i2][j2 + 1]) { out += '<del>' + esc(A[i2]) + '</del>'; i2++; }
+        else { out += '<ins>' + esc(B[j2]) + '</ins>'; j2++; }
+      }
+      while (i2 < n) { out += '<del>' + esc(A[i2]) + '</del>'; i2++; }
+      while (j2 < m) { out += '<ins>' + esc(B[j2]) + '</ins>'; j2++; }
+      return out;
+    }
+
+    function resourceBadge(state) {
+      var label = state === 'ready' ? 'READY' : (state === 'needs_review' ? 'YOUR REVIEW' : 'GAP');
+      var cls = state === 'ready' ? 'ready' : (state === 'needs_review' ? 'review' : 'gap');
+      return '<span class="mm-res-badge ' + cls + '">' + label + '</span>';
+    }
+
+    // `contact` is null (renders "no contact info on file") unless `source`
+    // is non-empty -- PRD S8.1 rule, verbatim. No enrichment happens here;
+    // this only renders what an act- marker already carries.
+    function contactLineHtml(contact) {
+      if (!contact || !contact.source) return '<div class="mm-res-contact none">No contact info on file.</div>';
+      var name = contact.name ? esc(contact.name) + ' &middot; ' : '';
+      var chan = contact.channel ? esc(contact.channel) : 'contact';
+      var val = contact.value ? esc(contact.value) : '';
+      var isUrl = /^https?:\/\//.test(String(contact.value || ''));
+      var valHtml = isUrl ? ('<a href="' + esc(contact.value) + '" target="_blank" rel="noopener">' + val + '</a>') : val;
+      return '<div class="mm-res-contact">' + name + esc(chan) + ': ' + valHtml +
+        '<span class="mm-res-source">source: ' + esc(contact.source) + '</span></div>';
+    }
+
+    // Registers this item with the SAME 061 store the notes panel already
+    // registers with (idempotent, page_slug = 'money-map-' + BOARD, item_id
+    // = the worklist key) -- no second registration mechanism, per PRD S3.
+    function reviewWidgetHtml(k, resource) {
+      var rv = REVIEW[k] || {};
+      var origText = (resource && resource.text) || '';
+      var draftText = (rv.edited_text != null && rv.edited_text !== '') ? rv.edited_text : origText;
+      var edited = rv.edited_text != null && rv.edited_text !== '' && rv.edited_text !== origText;
+      var decision = rv.decision || null;
+      var showOrig = !!REVIEW_SHOW_ORIG[k];
+
+      var h = '<div class="mm-review" data-reviewwrap="' + esc(k) + '">';
+      if (!notesLoaded) {
+        h += '<div class="mm-stat-note bad">REVIEW STATE NOT READ' + (notesReadError ? ' (' + esc(notesReadError) + ')' : '') +
+             '. What you see below may not be the current database state. Reload before saving.</div>';
+      }
+      h += '<textarea data-revtext="' + esc(k) + '" rows="4">' + esc(draftText) + '</textarea>';
+      h += '<div class="mm-formrow">' +
+        '<button type="button" data-revsave="' + esc(k) + '">Save edit</button>' +
+        '<button type="button" class="ghost" data-revtoggleorig="' + esc(k) + '">' + (showOrig ? 'Hide original' : 'Show original') + '</button>' +
+        '<button type="button" class="ok" data-revapprove="' + esc(k) + '">Approve</button>' +
+        '<button type="button" class="bad" data-revreject="' + esc(k) + '">Reject</button>' +
+      '</div>';
+      if (edited) h += '<div class="mm-stat-note ok">Edited from the original draft. Approving now ships this version.</div>';
+      if (showOrig) {
+        h += '<div class="mm-diff"><b>Original vs. current' + (edited ? '' : ' (no edits yet)') + ':</b>' +
+             '<div class="mm-diff-body">' + wordDiff(origText, draftText) + '</div></div>';
+      }
+      if (decision === 'reject') {
+        h += (NOTES[k] || []).length
+          ? '<div class="mm-stat-note bad">Rejected. Waiting on the drafting agent to act on the note below.</div>'
+          : '<div class="mm-stat-note bad">Rejected -- waiting on a note saying why. Add one below.</div>';
+      }
+      h += '<textarea data-revnote="' + esc(k) + '" rows="2" placeholder="Notes for the drafting agent -- required on a reject, optional on an approve."></textarea>' +
+        '<span class="mm-stat-note" data-revstatus="' + esc(k) + '"></span>' +
+      '</div>';
+      return h;
+    }
+
+    // The whole point of this build: every visible tile knows what state its
+    // resource is in and shows the thing needed to act, or an honest gap. An
+    // agent-owned row never reaches this function -- it renders in the "In
+    // agent hands" drawer instead (renderLists), not here.
+    function resourcePanelHtml(item, k) {
+      var marker = actOf(k);   // the LIVE marker wins over the published snapshot
+      var resState = (marker && marker.state) || item.res_state || 'gap';
+      var resource = marker || item.resource || null;
+
+      if (resState === 'ready') {
+        var text = resource && resource.text;
+        var box;
+        if (text) {
+          box = '<div class="mm-code" data-rescode="' + esc(k) + '">' + esc(text) +
+            '<button class="mm-copy" type="button" data-rescopy="' + esc(k) + '">Copy</button></div>';
+        } else if (resource && resource.url) {
+          box = '<div class="mm-res-link">The draft lives at <a href="' + esc(resource.url) + '" target="_blank" rel="noopener">' + esc(resource.url) + '</a>.</div>';
+        } else {
+          box = '<div class="mm-res-gap">Marked READY with no text or link on the marker. Re-check <code>act-' + esc(k) + '</code>.</div>';
+        }
+        return '<div class="mm-res" data-reskey="' + esc(k) + '">' + resourceBadge('ready') + box + contactLineHtml(resource && resource.contact) + '</div>';
+      }
+
+      if (resState === 'needs_review') {
+        return '<div class="mm-res" data-reskey="' + esc(k) + '">' + resourceBadge('needs_review') +
+          reviewWidgetHtml(k, resource) + contactLineHtml(resource && resource.contact) + '</div>';
+      }
+
+      var missing = (resource && resource.missing) ? esc(resource.missing) : 'No resource has been drafted for this yet.';
+      return '<div class="mm-res" data-reskey="' + esc(k) + '">' + resourceBadge('gap') +
+        '<div class="mm-res-gap">' + missing + '</div>' + contactLineHtml(resource && resource.contact) + '</div>';
+    }
+
+    // Reads back the SAME resolved resource resourcePanelHtml uses (live
+    // marker wins, else the row's published snapshot) for a key with no
+    // `item` object in hand -- the review-widget click handlers below only
+    // ever have the key, not the row.
+    function findWorklistItem(k) {
+      var wl = readWorklist();
+      if (!wl.items) return null;
+      for (var i = 0; i < wl.items.length; i++) {
+        if (String(wl.items[i].key) === k) return wl.items[i];
+      }
+      return null;
+    }
+
+    function resourceOfKey(k) {
+      var m = actOf(k);
+      if (m) return m;
+      var item = findWorklistItem(k);
+      return (item && item.resource) || null;
+    }
+
+    // Repaints every `.mm-res` panel for a key in place (hero + list both
+    // carry one when the hero text matches a ranked row) after a write that
+    // can change its badge -- an approve can flip needs_review -> ready.
+    function repaintResource(k) {
+      var item = findWorklistItem(k);
+      if (!item) return;
+      var nodes = document.querySelectorAll('.mm-res[data-reskey="' + cssEsc(k) + '"]');
+      var html = resourcePanelHtml(item, k);
+      Array.prototype.forEach.call(nodes, function (node) {
+        var wrap = document.createElement('div');
+        wrap.innerHTML = html;
+        node.parentNode.replaceChild(wrap.firstChild, node);
+      });
+    }
+
+    // The live marker's `owner` wins over the published snapshot's `owner`
+    // (PRD S8.2a, "always") -- an override he or an agent writes to the
+    // marker takes effect on the next render, not the next publish run.
+    function ownerOf(item) {
+      var m = actOf(String(item.key));
+      if (m && (m.owner === 'boubacar' || m.owner === 'agent')) return m.owner;
+      return item.owner || 'boubacar';
+    }
+
+    // "In agent hands (N, oldest Xd)" -- the count survives on his surface,
+    // the detail one tap down (PRD S8.3, the quiet-close asymmetry). Age is
+    // read off whichever agent-owned rows carry a marker `ts`; a row with no
+    // marker (verb-classified) has an unknown age and does not enter the max.
+    function agentDrawerHtml(rows) {
+      if (!rows.length) return '';
+      var oldestDays = null;
+      var now = new Date();
+      rows.forEach(function (r) {
+        var m = actOf(String(r.key));
+        if (m && m.ts) {
+          var t = new Date(m.ts);
+          if (!isNaN(t.getTime())) {
+            var days = Math.floor((now - t) / 86400000);
+            if (oldestDays === null || days > oldestDays) oldestDays = days;
+          }
+        }
+      });
+      var ageTxt = oldestDays !== null ? (', oldest ' + oldestDays + 'd') : '';
+      var rowsHtml = rows.map(function (r) {
+        var m = actOf(String(r.key));
+        var reason = (m && m.owner_reason) || r.owner_reason || 'agent work';
+        var first = r.headline || (r.title || '').split('\n')[0] || r.key;
+        return '<div class="mm-agent-row"><span class="mm-agent-title">' + esc(first) + '</span>' +
+          '<span class="mm-agent-reason">' + esc(reason) + '</span></div>';
+      }).join('');
+      return '<details class="mm-agent-drawer"><summary><span class="mm-chev">&#9656;</span>' +
+        'In agent hands (' + rows.length + ageTxt + ')</summary>' +
+        '<div class="mm-agent-rows">' + rowsHtml + '</div></details>';
+    }
+
     function itemHtml(item) {
       // `headline` is picked server-side by the publisher, which knows to skip
       // this board's scaffolding lines ("DATE SET:", "STATUS:", "DAY 3 of 10")
@@ -529,10 +766,16 @@
       if (item.perishable) facts.push('perishable window');
       if (item.minutes != null) facts.push(item.minutes + ' min');
       facts.push(item.source || '');
-      var move = item.first_move
-        ? '<div class="mm-move"><b>First move:</b> ' + esc(item.first_move) + '</div>'
-        : '<div class="mm-move blank"><b>No first move on this row.</b> Add a <code>FIRST-MOVE:</code> line to it rather than guessing one.</div>';
       var k = String(item.key);
+      var actMarker = actOf(k);
+      var resState = (actMarker && actMarker.state) || item.res_state || 'gap';
+      // PRD S8.3: a NEEDS REVIEW item's action line becomes "Review and
+      // approve this draft" -- it IS his task now, not a description of one.
+      var move = resState === 'needs_review'
+        ? '<div class="mm-move"><b>First move:</b> Review and approve this draft.</div>'
+        : (item.first_move
+            ? '<div class="mm-move"><b>First move:</b> ' + esc(item.first_move) + '</div>'
+            : '<div class="mm-move blank"><b>No first move on this row.</b> Add a <code>FIRST-MOVE:</code> line to it rather than guessing one.</div>');
       var done = isDone(k);
       var pushed = pushOf(k);
       var arch = archiveOf(k);
@@ -557,6 +800,7 @@
           '<span class="mm-item-title">' + esc(first) + '</span>' +
         '</summary>' +
         '<div class="mm-item-body">' + move +
+          resourcePanelHtml(item, k) +
           '<div class="mm-full">' + esc(item.title || '') + '</div>' +
           '<div class="mm-facts">' + esc(facts.filter(Boolean).join(' · ')) + ' · ' + esc(k) + '</div>' +
 
@@ -642,10 +886,17 @@
       // belong on the page.
       var heroText = (state['cos-top-priority'] || '').trim();
       var rows = wl.items.filter(function (i) { return !heroText || (i.title || '').trim() !== heroText; });
-      var revenue = rows.filter(function (i) { return i.revenue; });
-      var general = rows.filter(function (i) { return !i.revenue; });
+      // PRD S3/S8.3: "an item is visible on his list ONLY if it requires him
+      // personally." Agent-owned rows never reach the work/revenue lists --
+      // they move to the collapsed drawer below, one tap away, never gone.
+      var agentRows = rows.filter(function (i) { return ownerOf(i) === 'agent'; });
+      var visibleRows = rows.filter(function (i) { return ownerOf(i) !== 'agent'; });
+      var revenue = visibleRows.filter(function (i) { return i.revenue; });
+      var general = visibleRows.filter(function (i) { return !i.revenue; });
       renderList('mmWorkList', 'mmWorkMeta', general, 'work', '');
       renderList('mmRevList', 'mmRevMeta', revenue, 'rev', '');
+      var agentHost = el('mmAgentDrawer');
+      if (agentHost) agentHost.innerHTML = agentDrawerHtml(agentRows);
       var nm = el('mmNotesMeta');
       if (nm) nm.textContent = state['notes-log'] ? 'has notes' : 'empty';
     }
@@ -1054,6 +1305,205 @@
             .catch(function () {
               t.disabled = false;
               say(statusEl('data-archivestatus', k), 'bad', 'NOT SAVED: could not reach the database to confirm it. Nothing has moved.');
+            });
+          return;
+        }
+
+        // --- READY resource: copy to clipboard, phone-first one-tap copy
+        k = t.getAttribute('data-rescopy');
+        if (k) {
+          var box = document.querySelector('.mm-code[data-rescode="' + cssEsc(k) + '"]');
+          var rtext = box ? box.textContent.replace(/Copy\s*$/, '').trim() : '';
+          function copyDone() {
+            t.textContent = 'Copied'; t.classList.add('copied');
+            setTimeout(function () { t.textContent = 'Copy'; t.classList.remove('copied'); }, 1500);
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(rtext).then(copyDone).catch(function () {});
+          } else {
+            try {
+              var ta2 = document.createElement('textarea');
+              ta2.value = rtext; document.body.appendChild(ta2); ta2.select();
+              document.execCommand('copy'); document.body.removeChild(ta2); copyDone();
+            } catch (e) {}
+          }
+          return;
+        }
+
+        // --- NEEDS REVIEW: show/hide the original + word-level diff
+        k = t.getAttribute('data-revtoggleorig');
+        if (k) {
+          REVIEW_SHOW_ORIG[k] = !REVIEW_SHOW_ORIG[k];
+          // The textarea's live (possibly unsaved) text belongs in the diff,
+          // not the last-saved edited_text -- so read it off the DOM rather
+          // than re-deriving through repaintResource, which would blow away
+          // whatever he is mid-typing.
+          var rta = document.querySelector('textarea[data-revtext="' + cssEsc(k) + '"]');
+          var wrapEl = document.querySelector('.mm-review[data-reviewwrap="' + cssEsc(k) + '"]');
+          if (rta && wrapEl) {
+            var liveVal = rta.value;
+            var resrc = resourceOfKey(k);
+            wrapEl.outerHTML = reviewWidgetHtml(k, resrc);
+            var freshTa = document.querySelector('textarea[data-revtext="' + cssEsc(k) + '"]');
+            if (freshTa) freshTa.value = liveVal;
+          }
+          return;
+        }
+
+        // --- NEEDS REVIEW: save an inline edit (061 /edit-text, append-only history)
+        k = t.getAttribute('data-revsave');
+        if (k) {
+          var revTa = document.querySelector('textarea[data-revtext="' + cssEsc(k) + '"]');
+          var rvs = statusEl('data-revstatus', k);
+          var editedVal = revTa ? String(revTa.value || '') : '';
+          t.disabled = true;
+          say(rvs, '', 'Saving...');
+          fetch(NOTES_API + '/edit-text', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: k, edited_text: editedVal })
+          })
+            .then(function (r) { return r.json().catch(function () { return null; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (o) {
+              t.disabled = false;
+              if (!o.ok || !o.j || o.j.ok !== true) {
+                say(statusEl('data-revstatus', k), 'bad',
+                  'NOT SAVED: ' + ((o.j && (o.j.detail || o.j.error)) || 'the server rejected it') +
+                  '. Copy your edit somewhere before you leave this page.');
+                return;
+              }
+              return loadNotes().then(function () {
+                var back = REVIEW[k] && REVIEW[k].edited_text;
+                if (back !== editedVal) {
+                  say(statusEl('data-revstatus', k), 'bad',
+                    'NOT SAVED: the server said ok but a fresh read does not show this edit. Copy your text somewhere.');
+                  return;
+                }
+                say(statusEl('data-revstatus', k), 'ok', 'Saved. Confirmed by reading it back from the database.');
+                repaintResource(k);
+              });
+            })
+            .catch(function () {
+              t.disabled = false;
+              say(statusEl('data-revstatus', k), 'bad', 'NOT SAVED: could not reach the server. Copy your edit somewhere before you leave this page.');
+            });
+          return;
+        }
+
+        // --- NEEDS REVIEW: approve -> decision, then the client-side
+        // ready-flip (PRD S8.4; server-side flip is Phase 2's first item,
+        // S17). The flip only fires after the decision itself reads back
+        // confirmed -- a half-failure here leaves the row visibly still
+        // NEEDS REVIEW rather than silently claiming READY.
+        k = t.getAttribute('data-revapprove');
+        if (k) {
+          var apNote = document.querySelector('textarea[data-revnote="' + cssEsc(k) + '"]');
+          var apNoteText = apNote ? String(apNote.value || '').trim() : '';
+          var apResource = resourceOfKey(k) || {};
+          var apStatus = statusEl('data-revstatus', k);
+          t.disabled = true;
+          say(apStatus, '', 'Saving the decision...');
+          fetch(NOTES_API + '/decision', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: k, decision: 'approve' })
+          })
+            .then(function (r) { return r.json().catch(function () { return null; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (o) {
+              if (!o.ok || !o.j || o.j.ok !== true) {
+                t.disabled = false;
+                say(statusEl('data-revstatus', k), 'bad', 'NOT SAVED: the decision was not recorded' +
+                  ((o.j && (o.j.detail || o.j.error)) ? ' (' + (o.j.detail || o.j.error) + ')' : '') + '. Still NEEDS REVIEW. Try again.');
+                return null;
+              }
+              return fetch(NOTES_API + '/state?page_slug=' + encodeURIComponent(NOTES_SLUG), { cache: 'no-store' })
+                .then(function (r2) { return r2.json().catch(function () { return null; }); })
+                .then(function (j2) {
+                  var confirmed = j2 && j2.ok === true && j2.items && j2.items[k] && j2.items[k].decision === 'approve';
+                  if (!confirmed) {
+                    t.disabled = false;
+                    say(statusEl('data-revstatus', k), 'bad',
+                      'NOT CONFIRMED: the decision does not read back as approved. Still NEEDS REVIEW. Try again before you leave this page.');
+                    return null;
+                  }
+                  var finalText = (j2.items[k].edited_text != null && j2.items[k].edited_text !== '')
+                    ? j2.items[k].edited_text : (apResource.text || '');
+                  var newMarker = {
+                    v: 1, owner: 'boubacar',
+                    owner_reason: (apResource && apResource.owner_reason) || 'approved on the board',
+                    state: 'ready', kind: (apResource && apResource.kind) || 'message',
+                    text: finalText, contact: (apResource && apResource.contact) || null,
+                    review: { page_slug: NOTES_SLUG, item_id: k },
+                    by: 'boubacar', ts: new Date().toISOString()
+                  };
+                  if (apNoteText) {
+                    fetch(NOTES_API + '/note', {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: k, note_text: apNoteText })
+                    }).then(function () { return loadNotes(); }).catch(function () {});
+                  }
+                  return Promise.resolve(persist(actKey(k), JSON.stringify(newMarker)))
+                    .then(function () { return readBack(actKey(k)); })
+                    .then(function (res3) {
+                      t.disabled = false;
+                      var rows3 = (res3 && res3.data) || [];
+                      var back3 = null;
+                      try { back3 = rows3.length ? JSON.parse(rows3[0].value) : null; } catch (e) { back3 = null; }
+                      if ((res3 && res3.error) || !back3 || back3.state !== 'ready') {
+                        say(statusEl('data-revstatus', k), 'bad',
+                          'APPROVED, BUT NOT FLIPPED TO READY: the marker write did not read back. ' +
+                          'The decision is safely recorded as approved -- reload this page to retry the flip.');
+                        return;
+                      }
+                      say(statusEl('data-revstatus', k), 'ok', 'Approved. Confirmed READY by reading the marker back from the database.');
+                      loadNotes().then(function () { repaintResource(k); });
+                    })
+                    .catch(function () {
+                      t.disabled = false;
+                      say(statusEl('data-revstatus', k), 'bad',
+                        'APPROVED, BUT NOT FLIPPED TO READY: could not reach the database to confirm the marker. Reload to retry.');
+                    });
+                });
+            })
+            .catch(function () {
+              t.disabled = false;
+              say(statusEl('data-revstatus', k), 'bad', 'NOT SAVED: could not reach the server. Still NEEDS REVIEW. Try again.');
+            });
+          return;
+        }
+
+        // --- NEEDS REVIEW: reject -- stays needs_review, note carries why
+        k = t.getAttribute('data-revreject');
+        if (k) {
+          var rjNote = document.querySelector('textarea[data-revnote="' + cssEsc(k) + '"]');
+          var rjText = rjNote ? String(rjNote.value || '').trim() : '';
+          var rjStatus = statusEl('data-revstatus', k);
+          t.disabled = true;
+          say(rjStatus, '', 'Saving...');
+          fetch(NOTES_API + '/decision', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: k, decision: 'reject' })
+          })
+            .then(function (r) { return r.json().catch(function () { return null; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (o) {
+              t.disabled = false;
+              if (!o.ok || !o.j || o.j.ok !== true) {
+                say(statusEl('data-revstatus', k), 'bad', 'NOT SAVED: the rejection was not recorded' +
+                  ((o.j && (o.j.detail || o.j.error)) ? ' (' + (o.j.detail || o.j.error) + ')' : '') + '. Try again.');
+                return;
+              }
+              var noteWrite = rjText
+                ? fetch(NOTES_API + '/note', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ page_slug: NOTES_SLUG, item_id: k, note_text: rjText })
+                  })
+                : Promise.resolve();
+              return Promise.resolve(noteWrite).then(function () { return loadNotes(); }).then(function () {
+                say(statusEl('data-revstatus', k), 'ok', 'Rejected. Confirmed by reading it back from the database.');
+                repaintResource(k);
+              });
+            })
+            .catch(function () {
+              t.disabled = false;
+              say(statusEl('data-revstatus', k), 'bad', 'NOT SAVED: could not reach the server. Try again.');
             });
           return;
         }
