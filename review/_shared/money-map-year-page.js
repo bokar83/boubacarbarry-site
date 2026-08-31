@@ -71,6 +71,18 @@
   function dkey(d) {
     return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
   }
+  // Denver-local YYYY-MM-DD, independent of the viewing device's own
+  // timezone -- the same convention the /today-actions API's denver_date
+  // field carries server-side. Used to decide whether a done-<key> write
+  // timestamp counts as "today" for the live counter.
+  var DENVER_FMT = (function () {
+    try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit' }); }
+    catch (e) { return null; }
+  })();
+  function denverDateStr(d) {
+    if (DENVER_FMT) { try { return DENVER_FMT.format(d); } catch (e) {} }
+    return dkey(d); // fallback: device-local date if Intl/timezone data is unavailable
+  }
   function parseDate(s, fallback) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ''));
     return m ? new Date(+m[1], +m[2] - 1, +m[3]) : fallback;
@@ -273,6 +285,7 @@
           '<div class="mm-stat"><div class="mm-stat-label">Days left</div><div class="mm-stat-value" id="mmDaysLeft">&mdash;</div><div class="mm-stat-sub" id="mmEndSub"></div></div>' +
           '<div class="mm-stat"><div class="mm-stat-label">Collected</div><div class="mm-stat-value" id="mmCollected">&mdash;</div><div class="mm-stat-sub" id="mmTargetSub"></div></div>' +
           '<div class="mm-stat"><div class="mm-stat-label">Required run rate</div><div class="mm-stat-value" id="mmRunRate">&mdash;</div><div class="mm-stat-sub">per week to land it</div></div>' +
+          '<div class="mm-stat"><div class="mm-stat-label">Done today</div><div class="mm-stat-value" id="mmDoneToday">&mdash;</div><div class="mm-stat-sub">items checked off today</div></div>' +
         '</div>' +
         '<div class="mm-wk12"><div class="mm-wk12-track" id="mmWk12"></div><div class="mm-wk12-cap" id="mmWk12Cap">&nbsp;</div></div>' +
         '<div class="mm-conv-row">' +
@@ -324,6 +337,23 @@
       var convN = parseInt(state['conv-count-' + dkey(now)], 10);
       if (isNaN(convN)) convN = 0;
 
+      // Live "done today" tally -- every done-<key> row currently checked
+      // whose write timestamp falls on today in Denver. No new write path:
+      // this reads state (the '1'/'0' value) and stateTs (the row's
+      // updated_at, populated on hydrate/realtime, or set optimistically the
+      // moment he ticks the box -- see the change handler below).
+      var todayStr = denverDateStr(now);
+      var doneToday = 0;
+      for (var dk in state) {
+        if (dk.slice(0, 5) !== 'done-') continue;
+        if (state[dk] !== '1') continue;
+        var ts = stateTs[dk];
+        if (!ts) continue;
+        var tsDate = new Date(ts);
+        if (isNaN(tsDate.getTime())) continue;
+        if (denverDateStr(tsDate) === todayStr) doneToday++;
+      }
+
       if (el('mmWeek')) el('mmWeek').textContent = wk < 1 ? 'not started' : (wk > 12 ? '12 (closed)' : String(wkClamped));
       if (el('mmWeekSub')) el('mmWeekSub').textContent = 'of 12, started ' + DAYS[start.getDay()] + ' ' + MOS[start.getMonth()] + ' ' + start.getDate();
       if (el('mmDaysLeft')) el('mmDaysLeft').textContent = daysLeft < 0 ? 'ended' : String(daysLeft);
@@ -340,6 +370,7 @@
           : (daysLeft < 0 ? 'window closed' : '—');
       }
       if (el('mmConv')) el('mmConv').textContent = String(convN);
+      if (el('mmDoneToday')) el('mmDoneToday').textContent = String(doneToday);
 
       // The collapsed-state summary. This is the line that has to survive
       // "collapse everything", so it carries all three counters.
@@ -349,7 +380,8 @@
           '<span class="mm-pill">Week <b>' + (wk < 1 ? '0' : wkClamped) + '</b> of 12</span>' +
           '<span class="mm-pill">' + (daysLeft < 0 ? 'closed' : '<b>' + daysLeft + '</b> days left') + '</span>' +
           '<span class="mm-pill">$<b>' + collected.toLocaleString() + '</b> of $' + target.toLocaleString() + '</span>' +
-          '<span class="mm-pill' + (convN >= CONV_TARGET ? ' ok' : (convN ? ' warn' : '')) + '"><b>' + convN + '</b> of ' + CONV_TARGET + ' conversations today</span>';
+          '<span class="mm-pill' + (convN >= CONV_TARGET ? ' ok' : (convN ? ' warn' : '')) + '"><b>' + convN + '</b> of ' + CONV_TARGET + ' conversations today</span>' +
+          '<span class="mm-pill' + (doneToday ? ' ok' : '') + '"><b>' + doneToday + '</b> done today</span>';
       }
 
       // 12-week bar
@@ -1168,6 +1200,14 @@
         if (row) row.classList.toggle('is-done', on);
         // Keep the twin boxes (summary + body) in step immediately.
         Array.prototype.forEach.call(document.querySelectorAll('input[data-done="' + cssEsc(k) + '"]'), function (b) { b.checked = on; });
+
+        // Optimistic local update so the "done today" counter moves the
+        // instant he ticks/unticks, without waiting on the round trip. The
+        // real write timestamp lands moments later via readBack/realtime and
+        // overwrites this with the true value.
+        state[doneKey(k)] = val;
+        if (on) stateTs[doneKey(k)] = new Date().toISOString();
+        renderTracker();
 
         Promise.resolve(persist(doneKey(k), val))
           .then(function () { return readBack(doneKey(k)); })
