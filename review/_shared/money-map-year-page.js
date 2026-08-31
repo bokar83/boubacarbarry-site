@@ -93,6 +93,8 @@
     var BOARD = cfg.boardId;
     var TOKEN = cfg.boardToken;
     var CONV_TARGET = cfg.convTarget || 5;
+    var ASK_TARGET = cfg.askTarget || 5;     // a target to aim at, NEVER a gate
+    var DAY_STRIP_DAYS = 14;                 // how far back the day-by-day strip looks
     var LSK = 'mm-' + BOARD + '-';
     var FALLBACK = cfg.fallback || {};
     var YEAR_START = parseDate(FALLBACK.startDate, new Date());
@@ -167,6 +169,32 @@
     }
     function archiveOf(k) { return markerOf(archiveKey(k)); }
 
+    // ---- DECIDED vs UNDECIDED (2026-08-31, requirement 6) -----------------
+    // A row he has ACTED on -- ticked, moved, or archived -- must look
+    // different from one nobody has touched. Before this, only done and
+    // archived dulled; three rows moved to September sat at full brightness
+    // at the top of the list, which is the opposite of what a reschedule is
+    // for. Decided is any of the three dispositions the board supports.
+    function isDecided(k) { return isDone(k) || !!pushOf(k) || !!archiveOf(k); }
+
+    // ---- EFFECTIVE DUE DATE (2026-08-31, requirement 8) -------------------
+    // A rescheduled row is due on its NEW date, not its original one. This
+    // page has no date-sectioned display, so "moves under its new date"
+    // becomes: it stops competing for today. A row whose effective date is in
+    // the future sorts to the BOTTOM of its tier, dulls, and can never be the
+    // #1. It is never hidden -- nothing on this board is ever hidden.
+    // `push.to` wins when a reschedule marker exists; otherwise the row's own
+    // published by_date stands.
+    function effectiveDue(item) {
+      var p = pushOf(String(item.key));
+      if (p && p.to) return p.to;
+      return item.by_date || null;
+    }
+    function isFutureDated(item) {
+      var d = effectiveDue(item);
+      return !!d && d > dkey(new Date());
+    }
+
     // ---- ACT MARKER (2026-08-31, money-map-actionable-items) --------------
     // `act-<key>` carries the owner + resource state + resource content for
     // an item -- see docs/prds/money-map-actionable-items/PRD.md S8.1. The
@@ -216,8 +244,9 @@
             '<div class="mm-nav-links">' +
               '<a href="#sec-tracker">Tracker</a>' +
               '<a href="#sec-hero">#1 now</a>' +
-              '<a href="#sec-work">Work</a>' +
-              '<a href="#sec-revenue">Revenue</a>' +
+              '<a href="#sec-must">Must</a>' +
+              '<a href="#sec-should">Should</a>' +
+              '<a href="#sec-could">Could</a>' +
               '<a href="#sec-notes">Notes</a>' +
             '</div>' +
           '</nav>' +
@@ -245,20 +274,33 @@
               '<div id="mmHeroCtl"></div></div>' +
           '</details>' +
 
-          '<details class="mm-sec" id="sec-work" open>' +
-            '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Work to do</span>' +
-              '<span class="mm-sec-meta" id="mmWorkMeta">&hellip;</span></summary>' +
+          // THREE sections, in his order: MUST, then SHOULD, then COULD.
+          // They replace the old "Work to do" / "Revenue items" split, which
+          // buried a MUST under sixty general rows and made the tier a chip
+          // instead of the spine. Revenue keeps its identity as a chip on the
+          // row, inside whichever tier it earned.
+          '<details class="mm-sec tier-MUST" id="sec-must" open>' +
+            '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Must</span>' +
+              '<span class="mm-sec-meta" id="mmMustMeta">&hellip;</span></summary>' +
             '<div class="mm-sec-body">' +
-              '<p class="mm-lede">Ranked by the same engine the morning brief uses. Most important first, not nearest date first.</p>' +
-              '<div id="mmWorkList"></div></div>' +
+              '<p class="mm-lede">A hard clock or a promise to a named person. Inside the tier: a booked meeting first, then setting one up, then sends and calls, then comments, then your own posts, then everything else.</p>' +
+              '<div id="mmMustList"></div></div>' +
           '</details>' +
 
-          '<details class="mm-sec" id="sec-revenue" open>' +
-            '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Revenue items</span>' +
-              '<span class="mm-sec-meta" id="mmRevMeta">&hellip;</span></summary>' +
+          '<details class="mm-sec tier-SHOULD" id="sec-should" open>' +
+            '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Should</span>' +
+              '<span class="mm-sec-meta" id="mmShouldMeta">&hellip;</span></summary>' +
             '<div class="mm-sec-body">' +
-              '<p class="mm-lede">The same ranking, filtered to the lanes that make money.</p>' +
-              '<div id="mmRevList"></div></div>' +
+              '<p class="mm-lede">Real work with real value, no hard clock on it today.</p>' +
+              '<div id="mmShouldList"></div></div>' +
+          '</details>' +
+
+          '<details class="mm-sec tier-COULD" id="sec-could">' +
+            '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Could</span>' +
+              '<span class="mm-sec-meta" id="mmCouldMeta">&hellip;</span></summary>' +
+            '<div class="mm-sec-body">' +
+              '<p class="mm-lede">Everything else that is still live. Shut by default so it stops competing with the two above it.</p>' +
+              '<div id="mmCouldList"></div></div>' +
           '</details>' +
 
           '<div id="mmAgentDrawer"></div>' +
@@ -294,6 +336,22 @@
           '<button class="mm-num-btn" id="mmConvPlus" aria-label="one more conversation">+</button>' +
           '<div class="mm-conv-target">conversations today, of ' + CONV_TARGET + '</div>' +
         '</div>' +
+        // ---- ASKS (2026-08-31, requirement 4) ---------------------------
+        // An ASK is any time he asks someone for something: a meeting, a
+        // purchase, an introduction, anything. It reuses Year Zero's EXACT
+        // key shape, `ask-YYYY-MM-DD`, in this same shared table scoped by
+        // board -- one counter design across every cycle, not a second one.
+        // There is NO LOCK. The hard five-asks gate was killed on 2026-08-20
+        // because it produced zero asks for weeks and took the build work
+        // down with it. This counts and shows a streak; it never blocks.
+        '<div class="mm-conv-row">' +
+          '<button class="mm-num-btn" id="mmAskMinus" aria-label="one fewer ask">&minus;</button>' +
+          '<div class="mm-conv-count" id="mmAsk">0</div>' +
+          '<button class="mm-num-btn" id="mmAskPlus" aria-label="one more ask">+</button>' +
+          '<div class="mm-conv-target">asks today, of ' + ASK_TARGET + ' &middot; <span id="mmAskStreak"></span></div>' +
+        '</div>' +
+        // ---- DAY BY DAY (2026-08-31, requirement 5) ---------------------
+        '<div class="mm-days" id="mmDays"></div>' +
         '<div style="margin-top:0.8rem;">' +
           '<label class="mm-stat-label" for="mmCollectedInput">Update collected revenue ($)</label>' +
           '<input class="mm-input" type="text" id="mmCollectedInput" inputmode="numeric" placeholder="0">' +
@@ -320,6 +378,122 @@
       b.hidden = false;
     }
     function clearBanner() { var b = el('mmBanner'); if (b) b.hidden = true; }
+
+    // -------------------------------------------------------------------
+    // DAY BY DAY (2026-08-31, requirement 5)
+    // -------------------------------------------------------------------
+    // Four numbers for EVERY day, not just today: planned, done, moved,
+    // archived. Every one of them is DERIVED from rows already in this store.
+    // No new table, no migration, no second write path -- which also means
+    // no way for these numbers to drift from the markers they describe.
+    //
+    // Two honest limits, printed on the panel rather than hidden, because a
+    // number nobody can reproduce must never pass for an exact one:
+    //   * the store keeps ONE row per key, so a row ticked Monday, unticked
+    //     Tuesday and re-ticked Wednesday counts once, on Wednesday.
+    //   * a row rescheduled twice keeps only its latest marker, so it counts
+    //     once, on the later day.
+    //
+    // The one thing that is NOT a limit, and was nearly built as one: these
+    // counts include ONLY markers whose `by` says `boubacar`. Agent sweeps
+    // write reschedules in bulk -- one lane moved 99 rows in a single pass --
+    // and folding those into his day would tell him he moved a hundred things
+    // he never touched. His day is his own writes.
+    function askKey(ds) { return 'ask-' + ds; }
+    function getAsk(ds) { var n = parseInt(state[askKey(ds)], 10); return isNaN(n) ? 0 : n; }
+    function isHis(marker) { return !!marker && String(marker.by || '') === 'boubacar'; }
+
+    function dayCounts() {
+      var out = {};   // 'YYYY-MM-DD' -> {planned, done, moved, archived}
+      function bucket(d) {
+        if (!d) return null;
+        if (!out[d]) out[d] = { planned: 0, done: 0, moved: 0, archived: 0 };
+        return out[d];
+      }
+      for (var key in state) {
+        if (!Object.prototype.hasOwnProperty.call(state, key)) continue;
+
+        if (key.slice(0, 5) === 'done-' && state[key] === '1') {
+          var ts = stateTs[key];
+          if (ts) {
+            var td = new Date(ts);
+            if (!isNaN(td.getTime())) { var bd = bucket(denverDateStr(td)); if (bd) bd.done++; }
+          }
+          continue;
+        }
+        if (key.slice(0, 5) === 'push-') {
+          var pm = markerOf(key);
+          if (!pm) continue;
+          // MOVED counts on the day HE moved it; PLANNED counts on the day he
+          // moved it TO. A machine sweep still sets the plan (the row really
+          // is due then) but never counts as a move he made.
+          if (isHis(pm) && pm.ts) {
+            var pd = new Date(pm.ts);
+            if (!isNaN(pd.getTime())) { var bp = bucket(denverDateStr(pd)); if (bp) bp.moved++; }
+          }
+          if (pm.to) { var bt = bucket(pm.to); if (bt) bt.planned++; }
+          continue;
+        }
+        if (key.slice(0, 8) === 'archive-') {
+          var am = markerOf(key);
+          if (!am || !isHis(am) || !am.ts) continue;
+          var ad = new Date(am.ts);
+          if (!isNaN(ad.getTime())) { var ba = bucket(denverDateStr(ad)); if (ba) ba.archived++; }
+          continue;
+        }
+        // A row that carries its OWN due date and has never been rescheduled
+        // is planned on that date. Only 14 of the board's item rows do today;
+        // almost every plan on this board comes from a push- marker instead.
+        if (/^(status-|kpi-|debt-)/.test(key) && !markerOf(pushKey(key))) {
+          var m = /\b(?:BY|DUE)\s+(\d{4}-\d{2}-\d{2})/i.exec(String(state[key] || ''));
+          if (m) { var bo = bucket(m[1]); if (bo) bo.planned++; }
+        }
+      }
+      return out;
+    }
+
+    function renderDays() {
+      var host = el('mmDays');
+      if (!host) return;
+      var counts = dayCounts();
+      var now = new Date();
+      var cells = '';
+      for (var i = DAY_STRIP_DAYS - 1; i >= 0; i--) {
+        var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        var ds = dkey(d);
+        var c = counts[ds] || { planned: 0, done: 0, moved: 0, archived: 0 };
+        var isToday = (i === 0);
+        var asks = getAsk(ds);
+        // Every day in the window gets its real numbers, including days
+        // before this cycle opened. An earlier draft blanked those out on the
+        // reasoning that "the board did not exist yet" -- but the ROWS did.
+        // They were carried across from the previous cycle, and the work he
+        // did on them is real work he did. Blanking it would have hidden his
+        // own history behind a bookkeeping boundary.
+        cells +=
+          '<div class="mm-day' + (isToday ? ' today' : '') + '"' +
+            ' title="' + esc(prettyDate(ds)) + '">' +
+            '<div class="mm-day-lbl">' + DAYS[d.getDay()].charAt(0) + '<span>' + d.getDate() + '</span></div>' +
+            '<div class="mm-day-nums">' +
+              '<span class="p" title="planned">' + c.planned + '</span>' +
+              '<span class="d" title="done">' + c.done + '</span>' +
+              '<span class="m" title="moved">' + c.moved + '</span>' +
+              '<span class="a" title="archived">' + c.archived + '</span>' +
+              '<span class="k" title="asks">' + asks + '</span>' +
+            '</div>' +
+          '</div>';
+      }
+      host.innerHTML =
+        '<div class="mm-days-head">Day by day' +
+          '<span class="mm-days-key">' +
+            '<b class="p">planned</b><b class="d">done</b><b class="m">moved</b><b class="a">archived</b><b class="k">asks</b>' +
+          '</span></div>' +
+        '<div class="mm-days-strip">' + cells + '</div>' +
+        '<div class="mm-days-note">Counted straight off the board, nothing kept in a second place. ' +
+        'Moved and archived count only what YOU did, never an agent sweep. ' +
+        'The store keeps one marker per row, so a row moved twice counts once, on the later day, ' +
+        'and a row ticked, unticked and re-ticked counts on the last day you touched it.</div>';
+    }
 
     // -------------------------------------------------------------------
     // Tracker
@@ -371,6 +545,26 @@
       }
       if (el('mmConv')) el('mmConv').textContent = String(convN);
       if (el('mmDoneToday')) el('mmDoneToday').textContent = String(doneToday);
+
+      // Asks: same key shape as Year Zero, a target to aim at, never a gate.
+      var askN = getAsk(dkey(now));
+      if (el('mmAsk')) el('mmAsk').textContent = String(askN);
+      if (el('mmAskStreak')) {
+        // Consecutive days at target, counting back. A weekend below target
+        // is a rest day and is skipped, not a break -- Year Zero's rule,
+        // kept verbatim so the two cycles measure the same thing.
+        var s = 0, dd = new Date();
+        if (getAsk(dkey(dd)) < ASK_TARGET) dd.setDate(dd.getDate() - 1);
+        for (var si = 0; si < 400; si++) {
+          var dow = dd.getDay();
+          var an = getAsk(dkey(dd));
+          if (an >= ASK_TARGET) { s++; dd.setDate(dd.getDate() - 1); }
+          else if (dow === 0 || dow === 6) { dd.setDate(dd.getDate() - 1); }
+          else break;
+        }
+        el('mmAskStreak').textContent = 'streak ' + s + 'd';
+      }
+      renderDays();
 
       // The collapsed-state summary. This is the line that has to survive
       // "collapse everything", so it carries all three counters.
@@ -434,54 +628,65 @@
         if (res) res.innerHTML = '';
         return;
       }
-      var top = state['cos-top-priority'];
-      if (!top) {
-        line.textContent = 'No #1 has been published to this board yet.';
-        if (why) why.innerHTML = 'The morning run writes <code>cos-top-priority</code>. Nothing has written it for board <code>' + esc(BOARD) + '</code>.';
-        if (meta) meta.textContent = 'not set';
+      // ---- REQUIREMENT 7 (2026-08-31) -------------------------------------
+      // The #1 IS the live top-ranked row, not a separately cached string.
+      // `cos-top-priority` used to DRIVE this tile, and on 2026-08-31 it held
+      // text for an item that had already been discharged: the tile showed a
+      // priority that matched no row, so it carried no resource and no
+      // controls -- the single most important thing on the board was the one
+      // thing he could not tick, note, reschedule or archive. That whole bug
+      // class dies here, because the hero and the list now read ONE object.
+      var b = buildBoard();
+      if (b.fail) {
+        line.textContent = 'Could not build the ranked board, so there is no #1 to show.';
+        if (why) why.innerHTML = b.fail;
+        if (meta) meta.textContent = 'unavailable';
         if (res) res.innerHTML = '';
         return;
       }
-      line.textContent = top;
-      if (why) why.textContent = state['cos-top-priority-why'] || 'No reason was recorded with this priority.';
-      var d = state['cos-top-priority-date'] || '';
-      var today = dkey(new Date());
-      if (meta) meta.textContent = d ? (d === today ? 'set today' : 'set ' + d + ', not today') : 'no date';
-
-      // The #1 tile is the FIRST thing he reads. If the ranked list carries a
-      // row whose title matches this exact text, its resource (READY draft,
-      // review widget, or honest gap) renders right here too -- so the day's
-      // top priority never makes him scroll to find what he needs to act.
-      if (res) {
-        var wl = readWorklist();
-        var heroTrim = String(top).trim();
-        var match = null;
-        if (wl.items) {
-          for (var i = 0; i < wl.items.length; i++) {
-            if ((wl.items[i].title || '').trim() === heroTrim) { match = wl.items[i]; break; }
-          }
-        }
-        res.innerHTML = (match && ownerOf(match) !== 'agent') ? resourcePanelHtml(match, String(match.key)) : '';
+      var top = b.hero;
+      if (!top) {
+        line.textContent = 'Nothing is live and undecided right now.';
+        if (why) why.textContent = 'Every ranked row that is yours is either done, archived, or parked on a later date. ' +
+          'That is a finished list, not an empty one.';
+        if (meta) meta.textContent = 'all clear';
+        if (res) res.innerHTML = '';
+        return;
       }
 
-      // The #1 tile gets THE SAME four controls as every list tile, from the
-      // same function. renderLists deliberately filters this row out of the
-      // ranked list so it is not read twice -- which meant that until this
-      // was wired, the day's single most important item was the ONE item on
-      // the whole page he could not tick, note, reschedule or archive.
-      if (ctl) {
-        if (match) {
-          ctl.innerHTML = controlsHtml(String(match.key));
-        } else {
-          // No ranked row carries this exact text, so there is no item id to
-          // write against. Say that rather than drawing controls that would
-          // write to a key nothing else reads.
-          ctl.innerHTML = '<div class="mm-stat-note">This #1 was written straight to ' +
-            '<code>cos-top-priority</code> and does not match a ranked row, so it has no ' +
-            'item of its own to tick, note or reschedule. Find it in the list below, or ' +
-            're-run the publisher so the two agree.</div>';
-        }
+      var hk = String(top.key);
+      line.textContent = top.headline || (top.title || '').split('\n')[0] || hk;
+      if (why) {
+        why.textContent = top.first_move
+          ? ('First move: ' + top.first_move)
+          : 'This row carries no FIRST-MOVE line, so none is shown. Add one to the row rather than guessing one.';
       }
+      if (meta) {
+        var due = effectiveDue(top);
+        meta.textContent = (top.tier || 'COULD') + (due ? ' · due ' + prettyDate(due) : ' · no date');
+      }
+
+      // `cos-top-priority` is now a CROSS-CHECK, never the source. When the
+      // published #1 disagrees with the live one, say so in one line instead
+      // of silently showing whichever happens to be stale.
+      var published = String(state['cos-top-priority'] || '').trim();
+      var liveTitle = String(top.title || '').trim();
+      var drift = (published && published !== liveTitle)
+        ? '<div class="mm-stat-note">The last published #1 said something else. It is stale, and this tile is the live ranking.</div>'
+        : '';
+      if (b.heroSkipped && b.heroSkipped.length) {
+        drift = '<div class="mm-stat-note">This is a ' + esc(top.tier || 'COULD') + ' because every ' +
+          esc(b.heroSkipped.join(' and ')) + ' on the board is already done, archived, or moved to a later date. ' +
+          'The ranking did not skip them; you cleared them.</div>' + drift;
+      }
+
+      if (res) res.innerHTML = resourcePanelHtml(top, hk);
+      // The SAME control bar function every list tile uses. No second copy.
+      if (ctl) ctl.innerHTML = drift + controlsHtml(hk);
+      // The hero is filtered OUT of its tier list, so renderList never
+      // registers it with the notes store. Register it here or a note he
+      // writes on the day's #1 has nowhere to land.
+      registerNoteItems([top]);
     }
 
     // -------------------------------------------------------------------
@@ -891,6 +1096,23 @@
           (NOTES_OPEN[k] ? notesHtml(k) : '') + '</div>';
     }
 
+    // His priority hierarchy, in his own order. The number is computed
+    // SERVER-SIDE in `orchestrator/cos_office/ranking.py` -- the one ranker
+    // the morning brief and the on-demand answer also read -- and only
+    // rendered here. A second classifier in the browser is the drift this
+    // whole page is built to avoid. A row published before the ranker carried
+    // this field renders no chip at all rather than a guessed one.
+    var CLASS_LABEL = {
+      1: 'meeting booked', 2: 'set up a meeting', 3: 'send or call',
+      4: 'comment', 5: 'own post', 6: 'other work'
+    };
+    function classChipHtml(item) {
+      var c = item.action_class;
+      if (!c || !CLASS_LABEL[c]) return '';
+      return '<span class="mm-class c' + c + '" title="' +
+        esc(item.action_class_reason || 'priority class ' + c) + '">' + esc(CLASS_LABEL[c]) + '</span>';
+    }
+
     function itemHtml(item) {
       // `headline` is picked server-side by the publisher, which knows to skip
       // this board's scaffolding lines ("DATE SET:", "STATUS:", "DAY 3 of 10")
@@ -924,7 +1146,11 @@
       if (pushed) badges += '<span class="mm-mark push">moved to ' + esc(prettyDate(pushed.to)) + '</span>';
       if (arch) badges += '<span class="mm-mark arch">archived</span>';
 
-      var stateCls = (done ? ' is-done' : '') + (arch ? ' is-arch' : '');
+      // Requirement 6: DECIDED is done OR moved OR archived. All three dull.
+      // Requirement 8: a row moved to a future date also carries is-later, so
+      // it reads as parked rather than merely annotated.
+      var stateCls = (done ? ' is-done' : '') + (arch ? ' is-arch' : '') +
+                     (pushed ? ' is-push' : '') + (isFutureDated(item) ? ' is-later' : '');
 
       // The <details> holds the READING (title, first move, resource, facts).
       // The control bar is its SIBLING, not its child, so the four controls
@@ -932,11 +1158,19 @@
       return '<div class="mm-row' + stateCls + '" data-rowkey="' + esc(k) + '">' +
         '<details class="mm-item' + stateCls + '"' +
           ' data-itemkey="' + esc(k) + '"' + (itemOpen[k] ? ' open' : '') + '>' +
+        // ONE checkbox per item, his words, 2026-08-31. There used to be two:
+        // an unlabelled box here in the summary and the labelled DONE control
+        // in the bar below, both writing the same key. Two boxes for one fact
+        // is a question about which one is real. The labelled one wins because
+        // it says what it does; this one is gone.
         '<summary>' +
-          '<input type="checkbox" class="mm-check" data-done="' + esc(k) + '"' + (done ? ' checked' : '') +
-            ' aria-label="Mark done: ' + esc(first) + '">' +
           '<span class="mm-rank">#' + item.rank + '</span>' +
           '<span class="mm-tier ' + esc(item.tier || 'COULD') + '">' + esc(item.tier || '') + '</span>' +
+          // The kind of work, shown so a wrong classification is VISIBLE and
+          // therefore correctable with a `CLASS: n` marker on the row. A
+          // hierarchy nobody can see is a hierarchy nobody can fix.
+          classChipHtml(item) +
+          (item.revenue ? '<span class="mm-rev-chip">revenue</span>' : '') +
           (item.lane ? '<span class="mm-lane">' + esc(item.lane) + '</span>' : '') +
           whenLabel(item) + badges +
           '<span class="mm-item-title">' + esc(first) + '</span>' +
@@ -969,54 +1203,105 @@
       registerNoteItems(shown);
     }
 
-    function renderLists() {
+    // ONE function decides what he sees and in what order, and BOTH the #1
+    // tile and the three tier lists read its answer. That is the whole point:
+    // until today the hero read a cached `cos-top-priority` string and the
+    // lists read `cos-worklist`, so the two could disagree -- and they did,
+    // leaving the day's most important item showing text that matched no row
+    // and therefore carried no controls at all.
+    //
+    // Returns null when the board could not be read or the list could not be
+    // parsed, so callers can say "unknown" rather than draw an empty page.
+    function buildBoard() {
       if (!remoteOk) {
-        var msg = 'The board could not be read, so this list is unknown, not empty.' +
-                  (readError ? ' (' + esc(readError) + ')' : '');
-        renderList('mmWorkList', 'mmWorkMeta', null, 'work', msg);
-        renderList('mmRevList', 'mmRevMeta', null, 'rev', msg);
-        return;
+        return { fail: 'The board could not be read, so this list is unknown, not empty.' +
+                       (readError ? ' (' + esc(readError) + ')' : '') };
       }
       var wl = readWorklist();
       if (wl.error) {
-        var e = 'The stored ranked list could not be parsed: ' + esc(wl.error) + '. Re-run the publisher.';
-        renderList('mmWorkList', 'mmWorkMeta', null, 'work', e);
-        renderList('mmRevList', 'mmRevMeta', null, 'rev', e);
-        return;
+        return { fail: 'The stored ranked list could not be parsed: ' + esc(wl.error) + '. Re-run the publisher.' };
       }
       if (!wl.items) {
-        var m = 'No ranked list has been published to board <code>' + esc(BOARD) + '</code> yet. ' +
-                'Publish it with <code>python scripts/publish_money_map_worklist.py --write</code> on the orchestrator.';
-        renderList('mmWorkList', 'mmWorkMeta', null, 'work', m);
-        renderList('mmRevList', 'mmRevMeta', null, 'rev', m);
+        return { fail: 'No ranked list has been published to board <code>' + esc(BOARD) + '</code> yet. ' +
+                       'Publish it with <code>python scripts/publish_money_map_worklist.py --write</code> on the orchestrator.' };
+      }
+
+      var agent = [], mine = [];
+      wl.items.forEach(function (i) {
+        // PRD S3: an item is on HIS list only if it requires him personally.
+        if (ownerOf(i) === 'agent') agent.push(i); else mine.push(i);
+      });
+
+      // Requirement 8, the demotion. A row moved to a future date, and a row
+      // already decided, both stop competing for today -- they sink to the
+      // bottom of their own tier rather than leaving the page. Sort is STABLE
+      // in every browser that matters, so the publisher's rank survives inside
+      // each of the three groups; nothing is re-scored here.
+      function sinkRank(i) {
+        var k = String(i.key);
+        if (isDone(k) || archiveOf(k)) return 2;   // decided and closed
+        if (isFutureDated(i)) return 1;            // parked on a later date
+        return 0;                                  // live today
+      }
+      mine.sort(function (a, b) { return sinkRank(a) - sinkRank(b); });
+
+      var tiers = { MUST: [], SHOULD: [], COULD: [] };
+      mine.forEach(function (i) {
+        var t = (i.tier === 'MUST' || i.tier === 'SHOULD') ? i.tier : 'COULD';
+        tiers[t].push(i);
+      });
+
+      // The #1 is the FIRST genuinely live, undecided, not-parked row in the
+      // highest tier that has one. Same object the list renders, so the tile
+      // cannot carry different text or a missing control bar, ever.
+      var hero = null, heroSkipped = [];
+      ['MUST', 'SHOULD', 'COULD'].forEach(function (t) {
+        if (hero) return;
+        for (var i = 0; i < tiers[t].length; i++) {
+          if (sinkRank(tiers[t][i]) === 0) { hero = tiers[t][i]; return; }
+        }
+        // Nothing live in this tier. Remember it, so the tile can say WHY the
+        // day's #1 is a COULD instead of leaving him to wonder whether the
+        // ranking broke. A quiet fallthrough reads exactly like a bug.
+        if (tiers[t].length) heroSkipped.push(t);
+      });
+
+      return { wl: wl, tiers: tiers, agent: agent, hero: hero, heroSkipped: heroSkipped };
+    }
+
+    function renderLists() {
+      var b = buildBoard();
+      if (b.fail) {
+        renderList('mmMustList', 'mmMustMeta', null, 'must', b.fail);
+        renderList('mmShouldList', 'mmShouldMeta', null, 'should', b.fail);
+        renderList('mmCouldList', 'mmCouldMeta', null, 'could', b.fail);
         return;
       }
       var today = dkey(new Date());
-      if (wl.date && wl.date !== today) {
-        banner('<b>THIS RANKING IS NOT TODAY&rsquo;S.</b>It was computed for ' + esc(wl.date) +
+      if (b.wl.date && b.wl.date !== today) {
+        banner('<b>THIS RANKING IS NOT TODAY&rsquo;S.</b>It was computed for ' + esc(b.wl.date) +
                ' and has not been recomputed since. The items are real; their order may not reflect today.', true);
       } else {
         clearBanner();
       }
-      // The day's #1 already has its own tile above. Listing it again as rank 1
-      // makes the top of the work list a repeat of the thing he just read.
-      // Matched on the text rather than on the rank, because the hero comes
-      // from `cos-top-priority` and the list from `cos-worklist`: they agree
-      // today and are allowed to disagree, and on a day they disagree BOTH
-      // belong on the page.
-      var heroText = (state['cos-top-priority'] || '').trim();
-      var rows = wl.items.filter(function (i) { return !heroText || (i.title || '').trim() !== heroText; });
-      // PRD S3/S8.3: "an item is visible on his list ONLY if it requires him
-      // personally." Agent-owned rows never reach the work/revenue lists --
-      // they move to the collapsed drawer below, one tap away, never gone.
-      var agentRows = rows.filter(function (i) { return ownerOf(i) === 'agent'; });
-      var visibleRows = rows.filter(function (i) { return ownerOf(i) !== 'agent'; });
-      var revenue = visibleRows.filter(function (i) { return i.revenue; });
-      var general = visibleRows.filter(function (i) { return !i.revenue; });
-      renderList('mmWorkList', 'mmWorkMeta', general, 'work', '');
-      renderList('mmRevList', 'mmRevMeta', revenue, 'rev', '');
+      // The #1 renders ONCE, in its own tile above, and is filtered out of its
+      // tier list here. This is not cosmetic de-duplication: every control on
+      // this page is addressed by `[data-notes="<key>"]` and resolved with
+      // querySelector, which returns the FIRST match in document order. Render
+      // the same key twice and tapping Notes on the list row silently opens
+      // the hero's panel instead -- a button that visibly does nothing, which
+      // is exactly the complaint that started this rebuild. Rendering it once
+      // is safe now in a way it was not before, because the hero carries the
+      // full control bar from the same function every other tile uses.
+      var heroKey = b.hero ? String(b.hero.key) : null;
+      function withoutHero(rows) {
+        return heroKey ? rows.filter(function (i) { return String(i.key) !== heroKey; }) : rows;
+      }
+      renderList('mmMustList', 'mmMustMeta', withoutHero(b.tiers.MUST), 'must', '');
+      renderList('mmShouldList', 'mmShouldMeta', withoutHero(b.tiers.SHOULD), 'should', '');
+      renderList('mmCouldList', 'mmCouldMeta', withoutHero(b.tiers.COULD), 'could', '');
       var agentHost = el('mmAgentDrawer');
-      if (agentHost) agentHost.innerHTML = agentDrawerHtml(agentRows);
+      if (agentHost) agentHost.innerHTML = agentDrawerHtml(b.agent);
       var nm = el('mmNotesMeta');
       if (nm) nm.textContent = state['notes-log'] ? 'has notes' : 'empty';
     }
@@ -1243,8 +1528,19 @@
           if (!wrap) return;
           var opening = wrap.hidden;
           NOTES_OPEN[k] = opening;
-          if (opening) { wrap.innerHTML = notesHtml(k); wrap.hidden = false; }
-          else { wrap.hidden = true; wrap.innerHTML = ''; }
+          if (opening) {
+            wrap.innerHTML = notesHtml(k);
+            wrap.hidden = false;
+            // Put the cursor in the box and scroll it into view. On a phone
+            // the panel opens below the fold, and a panel he cannot see is
+            // indistinguishable from a button that did nothing -- which is
+            // exactly how this control got reported as broken.
+            var box = wrap.querySelector('textarea[data-noteinput]');
+            if (box) {
+              try { box.focus({ preventScroll: true }); } catch (e) { try { box.focus(); } catch (e2) {} }
+              try { wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e3) {}
+            }
+          } else { wrap.hidden = true; wrap.innerHTML = ''; }
           return;
         }
 
@@ -1693,6 +1989,15 @@
       }
       if (el('mmConvPlus')) el('mmConvPlus').addEventListener('click', function () { bumpConv(1); });
       if (el('mmConvMinus')) el('mmConvMinus').addEventListener('click', function () { bumpConv(-1); });
+
+      function bumpAsk(delta) {
+        var k = askKey(dkey(new Date()));
+        var n = Math.max(0, getAsk(dkey(new Date())) + delta);
+        persist(k, String(n));
+        renderTracker();
+      }
+      if (el('mmAskPlus')) el('mmAskPlus').addEventListener('click', function () { bumpAsk(1); });
+      if (el('mmAskMinus')) el('mmAskMinus').addEventListener('click', function () { bumpAsk(-1); });
 
       var nb = el('mmNotes');
       if (nb) nb.addEventListener('blur', function () {
