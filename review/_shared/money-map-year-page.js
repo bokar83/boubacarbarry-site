@@ -1191,7 +1191,22 @@
       if (!rows.length) { host.innerHTML = '<div class="mm-empty">Nothing ranked into this section today.</div>'; if (meta) meta.textContent = '0 items'; return; }
       var showAll = !!expanded[key];
       var shown = showAll ? rows : rows.slice(0, PAGE_SIZE);
-      var html = shown.map(itemHtml).join('');
+
+      // BATCHING, per the standing rule that the Money Map is grouped by KIND
+      // OF WORK ("I want to see all the calling tasks together"). The ranker
+      // already sorts by class inside a tier, so rows of one kind arrive
+      // adjacent; this only draws the line between them so the batch is
+      // visible instead of merely true. A run of rows with no class published
+      // yet draws no header rather than a guessed one.
+      var html = '', lastClass = null;
+      shown.forEach(function (item) {
+        var c = item.action_class;
+        if (c && CLASS_LABEL[c] && c !== lastClass) {
+          html += '<div class="mm-batch c' + c + '">' + esc(CLASS_LABEL[c]) + '</div>';
+        }
+        lastClass = c || lastClass;
+        html += itemHtml(item);
+      });
       if (rows.length > PAGE_SIZE) {
         html += '<div class="mm-more"><button class="mm-nav-btn" data-more="' + key + '">' +
           (showAll ? 'Show only the top ' + PAGE_SIZE : 'Show all ' + rows.length) + '</button></div>';
