@@ -607,6 +607,26 @@
         '<span class="mm-res-source">source: ' + esc(contact.source) + '</span></div>';
     }
 
+    // Extra contact lines beyond the primary one -- e.g. an older phone
+    // number found on file that should be surfaced, never omitted, but
+    // never presented as a live/verified number either. `note` carries the
+    // staleness label (required for anything not independently confirmed
+    // current). Renders nothing if `extra` is empty/absent.
+    function contactExtraHtml(extra) {
+      if (!extra || !extra.length) return '';
+      var out = '';
+      for (var i = 0; i < extra.length; i++) {
+        var c = extra[i] || {};
+        if (!c.value) continue;
+        var chan = c.channel ? esc(c.channel) : 'contact';
+        out += '<div class="mm-res-contact mm-res-contact-extra">' + esc(chan) + ': ' + esc(c.value) +
+          (c.note ? ' <span class="mm-res-contact-flag">(' + esc(c.note) + ')</span>' : '') +
+          (c.source ? '<span class="mm-res-source">source: ' + esc(c.source) + '</span>' : '') +
+          '</div>';
+      }
+      return out;
+    }
+
     // Registers this item with the SAME 061 store the notes panel already
     // registers with (idempotent, page_slug = 'money-map-' + BOARD, item_id
     // = the worklist key) -- no second registration mechanism, per PRD S3.
@@ -666,17 +686,17 @@
         } else {
           box = '<div class="mm-res-gap">Marked READY with no text or link on the marker. Re-check <code>act-' + esc(k) + '</code>.</div>';
         }
-        return '<div class="mm-res" data-reskey="' + esc(k) + '">' + resourceBadge('ready') + box + contactLineHtml(resource && resource.contact) + '</div>';
+        return '<div class="mm-res" data-reskey="' + esc(k) + '">' + resourceBadge('ready') + box + contactLineHtml(resource && resource.contact) + contactExtraHtml(resource && resource.contact_extra) + '</div>';
       }
 
       if (resState === 'needs_review') {
         return '<div class="mm-res" data-reskey="' + esc(k) + '">' + resourceBadge('needs_review') +
-          reviewWidgetHtml(k, resource) + contactLineHtml(resource && resource.contact) + '</div>';
+          reviewWidgetHtml(k, resource) + contactLineHtml(resource && resource.contact) + contactExtraHtml(resource && resource.contact_extra) + '</div>';
       }
 
       var missing = (resource && resource.missing) ? esc(resource.missing) : 'No resource has been drafted for this yet.';
       return '<div class="mm-res" data-reskey="' + esc(k) + '">' + resourceBadge('gap') +
-        '<div class="mm-res-gap">' + missing + '</div>' + contactLineHtml(resource && resource.contact) + '</div>';
+        '<div class="mm-res-gap">' + missing + '</div>' + contactLineHtml(resource && resource.contact) + contactExtraHtml(resource && resource.contact_extra) + '</div>';
     }
 
     // Reads back the SAME resolved resource resourcePanelHtml uses (live
