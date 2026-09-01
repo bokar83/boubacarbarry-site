@@ -223,6 +223,39 @@
       return p.to > todayStr() ? p.to : null;
     }
 
+    // ---- CLOSED ON AN EARLIER DAY (2026-09-01) ----------------------------
+    // The other half of the same complaint, and the one that stung most:
+    // "i put in notes for Y1 day 1 and i still see those items in there as
+    // action items." On 2026-08-31 he ticked three rows done. Two of them
+    // dropped off. `promise:5` did not -- the ranker republished it and this
+    // page only DULLED it, so on 2026-09-01 it was still sitting in his Must
+    // tier as one of two things he had to do. He had already done it and said
+    // so, twice, with a tick and a note.
+    //
+    // A row he closed on an EARLIER day leaves today's tier. Two guards, and
+    // both are load-bearing:
+    //   * only an earlier day. A row ticked TODAY stays visible, dulled, so
+    //     he can see the day's progress rather than watch work vanish as he
+    //     completes it.
+    //   * only when the row is not re-dated for today or later. Recurring
+    //     rows -- `recurring:brandon-daily` is the live example -- carry
+    //     yesterday's done marker AND today's date, because today's instance
+    //     is genuinely new work. Without this guard the daily accountability
+    //     message would disappear from his board every morning.
+    function closedEarlier(item) {
+      var k = String(item.key);
+      if (!isDone(k) && !archiveOf(k)) return null;
+      var ts = stateTs[doneKey(k)] || (archiveOf(k) || {}).ts;
+      if (!ts) return null;
+      var d = new Date(ts);
+      if (isNaN(d.getTime())) return null;
+      var closed = denverDateStr(d);
+      if (closed >= todayStr()) return null;
+      var due = effectiveDue(item);
+      if (due && due >= todayStr()) return null;
+      return closed;
+    }
+
     // ---- ACT MARKER (2026-08-31, money-map-actionable-items) --------------
     // `act-<key>` carries the owner + resource state + resource content for
     // an item -- see docs/prds/money-map-actionable-items/PRD.md S8.1. The
@@ -276,6 +309,7 @@
               '<a href="#sec-should">Should</a>' +
               '<a href="#sec-could">Could</a>' +
               '<a href="#sec-later">Later</a>' +
+              '<a href="#sec-done">Done</a>' +
               '<a href="#sec-notes">Notes</a>' +
             '</div>' +
           '</nav>' +
@@ -336,6 +370,14 @@
           // that is not today -- and its meta carries the next real date, so
           // the section says a date rather than the word "later" alone. Shut
           // by default: these are deliberately not today's work.
+          '<details class="mm-sec" id="sec-done">' +
+            '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Already done</span>' +
+              '<span class="mm-sec-meta" id="mmDoneMeta">&hellip;</span></summary>' +
+            '<div class="mm-sec-body">' +
+              '<p class="mm-lede">Closed on an earlier day. Kept here, never deleted, so a row you closed by mistake can be un-ticked and come straight back to today.</p>' +
+              '<div id="mmDoneList"></div></div>' +
+          '</details>' +
+
           '<details class="mm-sec" id="sec-later">' +
             '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">On a later day</span>' +
               '<span class="mm-sec-meta" id="mmLaterMeta">&hellip;</span></summary>' +
@@ -1328,10 +1370,16 @@
       var tiers = { MUST: [], SHOULD: [], COULD: [] };
       var movedOut = { MUST: 0, SHOULD: 0, COULD: 0 };
       var later = [];
+      var closed = [];
       mine.forEach(function (i) {
         var t = (i.tier === 'MUST' || i.tier === 'SHOULD') ? i.tier : 'COULD';
+        if (closedEarlier(i)) { movedOut[t]++; closed.push(i); return; }
         if (scheduledLater(i)) { movedOut[t]++; later.push(i); return; }
         tiers[t].push(i);
+      });
+      closed.sort(function (a, b) {
+        var x = closedEarlier(a) || '', y = closedEarlier(b) || '';
+        return x < y ? 1 : (x > y ? -1 : 0);
       });
       // Flat, soonest first. No grouping headers: the date is already printed
       // on every one of these rows by the MOVED TO stamp itself.
@@ -1355,7 +1403,7 @@
         if (tiers[t].length) heroSkipped.push(t);
       });
 
-      return { wl: wl, tiers: tiers, movedOut: movedOut, later: later, agent: agent, hero: hero, heroSkipped: heroSkipped };
+      return { wl: wl, tiers: tiers, movedOut: movedOut, later: later, closed: closed, agent: agent, hero: hero, heroSkipped: heroSkipped };
     }
 
     function renderLists() {
@@ -1365,6 +1413,7 @@
         renderList('mmShouldList', 'mmShouldMeta', null, 'should', b.fail);
         renderList('mmCouldList', 'mmCouldMeta', null, 'could', b.fail);
         renderList('mmLaterList', 'mmLaterMeta', null, 'later', b.fail);
+        renderList('mmDoneList', 'mmDoneMeta', null, 'closedearlier', b.fail);
         return;
       }
       var today = dkey(new Date());
@@ -1391,6 +1440,7 @@
       renderList('mmShouldList', 'mmShouldMeta', withoutHero(b.tiers.SHOULD), 'should', '', b.movedOut.SHOULD);
       renderList('mmCouldList', 'mmCouldMeta', withoutHero(b.tiers.COULD), 'could', '', b.movedOut.COULD);
       renderList('mmLaterList', 'mmLaterMeta', withoutHero(b.later), 'later', '');
+      renderList('mmDoneList', 'mmDoneMeta', withoutHero(b.closed), 'closedearlier', '');
       var lm = el('mmLaterMeta');
       if (lm && b.later.length) {
         lm.textContent = b.later.length + ' item' + (b.later.length === 1 ? '' : 's') +
