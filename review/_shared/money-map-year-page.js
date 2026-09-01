@@ -464,6 +464,7 @@
           '</details>' +
 
           '<div id="mmAgentDrawer"></div>' +
+          '<div id="mmReadiness"></div>' +
 
           '<details class="mm-sec" id="sec-notes">' +
             '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Notes and reference</span>' +
@@ -877,7 +878,7 @@
       try {
         var p = JSON.parse(raw);
         if (!p || !Array.isArray(p.items)) return { items: null, error: 'the stored worklist is not in the expected shape', date: null };
-        return { items: p.items, error: null, date: p.denver_date || null, total: p.total_considered };
+        return { items: p.items, error: null, date: p.denver_date || null, total: p.total_considered, payload: p };
       } catch (e) {
         return { items: null, error: String(e && e.message ? e.message : e), date: null };
       }
@@ -1218,6 +1219,46 @@
         '<div class="mm-agent-rows">' + rowsHtml + '</div></details>';
     }
 
+    // WHAT + HOW readiness line.
+    // memory/feedback_money_map_rows_need_what_and_how_2026_09_01.md -- a row
+    // reaches him only with a concrete next action AND the artifacts to do it.
+    // The verdict is computed SERVER-SIDE in publish_money_map_worklist.py and
+    // only rendered here; a second copy of the test in the browser is the drift
+    // priority_keys.py exists to prevent.
+    //
+    // Renders NOTHING at all for a worklist published before the gate existed
+    // (no `held_back` field). Every field is read defensively for the same
+    // reason: an older blob must never blank or break the page.
+    //
+    // While the publisher's HOLD_ENABLED is false NOTHING is being hidden --
+    // this line is a count of what does not YET meet the bar, on a board that
+    // is still showing him all of it. The wording says exactly that, because a
+    // line implying rows were removed when they were not is its own lie.
+    function readinessHtml(p) {
+      if (!p || !p.held_back || typeof p.held_back.count !== 'number') return '';
+      var hb = p.held_back;
+      var ready = (typeof p.ready_count === 'number') ? p.ready_count : null;
+      var by = hb.by_reason || {};
+      var bits = [];
+      if (by.how) bits.push(by.how + ' need a draft or a contact');
+      if (by.what) bits.push(by.what + ' have no action line');
+      if (by['what+how']) bits.push(by['what+how'] + ' have neither');
+      var delta = '';
+      if (typeof p.became_ready_since === 'number') {
+        delta = ' <span class="mm-when">' + p.became_ready_since + ' became ready since the last run</span>';
+      }
+      var verb = hb.hold_enabled
+        ? 'held off this list'
+        : 'not ready to act on yet, and still shown to you anyway';
+      return '<div class="mm-marknote">' +
+        '<b>' + hb.count + ' ' + esc(verb) + '.</b> ' +
+        (ready !== null ? (ready + ' carry both a next action and the thing you need to do it. ') : '') +
+        (bits.length ? esc(bits.join(', ')) + '. ' : '') +
+        'Nobody is assigned to the rest yet.' + delta +
+        ' <a href="/review/20260901-money-map-what-how-audit/">See the full breakdown</a>.' +
+        '</div>';
+    }
+
     // -------------------------------------------------------------------
     // THE control bar. ONE function, every tile type.
     // -------------------------------------------------------------------
@@ -1540,6 +1581,8 @@
       }
       var agentHost = el('mmAgentDrawer');
       if (agentHost) agentHost.innerHTML = agentDrawerHtml(b.agent);
+      var readyHost = el('mmReadiness');
+      if (readyHost) readyHost.innerHTML = readinessHtml(b.wl && b.wl.payload);
       var nm = el('mmNotesMeta');
       if (nm) nm.textContent = state['notes-log'] ? 'has notes' : 'empty';
     }
