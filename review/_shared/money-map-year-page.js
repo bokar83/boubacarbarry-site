@@ -1453,7 +1453,7 @@
           : 'Nothing ranked into this tier today. The board was read fine; this tier is genuinely empty.') + '</div>';
         if (meta) {
           var metaParts = [];
-          if (closedN) metaParts.push(closedN + ' done');
+          if (closedN) metaParts.push(closedN + ' already done');
           if (laterN) metaParts.push(laterN + ' on a later day');
           meta.textContent = '0 items' + (metaParts.length ? ' · ' + metaParts.join(' · ') : '');
         }
@@ -1483,8 +1483,29 @@
       }
       host.innerHTML = html;
       if (meta) {
+        // "done" here counts ONLY the rows actually shown in THIS tier right
+        // now (2026-09-01, corrected same day again): before this fix it
+        // reported closedN -- rows that had ALREADY LEFT the tier for
+        // "Already done" -- which is a different population from the rows
+        // in front of him. He ticked four Must rows due today (the
+        // closedEarlier guard correctly keeps a same-day-due row in its
+        // tier instead of moving it out) and the header still read "4 items
+        // - 1 done", because that 1 was one unrelated row that had left
+        // MUST on an earlier day. Every row he was looking at was in fact
+        // done, and the header disagreed with what his own eyes and the
+        // per-row DONE badges showed. This number now can never read lower
+        // than what is visibly ticked in the list below it.
+        // The "Already done" list (key === 'closedearlier') is 100% done
+        // rows by definition -- "N items - N done" there is true but only
+        // repeats the section's own title, so this figure is skipped for
+        // that one caller (Council, 2026-09-01).
+        var doneShown = 0;
+        if (key !== 'closedearlier') {
+          for (var ri = 0; ri < rows.length; ri++) { if (isDone(String(rows[ri].key))) doneShown++; }
+        }
         var metaSuffix = [];
-        if (closedN) metaSuffix.push(closedN + ' done');
+        if (doneShown) metaSuffix.push(doneShown + ' done');
+        if (closedN) metaSuffix.push(closedN + ' more already done, see Already done');
         if (laterN) metaSuffix.push(laterN + ' on a later day');
         meta.textContent = rows.length + ' item' + (rows.length === 1 ? '' : 's') +
           (metaSuffix.length ? ' · ' + metaSuffix.join(' · ') : '');
