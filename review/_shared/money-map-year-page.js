@@ -67,6 +67,74 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
   }
+
+  // Turns bare http(s) URLs inside plain-text row/note/reason content into
+  // real, tappable links -- escape FIRST, then build the anchor around the
+  // escaped pieces. Never string-concatenates raw unescaped text into HTML;
+  // every non-URL segment still goes through esc() exactly as it always did.
+  // Because the input is always plain text (esc() is the only thing that
+  // ever touches these fields otherwise), there is never a pre-existing
+  // anchor in here to double-link.
+  //
+  // HARD PLACEMENT RULE (2026-09-01, his own words after tapping one on the
+  // live board): "the links need to be lowered down so that I can actually
+  // click on it... right now the links are at the very top and when I click
+  // on it all it does is open and close each section." A <details>
+  // disclosure's ONLY toggle control is its <summary> -- any click landing
+  // inside a <summary>, including on a descendant <a>, toggles the section
+  // first and the browser never fires the navigation. So: NEVER call
+  // linkify() on text that renders inside a <summary> (item-title, the hero
+  // headline, a section title). Those stay plain via esc()/textContent, on
+  // purpose, so the header reads as a title. linkify() is only for BODY
+  // text -- rendered in a mm-item-body / mm-sec-body / a marknote / a note --
+  // which sits outside the <summary> and lets a tap navigate normally.
+  //
+  // `truncate` (default true) shortens a very long URL's DISPLAY text only,
+  // never its href, so the row does not blow out the mobile width. Pass
+  // `false` for a "Copy" box (.mm-code) where the visible text doubles as
+  // the exact string a button copies -- there, CSS word-break wraps the
+  // full URL instead of shortening what gets copied.
+  var URL_RE = /\bhttps?:\/\/[^\s<>"']+/g;
+  function linkify(s, truncate) {
+    var str = String(s == null ? '' : s);
+    var out = '', last = 0, m;
+    URL_RE.lastIndex = 0;
+    while ((m = URL_RE.exec(str))) {
+      var raw = m[0];
+      var start = m.index;
+      var end = start + raw.length;
+      // Trailing punctuation (a sentence's closing period/comma, a stray
+      // bracket) is almost never part of the URL. Strip from the end,
+      // unwinding one character at a time so "...page)." resolves to a
+      // trail of ").", not just ".". A ')' is kept when it balances an '('
+      // that is genuinely inside the URL (e.g. a Wikipedia "Foo_(bar)" link).
+      var trail = '';
+      while (raw.length) {
+        var lastCh = raw.charAt(raw.length - 1);
+        if (lastCh === ')') {
+          var opens = (raw.match(/\(/g) || []).length;
+          var closes = (raw.match(/\)/g) || []).length;
+          if (closes <= opens) break;
+        } else if ('.,;:!?]}\'"'.indexOf(lastCh) === -1) {
+          break;
+        }
+        trail = lastCh + trail;
+        raw = raw.slice(0, -1);
+      }
+      out += esc(str.slice(last, start));
+      if (raw) {
+        var display = (truncate !== false && raw.length > 64)
+          ? raw.slice(0, 40) + '…' + raw.slice(-16)
+          : raw;
+        out += '<a class="mm-link" href="' + esc(raw) + '" target="_blank" rel="noopener noreferrer">' +
+          esc(display) + '</a>';
+      }
+      out += esc(trail);
+      last = end;
+    }
+    out += esc(str.slice(last));
+    return out;
+  }
   function el(id) { return document.getElementById(id); }
   function dkey(d) {
     return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
@@ -864,7 +932,7 @@
              'Nothing was deleted. Reload before writing anything here.</div>';
       }
       list.forEach(function (n) {
-        h += '<div class="mm-note"><span class="mm-note-ts">' + esc(noteClock(n.created_at)) + '</span>' + esc(n.note_text) + '</div>';
+        h += '<div class="mm-note"><span class="mm-note-ts">' + esc(noteClock(n.created_at)) + '</span>' + linkify(n.note_text) + '</div>';
       });
       if (!list.length && notesLoaded) h += '<div class="mm-stat-note">No notes yet on this one.</div>';
       h += '<div class="mm-noteform">' +
@@ -1033,7 +1101,7 @@
         var text = resource && resource.text;
         var box;
         if (text) {
-          box = '<div class="mm-code" data-rescode="' + esc(k) + '">' + esc(text) +
+          box = '<div class="mm-code" data-rescode="' + esc(k) + '">' + linkify(text, false) +
             '<button class="mm-copy" type="button" data-rescopy="' + esc(k) + '">Copy</button></div>';
         } else if (resource && resource.url) {
           box = '<div class="mm-res-link">The draft lives at <a href="' + esc(resource.url) + '" target="_blank" rel="noopener">' + esc(resource.url) + '</a>.</div>';
@@ -1120,8 +1188,8 @@
         var m = actOf(String(r.key));
         var reason = (m && m.owner_reason) || r.owner_reason || 'agent work';
         var first = r.headline || (r.title || '').split('\n')[0] || r.key;
-        return '<div class="mm-agent-row"><span class="mm-agent-title">' + esc(first) + '</span>' +
-          '<span class="mm-agent-reason">' + esc(reason) + '</span></div>';
+        return '<div class="mm-agent-row"><span class="mm-agent-title">' + linkify(first) + '</span>' +
+          '<span class="mm-agent-reason">' + linkify(reason) + '</span></div>';
       }).join('');
       return '<details class="mm-agent-drawer"><summary><span class="mm-chev">&#9656;</span>' +
         'In agent hands (' + rows.length + ageTxt + ')</summary>' +
@@ -1171,11 +1239,11 @@
         '</div>' +
 
         (pushed ? '<div class="mm-marknote"><b>Rescheduled to ' + esc(prettyDate(pushed.to)) + '.</b> ' +
-                    esc(String(pushed.reason || '')) +
+                    linkify(String(pushed.reason || '')) +
                     (pushed.ts ? ' <span class="mm-when-sm">recorded ' + esc(noteClock(pushed.ts)) + '</span>' : '') +
                   '</div>' : '') +
         (arch ? '<div class="mm-marknote"><b>Archived' + (arch.ts ? ' ' + esc(noteClock(arch.ts)) : '') + '.</b> ' +
-                  esc(String(arch.reason || 'No reason recorded.')) + '</div>' : '') +
+                  linkify(String(arch.reason || 'No reason recorded.')) + '</div>' : '') +
 
         '<div class="mm-form" data-pushwrap="' + esc(k) + '"' + (formOpen[k] === 'push' ? '' : ' hidden') + '>' +
           (formOpen[k] === 'push' ? pushFormHtml(k) : '') + '</div>' +
@@ -1222,7 +1290,7 @@
       var move = resState === 'needs_review'
         ? '<div class="mm-move"><b>First move:</b> Review and approve this draft.</div>'
         : (item.first_move
-            ? '<div class="mm-move"><b>First move:</b> ' + esc(item.first_move) + '</div>'
+            ? '<div class="mm-move"><b>First move:</b> ' + linkify(item.first_move) + '</div>'
             : '<div class="mm-move blank"><b>No first move on this row.</b> Add a <code>FIRST-MOVE:</code> line to it rather than guessing one.</div>');
       var done = isDone(k);
       var pushed = pushOf(k);
@@ -1266,8 +1334,8 @@
         '</summary>' +
         '<div class="mm-item-body">' + move +
           resourcePanelHtml(item, k) +
-          '<div class="mm-full">' + esc(item.title || '') + '</div>' +
-          '<div class="mm-facts">' + esc(facts.filter(Boolean).join(' · ')) + ' · ' + esc(k) + '</div>' +
+          '<div class="mm-full">' + linkify(item.title || '') + '</div>' +
+          '<div class="mm-facts">' + linkify(facts.filter(Boolean).join(' · ')) + ' · ' + esc(k) + '</div>' +
         '</div></details>' +
         controlsHtml(k) +
       '</div>';
