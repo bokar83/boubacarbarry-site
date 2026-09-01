@@ -291,7 +291,7 @@
       return p.to > todayStr() ? p.to : null;
     }
 
-    // ---- CLOSED ON AN EARLIER DAY (2026-09-01) ----------------------------
+    // ---- CLOSED, TODAY OR EARLIER (2026-09-01, corrected same day) --------
     // The other half of the same complaint, and the one that stung most:
     // "i put in notes for Y1 day 1 and i still see those items in there as
     // action items." On 2026-08-31 he ticked three rows done. Two of them
@@ -300,16 +300,28 @@
     // tier as one of two things he had to do. He had already done it and said
     // so, twice, with a tick and a note.
     //
-    // A row he closed on an EARLIER day leaves today's tier. Two guards, and
-    // both are load-bearing:
-    //   * only an earlier day. A row ticked TODAY stays visible, dulled, so
-    //     he can see the day's progress rather than watch work vanish as he
-    //     completes it.
+    // FIRST CUT of this fix (same day, since reverted) kept a row ticked
+    // TODAY inside its tier, dulled, on the theory that watching it dim in
+    // place was the "look what I finished" signal. It was not: it produced
+    // the exact defect Boubacar caught within hours -- the tracker pill said
+    // "6 done today" while "Already done" said "1 item", because the section
+    // collects only earlier-day closures and today's six never left their
+    // tiers to be collected. Council (2026-09-01) confirmed: the count and
+    // the section must never be able to disagree, ever, and consistency with
+    // the sibling "On a later day" section (which removes a rescheduled row
+    // from its tier immediately, not just once a day has passed) beats the
+    // in-tier-dulling argument. The "watch today's progress" job is now done
+    // by the tracker pill + the day-by-day strip, both already live and both
+    // unaffected by this change -- this function no longer needs to serve
+    // that job too.
+    //
+    // A row he closed TODAY OR EARLIER leaves its tier and lands in "Already
+    // done". One guard remains, and it is still load-bearing:
     //   * only when the row is not re-dated for today or later. Recurring
     //     rows -- `recurring:brandon-daily` is the live example -- carry
-    //     yesterday's done marker AND today's date, because today's instance
-    //     is genuinely new work. Without this guard the daily accountability
-    //     message would disappear from his board every morning.
+    //     yesterday's (or today's) done marker AND a due date, because the
+    //     next instance is genuinely new work. Without this guard the daily
+    //     accountability message would disappear from his board every day.
     function closedEarlier(item) {
       var k = String(item.key);
       if (!isDone(k) && !archiveOf(k)) return null;
@@ -318,7 +330,6 @@
       var d = new Date(ts);
       if (isNaN(d.getTime())) return null;
       var closed = denverDateStr(d);
-      if (closed >= todayStr()) return null;
       var due = effectiveDue(item);
       if (due && due >= todayStr()) return null;
       return closed;
@@ -451,7 +462,7 @@
             '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Already done</span>' +
               '<span class="mm-sec-meta" id="mmDoneMeta">&hellip;</span></summary>' +
             '<div class="mm-sec-body">' +
-              '<p class="mm-lede">Closed on an earlier day. Kept here, never deleted, so a row you closed by mistake can be un-ticked and come straight back to today.</p>' +
+              '<p class="mm-lede">Everything closed, today included -- this count always matches the tracker\'s "done today" pill. Kept here, never deleted, so a row closed by mistake can be un-ticked and come straight back to its tier.</p>' +
               '<div id="mmDoneList"></div></div>' +
           '</details>' +
 
@@ -1359,12 +1370,22 @@
       var pushed = pushOf(k);
       var arch = archiveOf(k);
 
-      // A rescheduled or archived row wears it on its face, collapsed. He has
-      // to be able to tell at a glance that a row was LOOKED AT and moved on
-      // purpose, rather than left untouched, without opening anything.
+      // A rescheduled, archived, or done row wears it on its face, collapsed.
+      // He has to be able to tell at a glance that a row was LOOKED AT and
+      // moved on purpose, rather than left untouched, without opening
+      // anything. Done rows now leave their tier the moment they close
+      // (2026-09-01), so this badge is what tells him, inside the now-larger
+      // "Already done" list, which of those rows are today's -- the visual
+      // cue that replaces the old in-tier dulling.
       var badges = '';
       if (pushed) badges += '<span class="mm-mark push">moved to ' + esc(prettyDate(pushed.to)) + '</span>';
       if (arch) badges += '<span class="mm-mark arch">archived</span>';
+      if (done && !arch) {
+        var closedOn = closedEarlier(item);
+        badges += '<span class="mm-mark done">' +
+          (closedOn === todayStr() ? 'done today' : (closedOn ? 'done ' + esc(prettyDate(closedOn)) : 'done')) +
+          '</span>';
+      }
 
       // Requirement 6: DECIDED is done OR moved OR archived. All three dull.
       // Requirement 8: a row moved to a future date also carries is-later, so
@@ -1404,22 +1425,38 @@
       '</div>';
     }
 
-    function renderList(hostId, metaId, rows, key, emptyMsg, movedOut) {
+    function renderList(hostId, metaId, rows, key, emptyMsg, closedOut, laterOut) {
       var host = el(hostId), meta = el(metaId);
       if (!host) return;
       if (rows === null) { host.innerHTML = '<div class="mm-empty">' + emptyMsg + '</div>'; if (meta) meta.textContent = 'unavailable'; return; }
       // An empty section on a page whose job is telling him what to do reads
       // as a broken render, not as good news -- Year One shipped empty once
       // and cost him a working morning. So an emptied tier states its reason
-      // in words, and when the reason is that its rows were rescheduled it
-      // says so and points at where they went.
-      var moved = movedOut || 0;
+      // in words, and when the reason is that its rows moved out it says so
+      // and points at where each one actually went.
+      //
+      // TWO reasons a row leaves a tier, tracked SEPARATELY (2026-09-01
+      // correction): closed (done or archived, now including today -- see
+      // closedEarlier) goes to "Already done"; rescheduled goes to "On a
+      // later day". Before this fix both shared one counter and this message
+      // always said "moved to a later day", which was wrong on the day's
+      // most common case -- a row he finished today, sitting under "Already
+      // done" -- and would only have gotten more visibly wrong once today's
+      // closures started leaving tiers instead of staying dulled in place.
+      var closedN = closedOut || 0, laterN = laterOut || 0, moved = closedN + laterN;
       if (!rows.length) {
+        var parts = [];
+        if (closedN) parts.push(closedN + ' row' + (closedN === 1 ? ' is' : 's are') + ' done, under <a href="#sec-done">Already done</a>');
+        if (laterN) parts.push(laterN + ' row' + (laterN === 1 ? ' was' : 's were') + ' moved to a later day, under <a href="#sec-later">On a later day</a>');
         host.innerHTML = '<div class="mm-empty">' + (moved
-          ? 'Nothing due in this tier today. ' + moved + ' row' + (moved === 1 ? ' was' : 's were') +
-            ' moved to a later day and ' + (moved === 1 ? 'is' : 'are') + ' under <a href="#sec-later">On a later day</a>.'
+          ? 'Nothing due in this tier today. ' + parts.join(' and ') + '.'
           : 'Nothing ranked into this tier today. The board was read fine; this tier is genuinely empty.') + '</div>';
-        if (meta) meta.textContent = '0 items' + (moved ? ' · ' + moved + ' on a later day' : '');
+        if (meta) {
+          var metaParts = [];
+          if (closedN) metaParts.push(closedN + ' done');
+          if (laterN) metaParts.push(laterN + ' on a later day');
+          meta.textContent = '0 items' + (metaParts.length ? ' · ' + metaParts.join(' · ') : '');
+        }
         return;
       }
       var showAll = !!expanded[key];
@@ -1445,8 +1482,13 @@
           (showAll ? 'Show only the top ' + PAGE_SIZE : 'Show all ' + rows.length) + '</button></div>';
       }
       host.innerHTML = html;
-      if (meta) meta.textContent = rows.length + ' item' + (rows.length === 1 ? '' : 's') +
-        (moved ? ' · ' + moved + ' on a later day' : '');
+      if (meta) {
+        var metaSuffix = [];
+        if (closedN) metaSuffix.push(closedN + ' done');
+        if (laterN) metaSuffix.push(laterN + ' on a later day');
+        meta.textContent = rows.length + ' item' + (rows.length === 1 ? '' : 's') +
+          (metaSuffix.length ? ' · ' + metaSuffix.join(' · ') : '');
+      }
       // Self-register the rendered rows with the notes store so a note he
       // writes on any of them has somewhere to land. Idempotent server side.
       registerNoteItems(shown);
@@ -1494,18 +1536,24 @@
       }
       mine.sort(function (a, b) { return sinkRank(a) - sinkRank(b); });
 
-      // A rescheduled row leaves today's tier for the later list. The count
-      // per tier is kept so each tier can say out loud how many of its rows
-      // moved out -- an emptied section that does not explain itself reads
-      // exactly like a broken render, which is this page's worst-ever bug.
+      // A closed row (done or archived, any day, including today) leaves for
+      // "Already done"; a rescheduled row leaves for "On a later day". The
+      // count per tier is kept PER REASON, not combined, so each tier can say
+      // out loud not just how many of its rows moved out but where each one
+      // actually went -- an emptied section that does not explain itself
+      // reads exactly like a broken render, which is this page's worst-ever
+      // bug, and a section that explains itself WRONG (2026-09-01: "moved to
+      // a later day" printed for rows that were actually done today) is the
+      // same bug wearing a caption.
       var tiers = { MUST: [], SHOULD: [], COULD: [] };
-      var movedOut = { MUST: 0, SHOULD: 0, COULD: 0 };
+      var closedOut = { MUST: 0, SHOULD: 0, COULD: 0 };
+      var laterOut = { MUST: 0, SHOULD: 0, COULD: 0 };
       var later = [];
       var closed = [];
       mine.forEach(function (i) {
         var t = (i.tier === 'MUST' || i.tier === 'SHOULD') ? i.tier : 'COULD';
-        if (closedEarlier(i)) { movedOut[t]++; closed.push(i); return; }
-        if (scheduledLater(i)) { movedOut[t]++; later.push(i); return; }
+        if (closedEarlier(i)) { closedOut[t]++; closed.push(i); return; }
+        if (scheduledLater(i)) { laterOut[t]++; later.push(i); return; }
         tiers[t].push(i);
       });
       closed.sort(function (a, b) {
@@ -1534,7 +1582,7 @@
         if (tiers[t].length) heroSkipped.push(t);
       });
 
-      return { wl: wl, tiers: tiers, movedOut: movedOut, later: later, closed: closed, agent: agent, hero: hero, heroSkipped: heroSkipped };
+      return { wl: wl, tiers: tiers, closedOut: closedOut, laterOut: laterOut, later: later, closed: closed, agent: agent, hero: hero, heroSkipped: heroSkipped };
     }
 
     function renderLists() {
@@ -1567,9 +1615,9 @@
       function withoutHero(rows) {
         return heroKey ? rows.filter(function (i) { return String(i.key) !== heroKey; }) : rows;
       }
-      renderList('mmMustList', 'mmMustMeta', withoutHero(b.tiers.MUST), 'must', '', b.movedOut.MUST);
-      renderList('mmShouldList', 'mmShouldMeta', withoutHero(b.tiers.SHOULD), 'should', '', b.movedOut.SHOULD);
-      renderList('mmCouldList', 'mmCouldMeta', withoutHero(b.tiers.COULD), 'could', '', b.movedOut.COULD);
+      renderList('mmMustList', 'mmMustMeta', withoutHero(b.tiers.MUST), 'must', '', b.closedOut.MUST, b.laterOut.MUST);
+      renderList('mmShouldList', 'mmShouldMeta', withoutHero(b.tiers.SHOULD), 'should', '', b.closedOut.SHOULD, b.laterOut.SHOULD);
+      renderList('mmCouldList', 'mmCouldMeta', withoutHero(b.tiers.COULD), 'could', '', b.closedOut.COULD, b.laterOut.COULD);
       renderList('mmLaterList', 'mmLaterMeta', withoutHero(b.later), 'later', '');
       renderList('mmDoneList', 'mmDoneMeta', withoutHero(b.closed), 'closedearlier', '');
       var lm = el('mmLaterMeta');
