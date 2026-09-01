@@ -190,9 +190,37 @@
       if (p && p.to) return p.to;
       return item.by_date || null;
     }
+    // TODAY is the DENVER date, never the viewer's. `dkey(new Date())` reads
+    // the device clock, so a phone an hour past midnight MT would have called
+    // a row due today "future" and, after 2026-09-01, removed it from the day
+    // entirely. The day strip already computes the Denver date; this uses the
+    // same function rather than a second notion of today.
+    function todayStr() { return denverDateStr(new Date()); }
     function isFutureDated(item) {
       var d = effectiveDue(item);
-      return !!d && d > dkey(new Date());
+      return !!d && d > todayStr();
+    }
+
+    // ---- MOVED TO A LATER DAY (2026-09-01) --------------------------------
+    // R8 (2026-08-31) kept a row moved to September inside today's tier and
+    // merely sank and dimmed it. On 2026-09-01 the Should tier held exactly
+    // three rows and all three were stamped MOVED TO SEP 8 / 9 / 24, so the
+    // sink was invisible and the tier read as three things to do today.
+    // Boubacar, verbatim: "there are a lot of items that have new dates added
+    // to them but that have not moved." Moved means moved IN TIME. So a
+    // rescheduled row now leaves today's tier and renders under its own date
+    // in its own section. It is still on the page, still carries all four
+    // controls, and is still one tap away -- nothing on this board is hidden.
+    //
+    // Deliberately NARROWER than isFutureDated: this fires ONLY when a real
+    // `push-` marker exists. A row that merely carries a future by_date and
+    // was never rescheduled by anyone stays where the ranker put it. His
+    // complaint was about the MOVED TO stamp, and quietly relocating rows
+    // nobody rescheduled would be a bigger change than the one he asked for.
+    function scheduledLater(item) {
+      var p = pushOf(String(item.key));
+      if (!p || !p.to) return null;
+      return p.to > todayStr() ? p.to : null;
     }
 
     // ---- ACT MARKER (2026-08-31, money-map-actionable-items) --------------
@@ -247,6 +275,7 @@
               '<a href="#sec-must">Must</a>' +
               '<a href="#sec-should">Should</a>' +
               '<a href="#sec-could">Could</a>' +
+              '<a href="#sec-later">Later</a>' +
               '<a href="#sec-notes">Notes</a>' +
             '</div>' +
           '</nav>' +
@@ -301,6 +330,18 @@
             '<div class="mm-sec-body">' +
               '<p class="mm-lede">Everything else that is still live. Shut by default so it stops competing with the two above it.</p>' +
               '<div id="mmCouldList"></div></div>' +
+          '</details>' +
+
+          // MOVED TO A LATER DAY (2026-09-01). Named for what it holds -- a day
+          // that is not today -- and its meta carries the next real date, so
+          // the section says a date rather than the word "later" alone. Shut
+          // by default: these are deliberately not today's work.
+          '<details class="mm-sec" id="sec-later">' +
+            '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">On a later day</span>' +
+              '<span class="mm-sec-meta" id="mmLaterMeta">&hellip;</span></summary>' +
+            '<div class="mm-sec-body">' +
+              '<p class="mm-lede">Rows that carry a new date. They are off today on purpose and every control still works here, so a row you want back today can be rescheduled straight from this list.</p>' +
+              '<div id="mmLaterList"></div></div>' +
           '</details>' +
 
           '<div id="mmAgentDrawer"></div>' +
@@ -1190,11 +1231,24 @@
       '</div>';
     }
 
-    function renderList(hostId, metaId, rows, key, emptyMsg) {
+    function renderList(hostId, metaId, rows, key, emptyMsg, movedOut) {
       var host = el(hostId), meta = el(metaId);
       if (!host) return;
       if (rows === null) { host.innerHTML = '<div class="mm-empty">' + emptyMsg + '</div>'; if (meta) meta.textContent = 'unavailable'; return; }
-      if (!rows.length) { host.innerHTML = '<div class="mm-empty">Nothing ranked into this section today.</div>'; if (meta) meta.textContent = '0 items'; return; }
+      // An empty section on a page whose job is telling him what to do reads
+      // as a broken render, not as good news -- Year One shipped empty once
+      // and cost him a working morning. So an emptied tier states its reason
+      // in words, and when the reason is that its rows were rescheduled it
+      // says so and points at where they went.
+      var moved = movedOut || 0;
+      if (!rows.length) {
+        host.innerHTML = '<div class="mm-empty">' + (moved
+          ? 'Nothing due in this tier today. ' + moved + ' row' + (moved === 1 ? ' was' : 's were') +
+            ' moved to a later day and ' + (moved === 1 ? 'is' : 'are') + ' under <a href="#sec-later">On a later day</a>.'
+          : 'Nothing ranked into this tier today. The board was read fine; this tier is genuinely empty.') + '</div>';
+        if (meta) meta.textContent = '0 items' + (moved ? ' · ' + moved + ' on a later day' : '');
+        return;
+      }
       var showAll = !!expanded[key];
       var shown = showAll ? rows : rows.slice(0, PAGE_SIZE);
 
@@ -1218,7 +1272,8 @@
           (showAll ? 'Show only the top ' + PAGE_SIZE : 'Show all ' + rows.length) + '</button></div>';
       }
       host.innerHTML = html;
-      if (meta) meta.textContent = rows.length + ' item' + (rows.length === 1 ? '' : 's');
+      if (meta) meta.textContent = rows.length + ' item' + (rows.length === 1 ? '' : 's') +
+        (moved ? ' · ' + moved + ' on a later day' : '');
       // Self-register the rendered rows with the notes store so a note he
       // writes on any of them has somewhere to land. Idempotent server side.
       registerNoteItems(shown);
@@ -1266,10 +1321,23 @@
       }
       mine.sort(function (a, b) { return sinkRank(a) - sinkRank(b); });
 
+      // A rescheduled row leaves today's tier for the later list. The count
+      // per tier is kept so each tier can say out loud how many of its rows
+      // moved out -- an emptied section that does not explain itself reads
+      // exactly like a broken render, which is this page's worst-ever bug.
       var tiers = { MUST: [], SHOULD: [], COULD: [] };
+      var movedOut = { MUST: 0, SHOULD: 0, COULD: 0 };
+      var later = [];
       mine.forEach(function (i) {
         var t = (i.tier === 'MUST' || i.tier === 'SHOULD') ? i.tier : 'COULD';
+        if (scheduledLater(i)) { movedOut[t]++; later.push(i); return; }
         tiers[t].push(i);
+      });
+      // Flat, soonest first. No grouping headers: the date is already printed
+      // on every one of these rows by the MOVED TO stamp itself.
+      later.sort(function (a, b) {
+        var x = scheduledLater(a) || '', y = scheduledLater(b) || '';
+        return x < y ? -1 : (x > y ? 1 : 0);
       });
 
       // The #1 is the FIRST genuinely live, undecided, not-parked row in the
@@ -1287,7 +1355,7 @@
         if (tiers[t].length) heroSkipped.push(t);
       });
 
-      return { wl: wl, tiers: tiers, agent: agent, hero: hero, heroSkipped: heroSkipped };
+      return { wl: wl, tiers: tiers, movedOut: movedOut, later: later, agent: agent, hero: hero, heroSkipped: heroSkipped };
     }
 
     function renderLists() {
@@ -1296,6 +1364,7 @@
         renderList('mmMustList', 'mmMustMeta', null, 'must', b.fail);
         renderList('mmShouldList', 'mmShouldMeta', null, 'should', b.fail);
         renderList('mmCouldList', 'mmCouldMeta', null, 'could', b.fail);
+        renderList('mmLaterList', 'mmLaterMeta', null, 'later', b.fail);
         return;
       }
       var today = dkey(new Date());
@@ -1318,9 +1387,17 @@
       function withoutHero(rows) {
         return heroKey ? rows.filter(function (i) { return String(i.key) !== heroKey; }) : rows;
       }
-      renderList('mmMustList', 'mmMustMeta', withoutHero(b.tiers.MUST), 'must', '');
-      renderList('mmShouldList', 'mmShouldMeta', withoutHero(b.tiers.SHOULD), 'should', '');
-      renderList('mmCouldList', 'mmCouldMeta', withoutHero(b.tiers.COULD), 'could', '');
+      renderList('mmMustList', 'mmMustMeta', withoutHero(b.tiers.MUST), 'must', '', b.movedOut.MUST);
+      renderList('mmShouldList', 'mmShouldMeta', withoutHero(b.tiers.SHOULD), 'should', '', b.movedOut.SHOULD);
+      renderList('mmCouldList', 'mmCouldMeta', withoutHero(b.tiers.COULD), 'could', '', b.movedOut.COULD);
+      renderList('mmLaterList', 'mmLaterMeta', withoutHero(b.later), 'later', '');
+      var lm = el('mmLaterMeta');
+      if (lm && b.later.length) {
+        lm.textContent = b.later.length + ' item' + (b.later.length === 1 ? '' : 's') +
+          ' · next ' + prettyDate(scheduledLater(b.later[0]));
+      } else if (lm) {
+        lm.textContent = 'nothing rescheduled';
+      }
       var agentHost = el('mmAgentDrawer');
       if (agentHost) agentHost.innerHTML = agentDrawerHtml(b.agent);
       var nm = el('mmNotesMeta');
