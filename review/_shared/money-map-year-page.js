@@ -402,6 +402,15 @@
               '<span class="mm-sec-meta" id="mmHeroMeta"></span>' +
               '<span class="mm-hero-line" id="mmHeroLine">Reading the board&hellip;</span></summary>' +
             '<div class="mm-sec-body"><div class="mm-hero-why" id="mmHeroWhy"></div><div id="mmHeroRes"></div>' +
+              // The hero's own copy of itemHtml's mm-full (2026-09-01, real
+              // bug: the hero used to show ONLY the plain headline in its
+              // <summary> and nothing else -- a row with no resource marker
+              // and no FIRST-MOVE had its URL trapped in that plain-text
+              // header with literally no linkified copy anywhere on the
+              // page. This renders the row's FULL raw text, linkified, in
+              // the body -- below the header, inside the already-open
+              // section -- exactly like every tier-list row already does.
+              '<div class="mm-full" id="mmHeroFull"></div>' +
               '<div id="mmHeroCtl"></div></div>' +
           '</details>' +
 
@@ -769,6 +778,7 @@
     // -------------------------------------------------------------------
     function renderHero() {
       var line = el('mmHeroLine'), why = el('mmHeroWhy'), meta = el('mmHeroMeta'), res = el('mmHeroRes');
+      var full = el('mmHeroFull');
       var ctl = el('mmHeroCtl');
       // The hero repaints on EVERY realtime write from any device, including
       // renders that renderAll deliberately withholds from the lists. Its
@@ -783,6 +793,7 @@
         if (why) why.textContent = readError ? ('The read failed: ' + readError) : '';
         if (meta) meta.textContent = 'read failed';
         if (res) res.innerHTML = '';
+        if (full) full.innerHTML = '';
         return;
       }
       // ---- REQUIREMENT 7 (2026-08-31) -------------------------------------
@@ -799,6 +810,7 @@
         if (why) why.innerHTML = b.fail;
         if (meta) meta.textContent = 'unavailable';
         if (res) res.innerHTML = '';
+        if (full) full.innerHTML = '';
         return;
       }
       var top = b.hero;
@@ -808,16 +820,26 @@
           'That is a finished list, not an empty one.';
         if (meta) meta.textContent = 'all clear';
         if (res) res.innerHTML = '';
+        if (full) full.innerHTML = '';
         return;
       }
 
       var hk = String(top.key);
       line.textContent = top.headline || (top.title || '').split('\n')[0] || hk;
       if (why) {
-        why.textContent = top.first_move
-          ? ('First move: ' + top.first_move)
+        // BODY text (outside the <summary> above) -- innerHTML + linkify so
+        // a URL in the row's FIRST-MOVE line is a real tap target here, not
+        // just visible plain text. The fallback sentence is our own fixed
+        // copy, safe as literal HTML.
+        why.innerHTML = top.first_move
+          ? ('First move: ' + linkify(top.first_move))
           : 'This row carries no FIRST-MOVE line, so none is shown. Add one to the row rather than guessing one.';
       }
+      // The hero's own mm-full: the row's COMPLETE raw text, linkified, so a
+      // URL that lives only in the title (and never made it into headline,
+      // first_move, or a resource marker) still has a real tap target here,
+      // below the header, matching every tier-list row's mm-full.
+      if (full) full.innerHTML = linkify(top.title || '');
       if (meta) {
         var due = effectiveDue(top);
         meta.textContent = (top.tier || 'COULD') + (due ? ' · due ' + prettyDate(due) : ' · no date');
