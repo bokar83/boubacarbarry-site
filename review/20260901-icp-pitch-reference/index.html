@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICP + Pitch — Source of Truth</title>
+<style>
+  :root{
+    --bg:#14110f; --bg2:#1c1815; --card:#221d19; --border:#3a322a;
+    --text:#f2ece4; --text-dim:#c9bfb2; --text-faint:#8f8474;
+    --terracotta:#FF6B35; --brass:#C19A6B; --verdigris:#6F9B6E; --bronze:#B87333;
+    --accent:#FF6B35; --accent2:#C19A6B;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.45;padding:0 0 60px;}
+  a{color:var(--terracotta);}
+  a:visited{color:var(--brass);}
+  a:active{color:var(--verdigris);}
+  header{position:sticky;top:0;z-index:5;background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px;}
+  header h1{margin:0;font-size:1.15rem;letter-spacing:.01em;}
+  header p{margin:4px 0 0;font-size:.78rem;color:var(--text-faint);}
+  main{max-width:720px;margin:0 auto;padding:14px;}
+  .banner{background:#2a1e14;border:1px solid var(--terracotta);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:.85rem;color:var(--text-dim);}
+  .banner b{color:var(--terracotta);}
+  section.block{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden;}
+  .block-head{padding:14px 16px;font-weight:700;font-size:1.02rem;display:flex;justify-content:space-between;align-items:center;}
+  .universal .block-head{background:linear-gradient(135deg,#2a2118,#241c15);color:var(--terracotta);}
+  .focus > .block-head{cursor:pointer;user-select:none;background:#241f1a;}
+  .focus > .block-head:active{background:#2b241d;}
+  .focus > .block-head .chev{transition:transform .15s ease;color:var(--text-faint);font-size:.9rem;}
+  .focus.open > .block-head .chev{transform:rotate(90deg);}
+  .focus-body{display:none;padding:2px 16px 16px;}
+  .focus.open .focus-body{display:block;}
+  h2.sub{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--brass);margin:16px 0 6px;}
+  h2.sub:first-child{margin-top:4px;}
+  p{margin:6px 0;font-size:.95rem;color:var(--text-dim);}
+  .quote{background:#1a1512;border-left:3px solid var(--terracotta);border-radius:6px;padding:10px 12px;font-size:.95rem;color:var(--text);margin:6px 0;}
+  .icp{background:#1a1c17;border-left:3px solid var(--verdigris);border-radius:6px;padding:10px 12px;font-size:.92rem;margin:6px 0;}
+  .price-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;}
+  .price-chip{background:#241a12;border:1px solid var(--bronze);border-radius:20px;padding:6px 12px;font-size:.85rem;color:var(--brass);white-space:nowrap;}
+  .ask{background:#1a1a24;border-left:3px solid var(--accent2);border-radius:6px;padding:10px 12px;font-size:.92rem;margin:6px 0;}
+  .copybox{position:relative;background:#171310;border:1px solid var(--border);border-radius:8px;padding:10px 40px 10px 12px;margin:8px 0;font-size:.92rem;color:var(--text);}
+  .copybtn{position:absolute;top:8px;right:8px;background:var(--terracotta);color:#1a1310;border:none;border-radius:6px;padding:5px 9px;font-size:.72rem;font-weight:700;cursor:pointer;}
+  .copybtn.done{background:var(--verdigris);}
+  .flag{background:#2a1a14;border:1px dashed var(--terracotta);border-radius:8px;padding:10px 12px;font-size:.85rem;color:var(--text-dim);margin:8px 0;}
+  .flag b{color:var(--terracotta);}
+  .not-defined{background:#26201a;border:1px dashed var(--brass);border-radius:8px;padding:10px 12px;font-size:.85rem;color:var(--text-faint);margin:8px 0;}
+  .tag{display:inline-block;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;}
+  .tag.locked{background:#3a2410;color:var(--terracotta);}
+  .tag.needs{background:#332a1a;color:var(--brass);}
+  footer{max-width:720px;margin:20px auto 0;padding:0 14px;font-size:.72rem;color:var(--text-faint);}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-01-13:26:44 MT</div><!-- DEPLOY_STAMP_END -->
+
+<header>
+  <h1>ICP + Elevator Pitch — Source of Truth</h1>
+  <p>Look here mid-call. Tap a focus area to expand. Internal only.</p>
+</header>
+<main>
+
+<div class="banner">This page is the <b>single source of truth</b>. If positioning changes, it changes <b>here first</b>, nowhere else. Reproduced VERBATIM where locked, "not yet defined" where nothing canonical exists — never invented.</div>
+
+<!-- UNIVERSAL LAYER -->
+<section class="block universal">
+  <div class="block-head">Universal — say this on any call<span class="tag locked">Locked</span></div>
+  <div style="padding:0 16px 16px;">
+
+    <h2 class="sub">Elevator pitch (verbatim, locked)</h2>
+    <div class="copybox" id="pitch1">"I help companies put AI to work without the confusion and the overwhelm. Most feel like they have to use AI right now, so I help them take a breath and get clear: do you even need it, where does it fit, and how do you make it work. Sometimes I step in and lead it myself, as their HR leader, their chief AI officer, or whatever the job needs. I know it works because I run my own business on AI, on a system I built myself. I've already crossed the bridge everyone's still talking about."
+      <button class="copybtn" onclick="copyBox('pitch1', this)">Copy</button>
+    </div>
+
+    <h2 class="sub">HR-peer variant (talking to a CHRO / HR exec)</h2>
+    <div class="copybox" id="pitch2">"I help companies put AI to work without getting burned, and I step in fractionally to lead it, sometimes as their chief HR officer, sometimes as their chief AI officer. You and I share the HR roots, but the reason this works is that I run my own business on AI now. I have already crossed the bridge everyone keeps talking about."
+      <button class="copybtn" onclick="copyBox('pitch2', this)">Copy</button>
+    </div>
+
+    <h2 class="sub">Background line (approved construction — say it this way only)</h2>
+    <div class="copybox" id="bg1">"I spent 10 years in global HR leadership for a Fortune 100 company. Most recently, I spent four years in Dubai."
+      <button class="copybtn" onclick="copyBox('bg1', this)">Copy</button>
+    </div>
+    <p style="font-size:.8rem;">Never: "most of it inside GE" · never "HR business partner work" · never "ran HR/operations" or "executive" · never name GE out loud (fine only on resume/application/1:1 interview).</p>
+
+    <h2 class="sub">The niche — who I am becoming known for</h2>
+    <div class="quote">The go-to person for the merging of AI and HR. When people think AI and HR together, they think of me first. Scope: general AI opinions, general HR opinions, org design, improving how people work, simplifying processes, removing constraints.</div>
+
+    <h2 class="sub">What I actually do (his framing)</h2>
+    <p>Most businesses feel confused, overwhelmed, and pressured to adopt AI right now. I help them take a breath and get clear on three things: <b>IF</b> they even need AI, <b>WHERE</b> it fits, and <b>HOW</b> to implement it. I lead the constraint-finding, plug in fractionally, and build their team's own capability so I'm no longer necessary — never a dependency.</p>
+
+    <h2 class="sub">Cross-cutting rules for this call</h2>
+    <p>Pitch what you do <b>now</b>, never the resume. Background surfaces only if it moves the story. ICP everywhere below = businesses <b>with employees</b> (roughly 10–50 people), never solopreneurs — the pain is work that still routes through the owner despite having a team. Frame every engagement as "run it <b>with</b> you," never "run it <b>for</b> you."</p>
+  </div>
+</section>
+
+<!-- AI FOCUS -->
+<section class="block focus" id="focus-ai">
+  <div class="block-head" onclick="toggle('focus-ai')"><span>🤖 AI focus</span><span class="chev">▶</span></div>
+  <div class="focus-body">
+
+    <h2 class="sub">ICP <span class="tag locked">Live copy</span></h2>
+    <div class="icp">Owners of businesses with a team the work runs through, roughly ten to fifty people, with no operations or IT function to hand this to. One-person shops are the wrong fit.</div>
+
+    <h2 class="sub">One-line</h2>
+    <p>I find the constraint AI can actually fix, build it, and hand it to your people so it does not live in my head.</p>
+
+    <h2 class="sub">Offer / pricing</h2>
+    <p>Fractional AI retainer, sliding scale by days per week, not deliverable count. A stepdown model built to shrink, not grow: months 1–3 heaviest build, months 4–6 your people run it, month 7+ you step down a tier or stop.</p>
+    <div class="price-row">
+      <span class="price-chip">On call · $2,500/mo</span>
+      <span class="price-chip">1 day/wk · $5,000/mo</span>
+      <span class="price-chip">2 days/wk · $10,000/mo</span>
+    </div>
+    <p style="font-size:.82rem;">Not ready for a retainer → the five-day bottleneck audit (fixed scope, fixed price) is the entry point. Live page: <a href="https://catalystworks.consulting/fractional/ai/" target="_blank" rel="noopener">catalystworks.consulting/fractional/ai/</a></p>
+
+    <h2 class="sub">What I'm asking for on this call</h2>
+    <div class="ask">A conversation about where AI actually fits in their operation — not a pitch. If it's a fit: the five-day audit or a direct intro to the retainer conversation. If not: a name of someone it does fit.</div>
+  </div>
+</section>
+
+<!-- HR FOCUS -->
+<section class="block focus" id="focus-hr">
+  <div class="block-head" onclick="toggle('focus-hr')"><span>🧑‍🤝‍🧑 HR focus</span><span class="chev">▶</span></div>
+  <div class="focus-body">
+
+    <h2 class="sub">ICP <span class="tag locked">Live copy</span></h2>
+    <div class="icp">Owners of businesses with a team, roughly ten to fifty people, where HR is currently whoever has time. (Already have an HR manager and just want a second opinion? Different, much smaller conversation — say so on the call.)</div>
+
+    <h2 class="sub">One-line</h2>
+    <p>I step in as fractional HR leadership, fix the constraint that's actually costing you people, and train your managers to hold it without me.</p>
+
+    <h2 class="sub">Offer / pricing</h2>
+    <p>Same fractional structure as AI, sliding scale by days per week. Built to shrink: fix what's actually costing you people first, then step down as your managers take it over.</p>
+    <div class="price-row">
+      <span class="price-chip">On call · $2,500/mo</span>
+      <span class="price-chip">1 day/wk · $5,000/mo</span>
+      <span class="price-chip">2 days/wk · $10,000/mo</span>
+    </div>
+    <p style="font-size:.82rem;">Live page: <a href="https://catalystworks.consulting/fractional/hr/" target="_blank" rel="noopener">catalystworks.consulting/fractional/hr/</a></p>
+
+    <h2 class="sub">What I'm asking for on this call</h2>
+    <div class="ask">A conversation about what's actually eating their week on the people side. If it's a fit: the five-day audit or straight into the retainer conversation. If not: a referral to who it fits.</div>
+  </div>
+</section>
+
+<!-- GHOSTWRITING FOCUS -->
+<section class="block focus" id="focus-gw">
+  <div class="block-head" onclick="toggle('focus-gw')"><span>✍️ Ghostwriting focus</span><span class="chev">▶</span></div>
+  <div class="focus-body">
+
+    <h2 class="sub">ICP <span class="tag needs">Not cleanly locked — see flag below</span></h2>
+    <div class="not-defined">No current, confirmed ICP on file. An earlier tentative lock (mid-market B2B SaaS founders, post-Series-A, first CMO) predates the AI+HR niche lock and the live approach pattern below — treat it as stale, not current.</div>
+
+    <h2 class="sub">What I actually do</h2>
+    <p>Reverse-engineer a prospect's own voice from their already-published material, then write in it — proven on a real pitch (Dino Anthony / Art of Purpose), not just a method on paper.</p>
+
+    <h2 class="sub">Offer / pricing <span class="tag locked">Settled 8/19</span></h2>
+    <p>Paid pilot, then a monthly retainer. First piece delivered before money moves. Two revision rounds per piece.</p>
+    <div class="price-row">
+      <span class="price-chip">Pilot · $2,500 / 4 pieces / 30 days</span>
+      <span class="price-chip">Then · $5,000/mo</span>
+    </div>
+    <p style="font-size:.82rem;">Pilot price is a floor, discountable only in trade for a written testimonial — never on the call. Retainer is never discounted; shrink scope instead.</p>
+
+    <h2 class="sub">What I'm asking for on this call</h2>
+    <div class="ask">Who they already trust to write in their voice, and whether a sample piece built from their own material would be worth 15 minutes of their time.</div>
+  </div>
+</section>
+
+<div class="flag"><b>Needs your decision:</b> ghostwriting has no confirmed current ICP (see above) — worth locking one down soon so this section is as sharp as AI/HR.</div>
+
+</main>
+<footer>
+  Internal, source of truth. Maintainability note: this v1 is hardcoded HTML for speed — recommend moving content to a small JSON/Supabase-backed data file next pass so future edits don't touch markup. Built 2026-09-01.
+</footer>
+
+<script>
+function toggle(id){
+  var el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+function copyBox(id, btn){
+  var el = document.getElementById(id);
+  var text = el.childNodes[0].textContent.trim();
+  function done(){
+    var old = btn.textContent;
+    btn.textContent = 'Copied';
+    btn.classList.add('done');
+    setTimeout(function(){ btn.textContent = old; btn.classList.remove('done'); }, 1400);
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text, done); });
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, cb){
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+  cb();
+}
+</script>
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
