@@ -23,9 +23,16 @@
                      Its counters ride on the SUMMARY, so with every section
                      shut the tracker is still readable at the top -- which is
                      the whole point of the collapse.
-     2. #1 RIGHT NOW a TILE, not a page. One clamped line collapsed; the
-                     reasoning is one tap in. It used to open at full height
-                     and push everything else below the fold.
+     2. DO NEXT       a TILE, not a page. Two modes, his own words 2026-09-01:
+                     when any MUST item is live today (a hard clock or a
+                     promise to a named person), this tile points at the
+                     Must section below and EVERY must-do item renders there,
+                     together, first -- nothing is pulled out into its own
+                     spot anymore. When nothing is a genuine must today, this
+                     tile shows a rolling FIVE live items he can act on
+                     directly and choose from, rather than a single forced
+                     #1. Used to always be a single #1 pulled out of its own
+                     tier, which is the behavior he asked to change.
      3. WORK TO DO   the ranked list, general lanes.
      4. REVENUE      the ranked list, money-generating lanes, at the bottom.
      5. NOTES + REF  his own timestamped notes and the anchor rows. Shut by
@@ -383,7 +390,7 @@
             '<button class="mm-nav-btn" id="mmExpandAll">Expand all</button>' +
             '<div class="mm-nav-links">' +
               '<a href="#sec-tracker">Tracker</a>' +
-              '<a href="#sec-hero">#1 now</a>' +
+              '<a href="#sec-hero">Do next</a>' +
               '<a href="#sec-must">Must</a>' +
               '<a href="#sec-should">Should</a>' +
               '<a href="#sec-could">Could</a>' +
@@ -409,20 +416,17 @@
           '</details>' +
 
           '<details class="mm-sec hero" id="sec-hero" open>' +
-            '<summary><span class="mm-chev">&#9656;</span><span class="mm-hero-badge">#1 right now</span>' +
+            '<summary><span class="mm-chev">&#9656;</span><span class="mm-hero-badge" id="mmHeroBadge">#1 right now</span>' +
               '<span class="mm-sec-meta" id="mmHeroMeta"></span>' +
               '<span class="mm-hero-line" id="mmHeroLine">Reading the board&hellip;</span></summary>' +
-            '<div class="mm-sec-body"><div class="mm-hero-why" id="mmHeroWhy"></div><div id="mmHeroRes"></div>' +
-              // The hero's own copy of itemHtml's mm-full (2026-09-01, real
-              // bug: the hero used to show ONLY the plain headline in its
-              // <summary> and nothing else -- a row with no resource marker
-              // and no FIRST-MOVE had its URL trapped in that plain-text
-              // header with literally no linkified copy anywhere on the
-              // page. This renders the row's FULL raw text, linkified, in
-              // the body -- below the header, inside the already-open
-              // section -- exactly like every tier-list row already does.
-              '<div class="mm-full" id="mmHeroFull"></div>' +
-              '<div id="mmHeroCtl"></div></div>' +
+            // ONE container, filled by renderHero() with either a pointer to
+            // the Must section (must-mode) or up to five full itemHtml() rows
+            // (five-mode) -- see renderHero()'s own comment. The old fixed
+            // why/res/full/ctl slots were built for exactly one row; a block
+            // of rows reuses itemHtml(), the SAME renderer the tier lists use,
+            // so every row here already carries its own resource panel, full
+            // text and control bar with no second copy of that markup.
+            '<div class="mm-sec-body"><div id="mmHeroBody"></div></div>' +
           '</details>' +
 
           // THREE sections, in his order: MUST, then SHOULD, then COULD.
@@ -786,98 +790,115 @@
     }
 
     // -------------------------------------------------------------------
-    // Hero -- the day's #1, straight off the board. Never authored here.
+    // Do next -- the MUST block, or the rolling five. Never authored here.
+    //
+    // 2026-09-01, Boubacar direct, verbatim: "The only time we only see one
+    // thing is when there's a must-do item, and then we see all the must-do
+    // items and they are first in together." Otherwise he wants "a running
+    // list of 5 items... I can select which of the 5 I want to do."
+    //
+    // Two modes, decided by buildBoard() and read here, never re-decided:
+    //   MUST MODE (b.heroMode === 'must') -- at least one MUST item is live
+    //     today. This tile stops pulling the loudest one out into its own
+    //     spot (that was the OLD #1-tile behavior he asked to end) and
+    //     instead points at the Must section, which now renders every live
+    //     MUST item unfiltered -- see renderLists()'s heroKeys, empty in this
+    //     mode. All of them, together, first, in the section built for it.
+    //   FIVE MODE (b.heroMode === 'five') -- no MUST item is live today, so
+    //     there is no hard clock forcing a single item. This tile shows up
+    //     to five live rows, each rendered with itemHtml() -- the SAME
+    //     renderer the tier lists use, so every control (tick, note,
+    //     reschedule, archive) works in place with no second copy of that
+    //     logic. He picks which of the five to do; nothing is forced to #1.
     // -------------------------------------------------------------------
     function renderHero() {
-      var line = el('mmHeroLine'), why = el('mmHeroWhy'), meta = el('mmHeroMeta'), res = el('mmHeroRes');
-      var full = el('mmHeroFull');
-      var ctl = el('mmHeroCtl');
-      // The hero repaints on EVERY realtime write from any device, including
-      // renders that renderAll deliberately withholds from the lists. Its
-      // control bar now carries typeable forms, so it needs the same
-      // half-typed-text protection the lists have: drop the handle and every
-      // `if (ctl)` below becomes a no-op, leaving what he is typing alone.
-      if (ctl && editInProgress()) ctl = null;
-      if (!line) return;
-      if (ctl) ctl.innerHTML = '';
+      var badge = el('mmHeroBadge'), line = el('mmHeroLine'), meta = el('mmHeroMeta');
+      var body = el('mmHeroBody');
+      if (!line || !body) return;
+      // Five-mode rows carry the SAME typeable forms (reschedule reason,
+      // note) every tier-list row does, so this tile now needs the same
+      // half-typed-text freeze renderLists already gets in renderAll() --
+      // except renderHero() runs BEFORE that check, so it freezes itself.
+      // Before this change nothing in the hero could be mid-type, which is
+      // why only its (now-removed) control bar had this guard; now the
+      // whole body can be, so the whole repaint is skipped instead.
+      if (editInProgress()) return;
       if (!remoteOk) {
-        line.textContent = 'Could not read the board, so there is no #1 to show.';
-        if (why) why.textContent = readError ? ('The read failed: ' + readError) : '';
+        if (badge) badge.textContent = 'Board unavailable';
+        line.textContent = 'Could not read the board, so there is nothing to show.';
         if (meta) meta.textContent = 'read failed';
-        if (res) res.innerHTML = '';
-        if (full) full.innerHTML = '';
+        body.innerHTML = '';
         return;
       }
-      // ---- REQUIREMENT 7 (2026-08-31) -------------------------------------
-      // The #1 IS the live top-ranked row, not a separately cached string.
-      // `cos-top-priority` used to DRIVE this tile, and on 2026-08-31 it held
-      // text for an item that had already been discharged: the tile showed a
-      // priority that matched no row, so it carried no resource and no
-      // controls -- the single most important thing on the board was the one
-      // thing he could not tick, note, reschedule or archive. That whole bug
-      // class dies here, because the hero and the list now read ONE object.
+      // The tile reads the SAME live, ranked object the tier lists render --
+      // see the note on REQUIREMENT 7 (2026-08-31) below buildBoard(). A
+      // second, separately-cached string here is the exact bug class that
+      // requirement closed, and re-decided.
       var b = buildBoard();
       if (b.fail) {
-        line.textContent = 'Could not build the ranked board, so there is no #1 to show.';
-        if (why) why.innerHTML = b.fail;
+        if (badge) badge.textContent = 'Board unavailable';
+        line.textContent = 'Could not build the ranked board, so there is nothing to show.';
         if (meta) meta.textContent = 'unavailable';
-        if (res) res.innerHTML = '';
-        if (full) full.innerHTML = '';
+        body.innerHTML = b.fail;
         return;
       }
-      var top = b.hero;
-      if (!top) {
+
+      if (b.heroMode === 'must') {
+        var n = b.mustLiveCount;
+        var mustFirst = (b.mustLiveItems || [])[0];
+        // Council (2026-09-01) flagged a real regression here: the old
+        // single-#1 tile showed the loudest task's own title on the
+        // collapsed summary line, so a glance told him WHAT it was without
+        // expanding. A bare count loses that. This keeps "all together,
+        // first" (the body below is the whole unfiltered Must list) while
+        // restoring the glanceable preview -- the first live MUST's own
+        // headline, plus a count of the rest when there are more.
+        var preview = mustFirst ? (mustFirst.headline || (mustFirst.title || '').split('\n')[0] || '') : '';
+        if (badge) badge.textContent = 'MUST';
+        line.textContent = preview + (n > 1 ? ' (+' + (n - 1) + ' more must' + (n - 1 === 1 ? '' : 's') + ')' : '');
+        if (meta) meta.textContent = n + ' must-do item' + (n === 1 ? '' : 's') + ' today';
+        body.innerHTML = '<div class="mm-empty">Every must-do item for today is grouped together in ' +
+          '<a href="#sec-must">Must</a>, opened below — nothing is pulled out into its own tile ' +
+          'anymore, so the whole block moves together.</div>';
+        return;
+      }
+
+      // heroMode === 'five'
+      if (!b.heroItems.length) {
+        if (badge) badge.textContent = 'All clear';
         line.textContent = 'Nothing is live and undecided right now.';
-        if (why) why.textContent = 'Every ranked row that is yours is either done, archived, or parked on a later date. ' +
-          'That is a finished list, not an empty one.';
         if (meta) meta.textContent = 'all clear';
-        if (res) res.innerHTML = '';
-        if (full) full.innerHTML = '';
+        body.innerHTML = '<div class="mm-empty">Every ranked row that is yours is either done, ' +
+          'archived, or parked on a later date. That is a finished list, not an empty one.</div>';
         return;
       }
+      if (badge) badge.textContent = 'Next ' + b.heroItems.length;
+      line.textContent = 'Pick any of these ' + b.heroItems.length + ' — your call which one first.';
+      if (meta) meta.textContent = 'nothing is due today; ranked next-best';
 
-      var hk = String(top.key);
-      line.textContent = top.headline || (top.title || '').split('\n')[0] || hk;
-      if (why) {
-        // BODY text (outside the <summary> above) -- innerHTML + linkify so
-        // a URL in the row's FIRST-MOVE line is a real tap target here, not
-        // just visible plain text. The fallback sentence is our own fixed
-        // copy, safe as literal HTML.
-        why.innerHTML = top.first_move
-          ? ('First move: ' + linkify(top.first_move))
-          : 'This row carries no FIRST-MOVE line, so none is shown. Add one to the row rather than guessing one.';
-      }
-      // The hero's own mm-full: the row's COMPLETE raw text, linkified, so a
-      // URL that lives only in the title (and never made it into headline,
-      // first_move, or a resource marker) still has a real tap target here,
-      // below the header, matching every tier-list row's mm-full.
-      if (full) full.innerHTML = linkify(top.title || '');
-      if (meta) {
-        var due = effectiveDue(top);
-        meta.textContent = (top.tier || 'COULD') + (due ? ' · due ' + prettyDate(due) : ' · no date');
-      }
-
-      // `cos-top-priority` is now a CROSS-CHECK, never the source. When the
-      // published #1 disagrees with the live one, say so in one line instead
-      // of silently showing whichever happens to be stale.
-      var published = String(state['cos-top-priority'] || '').trim();
-      var liveTitle = String(top.title || '').trim();
-      var drift = (published && published !== liveTitle)
-        ? '<div class="mm-stat-note">The last published #1 said something else. It is stale, and this tile is the live ranking.</div>'
-        : '';
+      // `cos-top-priority` is a CROSS-CHECK, never the source -- see
+      // REQUIREMENT 7. Compared against the FIRST of the five, since that is
+      // the row it would have named under the old single-#1 behavior.
+      var drift = '';
       if (b.heroSkipped && b.heroSkipped.length) {
-        drift = '<div class="mm-stat-note">This is a ' + esc(top.tier || 'COULD') + ' because every ' +
-          esc(b.heroSkipped.join(' and ')) + ' on the board is already done, archived, or moved to a later date. ' +
-          'The ranking did not skip them; you cleared them.</div>' + drift;
+        drift += '<div class="mm-stat-note">Every ' + esc(b.heroSkipped.join(' and ')) +
+          ' item on the board is already done, archived, or moved to a later date. ' +
+          'The ranking did not skip them; you cleared them. These are the next best five.</div>';
+      }
+      var published = String(state['cos-top-priority'] || '').trim();
+      var liveTitle = String((b.heroItems[0] || {}).title || '').trim();
+      if (published && liveTitle && published !== liveTitle) {
+        drift += '<div class="mm-stat-note">The last published #1 said something else. ' +
+          'It is stale, and this list is the live ranking.</div>';
       }
 
-      if (res) res.innerHTML = resourcePanelHtml(top, hk);
-      // The SAME control bar function every list tile uses. No second copy.
-      if (ctl) ctl.innerHTML = drift + controlsHtml(hk);
-      // The hero is filtered OUT of its tier list, so renderList never
-      // registers it with the notes store. Register it here or a note he
-      // writes on the day's #1 has nowhere to land.
-      registerNoteItems([top]);
+      body.innerHTML = drift + b.heroItems.map(itemHtml).join('');
+      // Five-mode rows are filtered OUT of their tier list (see heroKeys in
+      // renderLists()), so renderList never registers them with the notes
+      // store. Register them here or a note he writes on one has nowhere to
+      // land. Must-mode needs no equivalent call: those rows stay in their
+      // tier list, which registers them itself.
+      registerNoteItems(b.heroItems);
     }
 
     // -------------------------------------------------------------------
@@ -1588,22 +1609,48 @@
         return x < y ? -1 : (x > y ? 1 : 0);
       });
 
-      // The #1 is the FIRST genuinely live, undecided, not-parked row in the
-      // highest tier that has one. Same object the list renders, so the tile
-      // cannot carry different text or a missing control bar, ever.
-      var hero = null, heroSkipped = [];
-      ['MUST', 'SHOULD', 'COULD'].forEach(function (t) {
-        if (hero) return;
-        for (var i = 0; i < tiers[t].length; i++) {
-          if (sinkRank(tiers[t][i]) === 0) { hero = tiers[t][i]; return; }
-        }
-        // Nothing live in this tier. Remember it, so the tile can say WHY the
-        // day's #1 is a COULD instead of leaving him to wonder whether the
-        // ranking broke. A quiet fallthrough reads exactly like a bug.
-        if (tiers[t].length) heroSkipped.push(t);
-      });
+      // ---- DO NEXT: must-block or rolling five (2026-09-01) ---------------
+      // Boubacar, verbatim: "the only time we only see one thing is when
+      // there's a must-do item, and then we see all the must-do items and
+      // they are first in together." Otherwise: "a running list of 5 items
+      // ... I can select which of the 5 I want to do."
+      //
+      // MUST MODE fires whenever at least one MUST row is genuinely live
+      // today (sinkRank 0 -- not done, not archived, not parked on a later
+      // date). heroKeys stays EMPTY in this mode on purpose: nothing is
+      // pulled out of tiers.MUST, so renderLists() renders the whole tier,
+      // unfiltered, and the Must section becomes the "all together, first"
+      // block he asked for. The old single-loudest-MUST tile is gone.
+      //
+      // FIVE MODE fires only when MUST has nothing live -- there is no hard
+      // clock forcing a single answer, so up to HERO_FIVE_N live rows come
+      // off SHOULD then COULD, in the SAME order the tier lists already use
+      // (the ranker's order; nothing is re-scored here). heroKeys names
+      // exactly those rows so renderLists() excludes them from their own
+      // tier list below -- the same anti-duplicate-key reasoning the old
+      // single-hero exclusion existed for, just for up to five keys instead
+      // of one.
+      var HERO_FIVE_N = 5;
+      var liveMust = tiers.MUST.filter(function (i) { return sinkRank(i) === 0; });
+      var heroMode, heroItems = [], heroKeys = [], heroSkipped = [];
+      if (liveMust.length) {
+        heroMode = 'must';
+      } else {
+        heroMode = 'five';
+        // Nothing live in MUST. Remember it, so the tile can say WHY these
+        // five are the day's answer instead of leaving him to wonder whether
+        // the ranking broke. A quiet fallthrough reads exactly like a bug.
+        if (tiers.MUST.length) heroSkipped.push('MUST');
+        ['SHOULD', 'COULD'].forEach(function (t) {
+          for (var i = 0; i < tiers[t].length && heroItems.length < HERO_FIVE_N; i++) {
+            if (sinkRank(tiers[t][i]) === 0) heroItems.push(tiers[t][i]);
+          }
+        });
+        heroKeys = heroItems.map(function (i) { return String(i.key); });
+      }
 
-      return { wl: wl, tiers: tiers, closedOut: closedOut, laterOut: laterOut, later: later, closed: closed, agent: agent, hero: hero, heroSkipped: heroSkipped };
+      return { wl: wl, tiers: tiers, closedOut: closedOut, laterOut: laterOut, later: later, closed: closed, agent: agent,
+        heroMode: heroMode, heroItems: heroItems, heroKeys: heroKeys, mustLiveItems: liveMust, mustLiveCount: liveMust.length, heroSkipped: heroSkipped };
     }
 
     function renderLists() {
@@ -1623,18 +1670,19 @@
       } else {
         clearBanner();
       }
-      // The #1 renders ONCE, in its own tile above, and is filtered out of its
-      // tier list here. This is not cosmetic de-duplication: every control on
-      // this page is addressed by `[data-notes="<key>"]` and resolved with
-      // querySelector, which returns the FIRST match in document order. Render
-      // the same key twice and tapping Notes on the list row silently opens
-      // the hero's panel instead -- a button that visibly does nothing, which
-      // is exactly the complaint that started this rebuild. Rendering it once
-      // is safe now in a way it was not before, because the hero carries the
-      // full control bar from the same function every other tile uses.
-      var heroKey = b.hero ? String(b.hero.key) : null;
+      // A row rendered in the "Do next" tile is filtered out of its tier
+      // list here, in FIVE MODE ONLY -- see buildBoard()'s heroKeys comment.
+      // This is not cosmetic de-duplication: every control on this page is
+      // addressed by `[data-notes="<key>"]` and resolved with querySelector,
+      // which returns the FIRST match in document order. Render the same key
+      // twice and tapping Notes on the list row silently opens the tile's
+      // copy instead -- a button that visibly does nothing, which is exactly
+      // the complaint that started this rebuild. In MUST MODE heroKeys is
+      // empty by construction, so every MUST row renders here too, unfiltered
+      // -- that is what makes the Must tier "all together, first."
+      var heroKeys = b.heroKeys || [];
       function withoutHero(rows) {
-        return heroKey ? rows.filter(function (i) { return String(i.key) !== heroKey; }) : rows;
+        return heroKeys.length ? rows.filter(function (i) { return heroKeys.indexOf(String(i.key)) === -1; }) : rows;
       }
       renderList('mmMustList', 'mmMustMeta', withoutHero(b.tiers.MUST), 'must', '', b.closedOut.MUST, b.laterOut.MUST);
       renderList('mmShouldList', 'mmShouldMeta', withoutHero(b.tiers.SHOULD), 'should', '', b.closedOut.SHOULD, b.laterOut.SHOULD);
