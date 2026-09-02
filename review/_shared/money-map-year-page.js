@@ -230,6 +230,20 @@
     var itemOpen = {};          // item key -> its <details> tile is expanded
     var formOpen = {};          // item key -> 'push' | 'archive' | null
 
+    // ---- DAY-STRIP DRILL-IN (2026-09-02) ----------------------------------
+    // Tapping a date on the day-by-day strip opens exactly what is scheduled
+    // to land THAT day -- every row whose effective due date (a reschedule's
+    // `to`, or the row's own `by_date` when it has never been rescheduled)
+    // equals the tapped date. Not a second page, not a second data source:
+    // it filters the SAME `cos-worklist` array every tier list already reads,
+    // and renders each row with itemHtml(), the exact function the tier lists
+    // use -- so the Done checkbox, Reschedule form, Archive button and Notes
+    // panel are the real, live controls (same document-level delegated
+    // listeners in wireItemControls()), never a second reschedule path. Only
+    // one thing tracks whether the drill-in is open: `dayModalDate`, null
+    // when closed, else the YYYY-MM-DD it is showing.
+    var dayModalDate = null;
+
     function doneKey(k) { return 'done-' + k; }
     function pushKey(k) { return 'push-' + k; }
     function archiveKey(k) { return 'archive-' + k; }
@@ -417,6 +431,22 @@
           '</header>' +
 
           '<div class="mm-banner" id="mmBanner" hidden></div>' +
+
+          // Day-strip drill-in (2026-09-02). Hidden by default; opened by a
+          // tap on any `.mm-day` cell in the day-by-day strip. Lives inside
+          // `.mm-wrap` but is `position:fixed` in CSS so it sits above every
+          // section regardless of scroll position -- phone-first, since he
+          // reads this board on his phone.
+          '<div class="mm-daymodal" id="mmDayModal" hidden>' +
+            '<div class="mm-daymodal-backdrop" id="mmDayModalBackdrop"></div>' +
+            '<div class="mm-daymodal-panel" role="dialog" aria-modal="true" aria-labelledby="mmDayModalTitle">' +
+              '<div class="mm-daymodal-head">' +
+                '<span class="mm-daymodal-title" id="mmDayModalTitle">&nbsp;</span>' +
+                '<button type="button" class="mm-nav-btn" id="mmDayModalClose">Close</button>' +
+              '</div>' +
+              '<div class="mm-daymodal-body" id="mmDayModalBody"></div>' +
+            '</div>' +
+          '</div>' +
 
           '<details class="mm-sec" id="sec-tracker" open>' +
             '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Tracker</span>' +
@@ -657,7 +687,9 @@
         // own history behind a bookkeeping boundary.
         cells +=
           '<div class="mm-day' + (isToday ? ' today' : '') + '"' +
-            ' title="' + esc(prettyDate(ds)) + '">' +
+            ' data-day="' + esc(ds) + '" role="button" tabindex="0"' +
+            ' aria-label="Show what lands ' + esc(prettyDate(ds)) + '"' +
+            ' title="Tap to see what lands ' + esc(prettyDate(ds)) + '">' +
             '<div class="mm-day-lbl">' + DAYS[d.getDay()].charAt(0) + '<span>' + d.getDate() + '</span></div>' +
             '<div class="mm-day-nums">' +
               '<span class="p" title="planned">' + c.planned + '</span>' +
@@ -684,6 +716,68 @@
       // matters -- today -- starts off screen. Park it at the right end.
       var strip = host.querySelector('.mm-days-strip');
       if (strip) { try { strip.scrollLeft = strip.scrollWidth; } catch (e) {} }
+    }
+
+    // -------------------------------------------------------------------
+    // Day-strip drill-in (2026-09-02)
+    // -------------------------------------------------------------------
+    // Filters the SAME `cos-worklist` array every tier list reads -- no
+    // second data source, no re-ranking. `effectiveDue()` already carries the
+    // "a reschedule wins over the row's own by_date" rule the tier lists use,
+    // so a rescheduled row shows up under its NEW date here too, not its old
+    // one. Order is left exactly as the worklist published it (rank order),
+    // same as every tier list -- "grouped/ordered the way the main list
+    // already orders them" without a second sort implementation.
+    function dayModalItems(dateStr) {
+      var wl = readWorklist();
+      if (wl.error) return { items: [], error: wl.error };
+      if (!wl.items) return { items: [], error: null };
+      return {
+        items: wl.items.filter(function (i) { return effectiveDue(i) === dateStr; }),
+        error: null
+      };
+    }
+
+    function renderDayModal() {
+      var host = el('mmDayModalBody');
+      var titleEl = el('mmDayModalTitle');
+      if (!host || !dayModalDate) return;
+      if (titleEl) titleEl.textContent = prettyDate(dayModalDate) + ' · ' + dayModalDate;
+      if (!remoteOk) {
+        host.innerHTML = '<p class="mm-lede">The board could not be read, so this day is unknown, not empty. ' +
+          esc(readError || '') + '</p>';
+        return;
+      }
+      var res = dayModalItems(dayModalDate);
+      if (res.error) {
+        host.innerHTML = '<p class="mm-lede">The stored ranked list could not be parsed: ' + esc(res.error) + '</p>';
+        return;
+      }
+      if (!res.items.length) {
+        host.innerHTML = '<p class="mm-lede">Nothing scheduled to land on this day.</p>';
+        return;
+      }
+      // Same row renderer the tier lists use -- Done, Reschedule, Archive and
+      // Notes are the real controls, wired into the same document-level
+      // delegated listeners already set up by wireItemControls(). Reschedule
+      // here writes through the exact same persist(pushKey(k), ...) path a
+      // reschedule from the Should tier would; there is no second write path.
+      host.innerHTML = res.items.map(itemHtml).join('');
+    }
+
+    function openDayView(dateStr) {
+      dayModalDate = dateStr;
+      var modal = el('mmDayModal');
+      if (modal) modal.hidden = false;
+      try { document.body.style.overflow = 'hidden'; } catch (e) {}
+      renderDayModal();
+    }
+
+    function closeDayView() {
+      dayModalDate = null;
+      var modal = el('mmDayModal');
+      if (modal) modal.hidden = true;
+      try { document.body.style.overflow = ''; } catch (e) {}
     }
 
     // -------------------------------------------------------------------
@@ -1898,6 +1992,11 @@
       if (editInProgress()) { renderPending = true; return; }
       renderPending = false;
       renderLists();
+      // The drill-in modal renders the SAME rows as itemHtml() elsewhere, so
+      // it needs the same live repaint on every write/realtime tick -- a
+      // reschedule saved from inside the modal must move the row out (or
+      // change its date-stamp) on screen without him closing and reopening.
+      if (dayModalDate) renderDayModal();
     }
 
     // -------------------------------------------------------------------
@@ -2588,6 +2687,28 @@
       });
 
       wireItemControls();
+
+      // ---- day-strip drill-in wiring (2026-09-02) ----------------------
+      // Delegated (not bound per-cell) because renderDays() rebuilds the
+      // strip's innerHTML on every render/realtime tick -- a per-cell
+      // listener would be silently lost on the very first repaint.
+      document.addEventListener('click', function (ev) {
+        var day = ev.target.closest && ev.target.closest('[data-day]');
+        if (day) { openDayView(day.getAttribute('data-day')); return; }
+        if (ev.target.id === 'mmDayModalClose' || ev.target.id === 'mmDayModalBackdrop') { closeDayView(); return; }
+      });
+      // Enter/Space activates a day cell the same as a tap -- it carries
+      // role="button" tabindex="0", not a real <button>, because the day
+      // strip's own layout (a horizontal scroller of many small cells) is
+      // built as <div>s throughout.
+      document.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+        var day = ev.target.closest && ev.target.closest('[data-day]');
+        if (day) { ev.preventDefault(); openDayView(day.getAttribute('data-day')); }
+      });
+      document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape' && dayModalDate) closeDayView();
+      });
 
       var ci = el('mmCollectedInput');
       if (ci) ci.addEventListener('change', function () {
