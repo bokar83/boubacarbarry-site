@@ -1660,10 +1660,25 @@
     // realtime fires a render on every write from ANY device, so this is not
     // hypothetical. Defer the list repaint instead; the tracker and hero carry
     // no typing and are always safe to repaint.
+    //
+    // BUG FIX 2026-09-01 (D-money-map-archive-reschedule-2026-09-01): a form
+    // whose Save button is already disabled has been SUBMITTED, not typed
+    // into -- his reason text is still sitting in the textarea only because
+    // nothing has cleared it yet while the write is confirming. Counting
+    // that as "still editing" is what froze the #1 tile: renderHero()'s own
+    // editInProgress() guard (below) saw that non-empty, not-yet-cleared
+    // textarea forever, so the hero's control bar (still wired to the item
+    // he just archived or rescheduled) never got replaced -- the headline
+    // moved to the new #1 but the Archive form underneath it, and the
+    // reason text inside it, was the OLD item's, stuck. Skipping a
+    // mid-submit form's fields here lets the very next render replace that
+    // stale control bar instead of leaving it frozen forever.
     var renderPending = false;
     function editInProgress() {
       var els = document.querySelectorAll('.mm-form textarea, .mm-noteform textarea, .mm-form input[type=date]');
       for (var i = 0; i < els.length; i++) {
+        var wrap = els[i].closest ? els[i].closest('.mm-form, .mm-noteform') : null;
+        if (wrap && wrap.querySelector('button[disabled]')) continue; // already submitted, not being edited
         if (String(els[i].value || '').trim() || els[i] === document.activeElement) return true;
       }
       return false;
@@ -1966,7 +1981,10 @@
         if (k) {
           formOpen[k] = null;
           persist(pushKey(k), JSON.stringify({ v: 1, del: 1 }));
-          renderLists();
+          // renderAll(), not the bare list repaint: an undone reschedule can
+          // put THIS row back in the #1 spot, and only renderAll() touches
+          // the hero tile. See the 2026-09-01 note on editInProgress().
+          renderAll();
           return;
         }
 
@@ -2014,7 +2032,25 @@
                 return;
               }
               say(sf, 'ok', 'Rescheduled to ' + prettyDate(newDate) + '. Confirmed by reading it back from the database.');
-              setTimeout(function () { formOpen[k] = null; renderLists(); }, 1200);
+              // renderAll(), not the bare list repaint (D-money-map-archive-
+              // reschedule-2026-09-01): the row leaving its tier is only half
+              // the fix. If this row WAS the #1, only renderAll() replaces
+              // the hero tile with the new #1 -- a bare renderLists() left
+              // the old headline and its stale controls on screen forever,
+              // which read to him as "reschedule does not move the row."
+              // The reason textarea and date input are cleared here (not just
+              // formOpen[k]) because editInProgress() reads their live DOM
+              // value at the moment renderAll() runs; by 1200ms the Save
+              // button is re-enabled again, so the disabled-button skip in
+              // editInProgress() no longer exempts them -- an uncleared value
+              // would still read as "still typing" and block this exact
+              // repaint.
+              setTimeout(function () {
+                formOpen[k] = null;
+                if (rEl) rEl.value = '';
+                if (dEl) dEl.value = '';
+                renderAll();
+              }, 1200);
             })
             .catch(function () {
               t.disabled = false;
@@ -2043,7 +2079,8 @@
         if (k) {
           formOpen[k] = null;
           persist(archiveKey(k), JSON.stringify({ v: 1, del: 1 }));
-          renderLists();
+          // renderAll(), for the same reason as data-pushundo above.
+          renderAll();
           return;
         }
 
@@ -2079,7 +2116,26 @@
                 return;
               }
               say(sf, 'ok', 'Archived. Confirmed by reading it back from the database.');
-              setTimeout(function () { formOpen[k] = null; renderLists(); }, 900);
+              // renderAll(), not the bare list repaint (D-money-map-archive-
+              // reschedule-2026-09-01, the root cause of the sticky-archive-
+              // form report): archiving the current #1 makes a DIFFERENT row
+              // the new #1. Only renderAll() repaints the hero tile with that
+              // new row's own headline AND its own, empty control bar. A bare
+              // renderLists() left the hero's headline stuck on this item and
+              // its control bar -- including the open Archive form and the
+              // reason just typed -- glued in place, so the NEXT item that
+              // took the #1 spot visually inherited the old item's open
+              // archive box and its old reason text.
+              // Clearing arEl's value here (not just formOpen[k]) matters: by
+              // 900ms the Save button is re-enabled, so editInProgress()'s
+              // disabled-button skip no longer exempts this textarea, and an
+              // uncleared reason would still read as "still typing" and block
+              // this very repaint.
+              setTimeout(function () {
+                formOpen[k] = null;
+                if (arEl) arEl.value = '';
+                renderAll();
+              }, 900);
             })
             .catch(function () {
               t.disabled = false;
