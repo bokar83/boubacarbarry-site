@@ -816,12 +816,16 @@
       var body = el('mmHeroBody');
       if (!line || !body) return;
       // Five-mode rows carry the SAME typeable forms (reschedule reason,
-      // note) every tier-list row does, so this tile now needs the same
-      // half-typed-text freeze renderLists already gets in renderAll() --
-      // except renderHero() runs BEFORE that check, so it freezes itself.
-      // Before this change nothing in the hero could be mid-type, which is
-      // why only its (now-removed) control bar had this guard; now the
-      // whole body can be, so the whole repaint is skipped instead.
+      // note) the old single-#1 hero's own control bar already could -- see
+      // the 2026-09-01 editInProgress()/renderAll() fix above for the bug
+      // that caused when only THAT control bar was frozen (per-ctl guard)
+      // instead of the whole tile. Freezing the WHOLE body here, before any
+      // of it is touched, is the simpler and now-correct version of that
+      // same guard: five-mode can hold up to five such forms at once, not
+      // one, so a per-item guard would need to track which of the five is
+      // being typed into -- freezing the tile wholesale during ANY edit
+      // anywhere on the page (same scope editInProgress() already checks)
+      // is simpler and matches what renderLists() already does in renderAll().
       if (editInProgress()) return;
       if (!remoteOk) {
         if (badge) badge.textContent = 'Board unavailable';
