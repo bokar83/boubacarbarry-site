@@ -573,6 +573,20 @@
         '</div>' +
         (cfg.archiveNote ? '<p class="mm-lede" style="margin-top:0.9rem;">' + cfg.archiveNote + '</p>' : '');
 
+      // The drill-in modal is built inside `.mm-wrap`, but `.mm-wrap` itself
+      // sets `position:relative; z-index:1`, which makes it a stacking
+      // context boundary -- EVERY fixed-position descendant's z-index (the
+      // modal included) is compared against page-level siblings using THAT
+      // boundary's z-index (1), never its own. The deploy-stamp badge lives
+      // directly under <body> at z-index 99999 and would always paint over
+      // the modal no matter how high the modal's own z-index goes. Moving
+      // the modal node to be a direct child of <body> escapes `.mm-wrap`'s
+      // stacking context so its z-index is finally compared where it is
+      // declared. The modal's own inner HTML is fully rebuilt on every
+      // hydrate/renderAll, so this move only needs to happen once.
+      var modalEl = el('mmDayModal');
+      if (modalEl && modalEl.parentNode !== document.body) { document.body.appendChild(modalEl); }
+
       wire();
     }
 
