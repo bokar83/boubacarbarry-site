@@ -2135,6 +2135,35 @@
       if (root.CSS && root.CSS.escape) return root.CSS.escape(s);
       return String(s).replace(/["\\]/g, '\\$&');
     }
+    // ROOT-CAUSE FIX (2026-09-02, D-money-map-reschedule-crosstalk): a row
+    // whose effective due date is TODAY renders TWICE on screen once the day
+    // strip's modal is open for today -- once in the normal Must/Should/Could
+    // list, once again inside #mmDayModalBody, both built by the SAME
+    // itemHtml(k)/controlsHtml(k) call and carrying the SAME data-* key
+    // attributes (confirmed live 2026-09-02: data-rowkey duplicated for every
+    // key due on the open day). Every Reschedule/Archive/Notes read and write
+    // in wireItemControls() below used a bare `document.querySelector(...)`
+    // keyed only by that shared attribute, which ALWAYS resolves to the
+    // FIRST matching node in document order -- not the one inside the row he
+    // actually clicked. Typing a reschedule reason into the modal's copy and
+    // hitting Save read the OTHER (empty/stale) copy's textarea, and the
+    // open-form toggle for the button he clicked could visibly pop open on
+    // the OTHER on-screen copy of the same row. Because both copies share one
+    // key, saving one always marks BOTH done in the same write, so a change
+    // on the row he was looking at appeared to also "jump onto" the
+    // differently-positioned sibling copy -- reported as one task's edit
+    // bleeding onto the next. Scoping every push/archive form-element lookup
+    // to the `.mm-row` that actually contains the clicked button removes the
+    // ambiguity outright: the code now always reads and writes the exact
+    // copy the click came from, regardless of how many times that key is
+    // rendered on the page.
+    function rowScope(t) {
+      var row = (t && t.closest) ? t.closest('.mm-row') : null;
+      return row || document;
+    }
+    function scopedEl(t, selector) {
+      return rowScope(t).querySelector(selector);
+    }
     function say(el2, cls, msg) { if (el2) { el2.className = 'mm-stat-note' + (cls ? ' ' + cls : ''); el2.textContent = msg; } }
 
     function wireItemControls() {
@@ -2284,9 +2313,13 @@
         }
 
         // --- reschedule form open / cancel / undo
+        // Scoped to the row the click came from (rowScope fix above) -- a
+        // key due today can be on screen twice (main list + open day
+        // modal), and a bare document-wide lookup would silently act on
+        // whichever copy happens to come first in the DOM.
         k = t.getAttribute('data-push');
         if (k) {
-          var pw = document.querySelector('.mm-form[data-pushwrap="' + cssEsc(k) + '"]');
+          var pw = scopedEl(t, '.mm-form[data-pushwrap="' + cssEsc(k) + '"]');
           if (!pw) return;
           if (pw.hidden) { formOpen[k] = 'push'; pw.innerHTML = pushFormHtml(k); pw.hidden = false; }
           else { formOpen[k] = null; pw.hidden = true; pw.innerHTML = ''; }
@@ -2294,7 +2327,7 @@
         }
         k = t.getAttribute('data-pushcancel');
         if (k) {
-          var pc = document.querySelector('.mm-form[data-pushwrap="' + cssEsc(k) + '"]');
+          var pc = scopedEl(t, '.mm-form[data-pushwrap="' + cssEsc(k) + '"]');
           formOpen[k] = null;
           if (pc) { pc.hidden = true; pc.innerHTML = ''; }
           return;
@@ -2311,11 +2344,15 @@
         }
 
         // --- reschedule save: the date is MANDATORY (D-20260830-06)
+        // dEl/rEl/ps are read from the SAME row the Save button lives in
+        // (rowScope fix above) -- reading them document-wide would grab
+        // whichever on-screen copy of this key happens to be first in the
+        // DOM, which is not necessarily the copy he just typed into.
         k = t.getAttribute('data-pushsave');
         if (k) {
-          var dEl = document.querySelector('input[data-pushdate="' + cssEsc(k) + '"]');
-          var rEl = document.querySelector('textarea[data-pushreason="' + cssEsc(k) + '"]');
-          var ps = statusEl('data-pushstatus', k);
+          var dEl = scopedEl(t, 'input[data-pushdate="' + cssEsc(k) + '"]');
+          var rEl = scopedEl(t, 'textarea[data-pushreason="' + cssEsc(k) + '"]');
+          var ps = scopedEl(t, '[data-pushstatus="' + cssEsc(k) + '"]');
           var newDate = dEl ? String(dEl.value || '').trim() : '';
           var reason = rEl ? String(rEl.value || '').trim() : '';
           if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) { say(ps, 'bad', 'Pick the new date this is due on.'); return; }
@@ -2343,7 +2380,7 @@
           Promise.resolve(written).then(function () { return readBack(pushKey(k)); })
             .then(function (res) {
               t.disabled = false;
-              var sf = statusEl('data-pushstatus', k);
+              var sf = scopedEl(t, '[data-pushstatus="' + cssEsc(k) + '"]') || ps;
               var rows = (res && res.data) || [];
               var back = null;
               try { back = rows.length ? JSON.parse(rows[0].value) : null; } catch (e) { back = null; }
@@ -2376,15 +2413,20 @@
             })
             .catch(function () {
               t.disabled = false;
-              say(statusEl('data-pushstatus', k), 'bad', 'NOT SAVED: could not reach the database to confirm it. Nothing has moved.');
+              say(scopedEl(t, '[data-pushstatus="' + cssEsc(k) + '"]') || ps, 'bad', 'NOT SAVED: could not reach the database to confirm it. Nothing has moved.');
             });
           return;
         }
 
         // --- archive form open / cancel / unarchive
+        // Scoped to the row the click came from -- same rowScope fix as
+        // reschedule above, and the same root cause: a key due today can
+        // render twice (main list + open day modal), and a document-wide
+        // lookup would silently act on whichever copy comes first in the DOM
+        // rather than the one under the button he actually clicked.
         k = t.getAttribute('data-archive');
         if (k) {
-          var aw = document.querySelector('.mm-form[data-archivewrap="' + cssEsc(k) + '"]');
+          var aw = scopedEl(t, '.mm-form[data-archivewrap="' + cssEsc(k) + '"]');
           if (!aw) return;
           if (aw.hidden) { formOpen[k] = 'archive'; aw.innerHTML = archiveFormHtml(k); aw.hidden = false; }
           else { formOpen[k] = null; aw.hidden = true; aw.innerHTML = ''; }
@@ -2392,7 +2434,7 @@
         }
         k = t.getAttribute('data-archivecancel');
         if (k) {
-          var ac = document.querySelector('.mm-form[data-archivewrap="' + cssEsc(k) + '"]');
+          var ac = scopedEl(t, '.mm-form[data-archivewrap="' + cssEsc(k) + '"]');
           formOpen[k] = null;
           if (ac) { ac.hidden = true; ac.innerHTML = ''; }
           return;
@@ -2407,10 +2449,14 @@
         }
 
         // --- archive save: NO date required, reason optional
+        // arEl/as are read from the SAME row the Save button lives in
+        // (rowScope fix above) -- a document-wide lookup would grab whichever
+        // on-screen copy of this key happens to be first in the DOM, which
+        // is not necessarily the copy he just typed the reason into.
         k = t.getAttribute('data-archivesave');
         if (k) {
-          var arEl = document.querySelector('textarea[data-archivereason="' + cssEsc(k) + '"]');
-          var as = statusEl('data-archivestatus', k);
+          var arEl = scopedEl(t, 'textarea[data-archivereason="' + cssEsc(k) + '"]');
+          var as = scopedEl(t, '[data-archivestatus="' + cssEsc(k) + '"]');
           var areason = arEl ? String(arEl.value || '').trim() : '';
           var arec = { v: 1, ts: new Date().toISOString(), reason: areason, by: 'boubacar' };
           t.disabled = true;
@@ -2427,7 +2473,7 @@
           Promise.resolve(awritten).then(function () { return readBack(archiveKey(k)); })
             .then(function (res) {
               t.disabled = false;
-              var sf = statusEl('data-archivestatus', k);
+              var sf = scopedEl(t, '[data-archivestatus="' + cssEsc(k) + '"]') || as;
               var rows = (res && res.data) || [];
               var back = null;
               try { back = rows.length ? JSON.parse(rows[0].value) : null; } catch (e) { back = null; }
@@ -2461,7 +2507,7 @@
             })
             .catch(function () {
               t.disabled = false;
-              say(statusEl('data-archivestatus', k), 'bad', 'NOT SAVED: could not reach the database to confirm it. Nothing has moved.');
+              say(scopedEl(t, '[data-archivestatus="' + cssEsc(k) + '"]') || as, 'bad', 'NOT SAVED: could not reach the database to confirm it. Nothing has moved.');
             });
           return;
         }
