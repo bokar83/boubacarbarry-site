@@ -66,6 +66,15 @@
   var MOS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var WEEK_MS = 604800000;
   var PAGE_SIZE = 20;          // how many tiles render before "show all"
+  // Must/Should are FINISHABLE (2026-09-02, Boubacar direct): capped at 5,
+  // and clearing them is the day being DONE for that tier -- no refill from
+  // backlog. Could is the opposite: a ROLLING 5 that always refills the
+  // moment a row is cleared, because nothing in it is an obligation. See the
+  // long comment above pickCommitted() for the full model (cascade + the
+  // arrival-can-bump rule) -- it is not a display accident, it is his stated
+  // definition of the three tiers.
+  var TIER_CAP = 5;
+  var COULD_ROLLING_N = 5;
   var TABLE = 'y0_money_map_state';
   var UPSERT_RPC = 'y0_upsert';
 
@@ -790,42 +799,29 @@
     }
 
     // -------------------------------------------------------------------
-    // Do next -- the MUST block, or the rolling five. Never authored here.
+    // Do next -- points at whichever capped tier is live, first. Never
+    // authored here; buildBoard() decides the mode, this only reads it.
     //
-    // 2026-09-01, Boubacar direct, verbatim: "The only time we only see one
-    // thing is when there's a must-do item, and then we see all the must-do
-    // items and they are first in together." Otherwise he wants "a running
-    // list of 5 items... I can select which of the 5 I want to do."
-    //
-    // Two modes, decided by buildBoard() and read here, never re-decided:
-    //   MUST MODE (b.heroMode === 'must') -- at least one MUST item is live
-    //     today. This tile stops pulling the loudest one out into its own
-    //     spot (that was the OLD #1-tile behavior he asked to end) and
-    //     instead points at the Must section, which now renders every live
-    //     MUST item unfiltered -- see renderLists()'s heroKeys, empty in this
-    //     mode. All of them, together, first, in the section built for it.
-    //   FIVE MODE (b.heroMode === 'five') -- no MUST item is live today, so
-    //     there is no hard clock forcing a single item. This tile shows up
-    //     to five live rows, each rendered with itemHtml() -- the SAME
-    //     renderer the tier lists use, so every control (tick, note,
-    //     reschedule, archive) works in place with no second copy of that
-    //     logic. He picks which of the five to do; nothing is forced to #1.
+    // 2026-09-02 rebuild (cap + cascade replaces the 2026-09-01 "show every
+    // live MUST unfiltered" build the same day it shipped -- see buildBoard()
+    // for the full four-rule model). Three modes now, not two, and NONE of
+    // them pull rows out into a second copy inside the tile any more: every
+    // mode just points at its section with an anchor link and a preview
+    // line, and the section itself (already capped to TIER_CAP or
+    // COULD_ROLLING_N by buildBoard()) is the only place those rows render.
+    // That closes the exact bug class the old "five mode" carried on purpose
+    // (a row rendered twice means its Notes button silently opens the wrong
+    // copy) rather than reproducing it for a third tier.
+    //   MUST mode   -- at least one row survived today's Must cap.
+    //   SHOULD mode -- Must is empty (cleared, or never had one today) and
+    //                  at least one row survived the Should cap.
+    //   COULD mode  -- both are empty; points at the rolling five instead.
+    //   none mode   -- everything that is his is done, archived, or parked.
     // -------------------------------------------------------------------
     function renderHero() {
       var badge = el('mmHeroBadge'), line = el('mmHeroLine'), meta = el('mmHeroMeta');
       var body = el('mmHeroBody');
       if (!line || !body) return;
-      // Five-mode rows carry the SAME typeable forms (reschedule reason,
-      // note) the old single-#1 hero's own control bar already could -- see
-      // the 2026-09-01 editInProgress()/renderAll() fix above for the bug
-      // that caused when only THAT control bar was frozen (per-ctl guard)
-      // instead of the whole tile. Freezing the WHOLE body here, before any
-      // of it is touched, is the simpler and now-correct version of that
-      // same guard: five-mode can hold up to five such forms at once, not
-      // one, so a per-item guard would need to track which of the five is
-      // being typed into -- freezing the tile wholesale during ANY edit
-      // anywhere on the page (same scope editInProgress() already checks)
-      // is simpler and matches what renderLists() already does in renderAll().
       if (editInProgress()) return;
       if (!remoteOk) {
         if (badge) badge.textContent = 'Board unavailable';
@@ -847,62 +843,49 @@
         return;
       }
 
-      if (b.heroMode === 'must') {
-        var n = b.mustLiveCount;
-        var mustFirst = (b.mustLiveItems || [])[0];
-        // Council (2026-09-01) flagged a real regression here: the old
-        // single-#1 tile showed the loudest task's own title on the
-        // collapsed summary line, so a glance told him WHAT it was without
-        // expanding. A bare count loses that. This keeps "all together,
-        // first" (the body below is the whole unfiltered Must list) while
-        // restoring the glanceable preview -- the first live MUST's own
-        // headline, plus a count of the rest when there are more.
-        var preview = mustFirst ? (mustFirst.headline || (mustFirst.title || '').split('\n')[0] || '') : '';
-        if (badge) badge.textContent = 'MUST';
-        line.textContent = preview + (n > 1 ? ' (+' + (n - 1) + ' more must' + (n - 1 === 1 ? '' : 's') + ')' : '');
-        if (meta) meta.textContent = n + ' must-do item' + (n === 1 ? '' : 's') + ' today';
-        body.innerHTML = '<div class="mm-empty">Every must-do item for today is grouped together in ' +
-          '<a href="#sec-must">Must</a>, opened below — nothing is pulled out into its own tile ' +
-          'anymore, so the whole block moves together.</div>';
+      function skippedNote(labelSuffix) {
+        if (!b.heroSkipped || !b.heroSkipped.length) return '';
+        return '<div class="mm-stat-note">Every ' + esc(b.heroSkipped.join(' and ')) +
+          ' item on the board is already done, archived, or moved to a later date' + labelSuffix +
+          '. The ranking did not skip them; you cleared them.</div>';
+      }
+
+      if (b.heroMode === 'must' || b.heroMode === 'should') {
+        var isMust = b.heroMode === 'must';
+        var items = isMust ? b.mustLiveItems : b.shouldLiveItems;
+        var n = items.length;
+        var first = items[0];
+        var preview = first ? (first.headline || (first.title || '').split('\n')[0] || '') : '';
+        if (badge) badge.textContent = isMust ? 'MUST' : 'SHOULD';
+        line.textContent = preview + (n > 1 ? ' (+' + (n - 1) + ' more ' + (isMust ? 'must' : 'should') + (n - 1 === 1 ? '' : 's') + ')' : '');
+        if (meta) meta.textContent = n + ' ' + (isMust ? 'must-do' : 'should-do') + ' item' + (n === 1 ? '' : 's') +
+          ' today' + (n >= TIER_CAP ? ' (capped at ' + TIER_CAP + ')' : '');
+        var anchor = isMust ? '#sec-must' : '#sec-should';
+        var anchorLabel = isMust ? 'Must' : 'Should';
+        body.innerHTML = skippedNote(isMust ? '' : ', or is genuinely empty today') +
+          '<div class="mm-empty">Grouped together in <a href="' + anchor + '">' + anchorLabel + '</a>, opened below ' +
+          '— nothing is pulled out into its own tile.' +
+          (isMust && b.shouldOverflowCount ? ' ' + b.shouldOverflowCount + ' more Should row' +
+            (b.shouldOverflowCount === 1 ? '' : 's') + ' will get a fresh look tomorrow.' : '') +
+          '</div>';
         return;
       }
 
-      // heroMode === 'five'
-      if (!b.heroItems.length) {
-        if (badge) badge.textContent = 'All clear';
-        line.textContent = 'Nothing is live and undecided right now.';
-        if (meta) meta.textContent = 'all clear';
-        body.innerHTML = '<div class="mm-empty">Every ranked row that is yours is either done, ' +
-          'archived, or parked on a later date. That is a finished list, not an empty one.</div>';
+      if (b.heroMode === 'could') {
+        if (badge) badge.textContent = 'Nice to have';
+        line.textContent = 'Everything with a deadline or a promise is cleared. A rolling five, no obligation.';
+        if (meta) meta.textContent = 'could · rolling five';
+        body.innerHTML = skippedNote('') + '<div class="mm-empty">Grouped together in ' +
+          '<a href="#sec-could">Could</a>, opened below — do any of them, great; skip them, no big deal.</div>';
         return;
       }
-      if (badge) badge.textContent = 'Next ' + b.heroItems.length;
-      line.textContent = 'Pick any of these ' + b.heroItems.length + ' — your call which one first.';
-      if (meta) meta.textContent = 'nothing is due today; ranked next-best';
 
-      // `cos-top-priority` is a CROSS-CHECK, never the source -- see
-      // REQUIREMENT 7. Compared against the FIRST of the five, since that is
-      // the row it would have named under the old single-#1 behavior.
-      var drift = '';
-      if (b.heroSkipped && b.heroSkipped.length) {
-        drift += '<div class="mm-stat-note">Every ' + esc(b.heroSkipped.join(' and ')) +
-          ' item on the board is already done, archived, or moved to a later date. ' +
-          'The ranking did not skip them; you cleared them. These are the next best five.</div>';
-      }
-      var published = String(state['cos-top-priority'] || '').trim();
-      var liveTitle = String((b.heroItems[0] || {}).title || '').trim();
-      if (published && liveTitle && published !== liveTitle) {
-        drift += '<div class="mm-stat-note">The last published #1 said something else. ' +
-          'It is stale, and this list is the live ranking.</div>';
-      }
-
-      body.innerHTML = drift + b.heroItems.map(itemHtml).join('');
-      // Five-mode rows are filtered OUT of their tier list (see heroKeys in
-      // renderLists()), so renderList never registers them with the notes
-      // store. Register them here or a note he writes on one has nowhere to
-      // land. Must-mode needs no equivalent call: those rows stay in their
-      // tier list, which registers them itself.
-      registerNoteItems(b.heroItems);
+      // heroMode === 'none'
+      if (badge) badge.textContent = 'All clear';
+      line.textContent = 'Nothing is live and undecided right now.';
+      if (meta) meta.textContent = 'all clear';
+      body.innerHTML = '<div class="mm-empty">Every ranked row that is yours is either done, ' +
+        'archived, or parked on a later date. That is a finished list, not an empty one.</div>';
     }
 
     // -------------------------------------------------------------------
@@ -927,6 +910,27 @@
       var txt = item.by_date;
       if (n != null) txt += (n < 0 ? ' · ' + Math.abs(n) + 'd overdue' : (n === 0 ? ' · today' : ' · ' + n + 'd'));
       return '<span class="mm-when' + cls + '">' + esc(txt) + '</span>';
+    }
+
+    // PRIORITY is not SEQUENCE (2026-09-02, Boubacar direct, the Enrique
+    // example): the #1-ranked row today might be a 10:30 interview, which
+    // means it is the day's top priority AND the wrong thing to reach for at
+    // 8am. There is no structured clock-time field on a row today (ranking.py
+    // carries a due DATE, never an hour), so this is a deliberately narrow,
+    // named simplification: scan the row's own text for a clock time it
+    // already states (e.g. "10:30am call with Enrique") and, when found,
+    // mark it as time-anchored rather than "do this first." A real fix is a
+    // structured start-time field on the row -- flagged, not built here,
+    // because that is a ranking.py/publisher schema change and this task is
+    // the tier page only.
+    var TIME_RE = /\b(1[0-2]|0?[1-9])(:[0-5]\d)?\s*(am|pm)\b/i;
+    function timePinLabel(item) {
+      var hay = String((item.title || '') + ' ' + (item.first_move || ''));
+      var m = TIME_RE.exec(hay);
+      if (!m) return '';
+      return '<span class="mm-mark" style="background:#3a3020;color:#e8c988;border:1px solid #7a5f2e;" ' +
+        'title="This row names a fixed time. It is ranked by priority, not by what happens first this morning.">' +
+        '&#128337; ' + esc(m[0]) + '</span>';
     }
 
     // ---- NOTES store (same stack every other review page uses) -----------
@@ -1403,6 +1407,7 @@
       // "Already done" list, which of those rows are today's -- the visual
       // cue that replaces the old in-tier dulling.
       var badges = '';
+      badges += timePinLabel(item);
       if (pushed) badges += '<span class="mm-mark push">moved to ' + esc(prettyDate(pushed.to)) + '</span>';
       if (arch) badges += '<span class="mm-mark arch">archived</span>';
       if (done && !arch) {
@@ -1613,48 +1618,182 @@
         return x < y ? -1 : (x > y ? 1 : 0);
       });
 
-      // ---- DO NEXT: must-block or rolling five (2026-09-01) ---------------
-      // Boubacar, verbatim: "the only time we only see one thing is when
-      // there's a must-do item, and then we see all the must-do items and
-      // they are first in together." Otherwise: "a running list of 5 items
-      // ... I can select which of the 5 I want to do."
+      // ---- MUST/SHOULD cap-and-cascade, COULD rolling five (2026-09-02) ---
+      // Boubacar, verbatim, correcting the 2026-09-01 "show every live MUST"
+      // build the same day it shipped: "for the must items I don't want more
+      // than three to five must items every single day... on the should [tier]
+      // it also should not have more than three to five items... on the could
+      // we have always five showing up and they're rolling five." And on what
+      // happens past five: "If the must list has ten items that really are
+      // super vital and important, then they'd be the first five items on the
+      // must list and then there'd be five items in the should list... If
+      // there's something on the should list today that might be on the must
+      // list tomorrow, you see how there's that relationship between them?"
+      // and, on a same-day reprioritization: "As new things pop up, something
+      // might bump something out because of priority" (his live example: the
+      // Enrique interview did not exist as a Must this morning; something
+      // that happened today made it tomorrow's #1).
       //
-      // MUST MODE fires whenever at least one MUST row is genuinely live
-      // today (sinkRank 0 -- not done, not archived, not parked on a later
-      // date). heroKeys stays EMPTY in this mode on purpose: nothing is
-      // pulled out of tiers.MUST, so renderLists() renders the whole tier,
-      // unfiltered, and the Must section becomes the "all together, first"
-      // block he asked for. The old single-loudest-MUST tile is gone.
+      // That is four rules, not one, and all four have to hold at once:
+      //   1. MUST caps at TIER_CAP, ranked order, nothing re-scored here.
+      //   2. Nothing is ever HIDDEN: whatever does not fit in MUST falls
+      //      through into the SHOULD pool (ahead of genuine Should rows --
+      //      it was still must-eligible, just not today's top five), and
+      //      SHOULD caps at TIER_CAP the same way. Only SHOULD's own leftover
+      //      goes unshown today -- it is not suppressed, it is simply next
+      //      in line for TOMORROW's fresh top-five, the same as it always
+      //      would have been under the ranker's own order.
+      //   3. FINISHABLE, no backfill: once a row picked for today's Must or
+      //      Should closes (done/archived) or moves to a later date, it
+      //      leaves and nothing from the backlog slides up to replace it.
+      //      Clearing the five really does mean the tier is done for the day.
+      //   4. An ARRIVAL can still bump a still-pending row out (down into the
+      //      tier below) when it out-ranks the day's weakest pick -- but only
+      //      a genuine arrival: a row seeing this specific pool (must-eligible
+      //      or should-eligible) for the FIRST TIME, tracked in `fseen-*`
+      //      below. An old backlog row that merely inherits a slot freed by a
+      //      completion does NOT get to sneak in that way -- that would be
+      //      backfill wearing an arrival's clothes, and rule 3 forbids it.
+      // pickCommitted() is the one place all four rules are enforced, reused
+      // for both MUST and SHOULD so there is exactly one implementation of
+      // "capped, finishable, arrival-can-bump" rather than two that can drift.
       //
-      // FIVE MODE fires only when MUST has nothing live -- there is no hard
-      // clock forcing a single answer, so up to HERO_FIVE_N live rows come
-      // off SHOULD then COULD, in the SAME order the tier lists already use
-      // (the ranker's order; nothing is re-scored here). heroKeys names
-      // exactly those rows so renderLists() excludes them from their own
-      // tier list below -- the same anti-duplicate-key reasoning the old
-      // single-hero exclusion existed for, just for up to five keys instead
-      // of one.
-      var HERO_FIVE_N = 5;
-      var liveMust = tiers.MUST.filter(function (i) { return sinkRank(i) === 0; });
-      var heroMode, heroItems = [], heroKeys = [], heroSkipped = [];
-      if (liveMust.length) {
-        heroMode = 'must';
-      } else {
-        heroMode = 'five';
-        // Nothing live in MUST. Remember it, so the tile can say WHY these
-        // five are the day's answer instead of leaving him to wonder whether
-        // the ranking broke. A quiet fallthrough reads exactly like a bug.
-        if (tiers.MUST.length) heroSkipped.push('MUST');
-        ['SHOULD', 'COULD'].forEach(function (t) {
-          for (var i = 0; i < tiers[t].length && heroItems.length < HERO_FIVE_N; i++) {
-            if (sinkRank(tiers[t][i]) === 0) heroItems.push(tiers[t][i]);
+      // COULD carries no obligation (his words: "nice to have... if you don't
+      // do them, no big deal") so it gets none of this machinery: it is a
+      // plain rolling window, recomputed fresh every render, of the top
+      // COULD_ROLLING_N rows still live today. As one clears (done,
+      // rescheduled, or archived -- the only three controls this page has;
+      // there is no separate "skip"), it leaves tiers.COULD on the very next
+      // render and the next-ranked Could row is simply already there.
+      // "Arrival" is decided against a BASELINE SNAPSHOT of the pool taken
+      // the first time today's set is established, not against "have I ever
+      // seen this key before" -- a per-key first-seen timestamp cannot tell
+      // an item that sat in the pool since 8am from one that just showed up,
+      // because BOTH are "first seen today" on day one. A unit test caught
+      // this exact bug in an earlier draft (see docs/audits/ for the harness
+      // that failed on it): m6/m7/m8 were still being treated as "new" for
+      // the rest of the day simply because today was also the first day
+      // anyone had ever seen them. The baseline is stored right inside the
+      // same lock JSON, so it costs one extra array, not a second persisted
+      // key per item -- simpler than the per-item version it replaced, and
+      // correct where that version was not.
+      function pickCommitted(poolAllOrdered, lockKey, today, alwaysEligible) {
+        var poolKeys = poolAllOrdered.map(function (i) { return String(i.key); });
+        var byKey = {};
+        poolAllOrdered.forEach(function (i) { byKey[String(i.key)] = i; });
+
+        var raw = state[lockKey], parsed = null;
+        try { parsed = raw ? JSON.parse(raw) : null; } catch (e) { parsed = null; }
+        // A fresh day (no lock yet, or the lock is from a prior date) gets a
+        // free fill -- every eligible row deserves a fair shot at the day's
+        // fresh top five, and the pool AS IT STANDS RIGHT NOW becomes the
+        // baseline everything else is measured an "arrival" against for the
+        // rest of today.
+        var freshDay = !parsed || parsed.date !== today || !Array.isArray(parsed.keys);
+        var baseline = freshDay ? poolKeys.slice() : (Array.isArray(parsed.baseline) ? parsed.baseline : poolKeys.slice());
+        var kept = freshDay ? [] : parsed.keys.filter(function (k) { return poolKeys.indexOf(k) !== -1; });
+        // Council (2026-09-02) flagged a real trust gap: a same-day bump
+        // swaps a still-pending row out with no on-screen explanation, and
+        // an unexplained disappearance from a list he's using for a
+        // completion signal reads as the board losing a row, not as the
+        // ranking working. bumpedOut names exactly which keys were swapped
+        // out THIS call (not ones that simply finished/archived/moved), so
+        // the caller can badge them rather than let them vanish quietly.
+        var bumpedOut = [];
+
+        var candidates = poolAllOrdered.filter(function (i) { return kept.indexOf(String(i.key)) === -1; });
+        candidates.forEach(function (i) {
+          var k = String(i.key);
+          // A genuine arrival is a key that was NOT part of today's baseline
+          // pool -- it showed up in a later re-rank, same as the Enrique
+          // interview example. A key that WAS in the baseline but just never
+          // got picked (or got picked and then finished) is known backlog:
+          // it waits for tomorrow's fresh cap, never today's freed slot.
+          var isArrival = baseline.indexOf(k) === -1;
+          var eligible = freshDay || (alwaysEligible && alwaysEligible[k]) || isArrival;
+          if (!eligible) return;
+          if (kept.length < TIER_CAP) { kept.push(k); return; }
+          var worstIdx = -1, worstRank = -1;
+          kept.forEach(function (kk, idx) {
+            var r = poolKeys.indexOf(kk);
+            if (r > worstRank) { worstRank = r; worstIdx = idx; }
+          });
+          var candRank = poolKeys.indexOf(k);
+          if (worstIdx !== -1 && candRank < worstRank) {
+            bumpedOut.push(kept[worstIdx]);
+            kept[worstIdx] = k; // bump
           }
         });
-        heroKeys = heroItems.map(function (i) { return String(i.key); });
+
+        kept.sort(function (a, b) { return poolKeys.indexOf(a) - poolKeys.indexOf(b); });
+        // Cumulative for the day (not just this call) -- a bump can happen
+        // on an earlier render than the one he's looking at, and it should
+        // still be nameable when he opens the page later that same day.
+        var priorBumped = (!freshDay && Array.isArray(parsed.bumped)) ? parsed.bumped : [];
+        var bumpedToday = priorBumped.concat(bumpedOut).filter(function (k, idx, arr) { return arr.indexOf(k) === idx; });
+        var serialized = JSON.stringify({ date: today, keys: kept, baseline: baseline, bumped: bumpedToday });
+        if (state[lockKey] !== serialized) persist(lockKey, serialized);
+
+        var keptSet = {}; kept.forEach(function (k) { keptSet[k] = 1; });
+        return {
+          kept: kept.map(function (k) { return byKey[k]; }).filter(Boolean),
+          overflow: poolAllOrdered.filter(function (i) { return !keptSet[String(i.key)]; }),
+          bumpedToday: bumpedToday.length
+        };
+      }
+
+      var todayD = todayStr();
+      var liveMustAll = tiers.MUST.filter(function (i) { return sinkRank(i) === 0; });
+      var liveShouldAll = tiers.SHOULD.filter(function (i) { return sinkRank(i) === 0; });
+      var liveCouldAll = tiers.COULD.filter(function (i) { return sinkRank(i) === 0; });
+
+      var mustPick = pickCommitted(liveMustAll, 'mustpick-' + todayD, todayD, null);
+      var mustOverflowKeys = {};
+      mustPick.overflow.forEach(function (i) { mustOverflowKeys[String(i.key)] = 1; });
+      // Must overflow cascades in AHEAD of genuine Should rows -- it was
+      // still must-eligible, just not one of today's five, so it outranks
+      // a plain Should row by construction. alwaysEligible means it never
+      // has to pass its own arrival test to occupy the Should pool.
+      var shouldPoolAll = mustPick.overflow.concat(liveShouldAll);
+      var shouldPick = pickCommitted(shouldPoolAll, 'shouldpick-' + todayD, todayD, mustOverflowKeys);
+
+      var displayMust = mustPick.kept;
+      var displayShould = shouldPick.kept;
+      var displayCould = liveCouldAll.slice(0, COULD_ROLLING_N);
+      var shouldOverflowCount = shouldPick.overflow.length; // true leftover -- tomorrow's candidates, not shown today
+
+      tiers.MUST = displayMust;
+      tiers.SHOULD = displayShould;
+      tiers.COULD = displayCould;
+
+      // ---- DO NEXT tile: whichever capped tier is live, first (2026-09-02)-
+      // Same "all together, first" behavior as before, just reading the
+      // now-capped Must/Should/Could sets instead of an unbounded Must. Every
+      // mode leaves heroKeys EMPTY: nothing is ever pulled out of a tier into
+      // a second copy inside the tile (that duplicate-key rendering was
+      // exactly the "Notes button silently does nothing" bug the 2026-09-01
+      // build already fixed once). The tile only ever points at the section;
+      // renderLists() renders that section's own (already-capped) rows.
+      var heroMode, heroItems = [], heroKeys = [], heroSkipped = [];
+      if (displayMust.length) {
+        heroMode = 'must';
+      } else if (displayShould.length) {
+        heroMode = 'should';
+        if (liveMustAll.length) heroSkipped.push('MUST');
+      } else if (displayCould.length) {
+        heroMode = 'could';
+        if (liveMustAll.length) heroSkipped.push('MUST');
+        if (liveShouldAll.length) heroSkipped.push('SHOULD');
+      } else {
+        heroMode = 'none';
       }
 
       return { wl: wl, tiers: tiers, closedOut: closedOut, laterOut: laterOut, later: later, closed: closed, agent: agent,
-        heroMode: heroMode, heroItems: heroItems, heroKeys: heroKeys, mustLiveItems: liveMust, mustLiveCount: liveMust.length, heroSkipped: heroSkipped };
+        heroMode: heroMode, heroItems: heroItems, heroKeys: heroKeys,
+        mustLiveItems: displayMust, mustLiveCount: displayMust.length,
+        shouldLiveItems: displayShould, shouldLiveCount: displayShould.length,
+        shouldOverflowCount: shouldOverflowCount, mustBumpedToday: mustPick.bumpedToday || 0,
+        heroSkipped: heroSkipped };
     }
 
     function renderLists() {
@@ -1674,16 +1813,13 @@
       } else {
         clearBanner();
       }
-      // A row rendered in the "Do next" tile is filtered out of its tier
-      // list here, in FIVE MODE ONLY -- see buildBoard()'s heroKeys comment.
-      // This is not cosmetic de-duplication: every control on this page is
-      // addressed by `[data-notes="<key>"]` and resolved with querySelector,
-      // which returns the FIRST match in document order. Render the same key
-      // twice and tapping Notes on the list row silently opens the tile's
-      // copy instead -- a button that visibly does nothing, which is exactly
-      // the complaint that started this rebuild. In MUST MODE heroKeys is
-      // empty by construction, so every MUST row renders here too, unfiltered
-      // -- that is what makes the Must tier "all together, first."
+      // heroKeys is always empty now (2026-09-02) -- no mode pulls a row out
+      // of its tier into a second copy inside the "Do next" tile any more,
+      // so there is nothing to de-duplicate here. withoutHero() is kept as a
+      // no-op safety net rather than deleted outright: it costs nothing, and
+      // it is the one guard against the exact "Notes button silently opens
+      // the wrong copy" bug reappearing if a future mode ever pulls rows out
+      // again without updating this call site.
       var heroKeys = b.heroKeys || [];
       function withoutHero(rows) {
         return heroKeys.length ? rows.filter(function (i) { return heroKeys.indexOf(String(i.key)) === -1; }) : rows;
@@ -1693,6 +1829,27 @@
       renderList('mmCouldList', 'mmCouldMeta', withoutHero(b.tiers.COULD), 'could', '', b.closedOut.COULD, b.laterOut.COULD);
       renderList('mmLaterList', 'mmLaterMeta', withoutHero(b.later), 'later', '');
       renderList('mmDoneList', 'mmDoneMeta', withoutHero(b.closed), 'closedearlier', '');
+      // Must/Should are now capped (TIER_CAP) and finishable -- see
+      // buildBoard(). Should's own overflow (after must-overflow already
+      // cascaded in ahead of it) is real backlog, not hidden: it waits for
+      // tomorrow's fresh top-five rather than showing today, so the count
+      // rides on the Should meta line instead of vanishing silently.
+      var shMeta = el('mmShouldMeta');
+      if (shMeta && b.shouldOverflowCount) {
+        shMeta.textContent = (shMeta.textContent || '') + ' · +' + b.shouldOverflowCount +
+          ' more waiting for tomorrow’s fresh ranking';
+      }
+      // Council (2026-09-02): a same-day bump (a new arrival out-ranking the
+      // day's weakest Must pick) moves a row from Must to Should silently
+      // otherwise -- its tier badge changes but nothing narrates WHY. Naming
+      // the count on Must's own meta line is the cheap fix: the row is never
+      // actually hidden (it renders in Should, tier badge and all), this
+      // just stops the swap from reading as the board losing a row.
+      var mMeta = el('mmMustMeta');
+      if (mMeta && b.mustBumpedToday) {
+        mMeta.textContent = (mMeta.textContent || '') + ' · ' + b.mustBumpedToday +
+          ' bumped to Should today by something more urgent';
+      }
       var lm = el('mmLaterMeta');
       if (lm && b.later.length) {
         lm.textContent = b.later.length + ' item' + (b.later.length === 1 ? '' : 's') +
