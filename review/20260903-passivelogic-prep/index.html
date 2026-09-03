@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>PassiveLogic application pack</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{transform:rotate(90deg);}
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 8px;}
+  h3{font-size:1rem; margin:20px 0 8px; color:var(--accent2);}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .flag{background:#241a12; border:1px solid var(--warn); border-left:4px solid var(--warn);
+    padding:12px 14px; border-radius:0 8px 8px 0; margin:14px 0;}
+  .flag h3{margin:0 0 8px; font-size:1rem; color:var(--warn);}
+  .flag.bad{background:#2a0d0d; border-color:var(--bad); border-left-color:var(--bad);}
+  .flag.bad h3{color:var(--bad);}
+  .flag.good{background:#0e1f18; border-color:var(--good); border-left-color:var(--good);}
+  .flag.good h3{color:var(--good);}
+  /* The draft blocks he copies out of. Monospace-free on purpose: he is reading
+     these as prose to judge the voice, not pasting them into a terminal. */
+  .draft{
+    background:#11141b; border:1px solid var(--border); border-left:3px solid var(--accent2);
+    border-radius:0 10px 10px 0; padding:16px 18px; margin:12px 0;
+  }
+  .draft p{margin:0 0 14px;}
+  .draft p:last-child{margin-bottom:0;}
+  .draft .salut{color:var(--text-dim);}
+  .copybtn{
+    appearance:none; -webkit-appearance:none; cursor:pointer; font:inherit;
+    font-size:.8rem; font-weight:600; line-height:1; min-height:38px;
+    padding:10px 14px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); margin:0 0 12px;
+  }
+  .copybtn:hover{border-color:var(--accent); color:var(--accent);}
+  .copybtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .score{display:inline-block; font-size:.72rem; font-weight:700; border-radius:5px;
+    padding:3px 8px; margin-left:8px; background:var(--good); color:#0a1a12;
+    vertical-align:middle; letter-spacing:.03em;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{ .nav-bar{position:static;} details{border:0;} details > summary::before{display:none;} }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-09-03-15:21:29 MT</div><!-- DEPLOY_STAMP_END -->
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">PassiveLogic &middot; Head of People Operations</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-company">The company</a>
+      <a href="#sec-letter">Cover letter</a>
+      <a href="#sec-resume">Resume brief</a>
+      <a href="#sec-extra">Extra mile</a>
+      <a href="#sec-gaps">Gaps and risks</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="mast">
+  <h1>PassiveLogic: the application pack</h1>
+  <div class="meta">Head of People Operations, Salt Lake City. Drafted 2026-09-03 for lighthouse-actions-02. Three pieces, because the posting asks for exactly three. Nothing here has been submitted. You apply, and you send.</div>
+</header>
+
+<details class="tldr" id="tldr" open>
+  <summary><h2>TL;DR</h2></summary>
+  <div class="sec-body">
+    <p><strong>The posting asks for three things and this page holds all three:</strong> a cover letter, a resume, and what they call an extra mile item, a project you personally created or built of your own self-initiative. That third one is not optional. It sits inside a list headed &ldquo;When applying, include:&rdquo; and the raw page never uses the word optional. An earlier read called it optional. That read was wrong.</p>
+    <p><strong>The single best line in the whole posting for you</strong> is buried under helpful-to-have: <em>&ldquo;Familiarity with AI tools and modern workforce productivity systems.&rdquo;</em> Almost nobody applying for a Head of People role can answer that with a system they actually run. You can. That is why the extra mile piece is the AI system rather than anything from your HR career, and the reasoning is written out below rather than assumed.</p>
+    <p><strong>One correction to the tracker page you should know about.</strong> The job pipeline page says Holladay, Utah. PassiveLogic's own materials say Salt Lake City and never say Holladay. The posting's own geographic detail is that they are at the base of Big Cottonwood Canyon. Use that, not Holladay.</p>
+    <p><strong>One thing that will change your letter if you get it wrong.</strong> PassiveLogic has a new chief executive as of 8 July 2026: Thomas Kiessling, previously chief technology officer of Siemens Smart Infrastructure. Troy Harvey, the co-founder, was in that seat as recently as the September 2025 funding round. Naming the wrong one is the kind of error a people leader does not get to make. The letter below names neither, on purpose.</p>
+    <p><strong>One real blocker before you send anything.</strong> The resume PDF sitting on your machine is stale. It predates two corrections you already approved. Details in the resume section, and it is a five minute fix, not a rewrite.</p>
+  </div>
+</details>
+
+<details class="sec" id="sec-company" open>
+  <summary><h2>What PassiveLogic actually is, verified today</h2></summary>
+  <div class="sec-body">
+    <p>Everything in this section was read off PassiveLogic's own pages or a press release on 2026-09-03. Anything that could not be confirmed is marked as such rather than filled in.</p>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Fact</th><th>Detail</th><th>State</th></tr>
+        <tr><td>What they build</td><td>A physics-based world model of a building called Quantum, running on their own edge hardware called Hive, with a software family called Autonomy Suite on top. In plain language: they generate a live digital model of a building's mechanical systems and then run the building off that model, instead of the hand-written control logic the industry still uses.</td><td>Verified, passivelogic.com</td></tr>
+        <tr><td>Mission, their words</td><td>&ldquo;Autonomy for the Physical Economy.&rdquo; And from this job posting itself: &ldquo;We've reinvented the fundamental principles of automation to democratize technology, optimize buildings, and reduce the world's carbon footprint.&rdquo;</td><td>Verified</td></tr>
+        <tr><td>Why it matters to them</td><td>Their own framing: buildings are the largest operating system on Earth, most building management systems run on decades-old technology, and commercial and industrial buildings consume close to forty percent of global energy while very few operate as intelligent assets.</td><td>Verified as their claim</td></tr>
+        <tr><td>Size</td><td>Around 130 people. Founded 2016.</td><td>Verified, their careers page</td></tr>
+        <tr><td>Funding</td><td>$74M Series C in September 2025, total funding above $125M. Investors include NVIDIA's venture arm, Johnson Controls, Prologis Ventures, Brookfield and noa.</td><td>Verified, press release</td></tr>
+        <tr><td>Chief executive</td><td>Thomas Kiessling, appointed 8 July 2026, previously chief technology officer of Siemens Smart Infrastructure. Co-founder Troy Harvey held the seat as of September 2025.</td><td>Verified, their newsroom</td></tr>
+        <tr><td>Location</td><td>Salt Lake City. The posting's own detail is that they sit at the base of Big Cottonwood Canyon.</td><td>Verified. <strong>Holladay is NOT confirmed anywhere</strong></td></tr>
+        <tr><td>On site</td><td>Strongly implied, never stated as policy. Every role carries a city and no remote tag, and they cater lunch in the office Monday to Friday.</td><td>Implied, not stated. Do not claim they require it</td></tr>
+        <tr><td>Posting freshness</td><td>Published 8 June 2026, last modified 2 September 2026. It is live and someone touched it yesterday.</td><td>Verified</td></tr>
+      </table>
+    </div>
+
+    <h3>The three things in the posting that should shape everything you write</h3>
+    <ul>
+      <li><strong>&ldquo;Support PassiveLogic researchers in their recruiting efforts.&rdquo;</strong> That is the entire talent acquisition section. Hiring belongs to the researchers there, and this seat exists to make them better at it, not to take it off them. That is unusual enough to be worth naming back to them, and it happens to be a real belief of yours rather than a flattery line.</li>
+      <li><strong>&ldquo;Familiarity with AI tools and modern workforce productivity systems.&rdquo;</strong> Under helpful-to-have. This is the one requirement on the page where your answer is genuinely rare.</li>
+      <li><strong>The whole responsibilities list is organizational design and leadership coaching</strong>, not benefits administration and compliance. Long-term people strategy, designing structures that support growth, performance systems built around coaching, career frameworks, and advising executives on organizational effectiveness. That is the half of your record that is strongest, and it is the half your resume currently buries under a role title.</li>
+    </ul>
+
+    <div class="flag">
+      <h3>A new chief executive four weeks in changes what this job is</h3>
+      <p style="margin:0;">A company of around 130 that just raised a Series C and then brought in an operator from Siemens is a company preparing to scale, and the first Head of People hired into that moment inherits the job of making the scaling survivable. Worth having in your head for the conversation. Keep it out of the letter, because guessing at a new chief executive's agenda in writing is a risk with no upside.</p>
+    </div>
+  </div>
+</details>
+
+<details class="sec" id="sec-letter" open>
+  <summary><h2>1. The cover letter, draft<span class="score">VOICE 93</span></h2></summary>
+  <div class="sec-body">
+    <p>Written to their problem rather than to your history, per the standing rule that a page built to win someone over is about them. Every fact in it is sourced from your canonical profile. No em-dashes. No count that does not earn its place.</p>
+    <button type="button" class="copybtn" data-copy="#letter">Copy the letter</button>
+    <div class="draft" id="letter">
+      <p class="salut">Dear PassiveLogic team,</p>
+      <p>Your posting says something companies your size usually do not say out loud. You want people practices designed to scale alongside the company, built on data and experimentation, before anything breaks. That is the version of this job worth doing, and it is the version I have actually done.</p>
+      <p>Ten years of my career sat in global HR leadership for a Fortune 100 company. GE Healthcare first, then HR business partner for a global engineering organization out of Atlanta, and most recently four years based in Dubai. The Atlanta years are the closest thing on my record to what you are hiring for. I supported close to 2,000 people spread across almost every country the business operated in, I co-led the restructuring of its services side into a single operating model, and I built the multi-year workforce plan that had to hold it up. That was organizational design against a hard constraint, not a slide.</p>
+      <p>One line in your posting told me more about how you work than the rest of the page. Support PassiveLogic researchers in their recruiting efforts. Hiring belongs to the researchers, and the people function exists to make them better at it rather than to take it away from them. I agree with that, and I have seen the alternative fail. I was part of a global Kaizen on a hiring process that brought average time to fill from around 60 days to under 30 on the part we completed, and it worked because the hiring managers owned the fix.</p>
+      <p>There is a line under helpful to have that I want to answer directly, because for me it is not a stretch. Familiarity with AI tools and modern workforce productivity systems. Inside GE I designed an AI-enabled HR dashboard that took a six to eight hour manual reporting process down to about ten minutes. Since leaving I went further, and I now design and run a multi-agent AI system that does the day to day work of my consulting business. I am not an engineer and I would not pretend to be one in a building full of them. What I bring is the judgment layer: where automation earns its keep, where it creates risk nobody is watching for, and where a person still has to decide. A company shipping autonomy into the physical world is going to need that same judgment on the people side.</p>
+      <p>The last part is the piece my resume hides. I am not an office HR person. At a unionized manufacturing site in Madison I walked the floor several times a day, because I did not believe I could support people I never saw. In Dubai I covered a repair shop and was at power plants regularly, and I still keep my PPE in my car. You write software that runs mechanical systems inside real buildings. I have spent a lot of my career standing in those rooms with the people who maintain them, and safety was my first priority every time.</p>
+      <p>You describe buildings as the largest operating system on Earth, and almost none of them run like it. That is a problem worth ten years of someone's attention. I would like to build the people side of the company that solves it.</p>
+      <p>Boubacar Barry<br>Salt Lake City, Utah</p>
+    </div>
+    <div class="flag good">
+      <h3>Why it is shaped this way</h3>
+      <ul style="margin:0;">
+        <li><strong>It opens on them, not on you.</strong> The first paragraph is about their posting and their choice, and your name does not appear until the second.</li>
+        <li><strong>The ten years is written as one span.</strong> GE Healthcare, then Atlanta, then four years in Dubai, all inside the ten. Never ten plus four.</li>
+        <li><strong>Co-led, not led.</strong> One Engineering was co-led and the letter says co-led.</li>
+        <li><strong>Was part of the Kaizen.</strong> Not led it, not ran it.</li>
+        <li><strong>The on-site paragraph is in on purpose.</strong> It is the thing your resume systematically hides and it lands harder here than at most companies, because their product physically runs the rooms you have been standing in.</li>
+        <li><strong>Two numbers survive, close to 2,000 and 60 to 30.</strong> Both carry your hedges, both do real work. Nothing else is counted.</li>
+        <li><strong>No chief executive is named</strong>, no product name is used as a prop, and no energy-savings percentage is quoted. Their homepage stat tiles do not resolve to real figures on the page, so anything you saw quoted elsewhere is old marketing.</li>
+      </ul>
+    </div>
+  </div>
+</details>
+
+<details class="sec" id="sec-resume" open>
+  <summary><h2>2. Resume, a tailoring brief rather than a rewrite</h2></summary>
+  <div class="sec-body">
+    <p>You already have a resume and it is good. This is what to move for this specific audience: a roughly 130-person engineering-led company hiring its first real Head of People, not a Fortune 100 talent director. Source of record is <code>docs/personal/2026-08-16-boubacar-resume-v5-source.md</code>, and the current DOCX carries both corrections you approved in August.</p>
+
+    <div class="flag bad">
+      <h3>Fix this before you attach anything</h3>
+      <ol style="margin:0;">
+        <li><strong>The PDF on your machine is stale.</strong> The build script only writes a DOCX, so every <code>Boubacar_Resume_2026_US_v5.pdf</code> on disk predates the Kaizen wording correction and the restored 60-to-30 number. Open the current DOCX in Word and export a fresh PDF. Five minutes, and it is the only manual step.</li>
+        <li><strong>One line in the resume still overstates the MENA AI work.</strong> The GE Vernova block reads &ldquo;Designed and facilitated HR Development Days across MENA focused on AI enablement.&rdquo; By your own correction that work was personal and shared informally, not a program. For this application in particular, where they will read that line closely, change it to the development-days line without the AI-enablement framing, and let the global HR Skills Initiative carry the formal credential.</li>
+        <li><strong>The <code>OneDrive\Desktop\JobHunt\</code> copies are stale in both formats.</strong> If that is where you grab files from, copy the refreshed pair across first.</li>
+      </ol>
+    </div>
+
+    <h3>Reorder: lead with the Atlanta years, not the Dubai years</h3>
+    <p>Your resume runs reverse chronological and Dubai sits on top, which is correct and should stay. What changes is the <strong>summary</strong>. Right now it opens on GE splitting into three public companies, which is genuinely impressive and reads, to a 130-person startup, like a large-company person. For this one, the summary should open on organizational design against a constraint and on the system you run, then let GE be the proof underneath rather than the headline.</p>
+
+    <h3>Emphasize, in this order</h3>
+    <ul>
+      <li><strong>The Gas Power engineering block, 2017 to 2021.</strong> This is the most relevant block on the whole document for this role and it currently sits second. Co-led One Engineering, close to 2,000 engineers, the multi-year workforce plan, the performance visibility model, and the succession and promotion work. Every one of those maps to a named responsibility in their posting. Give it the most lines.</li>
+      <li><strong>The Applied AI section.</strong> Keep it, and do not shrink it. It answers a stated requirement on their page directly, and it is the reason your resume will not look like the other forty.</li>
+      <li><strong>Madison.</strong> Currently buried in the leadership-program block. For this audience it is worth a line of its own: a 400-person unionized manufacturing site, covering the site HR lead role on an interim basis, handling the investigations and the issues between the union and leadership. It is the proof that you operate hands-on in a small population and not only at corporate altitude, which is exactly the doubt a 130-person company will have about a GE resume.</li>
+      <li><strong>The AI-enabled HR dashboard.</strong> Already in the Dubai block. Keep it high in that block rather than mid-list. It is your one piece of evidence that you delivered automation inside a large organization rather than only for yourself.</li>
+    </ul>
+
+    <h3>Trim, or move down</h3>
+    <ul>
+      <li><strong>The 14-country framing at summary altitude.</strong> True of the Dubai role and it belongs in that block, but at the top of the page it reads as regional big-company language to a startup. The Atlanta scope is both larger and truer to what they need.</li>
+      <li><strong>Named GE programs.</strong> Courageous Conversations, GlobeSmart, HR Culture Ambassador. Inside GE these are recognized. To a research-led company of 130 they read as corporate program names with no content attached. Compress the three into one line or drop them for this version.</li>
+      <li><strong>The core capabilities block runs twelve items.</strong> For this application, cut it to the six that match their posting: organizational design and operating model, workforce strategy and planning, performance and promotion-readiness systems, talent acquisition process design, HR analytics and decision systems, and applied AI in HR. Twelve capabilities read as a list. Six read as a person.</li>
+    </ul>
+
+    <h3>The headline line</h3>
+    <p>Current: <em>Global HR and Transformation Leader | Organizational Design | Applied AI in HR</em>. That is a strong line and it is nearly right. For this role only, the first slot should say what the job is called, so consider: <em>People Operations and Organizational Design | Scaling People Functions in Technical Companies | Applied AI in HR</em>. Your call, and it is the only line worth debating.</p>
+
+    <div class="flag">
+      <h3>Do not add anything to fill a gap</h3>
+      <p style="margin:0;">Their must-have list asks for experience leading and scaling a People Operations function in a growing organization. You have not run a standalone people function at a startup, and no rewording of a bullet will change that. It is addressed honestly in the gaps section below and it does not belong on the resume as a stretch.</p>
+    </div>
+  </div>
+</details>
+
+<details class="sec" id="sec-extra" open>
+  <summary><h2>3. The extra mile project, draft<span class="score">VOICE 94</span></h2></summary>
+  <div class="sec-body">
+    <p>Their exact instruction: <em>&ldquo;include a description of a project (of any type) you personally created, devised, built, managed, organized, or designed that was of your own self-initiative.&rdquo;</em> It is listed as an include, not an optional extra.</p>
+
+    <div class="flag good">
+      <h3>Which project, and why this one wins on the test they actually set</h3>
+      <p>Three candidates were weighed against the words in their prompt, and the deciding phrase is <strong>of your own self-initiative</strong>.</p>
+      <ul style="margin:0 0 8px;">
+        <li><strong>The One Engineering restructuring.</strong> The most impressive single thing on your record by scale. Ruled out: it was assigned work, and it was co-led. It fails self-initiative on its face and you would have to stretch to claim otherwise.</li>
+        <li><strong>The AI-enabled HR dashboard at GE.</strong> Genuinely self-initiated inside the job, and a strong second choice. Ruled out as the primary because it lived inside a role and inside GE's systems, so the initiative is arguable rather than obvious, and it is already on the resume, which makes it a repeat rather than an extra mile.</li>
+        <li><strong>The AI system that runs your business. Chosen.</strong> Nobody asked for it, nobody paid for it, it did not exist before you decided it should, and it is running in production today with real work depending on it. That is the cleanest possible answer to their question. It also happens to answer the one requirement on their page you are rare on.</li>
+      </ul>
+      <p style="margin:0;"><strong>The risk this piece carries, handled head on.</strong> This is a company full of engineers, and the fastest way to lose them is to imply you write the code. The draft says plainly that you are not an engineer and did not hand-write it, and puts the claim where it is true and stronger: the architecture, the governance, and the judgment about what a system is allowed to decide. Saying it outright is more credible in that building than hedging, and it protects you in a conversation where someone will ask.</p>
+    </div>
+
+    <button type="button" class="copybtn" data-copy="#extra">Copy the project writeup</button>
+    <div class="draft" id="extra">
+      <p><strong>A project of my own self-initiative: the system that runs my business</strong></p>
+      <p>I started using AI seriously in 2023 and leaned on it heavily in my HR work through 2024 and 2025. When I left GE and started consulting on my own, the problem got concrete fast. One person cannot do research, writing, outreach, delivery and administration at the standard any of them deserve, and hiring is not an option at zero revenue. The usual answer to that is work more hours. I wanted a different answer.</p>
+      <p>So I designed a multi-agent AI system to run the day to day of the business, and I have operated it every day since.</p>
+      <p>What it is, plainly. A self-hosted system on my own hardware, running on Ubuntu and Docker. A set of specialized agents handle research synthesis, content development and strategic review. An automation layer connects them, a routing layer sends each task to an appropriate model rather than to the most expensive one, and Postgres sits underneath so nothing that matters lives in a chat window. It is wired into the tools I already work in, so the output lands where the work actually happens.</p>
+      <p>Two decisions in it I would defend in any review.</p>
+      <p>First, I wrote the governance before I wrote the capability. Output anomaly scanning and harmful content flagging were in from the first version, not added later after something embarrassing happened. It is the same instinct as safety on a plant site. You do not install the guard after the injury.</p>
+      <p>Second, I designed in disagreement on purpose. A five-voice review panel pressure-tests any significant decision from five different angles, and I run two frontier models against each other on anything that matters. A system that only ever agrees with me would be an expensive way to be wrong faster.</p>
+      <p>What I want to be precise about, because you will ask and you should. I am not an engineer and I did not hand-write this system. What I did was the architecture and the judgment. What it should do, what it must never do, where a decision has to come back to a human, and which model at what cost. The building was the cheaper half. Deciding what to trust it with was not.</p>
+      <p>Why I am offering this one rather than something from my HR career. Nobody asked me to build it, nobody paid for it, and it did not exist until I decided it should. It also runs in production with real client work depending on it, which is a very different thing from having read about these tools. I know where they save an enormous amount of time and I know exactly where they produce confident nonsense, and the second half is the part a people function needs from whoever is holding this seat.</p>
+    </div>
+
+    <div class="flag">
+      <h3>If you want the safer version</h3>
+      <p style="margin:0;">Swap in the AI-enabled HR dashboard from GE. It is smaller, it is inside an employer's walls so it reads as more conventional, and it comes with a hard outcome attached: a six to eight hour manual reporting process down to about ten minutes. It answers their prompt less cleanly on self-initiative and it repeats your resume, so it is the second choice, not the first. Say the word and it gets drafted.</p>
+    </div>
+  </div>
+</details>
+
+<details class="sec" id="sec-gaps">
+  <summary><h2>Gaps and risks, said plainly</h2></summary>
+  <div class="sec-body">
+    <ul>
+      <li><strong>You have not run a standalone People Operations function at a startup.</strong> This is their first must-have and it is the real gap. What you have instead is designing and rebuilding people structures inside a large organization, plus repeated interim stretches as the actual people leader when someone left, in Atlanta and more than once in Dubai. Interim in title, full in substance. Say it that way if it comes up, and do not stretch it into something permanent.</li>
+      <li><strong>No venture-backed startup on your record.</strong> Unchanged from yesterday's read and there is no way around it. The nearest true thing is that you are currently running your own business on systems you designed, which is small-company operating rather than large-company administering.</li>
+      <li><strong>On site, five days, at the base of a canyon.</strong> Implied rather than stated by them, but plan for it. Their catered-lunch-Monday-to-Friday line is the tell.</li>
+      <li><strong>No published salary range.</strong> Nothing to check against your floor before a conversation, so the number question will come from them first. Your working floor is unchanged.</li>
+      <li><strong>Their must-have list also asks for people analytics and workforce planning frameworks.</strong> This one you can answer well: the multi-year workforce plan for the redesigned Gas Power engineering organization, built during tight-budget years, is exactly that. Make sure it survives the resume trim.</li>
+    </ul>
+    <div class="flag">
+      <h3>The human contact, which the standing rule requires before this goes out</h3>
+      <p style="margin:0;">Julie Tsutsei, People and Business Operations at PassiveLogic, third degree, no mutual named. She is the people function there today, so this role would either lead or sit directly beside her, which makes the note delicate and worth writing carefully rather than fast. She has not been contacted. Under your own rule this application is not complete without her, and no note has been drafted yet.</p>
+    </div>
+  </div>
+</details>
+
+<footer class="foot">
+  Drafted 2026-09-03 for lighthouse-actions-02. <strong>Both drafts were run through the voice battery, and it changed them.</strong> The first pass scored 86 and 89, under the bar. Five things came out: &ldquo;close to 2,000 engineers&rdquo; narrowed a population the source calls employees, &ldquo;that organization&rdquo; overstated a restructuring that covered the services side, a banned filler adverb, four contrast constructions in one letter where one sells and four read as a pattern, and a four-fragment staccato run in the project piece. Fixed, re-scored 93 and 94. Company facts read live on 2026-09-03 from passivelogic.com, their careers site, their newsroom and the Series C press release; anything not confirmable there is marked unverified on this page rather than filled in. The full job posting text, including the three-part application instruction, was read from the posting itself on the same date. Every claim about Boubacar's record traces to the canonical profile file and the resume source of record, and the guardrails on that record are applied here: ten years as a single span, co-led never inflated to led, part of the Kaizen never led it, no HR or operations leadership claim, no executive title, no coding claim. Nothing on this page has been submitted and Julie Tsutsei has not been contacted.
+</footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+  // Copy buttons pull the rendered TEXT of the draft, so what lands on the
+  // clipboard is what he read, with paragraph breaks intact and no markup.
+  Array.prototype.slice.call(document.querySelectorAll('.copybtn')).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var src = document.querySelector(btn.getAttribute('data-copy'));
+      if (!src) { return; }
+      var text = Array.prototype.slice.call(src.querySelectorAll('p'))
+        .map(function (p) { return p.innerText.trim(); })
+        .filter(Boolean).join('\n\n');
+      var done = function (ok) {
+        var was = btn.textContent;
+        btn.textContent = ok ? 'Copied' : 'Copy failed, select it by hand';
+        setTimeout(function () { btn.textContent = was; }, 2200);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done(true); },
+                                                 function () { done(false); });
+      } else { done(false); }
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
+
