@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Pipeline</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .qr-row{display:flex; justify-content:space-between; gap:10px; padding:6px 0;
+    border-bottom:1px dashed var(--border); font-size:.95rem;}
+  .qr-row:last-child{border-bottom:none;}
+  .qr-label{color:var(--text-dim);}
+  .qr-val{font-weight:600; text-align:right;}
+  .big{font-size:1.25rem; font-weight:700; color:var(--accent2);}
+  .copybox{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px; font-family:ui-monospace,Consolas,monospace; font-size:.88rem;
+    position:relative; margin:8px 0; word-break:break-word;}
+  .copybtn{position:absolute; top:6px; right:8px; background:var(--accent-visited);
+    color:#fff; border:none; border-radius:6px; padding:3px 9px; font-size:.75rem; cursor:pointer;}
+  .copybtn:active{background:var(--accent);}
+  .voice{font-style:italic; background:var(--bg2); border-left:3px solid var(--accent2);
+    padding:12px 14px; border-radius:0 8px 8px 0; font-size:1rem;}
+  .flag{background:#241a12; border:1px solid var(--warn); border-left:4px solid var(--warn);
+    padding:12px 14px; border-radius:0 8px 8px 0; margin:12px 0;}
+  .flag h3{margin:0 0 8px; font-size:1rem; color:var(--warn);}
+  .tag{display:inline-block; font-size:.7rem; font-weight:700; border-radius:5px;
+    padding:2px 7px; margin-left:6px; vertical-align:middle;}
+  .tag.conf-high{background:var(--good); color:#0a1a12;}
+  .tag.conf-med{background:var(--warn); color:#1a1206;}
+  .tag.conf-low{background:var(--bad); color:#2a0d0d;}
+  .unverified{color:var(--warn); font-size:.8rem; font-style:italic;}
+  .rank{display:flex; gap:12px; align-items:flex-start; padding:12px 0;
+    border-bottom:1px dashed var(--border);}
+  .rank:last-child{border-bottom:none;}
+  .rank .num{font-size:1.5rem; font-weight:800; color:var(--accent); flex:none; width:32px;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-02-21:27:42 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Job pipeline &middot; 3 live, 5 new candidates</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-live">Live, ranked</a>
+      <a href="#sec-new">New candidates</a>
+      <a href="#sec-contacts">Contacts</a>
+      <a href="#sec-rejected">Looked at, not carried</a>
+      <a href="#sec-guard">Guardrails</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="mast">
+  <h1>Job pipeline</h1>
+  <div class="meta">The one page that holds every role in play. Three live and ranked, five new candidates found 2026-09-02 and not yet ranked. Every new candidate carries a named human contact or an honest note that none was found. Nothing here has been applied to or messaged. Built 2026-09-02 for lighthouse-actions-02.</div>
+</header>
+
+<details class="tldr" id="tldr" open>
+  <summary><h2>TL;DR</h2></summary>
+  <div class="sec-body">
+    <p><strong>Three roles are live and already ranked</strong>: Edwards at the offer window, WGU screening Thursday, Energy4Life a recruiter call Friday. That ranking has not changed today and it is carried forward below with each prep page linked.</p>
+    <p><strong>Five new candidates were found today.</strong> They are deliberately <em>not</em> ranked against the live three, because stage decides that ranking and none of these five has a stage yet. They sit in their own section, ordered by how well they fit rather than by how far along they are.</p>
+    <p><strong>The two worth your attention first are Cloudflare and Salt Lake Community College</strong>, and for opposite reasons. Cloudflare is the best content fit of anything found: leading a global HR business partner team for engineering, product and security, with the job description explicitly asking for someone who understands how AI tools reshape technical work. That is your two halves in one seat. Salt Lake Community College is the best <em>access</em>: the person who covered that exact job on an interim basis is a second-degree connection and is now the college's talent acquisition manager, which is about as short a path to a hiring conversation as this ever gets.</p>
+    <p><strong>Two honest caveats before you spend time.</strong> Cloudflare's own application page says Austin, Texas, hybrid, with relocation assistance, while LinkedIn shows the same posting as remote. That contradiction has to be settled before you invest in it. And the community college role pays about $129,000, which is under your $140,000 working floor, so it is a conversation about scope and level rather than a straight apply.</p>
+    <p><strong>Nothing has been submitted and no one has been messaged.</strong> Every one of these is waiting on your go-ahead.</p>
+  </div>
+</details>
+
+<details class="sec" id="sec-live" open>
+  <summary><h2>Live and ranked, unchanged today</h2></summary>
+  <div class="sec-body">
+    <p>This ranking was set on the Energy4Life prep page and is reproduced here so this page can be the single place you look. If it changes, change it here and on that page in the same pass.</p>
+    <div class="rank">
+      <div class="num">1</div>
+      <div>
+        <strong>Edwards Lifesciences &mdash; Director, HR Business Leader. Draper, Utah.</strong>
+        Round two with Enrique Carvajal is done and went well. Offer expected Friday 9/4 or Monday 9/7 on your own read, around $150,000 signalled verbally by both the recruiter and the hiring manager. Furthest along by a wide margin, and the only one with a live offer window.
+        <br><br>
+        <a href="/review/20260902-edwards-round2-prep/">Round two prep page</a>
+      </div>
+    </div>
+    <div class="rank">
+      <div class="num">2</div>
+      <div>
+        <strong>Western Governors University &mdash; HR Program Manager, Performance. JR-025451. Salt Lake City.</strong>
+        Phone screen Thursday 9/3 at 2:15pm Mountain with Jennie Barron. Posted band $100,000 to $150,000, realistic landing $130,000 to $140,000. Senior individual contributor. Applications close September 12.
+        <br><br>
+        <a href="/review/20260903-wgu-interview-prep/">Interview prep page</a>
+      </div>
+    </div>
+    <div class="rank">
+      <div class="num">3</div>
+      <div>
+        <strong>Energy4Life &mdash; Technical Product Lead. Salt Lake City eventually, remote for now.</strong>
+        First conversation with an external recruiter, Rachel Kent Manning, Friday 9/4 at 10:30am Mountain. She calls you. Nothing confirmed beyond her email, and the category carries a reputational question the other two do not.
+        <br><br>
+        <a href="/review/20260902-energy4life-prep/">Recruiter call prep page</a>
+      </div>
+    </div>
+  </div>
+</details>
+
+<details class="sec" id="sec-new" open>
+  <summary><h2>New candidates, found 2026-09-02, not yet ranked</h2></summary>
+  <div class="sec-body">
+    <p>Ordered by fit, not by stage. None of these has been applied to. Each one names a real human found on LinkedIn, with the connection distance stated, because an application without a person attached is half an application.</p>
+
+    <div class="rank">
+      <div class="num">A</div>
+      <div>
+        <strong>Cloudflare &mdash; Senior Director, R&amp;D HR Business Partnering.</strong>
+        <span class="tag conf-med">LOCATION CONFLICT</span>
+        <br><br>
+        <em>The role:</em> leads a global team of HR business partners supporting senior executives across engineering, product, security and research. Sits between R&amp;D leadership and the HR centres of excellence. The listed responsibilities include designing R&amp;D structures for AI-native engineering work, evolving technical career frameworks, succession and retention for specialised technical talent, and leading change across global R&amp;D teams. It asks for fifteen-plus years of progressive HR, five-plus years leading HR business partner teams supporting technical organisations, and an understanding of how AI tools reshape technical workflows.
+        <br><br>
+        <em>Why it fits you and almost nobody else:</em> you were the HR business partner for a global engineering organisation of close to two thousand people, out of Atlanta, covering almost every country in the world. You co-led the restructure of that organisation into a single engineering model and built the multi-year workforce plan behind it. And you run a production AI system yourself, daily, which is the exact thing the job description asks the candidate to understand. Most people applying will have one half of that.
+        <br><br>
+        <em>The honest gap:</em> the five-plus years leading an HR business partner <em>team</em> is the one requirement you cannot claim cleanly. Your people-leadership was real but interim, covering for departures in Atlanta and in Dubai, repeatedly, and never a permanent org-chart line. Say it that way rather than stretching it, and lean on the fact that you have been the senior partner to VP-and-above technical leaders for eight years.
+        <br><br>
+        <em>The caveat that has to be settled first:</em> the Cloudflare application page lists this as <strong>Austin, Texas, hybrid, with relocation assistance</strong>. LinkedIn lists the same posting as remote, United States. Those cannot both be true. Ask before you invest.
+        <br><br>
+        <em>Also worth knowing:</em> you already wrote a Cloudflare cover letter in August. That letter and its structure are in the cover-letter archive and are reusable.
+        <br><br>
+        <span class="qr-label">Apply</span> <a href="https://job-boards.greenhouse.io/cloudflare/jobs/8161890">job-boards.greenhouse.io/cloudflare/jobs/8161890</a> &nbsp;&middot;&nbsp;
+        <a href="https://www.linkedin.com/jobs/view/4458011301/">LinkedIn posting</a>
+        <br>
+        <span class="qr-label">Human</span> <strong>Jennifer Carranza</strong>, People Team Business Partner Leader (R&amp;D) at Cloudflare. Third degree, no mutual named. This is the person the role most likely reports into or sits beside. <a href="https://www.linkedin.com/in/jennifer-carranza-884a333">Profile</a>
+      </div>
+    </div>
+
+    <div class="rank">
+      <div class="num">B</div>
+      <div>
+        <strong>Salt Lake Community College &mdash; Senior Director, People and Workplace Culture. Taylorsville, Utah, on site.</strong>
+        <span class="tag conf-med">COMP UNDER FLOOR</span>
+        <br><br>
+        <em>The role:</em> reports to the Associate Vice President of People and Workplace Culture. Strategic, operational and administrative leadership for the division. Director track, twenty minutes from home, and the same higher-education sector you are already interviewing in at WGU.
+        <br><br>
+        <em>Why it is on the list:</em> the access is unusually good, and the sector reads naturally on you. You come from a family of educators, your wife teaches, your sister is a principal. That is real ground, not a talking point.
+        <br><br>
+        <em>The honest problem:</em> reported at about <strong>$129,000</strong>, which is below your $140,000 working floor. Worth a conversation about scope and level before an application, not instead of one.
+        <br><br>
+        <em>Posting age:</em> listed on LinkedIn about a month ago. Confirm it is still live on the college's own job site before applying. The public boards still show it.
+        <br><br>
+        <span class="qr-label">Apply</span> <a href="https://jobs.slcc.edu/">jobs.slcc.edu</a> &nbsp;&middot;&nbsp;
+        <a href="https://www.linkedin.com/jobs/view/4446902733/">LinkedIn posting</a>
+        <br>
+        <span class="qr-label">Human</span> <strong>Leilani Clegg, MA</strong>, Talent Acquisition Manager at Salt Lake Community College, and previously the <em>interim</em> Senior Director of People and Workplace Culture. Second degree, mutual connections Kokailey Djanie and Jourdan Biesinger. She held this exact seat and now runs talent acquisition, which makes her both the best-informed and the most reachable person on this list. <a href="https://www.linkedin.com/in/lhclegg/">Profile</a>
+        <div class="flag">
+          <h3>Name collision, checked</h3>
+          <p style="margin:0;">There are <strong>two</strong> people named Leilani Clegg at Salt Lake Community College, both listed in Herriman, Utah. The other one is Director of University Partnership and Transfer Articulation and is a different person. The right one carries <strong>&ldquo;, MA&rdquo;</strong> in her name and the profile URL <code>/in/lhclegg/</code>. Do not message the other.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="rank">
+      <div class="num">C</div>
+      <div>
+        <strong>PassiveLogic &mdash; Head of People Operations. Holladay, Utah, on site.</strong>
+        <span class="tag conf-high">CONFIRMED OPEN</span>
+        <br><br>
+        <em>The role:</em> builds and leads the people operations function as the company scales. Long-term people strategy, organisational design, performance management built around growth and coaching, career and leadership development frameworks, advising executives on organisational effectiveness, and using data to drive people decisions. Asks for eight-plus years in people operations or HR leadership, experience scaling in a growing organisation, and organisational design depth. Prefers a startup or high-growth technology background and experience supporting technical teams.
+        <br><br>
+        <em>Why it fits:</em> PassiveLogic builds autonomy software for buildings, roughly fifty to two hundred people, headquartered in the Salt Lake area, with everyone on site. It is a deep-technology company hiring its first real head of people, which is organisational design work from a blank page rather than maintenance of someone else's structure. The organisational design half of your record is the strongest single match here: the One Engineering restructure, the Gas Power engineering redesign with the multi-year workforce plan, and the global HR skills initiative.
+        <br><br>
+        <em>The honest gap:</em> no venture-backed startup on your record, and this is an on-site, five-days-a-week culture. Nothing wrong with either, they just need naming rather than hiding.
+        <br><br>
+        <em>Verified:</em> the company's own application page confirms the posting is open for applications as of today.
+        <br><br>
+        <span class="qr-label">Apply</span> <a href="https://passivelogic.teamtailor.com/jobs/7874893-head-of-people-operations">passivelogic.teamtailor.com/jobs/7874893</a> &nbsp;&middot;&nbsp;
+        <a href="https://www.linkedin.com/jobs/view/4461369922/">LinkedIn posting</a>
+        <br>
+        <span class="qr-label">Human</span> <strong>Julie Tsutsei</strong>, People and Business Operations at PassiveLogic. Third degree, no mutual named. She is the people function today, so this role would either lead or sit directly beside her. <a href="https://www.linkedin.com/in/yuliia-tsutsei">Profile</a>
+      </div>
+    </div>
+
+    <div class="rank">
+      <div class="num">D</div>
+      <div>
+        <strong>GE HealthCare &mdash; Executive, HR Business Partnership, USCAN Service Delivery.</strong>
+        <span class="tag conf-low">STATUS UNRESOLVED</span>
+        <br><br>
+        <em>The role:</em> senior HR business partnership for the United States and Canada service delivery organisation. LinkedIn lists it as remote and it was posted today, promoted by the hirer. Requisition R4045703.
+        <br><br>
+        <em>Why it would be the strongest fit on this page if it is real:</em> you spent two years inside GE HealthCare on the HR leadership programme, and four years as the HR business partner for Power Services Engineering. A services organisation inside GE HealthCare is the intersection of both. You know the systems, the bands, the language and the operating rhythm without any ramp. And your warm path here is the best on the page.
+        <br><br>
+        <em>Why it is flagged, and this matters:</em> the requisition on GE HealthCare's own careers site returned <strong>&ldquo;the job you are trying to apply for has been filled&rdquo;</strong> when checked today, while LinkedIn showed the same posting as an hour old. The page would not render for a visual confirmation either. One of those two sources is wrong and this write-up does not know which. <strong>Treat the status as genuinely unresolved and re-check in a browser before spending any time on it.</strong> If it is live, it moves to the top of this section.
+        <br><br>
+        <em>One wording note:</em> &ldquo;Executive&rdquo; here is GE's internal band name for the level. It does not change your own rule about never describing yourself as an executive.
+        <br><br>
+        <span class="qr-label">Apply</span> <a href="https://careers.gehealthcare.com/global/en/job/GEVGHLGLOBALR4045703EXTERNALENGLOBAL/Executive-HR-Business-Partnership-USCAN-Service-Delivery">careers.gehealthcare.com, req R4045703</a> &nbsp;&middot;&nbsp;
+        <a href="https://www.linkedin.com/jobs/view/4462721565/">LinkedIn posting</a>
+        <br>
+        <span class="qr-label">Human</span> <strong>Katie Jacobson</strong>, HR Partner supporting USCAN West Central Sales and Service at GE HealthCare. <strong>Second degree with forty-one mutual connections</strong>, including Mary Rindo and Kimberly Wallace. She sits inside the exact organisation this role serves. This is the warmest path on this page by a distance and it is worth using even if this particular requisition turns out to be closed. <a href="https://www.linkedin.com/in/katie-jacobson-9619992b">Profile</a>
+        <br>
+        <span class="qr-label">Backup</span> <strong>Sarah Friske</strong>, HR Business Partner, USCAN South Region and Lean, GE HealthCare. Same organisation, second contact if the first goes quiet.
+      </div>
+    </div>
+
+    <div class="rank">
+      <div class="num">E</div>
+      <div>
+        <strong>PracticeTek &mdash; Senior Director, HR Business Partner. Remote. $195,000 to $200,000.</strong>
+        <br><br>
+        <em>The role:</em> senior director level HR business partnering at a healthcare software company. Remote, full time, and the posted band is the highest of anything on this page by a wide margin, well above your default ask.
+        <br><br>
+        <em>Why it fits:</em> it is a director-track business partner seat, which is the shape you said you prefer, and it is genuinely remote, which fits the Utah home base. Healthcare software sits close enough to the medical device world you are already interviewing in.
+        <br><br>
+        <em>The honest problem:</em> over a hundred people have already clicked apply and the posting says the company is actively reviewing applicants. Volume is real here, which is exactly why the human contact matters more on this one than on any other row.
+        <br><br>
+        <span class="qr-label">Apply</span> <a href="https://www.linkedin.com/jobs/view/4453466271/">LinkedIn posting, easy apply</a>
+        <br>
+        <span class="qr-label">Human</span> <strong>Melissa Campana, MS HRM</strong>, talent acquisition leader listed on PracticeTek's LinkedIn people page. Second degree, mutual connections Tara Boschetti and Joseph Guanci. <a href="https://www.linkedin.com/in/melissa-campana-ms-hrm-anfi-383778104">Profile</a>
+        <br>
+        <span class="qr-label">Backup</span> <strong>Vanessa A. Johnson, PHR</strong>, people operations and HR, same company page, second degree through Jorge Zavala. <a href="https://www.linkedin.com/in/vanessa-a-johnson">Profile</a>
+        <br>
+        <span class="unverified">Both contacts were read off PracticeTek's LinkedIn people list. Their current employer was not independently confirmed against their own profiles, so confirm before you write to either.</span>
+      </div>
+    </div>
+  </div>
+</details>
+
+<details class="sec" id="sec-contacts">
+  <summary><h2>The contacts in one table</h2></summary>
+  <div class="sec-body">
+    <div class="table-scroll">
+      <table>
+        <tr><th>Company</th><th>Person</th><th>Their seat</th><th>Distance</th><th>Warmth</th></tr>
+        <tr><td>GE HealthCare</td><td>Katie Jacobson</td><td>HR Partner, USCAN West Central Sales and Service</td><td>2nd, 41 mutuals</td><td>Warmest on the page</td></tr>
+        <tr><td>Salt Lake Community College</td><td>Leilani Clegg, MA</td><td>Talent Acquisition Manager, previously interim in this exact role</td><td>2nd, 2 named mutuals</td><td>Best informed</td></tr>
+        <tr><td>PracticeTek</td><td>Melissa Campana, MS HRM</td><td>Talent acquisition leader</td><td>2nd, 2 named mutuals</td><td>Warm</td></tr>
+        <tr><td>Cloudflare</td><td>Jennifer Carranza</td><td>People Team Business Partner Leader, R&amp;D</td><td>3rd</td><td>Cold but exactly on target</td></tr>
+        <tr><td>PassiveLogic</td><td>Julie Tsutsei</td><td>People and Business Operations</td><td>3rd</td><td>Cold, only people contact there</td></tr>
+      </table>
+    </div>
+    <p>Every name above was read directly off LinkedIn today, with the connection distance and mutual connections taken from the profile card rather than inferred. Where a person's employer could not be confirmed against their own profile, the row above says so in the company's section. <strong>No name, title or mutual connection on this page was invented.</strong></p>
+    <p><strong>Nothing has been sent.</strong> Outreach to any of these five is drafted only on your say-so, and you send it, per the standing rule.</p>
+  </div>
+</details>
+
+<details class="sec" id="sec-rejected">
+  <summary><h2>Looked at and not carried, with the reason</h2></summary>
+  <div class="sec-body">
+    <p>Recorded so nobody re-finds these next week and presents them as new.</p>
+    <ul>
+      <li><strong>Intermountain Health, HR Business Partner Director, Lehi.</strong> Already applied, 2026-09-01. Not new.</li>
+      <li><strong>Versova, Director of People Operations, North Salt Lake.</strong> Already applied, roughly two weeks ago. Not new.</li>
+      <li><strong>BAE Systems, HR Business Partner Principal, Layton.</strong> Already applied about four months ago. The posting was refreshed three days ago, so it may be worth a follow-up rather than a fresh application.</li>
+      <li><strong>Adobe, Director HR Business Partner, Lehi.</strong> Requisition R156556 returns a hard 410 Gone. The posting is dead, whatever the aggregators still say.</li>
+      <li><strong>Ash Grove Cement, Senior HR Business Partner, Leamington, Utah.</strong> A genuinely good content fit for the plant, safety and walk-the-floor half of your record, and dropped only on geography. Leamington is roughly two hours from Salt Lake City and the role is on site.</li>
+      <li><strong>Mulberry Talent Partners, Senior HRBP, Boise.</strong> $95,000 to $135,000 and out of state. Under floor.</li>
+      <li><strong>Insurance Office of America, HR Business Partner.</strong> Individual contributor level, not director track.</li>
+      <li><strong>&ldquo;PeopleOps Jobs&rdquo;, Human Resources Director, remote.</strong> An aggregator listing with no identifiable employer. Not verifiable, so not carried.</li>
+      <li><strong>Salt Lake Community College, Supervisor of HR Employee Experience</strong> and <strong>University of Utah Health</strong> equivalents. Below level.</li>
+    </ul>
+  </div>
+</details>
+
+<details class="sec" id="sec-guard">
+  <summary><h2>Guardrails for anything written off this page</h2></summary>
+  <div class="sec-body">
+    <ul>
+      <li><strong>Never claim you ran HR or operations, and never call yourself an executive.</strong> You worked in HR, helped run things within HR, and were operations-adjacent only.</li>
+      <li><strong>Never &ldquo;15 years at a Fortune 100.&rdquo;</strong> The shape is ten years in global HR leadership for a Fortune 100 company, GE Healthcare then Gas Power out of Atlanta then four years in Dubai, with Dubai the last four of that same ten. Never ten plus four.</li>
+      <li><strong>People leadership is real but interim.</strong> You stepped in as the people leader for months at a time in Atlanta and repeatedly in Dubai. Say it that way. Neither &ldquo;no direct reports&rdquo; nor &ldquo;managed a team&rdquo; is accurate.</li>
+      <li><strong>Helped lead the Kaizen.</strong> Never led, never ran, never a bare co-led.</li>
+      <li><strong>Preserve the hedges.</strong> Close to two thousand employees. About four to five hundred. Almost every country, not every country.</li>
+      <li><strong>Lead with the how.</strong> On site, walks the floor, PPE in the car, safety first. Your resume hides this and it is what separates you on a shortlist.</li>
+      <li><strong>Public city is Salt Lake City.</strong> Never South Jordan.</li>
+      <li><strong>The AI work in MENA was personal and shared informally.</strong> Not a programme. The formal credential is the global HR skills initiative delivered as part of the enterprise HR transformation.</li>
+      <li><strong>No coding claim.</strong> The system exists, it runs the business, you designed and operate it. That is the true and stronger version.</li>
+    </ul>
+  </div>
+</details>
+
+  <footer class="foot">
+    Built 2026-09-02 for lighthouse-actions-02. Roles found and read live on 2026-09-02 through LinkedIn Jobs and, where the employer's own application system could be reached, on that system directly. Contacts read off LinkedIn company people pages and profile search on the same date, with connection distance and mutual connections taken from the profile card. The GE HealthCare requisition returned a conflicting status between LinkedIn and the company careers site and is labelled unresolved rather than reported either way. The Cloudflare location conflicts between the two sources and is labelled as such. PracticeTek contacts are listed on the company people page but their current employer was not confirmed against their own profiles. Nothing on this page has been applied to and no one on it has been contacted.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+</body>
+</html>
+
+
