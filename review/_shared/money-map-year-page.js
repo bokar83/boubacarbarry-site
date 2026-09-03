@@ -361,9 +361,34 @@
       if (isNaN(d.getTime())) return null;
       var closed = denverDateStr(d);
       var due = effectiveDue(item);
-      if (due && due >= todayStr()) return null;
+      // 2026-09-03. The guard used to read `due >= todayStr()`, with no
+      // reference to the day the row was actually CLOSED. That fires on the
+      // single most ordinary case on this board -- ticking a row whose
+      // by_date IS today -- so a row he finished at 9am sat in his MUST tier
+      // for the rest of the day. Measured live the morning this was fixed:
+      // the tracker pill said 5 done today while "Already done" showed 2,
+      // because 3 of the 5 carried by_date=2026-09-03 and this guard held
+      // them in place. That is the same complaint he raised on 2026-09-01
+      // ("i still see those items in there as action items"), and it also
+      // broke the Council ruling recorded above that the pill and the
+      // section must never be able to disagree.
+      //
+      // Anchoring on the CLOSURE day instead of on today makes the rule
+      // unconditional in the direction that matters: a row closed TODAY
+      // always leaves its tier, no exception. A row closed on an EARLIER day
+      // comes back only when it carries a today-or-later date, which is
+      // exactly and only the recurring case this guard was written for --
+      // `recurring:brandon-daily`, closed yesterday, due today, genuinely
+      // new work this morning.
+      if (closed < todayStr() && due && due >= todayStr()) return null;
       return closed;
     }
+    // Closed on TODAY's Denver calendar day. "Already done" holds these and
+    // nothing else, so the section empties at Denver midnight and refills
+    // with the day's own work -- his words, 2026-09-03: "We should only be
+    // tracking things that were done today... based off the calendar of the
+    // day, based on the Utah time."
+    function closedToday(item) { return closedEarlier(item) === todayStr(); }
 
     // ---- ACT MARKER (2026-08-31, money-map-actionable-items) --------------
     // `act-<key>` carries the owner + resource state + resource content for
@@ -505,7 +530,7 @@
             '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Already done</span>' +
               '<span class="mm-sec-meta" id="mmDoneMeta">&hellip;</span></summary>' +
             '<div class="mm-sec-body">' +
-              '<p class="mm-lede">Everything closed, today included -- this count always matches the tracker\'s "done today" pill. Kept here, never deleted, so a row closed by mistake can be un-ticked and come straight back to its tier.</p>' +
+              '<p class="mm-lede">Today only. It starts empty every morning and fills as you tick things off, so it tracks the day you are actually in &mdash; Utah time, on the calendar day, not a rolling window. Anything closed on an earlier day sits under its own date in the day-by-day strip above, with all four controls, so a row closed by mistake can still be un-ticked and come straight back.</p>' +
               '<div id="mmDoneList"></div></div>' +
           '</details>' +
 
@@ -746,8 +771,27 @@
       var wl = readWorklist();
       if (wl.error) return { items: [], error: wl.error };
       if (!wl.items) return { items: [], error: null };
+      // 2026-09-03: TWO groups, not one. This modal used to answer only
+      // "what was PLANNED to land on this day", which meant tapping a day
+      // whose strip cell read "12 done" showed you that day's plan and not
+      // the twelve things he actually finished. That gap is why prior-day
+      // closures had nowhere to go except a permanent pile in "Already
+      // done". The strip already COUNTS closures per Denver day (dayCounts);
+      // this makes those counts tappable, which is both the missing half of
+      // a feature already built and the home for every row that leaves
+      // "Already done" at midnight.
+      //
+      // A row that is both planned for and closed on the same day appears
+      // ONCE, under Closed -- the stronger fact, and the same rule the tier
+      // lists already follow when a closed row leaves its tier.
+      var closedRows = wl.items.filter(function (i) { return closedEarlier(i) === dateStr; });
+      var closedKeys = {};
+      closedRows.forEach(function (i) { closedKeys[String(i.key)] = 1; });
       return {
-        items: wl.items.filter(function (i) { return effectiveDue(i) === dateStr; }),
+        items: wl.items.filter(function (i) {
+          return effectiveDue(i) === dateStr && !closedKeys[String(i.key)];
+        }),
+        closed: closedRows,
         error: null
       };
     }
@@ -767,8 +811,9 @@
         host.innerHTML = '<p class="mm-lede">The stored ranked list could not be parsed: ' + esc(res.error) + '</p>';
         return;
       }
-      if (!res.items.length) {
-        host.innerHTML = '<p class="mm-lede">Nothing scheduled to land on this day.</p>';
+      var closedRows = res.closed || [];
+      if (!res.items.length && !closedRows.length) {
+        host.innerHTML = '<p class="mm-lede">Nothing scheduled to land on this day, and nothing was closed on it.</p>';
         return;
       }
       // Same row renderer the tier lists use -- Done, Reschedule, Archive and
@@ -776,7 +821,15 @@
       // delegated listeners already set up by wireItemControls(). Reschedule
       // here writes through the exact same persist(pushKey(k), ...) path a
       // reschedule from the Should tier would; there is no second write path.
-      host.innerHTML = res.items.map(itemHtml).join('');
+      var out = '';
+      if (closedRows.length) {
+        out += '<div class="mm-batch">Closed on this day</div>' + closedRows.map(itemHtml).join('');
+      }
+      if (res.items.length) {
+        out += '<div class="mm-batch">Planned for this day</div>' + res.items.map(itemHtml).join('');
+      }
+      host.innerHTML = out;
+      registerNoteItems(closedRows.concat(res.items));
     }
 
     function openDayView(dateStr) {
@@ -1563,7 +1616,7 @@
       '</div>';
     }
 
-    function renderList(hostId, metaId, rows, key, emptyMsg, closedOut, laterOut) {
+    function renderList(hostId, metaId, rows, key, emptyMsg, closedOut, laterOut, priorOut) {
       var host = el(hostId), meta = el(metaId);
       if (!host) return;
       if (rows === null) { host.innerHTML = '<div class="mm-empty">' + emptyMsg + '</div>'; if (meta) meta.textContent = 'unavailable'; return; }
@@ -1581,17 +1634,36 @@
       // most common case -- a row he finished today, sitting under "Already
       // done" -- and would only have gotten more visibly wrong once today's
       // closures started leaving tiers instead of staying dulled in place.
-      var closedN = closedOut || 0, laterN = laterOut || 0, moved = closedN + laterN;
+      // 2026-09-03: THREE reasons now, not two. A row closed on an EARLIER
+      // day no longer sits in "Already done" -- it leaves for its own date in
+      // the day-by-day strip -- so a tier emptied by last week's closures has
+      // to say THAT, and point at the strip. A caption that outlives its
+      // subject is this file's own named failure mode.
+      var closedN = closedOut || 0, laterN = laterOut || 0, priorN = priorOut || 0;
+      var moved = closedN + laterN + priorN;
       if (!rows.length) {
+        // "Already done" empties every night at Denver midnight by design, so
+        // it is the one section whose empty state is NORMAL and needs to say
+        // so out loud. He opens this page at 07:30, before he has ticked
+        // anything; a blank box with a tier's "genuinely empty" copy would
+        // read as the broken render this whole block exists to prevent.
+        if (key === 'closedearlier') {
+          host.innerHTML = '<div class="mm-empty">Nothing closed yet today. This list holds today only and starts empty ' +
+            'every morning &mdash; anything you finished on an earlier day is under its own date in the day-by-day strip above.</div>';
+          if (meta) meta.textContent = 'nothing closed yet today';
+          return;
+        }
         var parts = [];
-        if (closedN) parts.push(closedN + ' row' + (closedN === 1 ? ' is' : 's are') + ' done, under <a href="#sec-done">Already done</a>');
+        if (closedN) parts.push(closedN + ' row' + (closedN === 1 ? ' is' : 's are') + ' done today, under <a href="#sec-done">Already done</a>');
+        if (priorN) parts.push(priorN + ' row' + (priorN === 1 ? ' was' : 's were') + ' closed on an earlier day, under its own date in the strip above');
         if (laterN) parts.push(laterN + ' row' + (laterN === 1 ? ' was' : 's were') + ' moved to a later day, under <a href="#sec-later">On a later day</a>');
         host.innerHTML = '<div class="mm-empty">' + (moved
-          ? 'Nothing due in this tier today. ' + parts.join(' and ') + '.'
+          ? 'Nothing due in this tier today. ' + parts.join('; ') + '.'
           : 'Nothing ranked into this tier today. The board was read fine; this tier is genuinely empty.') + '</div>';
         if (meta) {
           var metaParts = [];
-          if (closedN) metaParts.push(closedN + ' already done');
+          if (closedN) metaParts.push(closedN + ' done today');
+          if (priorN) metaParts.push(priorN + ' closed earlier');
           if (laterN) metaParts.push(laterN + ' on a later day');
           meta.textContent = '0 items' + (metaParts.length ? ' · ' + metaParts.join(' · ') : '');
         }
@@ -1643,7 +1715,8 @@
         }
         var metaSuffix = [];
         if (doneShown) metaSuffix.push(doneShown + ' done');
-        if (closedN) metaSuffix.push(closedN + ' more already done, see Already done');
+        if (closedN) metaSuffix.push(closedN + ' more done today, see Already done');
+        if (priorN) metaSuffix.push(priorN + ' closed on an earlier day');
         if (laterN) metaSuffix.push(laterN + ' on a later day');
         meta.textContent = rows.length + ' item' + (rows.length === 1 ? '' : 's') +
           (metaSuffix.length ? ' · ' + metaSuffix.join(' · ') : '');
@@ -1707,11 +1780,28 @@
       var tiers = { MUST: [], SHOULD: [], COULD: [] };
       var closedOut = { MUST: 0, SHOULD: 0, COULD: 0 };
       var laterOut = { MUST: 0, SHOULD: 0, COULD: 0 };
+      var priorOut = { MUST: 0, SHOULD: 0, COULD: 0 };
       var later = [];
       var closed = [];
       mine.forEach(function (i) {
         var t = (i.tier === 'MUST' || i.tier === 'SHOULD') ? i.tier : 'COULD';
-        if (closedEarlier(i)) { closedOut[t]++; closed.push(i); return; }
+        // 2026-09-03. Closed rows split by the day they were closed. Today's
+        // go to "Already done", which is now a TODAY list and empties at
+        // Denver midnight. An earlier day's leave this flow entirely and are
+        // reached under their own date in the day-by-day strip -- the surface
+        // he named himself ("based off the calendar of the day"), which
+        // already counts these closures and now lists them too. No new
+        // section was added for them: a second permanent pile on the same
+        // screen is the clutter he asked to be rid of wearing a new label,
+        // and it would grow without bound. Nothing is hidden and nothing is
+        // deleted -- every one of these rows keeps all four controls in the
+        // day drill-in, so a mis-tick from last week can still be un-ticked.
+        var closedOn = closedEarlier(i);
+        if (closedOn) {
+          if (closedOn === todayStr()) { closedOut[t]++; closed.push(i); }
+          else { priorOut[t]++; }
+          return;
+        }
         if (scheduledLater(i)) { laterOut[t]++; later.push(i); return; }
         tiers[t].push(i);
       });
@@ -1896,7 +1986,8 @@
         heroMode = 'none';
       }
 
-      return { wl: wl, tiers: tiers, closedOut: closedOut, laterOut: laterOut, later: later, closed: closed, agent: agent,
+      return { wl: wl, tiers: tiers, closedOut: closedOut, laterOut: laterOut, priorOut: priorOut,
+        later: later, closed: closed, agent: agent,
         heroMode: heroMode, heroItems: heroItems, heroKeys: heroKeys,
         mustLiveItems: displayMust, mustLiveCount: displayMust.length,
         shouldLiveItems: displayShould, shouldLiveCount: displayShould.length,
@@ -1932,9 +2023,9 @@
       function withoutHero(rows) {
         return heroKeys.length ? rows.filter(function (i) { return heroKeys.indexOf(String(i.key)) === -1; }) : rows;
       }
-      renderList('mmMustList', 'mmMustMeta', withoutHero(b.tiers.MUST), 'must', '', b.closedOut.MUST, b.laterOut.MUST);
-      renderList('mmShouldList', 'mmShouldMeta', withoutHero(b.tiers.SHOULD), 'should', '', b.closedOut.SHOULD, b.laterOut.SHOULD);
-      renderList('mmCouldList', 'mmCouldMeta', withoutHero(b.tiers.COULD), 'could', '', b.closedOut.COULD, b.laterOut.COULD);
+      renderList('mmMustList', 'mmMustMeta', withoutHero(b.tiers.MUST), 'must', '', b.closedOut.MUST, b.laterOut.MUST, b.priorOut.MUST);
+      renderList('mmShouldList', 'mmShouldMeta', withoutHero(b.tiers.SHOULD), 'should', '', b.closedOut.SHOULD, b.laterOut.SHOULD, b.priorOut.SHOULD);
+      renderList('mmCouldList', 'mmCouldMeta', withoutHero(b.tiers.COULD), 'could', '', b.closedOut.COULD, b.laterOut.COULD, b.priorOut.COULD);
       renderList('mmLaterList', 'mmLaterMeta', withoutHero(b.later), 'later', '');
       renderList('mmDoneList', 'mmDoneMeta', withoutHero(b.closed), 'closedearlier', '');
       // Must/Should are now capped (TIER_CAP) and finishable -- see
