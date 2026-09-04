@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Which approvals can come off your plate</title>
+<!--
+  CANONICAL REVIEW-PAGE TEMPLATE for boubacarbarry.com/review/<slug>/
+
+  Start every review page from this file. It is compliant with the layout hard standard out
+  of the box, and scripts/validate-review-page.ps1 (which publish-review.ps1 runs on every
+  publish and REFUSES to ship past) is written against exactly this structure.
+
+  THE FIVE RULES, Boubacar verbatim 2026-08-11:
+    1. TL;DR at the very top, sections underneath it.
+    2. The TL;DR itself is collapsible.
+    3. Every section collapsible with a toggle.
+    4. A back-to-top button on every page.
+    5. Hamburger nav on mobile, normal nav on desktop, floating if practical.
+
+  THE REASON, which matters more than the list:
+    "I don't want to have to read 30 pages of a TL;DR to get to the content every single
+     time. I need to be able to just quickly jump into this after future reviews."
+    => Design for the SECOND visit. Rules 4 and the fold-state memory that makes the second
+       visit fast are AUTO-INJECTED at publish time by scripts/inject-review-furniture.ps1,
+       so do not hand-roll a back-to-top button here -- you would get two.
+
+  WHAT YOU EDIT: the {{PLACEHOLDERS}}, the nav links, and the <section> blocks. Keep the
+  <details><summary><h2>...</h2></summary> shape on every section; that shape IS the check.
+
+  STANDS ALONE ON PURPOSE: no external CSS, no external JS, no fonts, no CDN. He opens these
+  on a phone on bad wifi, and a shared include that fails to load would take the furniture
+  down with the page. Duplicated bytes are the cheaper trade.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-04-08:39:01 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+
+<style>
+  table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:.88rem;}
+  table.dt th,table.dt td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top;}
+  table.dt th{background:var(--bg2);color:var(--text-dim);font-weight:650;}
+  table.dt td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .wrapx{overflow-x:auto;}
+  .pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.72rem;font-weight:700;letter-spacing:.03em;}
+  .p-go{background:rgba(127,224,184,.16);color:var(--good);border:1px solid rgba(127,224,184,.4);}
+  .p-hold{background:rgba(255,122,122,.14);color:var(--bad);border:1px solid rgba(255,122,122,.4);}
+  .p-warn{background:rgba(242,184,75,.14);color:var(--warn);border:1px solid rgba(242,184,75,.4);}
+  .rule{background:var(--bg2);border-left:3px solid var(--accent);padding:12px 16px;margin:14px 0;border-radius:0 8px 8px 0;}
+  .rule strong{color:var(--accent);}
+  .q{border-left:3px solid var(--accent2);padding:8px 16px;margin:14px 0;color:var(--text-dim);font-style:italic;}
+  .cand{border:1px solid var(--border);border-radius:10px;padding:0;margin:18px 0;overflow:hidden;}
+  .cand h3{margin:0;padding:12px 16px;background:var(--bg2);font-size:1rem;border-bottom:1px solid var(--border);}
+  .cand .in{padding:4px 16px 14px;}
+  .rank{color:var(--accent);font-weight:800;margin-right:8px;}
+  ul.tight li{margin:5px 0;}
+  code{background:var(--bg2);padding:1px 5px;border-radius:4px;font-size:.86em;}
+</style>
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Approval Graduation</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">The record</a>
+      <a href="#sec-2">Candidates</a>
+      <a href="#sec-3">Stays gated</a>
+      <a href="#sec-4">The rule</a>
+      <a href="#sec-5">Gaps</a>
+      <a href="#sec-6">Decide</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Which approvals can come off your plate</h1>
+    <div class="meta">Scoping proposal &middot; nothing installed, nothing changed &middot; 2026-09-04</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>Your claim checks out.</strong> Across every gate approval card the system has ever recorded, there are <strong>303 approvals and exactly one rejection</strong>. The one rejection was 2026-05-22, and it was a stale branch that would have re-enabled a disabled API key and stripped a read-only mount. <em>The single time you said no, it was a damage-list item.</em> That is the strongest possible argument for the split I am proposing: graduate everything that is not on the damage list, keep the damage list exactly where it is.</p>
+      <p><strong>The real finding is not that you say yes. It is what you are being asked about.</strong> Of the 190 recent approval cards I could trace to their actual file changes, <strong>128 (67%) touched no guardrail file at all</strong> &mdash; they were ordinary bug fixes and one-shot data scripts that happen to live in the <code>orchestrator/</code> and <code>scripts/</code> folders. 31 of those were single-use throwaway scripts that write a few rows and are never run again. Only <strong>27 of 190 (14%)</strong> touched anything genuinely close to a guardrail.</p>
+      <p>The gate is not mis-firing. Its definition of &quot;the system modifying itself&quot; is <em>two whole directories</em>, so a script that adds one Money Map row gets the same treatment as a change to the gate itself.</p>
+      <p><strong>Top 3 things to graduate, in order: single-use data scripts (31 cards, 0 rejections), ordinary application-code fixes in those two directories (128 cards, 0 rejections), and absorb decisions (27 approvals, 0 rejections since May).</strong> Together those are roughly 85% of the cards you tap.</p>
+      <p><strong>One honest caveat before you decide anything.</strong> The system records approvals well and records rejections badly &mdash; a rejected branch's record is deleted rather than kept. So &quot;zero rejections&quot; is partly real and partly an artifact of never having written them down. Fix that first, and the graduation rule below has real teeth instead of a comfortable number.</p>
+      <p><strong>Nothing here has been built.</strong> This is the scoping step you asked for. Your call on which of the five candidates goes first.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. What the record actually says</h2></summary>
+    <div class="sec-body">
+
+      <p>Four separate sources, mined independently. Where I verified something, I say so. Where I am taking your word for it, I say that too.</p>
+
+      <h3>Gate approval cards &mdash; VERIFIED</h3>
+      <p>Two stores hold this history, and they overlap. The signed grant ledger on the server holds <strong>217 grants</strong> covering 2026-08-20 to 2026-09-04. The marker files on disk go back further, to 2026-05-17, and hold <strong>153</strong>. Between them, after removing the overlap, the system has recorded roughly <strong>303 distinct approval decisions</strong> and <strong>one rejection</strong>.</p>
+
+      <div class="wrapx"><table class="dt">
+        <tr><th>Source</th><th class="num">Approve</th><th class="num">Reject</th><th>Window</th><th>Verified how</th></tr>
+        <tr><td>Signed grant ledger</td><td class="num">217</td><td class="num">0</td><td>8/20 &rarr; 9/04</td><td>Read the file on the server, counted every record</td></tr>
+        <tr><td>Marker files on disk</td><td class="num">153</td><td class="num">1</td><td>5/17 &rarr; 9/04</td><td>Listed the directory, read the one rejection in full</td></tr>
+        <tr><td>Approval queue (absorb cards)</td><td class="num">36</td><td class="num">4</td><td>4/24 &rarr; 9/02</td><td>Queried the database directly</td></tr>
+        <tr><td>Decision ledger, decided by you</td><td class="num">21 GO</td><td class="num">1 NO-GO</td><td>8/29 &rarr; 9/04</td><td>Parsed all 142 entries</td></tr>
+      </table></div>
+
+      <p><strong>The rejection, in full.</strong> Branch <code>chore/email-phase1-env-and-cf-handoff</code>, 2026-05-22. Your reason as recorded: <em>&quot;stale branch, pre-dates the API key disable of 2026-05-21; would re-enable disabled API + remove the read-only scripts mount. Reject and rebase a clean version if the work is still needed.&quot;</em></p>
+      <p>Read that reason carefully, because it is the whole argument of this page. You did not reject an idea. You rejected a <em>credentials change</em> plus a <em>shared-infrastructure change</em>, both of which are already on the damage list, and you rejected it for being <em>stale</em> rather than wrong. That is the gate doing exactly the job it was built for, on exactly the class of thing it was built for.</p>
+
+      <div class="rule">
+        <strong>Verified, with one asterisk.</strong> The approve numbers are solid. The reject number is not, because the system deletes a rejection record instead of keeping it. The one rejection above survives only because somebody manually moved it into an archive folder three years&rsquo; worth of habits later. So read &quot;one rejection&quot; as &quot;one rejection we can still see&quot;, not &quot;one rejection ever&quot;. Section 5 covers the fix.
+      </div>
+
+      <h3>What you are actually being asked about &mdash; the finding that matters</h3>
+      <p>I took every one of the 217 grants, found the commit it landed as, and read which files that commit actually changed. 190 resolved; 27 could not be traced (their commits are not reachable in the current main line, which is itself worth a look).</p>
+
+      <div class="wrapx"><table class="dt">
+        <tr><th>What the change actually touched</th><th class="num">Cards</th><th class="num">Share</th><th>Rejections</th></tr>
+        <tr><td><strong>Ordinary application code</strong> in <code>orchestrator/</code> or <code>scripts/</code>, no guardrail file anywhere in the diff</td><td class="num">128</td><td class="num">67%</td><td>0</td></tr>
+        <tr><td><strong>No code in those directories at all</strong> &mdash; the merge changed only markdown: PRDs, decision-ledger rows, book notes</td><td class="num">35</td><td class="num">18%</td><td>0</td></tr>
+        <tr><td><strong>Guardrail-adjacent</strong> &mdash; the gate itself, approval handling, budgets, credentials, sending, deploys, database migrations</td><td class="num">27</td><td class="num">14%</td><td>0</td></tr>
+      </table></div>
+
+      <p>Breaking the 128 down further, because the top of that list is the cleanest thing on this page:</p>
+
+      <div class="wrapx"><table class="dt">
+        <tr><th>Sub-class</th><th class="num">Cards</th><th>What it is</th></tr>
+        <tr><td>Single-use data scripts (<code>oneshot_*</code>)</td><td class="num">31</td><td>A script written once to write a handful of Money Map or outreach rows, run once, never run again</td></tr>
+        <tr><td>Money Map / daily board / content app code</td><td class="num">27</td><td>Feature and bug work on the boards you look at every morning</td></tr>
+        <tr><td>Session hooks</td><td class="num">12</td><td>The rule-injection hooks that carry standing rules into agent sessions</td></tr>
+        <tr><td>Tests only</td><td class="num">3</td><td>Test files, nothing else</td></tr>
+        <tr><td>Everything else ordinary</td><td class="num">55</td><td>Assorted application code with no guardrail in the diff</td></tr>
+      </table></div>
+
+      <h3>Why the gate fires on all of this</h3>
+      <p>The self-modification hold is defined by <em>directory</em>, not by <em>risk</em>. Every non-markdown file under <code>orchestrator/</code> and <code>scripts/</code> is treated as the system modifying itself. That was deliberate and it was the right call when it was written &mdash; the previous version was so narrow that a change to the gate's own logic slipped through and auto-merged in July, which is the incident the current breadth exists to prevent.</p>
+      <p>But breadth has a cost, and the cost is now measurable: <strong>85% of the cards you tap are for changes that cannot modify the system's guardrails, because they do not touch a guardrail file.</strong></p>
+
+      <h3>The decision ledger &mdash; smaller and weaker evidence than it looks</h3>
+      <p>142 entries: 56 GO, 51 PENDING, 34 PARK, 1 NO-GO. But only <strong>28 were decided by you</strong>. The other 114 are agent verdicts, which are not a record of asking you anything. So on this source I am deliberately claiming less than the headline number invites.</p>
+      <p>Of your 28: <strong>21 GO, 4 PARK, 1 NO-GO, 2 still pending</strong>. And the shape is consistent &mdash; every PARK and the single NO-GO sit in <em>revenue and authority</em> categories (the HAW archive, the book milestones, the offer questions). Every infrastructure and capability item you touched was a GO. That is a clean split between the strategic calls that are genuinely yours and the operational calls that are not.</p>
+
+      <h3>The absorb queue</h3>
+      <p><strong>27 approved, 0 rejected</strong>, every one via a Telegram tap, 2026-05-23 to 2026-09-02. Fifteen weeks, an unbroken streak. Scout auto-mute cards: 3 approved, 0 rejected.</p>
+      <p>One number in that database looks alarming and is not: 241 &quot;rejected&quot; content cards from June and July. 212 of them were bulk auto-closed by a script on 2026-07-07 when that pipeline was replaced, and the record says so explicitly. They were never individually reviewed by anyone. I am not counting them as your rejections and neither should anything else.</p>
+
+      <h3>The pattern is already recurring, ad hoc, roughly monthly</h3>
+      <p>The clearest evidence that this needs a mechanism rather than another one-off rule: I found <strong>30 separate standing rules already written</strong>, each one created after a specific incident where an agent asked you something it should have decided. A sample of the recent ones:</p>
+      <ul class="tight">
+        <li>2026-07-15 &mdash; an urgent fix is done now, never scheduled</li>
+        <li>2026-07-16 &mdash; report guardrail categories, do not ask about them</li>
+        <li>2026-07-21 &mdash; merges auto-approve unless real damage <em>(created from your words: &quot;I have yet to NOT approve a merge&quot;)</em></li>
+        <li>2026-08-25 &mdash; do not ask when the fix is obvious</li>
+        <li>2026-08-29 &mdash; fix it, do not ask, unless it could truly break the system</li>
+        <li>2026-09-01 &mdash; proactive repair, no asking</li>
+        <li>2026-09-03 &mdash; resolve non-decisions yourself, do not ask</li>
+        <li>2026-09-04 &mdash; stop asking on known-needed items, just do it <em>(this session)</em></li>
+      </ul>
+      <p>Eight rules in eight weeks, all pointing the same direction, all written one incident at a time. On 2026-07-21 you said almost exactly what you said yesterday. That rule shipped and it worked &mdash; and six weeks later the same conversation happened again, because that rule graduated one <em>gate</em> and not one <em>class of question</em>. That is what a missing mechanism looks like.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. The five graduation candidates, ranked by evidence</h2></summary>
+    <div class="sec-body">
+
+      <p>Ranked strictly by strength of evidence, not by how much friction each removes. Each one names what would replace the ask.</p>
+
+      <div class="cand">
+        <h3><span class="rank">#1</span> Single-use data scripts <span class="pill p-go">STRONGEST</span></h3>
+        <div class="in">
+          <p><strong>Evidence:</strong> 31 approval cards, 0 rejections. Every one is a script named <code>oneshot_*</code> that writes a few rows and is never executed again. Examples from your own history: the Guinea DM rows, the Energy4Life recruiter call row, the WGU interview row, the Money Map re-rank you asked for yourself.</p>
+          <p><strong>Why it is the safest first move:</strong> these scripts cannot modify the system. They run once, write data, and become dead files. A wrong one is undone by editing a row. There is no version of one of these that files down a guardrail.</p>
+          <div class="rule"><strong>Proposed rule:</strong> A branch whose only changes under <code>orchestrator/</code> or <code>scripts/</code> are new <code>oneshot_*</code> files does not require approval. It merges under the existing Tier C rules and is reported, not asked about. If the same branch touches anything else, the normal hold applies to the whole branch.</div>
+        </div>
+      </div>
+
+      <div class="cand">
+        <h3><span class="rank">#2</span> Ordinary application-code fixes in those two directories <span class="pill p-go">STRONG</span></h3>
+        <div class="in">
+          <p><strong>Evidence:</strong> 128 cards, 0 rejections, covering the full window. This is the big one &mdash; two thirds of everything you tap.</p>
+          <p><strong>The distinction that makes it safe:</strong> today &quot;self-modification&quot; means <em>a file's folder</em>. It should mean <em>what the file does</em>. A fix to the morning board is not the system modifying its own guardrails; a change to the gate is. Today they are treated identically, which is why you are tapping approve on Money Map bug fixes.</p>
+          <p><strong>What this is NOT:</strong> it is not loosening the self-modification gate. It is making that gate actually mean self-modification. The list of genuinely guardrail-carrying modules &mdash; the gate, approval handling, the spend and budget code, credentials, the sending paths, the deploy scripts, database migrations, the coordination primitives &mdash; stays fully held. On the traced record that is 27 of 190 cards.</p>
+          <div class="rule"><strong>Proposed rule:</strong> Split the self-modification hold into a named guardrail list and everything else. A branch touching a named guardrail module holds for your tap exactly as today. A branch touching only ordinary application code merges under the existing Tier C rules. <strong>The list is explicit and additive-only:</strong> an agent may add a module to it without asking; removing one is weakening a hard rule and always stops.</div>
+          <p><span class="pill p-warn">CAVEAT</span> This is the candidate that needs the most care, because the boundary <em>is</em> the safety property. Getting the guardrail list right is the whole job. It should run through Karpathy and Council before it is built &mdash; not now, at the point somebody actually builds it.</p>
+        </div>
+      </div>
+
+      <div class="cand">
+        <h3><span class="rank">#3</span> Absorb decisions <span class="pill p-go">STRONG</span></h3>
+        <div class="in">
+          <p><strong>Evidence:</strong> 27 approved, 0 rejected, fifteen unbroken weeks, every one a real Telegram tap by you. Plus 3 of 3 on scout auto-mute cards.</p>
+          <p><strong>The nuance:</strong> most absorb verdicts are &quot;note it and move on&quot; or &quot;park it&quot;. Those produce a ledger row and change nothing else. The ones that matter install something. Only the second kind is worth your attention.</p>
+          <div class="rule"><strong>Proposed rule:</strong> An absorb verdict of park or archive-and-note files itself and appears in the digest. A verdict that installs a new skill, agent, or integration still cards you, because installing is a real change to how the system behaves.</div>
+        </div>
+      </div>
+
+      <div class="cand">
+        <h3><span class="rank">#4</span> Additive hardening &mdash; hooks, guards, checks <span class="pill p-warn">MODERATE</span></h3>
+        <div class="in">
+          <p><strong>Evidence:</strong> 12 hook cards, 0 rejections, plus two entries in this week's ledger and your verbatim instruction yesterday. This is literally the question that started the conversation.</p>
+          <p><strong>Why it is ranked below the first three:</strong> 12 is a thinner record than 128 or 31, and there is a live counter-example sitting in the repo &mdash; a destructive-command guard has been written, tested, and deliberately held since 2026-07-25 <em>specifically</em> because registering it changes every future session's behaviour and its coverage is known to be incomplete. That is a real reason to hold, and it argues for splitting this candidate rather than graduating it whole.</p>
+          <div class="rule"><strong>Proposed rule:</strong> A hook or guard that only <em>warns</em> gets registered without asking. A hook that <em>blocks</em> gets a card, because a bad blocking hook stops every session in the system and the person who has to notice is you.</div>
+        </div>
+      </div>
+
+      <div class="cand">
+        <h3><span class="rank">#5</span> Technical open questions in a build spec <span class="pill p-go">ALREADY GRADUATED</span></h3>
+        <div class="in">
+          <p><strong>Evidence:</strong> your direct correction on 2026-09-03 &mdash; <em>&quot;You didn't need me for any of those questions. Next time resolve them yourself and proceed.&quot;</em> Already written as a standing rule.</p>
+          <p><strong>Why it is on this list anyway:</strong> because it is rule number 30 in a pile of 30, none of which know about each other. The work here is not a new rule. It is folding the pile into one standing default, so the next incident does not produce rule 31.</p>
+          <div class="rule"><strong>Proposed action:</strong> Consolidate the 30 existing &quot;don't ask&quot; rules into a single standing autonomy default with one list of exceptions. Not a new permission &mdash; the same permissions, in one place, where they can actually be read.</div>
+        </div>
+      </div>
+
+      <h3>Where the data does NOT support graduation</h3>
+      <p>Naming these explicitly so they never get swept in with the safe ones:</p>
+      <div class="wrapx"><table class="dt">
+        <tr><th>Class</th><th>Record</th><th>Verdict</th></tr>
+        <tr><td><strong>Posts and content in your name</strong></td><td>5 approved, <strong>2 rejected</strong> &mdash; a genuinely mixed record, the only one in the whole dataset</td><td><span class="pill p-hold">STAYS</span> Real rejections, and it is on the damage list twice over</td></tr>
+        <tr><td><strong>Revenue and offer decisions</strong></td><td>Every PARK and the only NO-GO you have ever recorded live here</td><td><span class="pill p-hold">STAYS</span> This is the category where you actually say no</td></tr>
+        <tr><td><strong>Book and authority milestones</strong></td><td>Parked by you twice, deliberately</td><td><span class="pill p-hold">STAYS</span> Yours</td></tr>
+        <tr><td><strong>Doc-only branches</strong></td><td>35 cards, 0 rejections &mdash; but I could not determine <em>why</em> these were held at all</td><td><span class="pill p-warn">INVESTIGATE</span> Looks like a bug, not a candidate. Do not graduate what you do not understand</td></tr>
+        <tr><td><strong>Everything in section 3</strong></td><td>Clean approval records, some of them long</td><td><span class="pill p-hold">STAYS</span> On risk class, not on vote count. See below</td></tr>
+      </table></div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. What stays gated, and why a clean record is not enough</h2></summary>
+    <div class="sec-body">
+
+      <p>Some classes below have <em>perfect approval records</em>. They still do not graduate, and the reason is not the evidence. It is that the evidence is the wrong test for them.</p>
+
+      <div class="rule">
+        <strong>The principle.</strong> A history of yes tells you the answer has been right so far. It does not tell you what a single wrong answer costs. Graduation is only safe where those two things point the same way &mdash; a class of decisions that has been right a hundred times <em>and</em> where being wrong once is recoverable. Where a single wrong call is unrecoverable, a hundred rights buy nothing.
+      </div>
+
+      <h3>The damage list &mdash; not eligible, ever</h3>
+      <p>Sending to a real person, publishing in your name, money, destroying or migrating data, credentials and permissions, shared infrastructure that can take services down, weakening a hard rule, legal exposure. These are not gated because we are unsure how you would answer. They are gated because a wrong instance <strong>cannot be taken back</strong>. An email that is sent is sent. A dropped table is dropped. A leaked credential is leaked.</p>
+      <p>And the evidence supports this rather than undercutting it: <strong>the one rejection in the entire history was a credentials and shared-infrastructure item.</strong> On the one occasion the record shows you saying no, you said it about something on this list. That is not an argument for shortening it.</p>
+
+      <h3>The self-modification gate &mdash; not eligible under this proposal</h3>
+      <p>Changes to the gate itself, to approval handling, to the permission files, to secrets, to the constitutional documents. These stay behind your Telegram tap, and the reason is different from the reason above.</p>
+      <p><strong>This class is self-referential.</strong> Every other gate is a system checking a change. This gate is the system checking a change <em>to its own checking</em>. If an agent can graduate this class, it can graduate its way out of every other class, and the whole structure below it becomes decorative. That is not hypothetical: on 2026-07-12 the policy that the gate does not merge changes to its own logic existed <em>only as a note in a commit message</em>, and the gate merged such a change anyway. Nobody was malicious. The rule simply had no teeth, so it did not hold.</p>
+      <p>You said it yourself yesterday, in the same breath as asking for this: <em>&quot;We still put gates in there. We still put checks so that there are no rogue agents.&quot;</em> This is that gate. It is the one that makes the others mean anything.</p>
+
+      <div class="rule">
+        <strong>The distinction I want you to hold on to, because it is the whole design.</strong> There is a real difference between <em>&quot;should we register a hardening hook&quot;</em> and <em>&quot;should we change the rule about who may approve things&quot;</em>. Both are infrastructure. Both have a clean record. But the first is reversible in one commit and the second decides whether reversibility exists at all. The first graduates. The second never does.
+      </div>
+
+      <h3>The honest tension in your own request</h3>
+      <p>You said &quot;even the gate approval cards are things that we can loosen&quot;. Here is the part I do not want to soft-pedal: <strong>every one of the 217 cards in the ledger IS the self-modification gate.</strong> The merge gate you loosened in July already works &mdash; ordinary merges do not card you any more. What is left is exclusively this one narrow gate. So on a strict reading, the answer to &quot;loosen the cards&quot; is &quot;we cannot, that gate is the one that must not move.&quot;</p>
+      <p>I think that reading is technically correct and practically wrong, and here is why. That gate is not firing on 217 acts of self-modification. It is firing on 31 throwaway data scripts, 27 Money Map fixes, 35 markdown-only merges, and 27 things that actually touch a guardrail. <strong>The problem is not the gate's strictness. It is the gate's aim.</strong> Nothing in candidates #1 through #3 weakens what the gate does to a real self-modification &mdash; they stop it from firing on things that were never self-modification in the first place.</p>
+      <p>That said, narrowing what counts as self-modification is a change to a hard rule, which puts it on the damage list, which means it is your call and not mine. That is why this page is a proposal and not a change.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. The repeatable rule, so this is a mechanism and not a list</h2></summary>
+    <div class="sec-body">
+
+      <p>You did not ask for a list of five things. You asked for the system to learn from its own history. A list gets stale in a month; a rule keeps working. Here is the rule I would put in.</p>
+
+      <h3>The eligibility test &mdash; all four, no exceptions</h3>
+      <div class="wrapx"><table class="dt">
+        <tr><th>#</th><th>Test</th><th>Why it is there</th></tr>
+        <tr><td class="num">1</td><td><strong>Not on the damage list.</strong></td><td>Cost of one wrong call is unrecoverable. No amount of history changes that.</td></tr>
+        <tr><td class="num">2</td><td><strong>Not self-referential.</strong> Does not change the gate, the approval path, the permission files, or a hard rule.</td><td>A class that can graduate itself makes every other gate decorative.</td></tr>
+        <tr><td class="num">3</td><td><strong>Reversible by a revert</strong>, with no side effect that survives the revert.</td><td>If undoing the change does not undo the harm, it was never a low-stakes class.</td></tr>
+        <tr><td class="num">4</td><td><strong>Ten or more recorded instances</strong>, all approved, none rejected, spanning at least 30 days.</td><td>Ten in one week is a burst. Ten across a month is a pattern.</td></tr>
+      </table></div>
+
+      <h3>What un-graduates a class, automatically</h3>
+      <ul class="tight">
+        <li><strong>One rejection, and the class is back on cards immediately</strong> &mdash; for its next ten instances, no discussion.</li>
+        <li><strong>One incident traced to a change that merged under the graduation</strong> &mdash; same treatment, plus a written note on what the class boundary got wrong.</li>
+        <li><strong>You say so.</strong> No justification required, no counter-argument from an agent. Un-graduating is always free.</li>
+      </ul>
+      <p>That asymmetry is deliberate. Graduating takes ten clean instances and thirty days. Un-graduating takes one word from you. The system should be much quicker to hand something back than to take it.</p>
+
+      <h3>Cadence</h3>
+      <div class="wrapx"><table class="dt">
+        <tr><th>When</th><th>What runs</th><th>What lands on your plate</th></tr>
+        <tr><td><strong>Monthly</strong>, alongside the ledger regeneration</td><td>Scan every recorded decision class against the four tests</td><td>One short page: which classes qualified this month, the count behind each, and a recommendation. Same shape as this page.</td></tr>
+        <tr><td><strong>On every rejection</strong></td><td>Un-graduate the affected class, log the reason</td><td>A single line telling you it happened. Nothing to approve.</td></tr>
+        <tr><td><strong>Quarterly</strong></td><td>Re-check the graduated classes are still clean</td><td>Nothing, unless something has drifted.</td></tr>
+      </table></div>
+
+      <p>One deliberate design choice worth naming: <strong>the monthly review recommends, it does not auto-apply.</strong> A mechanism that graduates classes on its own is a mechanism that can graduate its way past the damage list, and no amount of careful coding makes that safe. The review does the counting and the arguing. You do the graduating. That keeps the volume of things reaching you falling while the thing you are deciding stays worth your time.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. What the data cannot tell us yet</h2></summary>
+    <div class="sec-body">
+
+      <p>Stated plainly, because a graduation rule built on an incomplete record is worse than no rule &mdash; it produces confident wrong answers instead of cautious ones.</p>
+
+      <div class="wrapx"><table class="dt">
+        <tr><th>Gap</th><th>Effect</th><th>Fix</th></tr>
+        <tr><td><strong>Rejections are not kept.</strong> Approvals get a signed, permanent record. A rejection deletes the record instead of preserving it.</td><td>The single most important number on this page is the least trustworthy one. &quot;Zero rejections&quot; is partly real and partly an accounting artifact.</td><td>Record rejections exactly like approvals, with the reason. Do this before anything graduates.</td></tr>
+        <tr><td><strong>Nothing records why a branch was held.</strong> The record says what was approved, never what triggered the hold.</td><td>35 doc-only cards are unexplained. I cannot tell whether that is a bug or a rule I have not found.</td><td>Log the triggering path with every hold. One field.</td></tr>
+        <tr><td><strong>The biggest source of asks is not instrumented at all.</strong> Everything on this page is a card or a ledger row. The questions agents ask you in chat &mdash; which is most of them &mdash; are recorded nowhere.</td><td>This is the real gap. Your instruction was to track every question so patterns become visible; today only the formal fraction is visible.</td><td>Structured capture at the moment of asking: what class, what was asked, what you answered. This is the thing that makes the whole idea work.</td></tr>
+        <tr><td><strong>The signed ledger only starts 2026-08-20.</strong> Before that there are marker files with no per-decision reasoning.</td><td>Anything earlier than mid-August is countable but not analysable.</td><td>Nothing to fix. Just do not over-read pre-August numbers, and I have not.</td></tr>
+        <tr><td><strong>27 of 217 approved branches cannot be traced</strong> to a commit reachable in the current main line.</td><td>13% of the sample is invisible to the file-level analysis.</td><td>Worth a separate look. Approved work that cannot be found afterwards is its own question.</td></tr>
+      </table></div>
+
+      <div class="rule">
+        <strong>The one-line version.</strong> The system is good at recording what it was allowed to do and poor at recording what it was told not to do. Every number on this page leans optimistic for that reason. It does not change the shape of the finding &mdash; 85% of your taps are on things that cannot modify the system, and that would still be true with a handful of rejections in the record &mdash; but it is the reason I would fix the recording before turning any of it into a standing rule.
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>6. What I would do, and what I need from you</h2></summary>
+    <div class="sec-body">
+
+      <p>My recommendation, in order, with the reasoning stated rather than buried.</p>
+
+      <div class="wrapx"><table class="dt">
+        <tr><th>#</th><th>Move</th><th>Why now</th></tr>
+        <tr><td class="num">1</td><td><strong>Fix the recording first.</strong> Keep rejections. Log why a branch was held. Roughly a day's work, touches the gate, so it needs a tap.</td><td>Everything else rests on this. Without it, every future graduation review reports a number it cannot defend.</td></tr>
+        <tr><td class="num">2</td><td><strong>Graduate candidate #1</strong> &mdash; single-use data scripts. 31 cards, zero risk, one narrow definition.</td><td>The cleanest possible first instance. It proves the mechanism on something where being wrong costs a row edit.</td></tr>
+        <tr><td class="num">3</td><td><strong>Graduate #3</strong> &mdash; absorb park and note-only verdicts.</td><td>Fifteen unbroken weeks. Independent of the gate work, so it can run in parallel.</td></tr>
+        <tr><td class="num">4</td><td><strong>Then spec candidate #2</strong> &mdash; the guardrail-list split. Karpathy and Council before a line is written, because the boundary is the safety property.</td><td>The big win, 128 cards, and the one worth being slow about. It should follow two successful graduations, not lead them.</td></tr>
+        <tr><td class="num">5</td><td><strong>Stand up the monthly review</strong> once one graduation has actually held for a month.</td><td>Build the mechanism after the pattern is proven, not before.</td></tr>
+      </table></div>
+
+      <h3>What stays yours, unchanged, in every version of this</h3>
+      <p>The damage list. The self-modification tap. Content in your name. Revenue and offer calls. Anything that reaches a real person. None of that moves, and none of it is in scope for any candidate on this page.</p>
+
+      <h3>The two decisions I need from you</h3>
+      <ol>
+        <li><strong>Do the first two graduations go ahead?</strong> Single-use data scripts, and absorb park verdicts. My recommendation is yes to both. Neither can modify the system.</li>
+        <li><strong>Do I spec the guardrail-list split?</strong> That is the 128-card one. It requires narrowing what counts as self-modification, which is a change to a hard rule, which is why it is a question and not a plan. My recommendation is yes to specifying it, with the build gated on the Karpathy and Council pass and on the recording fix landing first.</li>
+      </ol>
+
+      <p>Everything on this page is analysis. No hook was registered, no rule edited, no setting changed, and no gate touched.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Scoping proposal, systems lane, 2026-09-04. Sources: the signed gate approval ledger and marker files on the server, the approval queue in the database, the full decision ledger, and 30 existing standing rules in the memory corpus. Every number labelled verified was read from its source directly.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
