@@ -1,0 +1,140 @@
+<title>Approval Graduation</title>
+<style>
+:root{--bg:#12141a;--card:#1b1e26;--ink:#e8e6e1;--dim:#a3a099;--line:#2c303a;
+--warn:#e8b04b;--good:#6fbf87;--bad:#e07a5f;--link:#c9a227}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+a{color:var(--link)}
+header{position:sticky;top:0;z-index:20;background:#0e1015;border-bottom:1px solid var(--line);
+padding:.7rem 1rem;display:flex;align-items:center;gap:1rem}
+header .t{font-weight:700;letter-spacing:.02em}
+nav a{margin-right:1rem;text-decoration:none;font-size:.9rem}
+#burger{display:none;background:none;border:1px solid var(--line);color:var(--ink);
+font-size:1.2rem;border-radius:6px;padding:.2rem .55rem;cursor:pointer}
+main{max-width:900px;margin:0 auto;padding:1rem}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;
+margin:.9rem 0;padding:.2rem 1rem}
+details>summary{cursor:pointer;font-weight:600;padding:.8rem 0;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"▸ ";color:var(--dim)}
+details[open]>summary::before{content:"▾ "}
+h1{font-size:1.5rem;margin:.6rem 0}
+h2{font-size:1.05rem;margin:0;display:inline}
+table{width:100%;border-collapse:collapse;margin:.6rem 0;font-size:.92rem}
+th,td{text-align:left;padding:.45rem .5rem;border-bottom:1px solid var(--line);
+vertical-align:top}
+th{color:var(--dim);font-weight:600}
+.num{font-variant-numeric:tabular-nums;text-align:right}
+.warn{color:var(--warn)}.good{color:var(--good)}.bad{color:var(--bad)}.dim{color:var(--dim)}
+.lead{background:#241f16;border:1px solid var(--warn);border-radius:10px;padding:1rem;margin:1rem 0}
+.pill{display:inline-block;font-size:.75rem;border:1px solid var(--line);
+border-radius:999px;padding:.1rem .6rem;color:var(--dim)}
+.wrap{overflow-x:auto}
+#top{position:fixed;right:1rem;bottom:1rem;background:var(--card);border:1px solid var(--line);
+color:var(--ink);border-radius:8px;padding:.5rem .8rem;text-decoration:none;font-size:.85rem}
+@media(max-width:768px){
+ #burger{display:block}
+ nav{display:none;position:absolute;top:100%;left:0;right:0;background:#0e1015;
+ border-bottom:1px solid var(--line);padding:.8rem 1rem}
+ nav.open{display:block}
+ nav a{display:block;margin:.5rem 0}
+}
+</style>
+<header>
+  <button id="burger" aria-label="Menu">&#9776;</button>
+  <span class="t">Approval Graduation</span>
+  <nav id="nav">
+    <a href="#sec-tldr">TL;DR</a><a href="#sec-gap">Unlogged holds</a>
+    <a href="#sec-rej">Rejections</a><a href="#sec-rule">The rule</a>
+    <a href="#sec-decide">Decide</a>
+  </nav>
+</header>
+<main>
+<h1>Which approvals can come off your plate</h1>
+<p class="pill">Recomputed every 14 days &middot; 2026-09-04 &middot; nothing applied</p>
+<details id="sec-tldr" open><summary><h2>TL;DR</h2></summary>
+<div class="lead">
+<p><strong>Correction to the page you read on 2026-09-04, before anything else.</strong>
+That page reported <strong>35 doc-only cards whose hold reason could not be determined</strong>
+and told you not to graduate what you do not understand. <strong>That bucket does not
+exist.</strong> The analysis classified each branch by the files in its <em>merge commit</em>;
+the gate decides a hold against the <em>branch tip</em> and already records exactly that,
+so the reason was on file the whole time.</p>
+<p><strong>It was not uniformly good news.</strong> Re-run against the right key, the
+<strong>guardrail-adjacent bucket grew from 27 to 34</strong>.
+The correction dissolved a phantom bucket and also found genuinely
+risky changes the last count missed. Both halves are real.</p>
+<p><strong>The number this page rests on still cannot go up.</strong> Rejections are
+not yet recorded durably, so every &ldquo;0 rejections&rdquo; below means
+&ldquo;none we can still see&rdquo;, never &ldquo;none ever&rdquo;. The recording fix is
+in flight on a separate branch. Until it lands, treat every count here as leaning
+optimistic on purpose.</p>
+</div>
+<p>Of <strong>221</strong> recorded approvals, the hold reason is now known for
+<strong>216</strong> of them, read from the gate's own hold rows.</p>
+<table><tr><th>What the change actually touched</th><th class="num">Cards</th><th class="num">Since last cycle</th></tr>
+<tr><td>constitutional or config doc</td><td class="num">0</td><td class="num"><span class="dim">first cycle</span></td></tr><tr><td>guardrail-adjacent</td><td class="num">34</td><td class="num"><span class="dim">first cycle</span></td></tr><tr><td>hold reason not recorded</td><td class="num">5</td><td class="num"><span class="dim">first cycle</span></td></tr><tr><td>oneshot single-use data script</td><td class="num">39</td><td class="num"><span class="dim">first cycle</span></td></tr><tr><td>ordinary application code</td><td class="num">143</td><td class="num"><span class="dim">first cycle</span></td></tr>
+</table>
+<p class="dim">Classification key: gate_log.jsonl tier_c_hold.all_gate_files (hold-time files, NOT the merge diff)</p>
+</details>
+<details id="sec-gap"><summary><h2>The holds nothing recorded, and why they matter most</h2></summary>
+<p>5 approved branches have <strong>no hold row at all</strong>.
+They are not noise, and they are not random:</p>
+<ul><li><code>fix/gate-dt-shadow-real-fix-0827</code></li><li><code>fix/gate-merge-message-provenance-2026-08-29</code></li><li><code>fix/gate-stuck-merge-watchdog</code></li><li><code>fix/gate-unapplied-grant-alert-dedup-crash-0827</code></li><li><code>fix/sys148-gate-ready-tag-substring-match-0811</code></li></ul>
+<p>Every one is a <code>fix/gate-*</code> branch. These were held by a
+<strong>second, separate hold path</strong> that nothing documents: the claude-review
+pilot. When its verdict is anything other than <em>pass</em>, the branch is held and
+cards you, but the gate writes its hold row only when a Tier-C path was also hit, so a
+review-only hold leaves no record.</p>
+<p class="warn">The unlogged cases are precisely the branches that modify the gate itself.
+That is the least acceptable place to have no audit trail. The one-line fix belongs to
+the branch already touching that function and is deliberately not bundled into this
+reporting work.</p>
+</details>
+<details id="sec-rej"><summary><h2>Rejections, and permanent exclusion</h2></summary>
+<p class="bad">No rejection journal at /root/agentsHQ/data/gate_hold_journal.jsonl. Rejections are still not recorded durably, so every &#x27;0 rejections&#x27; below is structurally incapable of rising. Treat it as &#x27;none we can still see&#x27;, never &#x27;none ever&#x27;.</p><p>Until that journal exists, this page recommends nothing on the strength of a zero. A class is eligible only once a rejection could have been recorded and was not.</p>
+</details>
+<details id="sec-rule"><summary><h2>The eligibility rule</h2></summary>
+<p>All four, no exceptions. Time alone must never graduate anything.</p>
+<ol>
+<li><strong>Not on the damage list.</strong> One wrong call is unrecoverable, and no
+amount of history changes that.</li>
+<li><strong>Not self-referential.</strong> Does not change the gate, the approval path,
+the permission files, or a hard rule. A class that can graduate itself makes every other
+gate decorative.</li>
+<li><strong>Reversible by a revert</strong>, with no side effect that survives it.</li>
+<li><strong>Ten or more instances, none rejected, spanning 30+ days</strong> &mdash; and
+only once rejections are actually recordable.</li>
+</ol>
+<p><strong>One recorded rejection excludes a class permanently</strong>, not until the next
+cycle. It re-opens only by an explicit new decision-log entry from you. An agent may never
+re-open one, and no number of subsequent clean instances does it either.</p>
+<p class="dim">This page recommends. It never applies. A mechanism that graduated classes
+on its own could graduate its way past the damage list, and no amount of careful coding
+makes that safe.</p>
+<p class="warn">Success criterion for this page itself: a healthy version gets
+<strong>shorter</strong> every cycle. If cycle three is longer than cycle one, the review
+is not working and should be replaced by a filter.</p>
+</details>
+<details id="sec-decide"><summary><h2>What needs you</h2></summary>
+<p>Nothing on this page has been applied. What needs you:</p>
+<ol>
+<li>Land the rejection recording, then re-read this page. Every count here is
+provisional until then.</li>
+<li>The single-use data script class is the cleanest first graduation, and the
+correction made its count larger, not smaller.</li>
+<li>Where a recommendation gets a no from you, that no is recorded and the class is
+never proposed again.</li>
+</ol>
+</details>
+</main>
+<a id="top" href="#">&uarr; Top</a>
+<script>
+document.getElementById('burger').addEventListener('click',function(){
+  document.getElementById('nav').classList.toggle('open');
+});
+document.querySelectorAll('nav a').forEach(function(a){
+  a.addEventListener('click',function(){document.getElementById('nav').classList.remove('open');});
+});
+</script>
