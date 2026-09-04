@@ -78,9 +78,31 @@ $endMarker   = "<!-- DEPLOY_STAMP_END -->"
 # corner nothing else claims (the floating back-to-top / fold controls injected by
 # inject-review-furniture.ps1 live bottom-RIGHT, the nav lives top). Desktop is unchanged:
 # still upper-right, per the standing version-stamp hard rule.
+#
+# COLLISION FIX 2026-09-04 (first attempt, since found still broken): moving the pill to
+# bottom-left only dodged the OLD collision (the mobile hamburger button); it did not
+# create a clear zone, because body copy is normal-flow and scrolls through that corner at
+# every scroll depth, not just at page-end. The first attempt tried to paper over this with
+# a scroll-based opacity fade (near-invisible once scrolled, full opacity near the top) --
+# but a real 375x812 screenshot taken AT PAGE LOAD (scrollY 0, the exact moment the fade
+# logic keeps it at full opacity "because that is the only moment verify-at-a-glance needs
+# it") caught it sitting fully opaque directly on top of body text, because scrollY 0 is
+# also the moment content is guaranteed to be right there. Fading opacity never fixes an
+# overlap; it only changes how visible the overlap is.
+#
+# REAL FIX 2026-09-04: stop fighting position:fixed with scroll heuristics. Under 560px the
+# stamp is no longer fixed at all -- it renders IN NORMAL DOCUMENT FLOW as its own line at
+# the very top of <body>, before the nav bar, so it physically cannot sit on top of
+# anything; the page just gets ~20px taller. This is a structural guarantee, not a
+# probability, and it needs no JS: the scroll-listener script that drove the old fade is
+# removed entirely. Desktop is unchanged: still upper-right, fixed, constant full opacity,
+# inside the sticky nav bar's own opaque strip (which has always been collision-free,
+# because that chrome papers over whatever scrolls beneath it).
 $stampHtml = $startMarker +
-    '<style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;' +
-    'right:auto !important;bottom:10px !important;left:10px !important;}}' +
+    '<style id="deploy-stamp-css">' +
+    '@media (max-width:560px){#deploy-stamp{position:static !important;display:block;' +
+    'top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;' +
+    'width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}' +
     '@media print{#deploy-stamp{position:static !important;}}</style>' +
     '<div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;' +
     "font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;" +
@@ -88,7 +110,8 @@ $stampHtml = $startMarker +
     'background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);' +
     'border-radius:6px;padding:4px 8px;letter-spacing:0.02em;' +
     'backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;' +
-    'user-select:none;white-space:nowrap;">' + $label + '</div>' + $endMarker
+    'user-select:none;white-space:nowrap;">' + $label + '</div>' +
+    $endMarker
 
 $html = Get-Content $HtmlFile -Raw -Encoding UTF8
 
