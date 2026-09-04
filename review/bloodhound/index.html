@@ -171,6 +171,30 @@
     color:#e2ddd4;white-space:pre;}
   .copy{position:absolute;top:8px;right:8px;}
 
+  /* ---- cover letter panel ---- */
+  details.cl{background:#181c25;border:1px solid var(--line);border-radius:11px;
+    padding:0;margin:14px 0 4px;}
+  details.cl>summary{cursor:pointer;list-style:none;padding:11px 14px;
+    display:flex;align-items:center;gap:10px;font-weight:650;font-size:14.5px;}
+  details.cl>summary::-webkit-details-marker{display:none;}
+  details.cl>summary::after{content:'\25be';margin-left:auto;color:var(--faint);
+    transition:transform .15s;}
+  details.cl[open]>summary::after{transform:rotate(180deg);}
+  .clbadge{font:650 11px/1 inherit;letter-spacing:.04em;text-transform:uppercase;
+    padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--faint);}
+  .clbadge[data-has="1"]{color:#2a2016;background:var(--verdigris);border-color:var(--verdigris);}
+  .clbody{padding:0 14px 14px;}
+  .cltext{background:#0f1219;border:1px solid var(--line);border-radius:10px;
+    padding:15px 17px;margin:0 0 11px;max-height:420px;overflow:auto;
+    font:14.5px/1.72 Georgia,'Times New Roman',serif;color:#e2ddd4;
+    white-space:pre-wrap;word-wrap:break-word;}
+  .clnone{color:var(--faint);font-size:13.5px;margin:0 0 11px;line-height:1.6;}
+  .clerr{display:none;margin-top:11px;padding:11px 13px;border-radius:9px;
+    background:rgba(232,131,111,.14);border:1px solid var(--rose);
+    color:#ffd0c4;font-size:13.5px;}
+  .clerr[data-shown="1"]{display:block;}
+  .clerr code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;font-size:12px;}
+
   .empty{color:var(--faint);font-style:italic;padding:6px 0;}
   .note{color:var(--faint);font-size:13px;margin-top:12px;}
   @media (max-width:560px){
@@ -181,7 +205,8 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-03-22:43:37 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-09-03-23:37:01 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -457,6 +482,11 @@ order by decided_at desc nulls last;</code>
       outcomeUpdated: s.outcomeUpdated || null,
       notes:      s.notes      || '',
       notesUpdated: s.notesUpdated || null,
+      // The cover letter is authored outside the browser and written straight to
+      // the row. It is carried through every merge so a decision or a note never
+      // silently drops the letter that was already stored against this role.
+      coverLetter: s.coverLetter || '',
+      coverLetterUpdated: s.coverLetterUpdated || null,
       archived:   !!s.archived,
       history: Array.isArray(s.history) ? s.history.slice() : []
     };
@@ -503,6 +533,9 @@ order by decided_at desc nulls last;</code>
     el.className = 'role';
     el.setAttribute('data-decision', dec);
     el.setAttribute('data-role', role.key);
+
+    var hasCL = !!(s.coverLetter && String(s.coverLetter).trim());
+    var clId  = 'cl-' + role.key.replace(/[^a-z0-9]+/gi, '-');
 
     var tickAttr = dec === 'applied' ? '1' : dec === 'skipped' ? 'skip' : '0';
     var tickChar = dec === 'skipped' ? '&ndash;' : '&#10003;';
@@ -551,6 +584,38 @@ order by decided_at desc nulls last;</code>
         '<div class="gate"></div>' +
       '</div>' +
 
+      // ---- cover letter, read-only. Copy it, or take it away as a PDF. ----
+      '<details class="cl">' +
+        '<summary>Cover letter' +
+          '<span class="clbadge" data-has="' + (hasCL ? '1' : '0') + '">' +
+            (READ_FAILED ? 'Unknown, the read failed'
+                         : (hasCL ? 'Ready' : 'Not written yet')) + '</span>' +
+        '</summary>' +
+        '<div class="clbody">' +
+          (hasCL
+            ? '<pre class="cltext" id="' + clId + '">' + esc(s.coverLetter) + '</pre>' +
+              '<div class="row">' +
+                '<button class="btn ghost" data-copy="#' + clId + '">Copy</button>' +
+                '<button class="btn" data-cl-pdf="1">Download as PDF</button>' +
+                '<span class="saved">' +
+                  (s.coverLetterUpdated ? 'Written ' + esc(pretty(s.coverLetterUpdated)) : '') +
+                '</span>' +
+              '</div>'
+            : READ_FAILED
+              ? '<p class="clnone">This panel is blank because the page could not read its own ' +
+                'saved state, <em>not</em> because no letter exists. Reload before concluding ' +
+                'anything from it.</p>'
+              : '<p class="clnone">No letter is stored against this role yet. Nothing is hidden ' +
+                'and nothing failed to load. When one is written it appears here in full, ready ' +
+                'to copy or to take away as a PDF.</p>') +
+          // Deliberately NOT class="err". The card's own error box is queried with
+          // querySelector('.err'), which takes the FIRST match, so giving this one
+          // that class would silently redirect every save-failure message into a
+          // collapsed panel nobody opens.
+          '<div class="clerr"></div>' +
+        '</div>' +
+      '</details>' +
+
       '<label class="fld">Outcome, once you hear back</label>' +
       '<select class="outcome">' +
         OUTCOMES.map(function (o) {
@@ -570,6 +635,28 @@ order by decided_at desc nulls last;</code>
 
     wire(el, role);
     return el;
+  }
+
+  // Loaded once, on first use, and the same promise is handed to every later
+  // caller so five roles do not pull the library five times.
+  var jsPdfPromise = null;
+  function loadJsPDF() {
+    if (window.jspdf && window.jspdf.jsPDF) { return Promise.resolve(window.jspdf.jsPDF); }
+    if (jsPdfPromise) { return jsPdfPromise; }
+    jsPdfPromise = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = function () {
+        if (window.jspdf && window.jspdf.jsPDF) { resolve(window.jspdf.jsPDF); }
+        else { jsPdfPromise = null; reject(new Error('the PDF library loaded but exposed nothing usable')); }
+      };
+      s.onerror = function () {
+        jsPdfPromise = null;
+        reject(new Error('the PDF library could not be downloaded, check the connection'));
+      };
+      document.head.appendChild(s);
+    });
+    return jsPdfPromise;
   }
 
   function wire(el, role) {
@@ -616,6 +703,51 @@ order by decided_at desc nulls last;</code>
       }).catch(function (err) {
         showErr('That change', err);
       }).then(function () { lock(false); });
+    }
+
+    // ---- Cover letter: PDF. ------------------------------------------
+    // jsPDF is fetched on the FIRST click rather than on page load, so a role
+    // with no letter never pays for it. A failure to load says so out loud in
+    // the card instead of leaving a dead button.
+    var pdfBtn = el.querySelector('[data-cl-pdf]');
+    if (pdfBtn) {
+      pdfBtn.addEventListener('click', function () {
+        var s2 = STATE[role.key] || {};
+        var text = String(s2.coverLetter || '').trim();
+        var clErr = el.querySelector('.clerr');
+        clErr.removeAttribute('data-shown'); clErr.innerHTML = '';
+        if (!text) {
+          clErr.setAttribute('data-shown','1');
+          clErr.innerHTML = '<strong>Nothing to export.</strong> This role has no stored letter.';
+          return;
+        }
+        var o = pdfBtn.textContent;
+        pdfBtn.disabled = true; pdfBtn.textContent = 'Building the PDF...';
+        loadJsPDF().then(function (JsPDF) {
+          var doc = new JsPDF({ unit:'pt', format:'letter' });
+          var M = 72, W = 612 - M * 2, LH = 15.5;
+          var y = M;
+          doc.setFont('times', 'normal'); doc.setFontSize(11);
+          text.split(/\n\s*\n/).forEach(function (para) {
+            var lines = doc.splitTextToSize(para.replace(/\s*\n\s*/g, ' ').trim(), W);
+            lines.forEach(function (ln) {
+              if (y > 792 - M) { doc.addPage(); y = M; }
+              doc.text(ln, M, y); y += LH;
+            });
+            y += LH * 0.75;
+          });
+          var safe = function (v) { return String(v || '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, ''); };
+          doc.save('Boubacar_Barry_CoverLetter_' + safe(role.company) + '.pdf');
+          pdfBtn.textContent = 'Downloaded'; pdfBtn.disabled = false;
+          setTimeout(function () { pdfBtn.textContent = o; }, 1800);
+        }).catch(function (err) {
+          pdfBtn.textContent = o; pdfBtn.disabled = false;
+          clErr.setAttribute('data-shown','1');
+          clErr.innerHTML = '<strong>The PDF was NOT created.</strong> The letter itself is fine and ' +
+            'still on screen, so use Copy and paste it wherever it needs to go. Error: <code>' +
+            esc(err && err.message ? err.message : String(err)) + '</code>';
+        });
+      });
     }
 
     el.querySelector('[data-copy-link]').addEventListener('click', function () {
@@ -877,6 +1009,7 @@ order by decided_at desc nulls last;</code>
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
 
 
 
