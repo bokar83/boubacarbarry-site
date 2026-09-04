@@ -145,7 +145,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['gate_passw
         exit;
     }
 
+    // The hint (never the password) is shown ONLY after a failed attempt, never
+    // on the initial form -- a drive-by visitor who has submitted nothing gets
+    // no hint text at all. Boubacar's explicit, deliberate call: he would
+    // otherwise have to ask an agent for it every time he mistypes. The hint
+    // itself lives in the key file above public_html, alongside the hash and
+    // signing secret it never overwrites.
     $error  = 'That password did not match. Check it with the eye, then try again.';
+    $hint   = trim((string) ($key['hint'] ?? ''));
+    if ($hint !== '') {
+        $error .= ' Hint: ' . $hint;
+    }
     $authed = false;
 }
 

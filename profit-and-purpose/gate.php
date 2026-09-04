@@ -120,7 +120,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['gate_passw
         exit;
     }
 
+    // The hint (never the password) is shown ONLY after a failed attempt, never
+    // on the initial form. Boubacar's explicit, deliberate call, same as the
+    // /review/ gate above -- see reference_password_hint_register.md.
     $error  = 'That did not match. Use the eye to check what you typed.';
+    $hint   = trim((string) ($key['hint'] ?? ''));
+    if ($hint !== '') {
+        $error .= ' Hint: ' . $hint;
+    }
     $authed = false;
 }
 

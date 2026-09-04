@@ -108,7 +108,7 @@ function dojo_api_base(): string
 // Key material
 // ---------------------------------------------------------------------------
 
-/** @return array{hash:string,secret:string,api_base:string}|null */
+/** @return array{hash:string,secret:string,api_base:string,hint:string}|null */
 function dojo_load_key(): ?array
 {
     static $cached = null;
@@ -154,6 +154,7 @@ function dojo_load_key(): ?array
         'hash'     => $hash,
         'secret'   => $secret,
         'api_base' => (string) ($data['api_base'] ?? ''),
+        'hint'     => (string) ($data['hint'] ?? ''),
     ];
     return $cached;
 }
@@ -615,7 +616,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gate_password'])) {
     dojo_record_failure();
     // Same message and same timing whether the passphrase was wrong or the
     // account was throttled a moment ago. Nothing here confirms a near miss.
-    dojo_login('That passphrase is not right.');
+    // The hint (never the passphrase) rides along ONLY on this failed-attempt
+    // path, never on the initial GET -- Boubacar's explicit, deliberate call,
+    // same as the /review/ and /profit-and-purpose/ gates on this domain.
+    $hint = trim((string) $key['hint']);
+    dojo_login('That passphrase is not right.' . ($hint !== '' ? ' Hint: ' . $hint : ''));
 }
 
 if (!dojo_is_authed()) {
