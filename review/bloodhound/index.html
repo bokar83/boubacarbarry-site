@@ -230,7 +230,8 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v10 · 2026-09-04-16:51:54 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v11 · 2026-09-04-16:59:02 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -931,13 +932,15 @@ order by decided_at desc nulls last;</code>
 
     // ---- Applied: one tap, writes immediately, and archives the role -----
     // out of the live/undecided list. ACTIVE/ROLLING is a decision queue
-    // (corrected 2026-09-04); a role he has applied to is no longer
-    // undecided, so it moves to the archive tab automatically. Never
-    // deleted, and notes/outcome/cover-letter stay fully editable there --
-    // buildCard/wire render archived roles the same way as live ones.
-    // Un-applying (second tap) does NOT auto-restore it to live; that stays
-    // a deliberate action via the existing Archive/Restore button so a
-    // mis-tap never silently repopulates the queue.
+    // (corrected 2026-09-04, then broadened same day): the organizing
+    // principle is DECIDED vs UNDECIDED, not applied vs skipped. Any
+    // decision -- applied OR skipped -- means the role no longer needs a
+    // call from him, so it archives automatically. Clearing a decision
+    // (second tap) makes it undecided again, so it un-archives. Never
+    // deleted either way, and notes/outcome/cover-letter stay fully
+    // editable in archive -- buildCard/wire render archived roles the same
+    // way as live ones. The manual Archive/Restore button still exists for
+    // anything outside this decided/undecided model.
     el.querySelector('[data-set="applied"]').addEventListener('click', function () {
       var s = STATE[role.key] || {};
       var next = s.decision === 'applied' ? '' : 'applied';
@@ -950,7 +953,7 @@ order by decided_at desc nulls last;</code>
         decidedAt: next ? new Date().toISOString() : null,
         reasonTag: next === 'applied' ? '' : (next ? (s.reasonTag||'') : ''),
         reason:    next === 'applied' ? '' : (next ? (s.reason||'')    : ''),
-        archived:  next === 'applied' ? true : s.archived,
+        archived:  !!next,
         history: hist
       });
       commit(payload, render);
@@ -960,10 +963,12 @@ order by decided_at desc nulls last;</code>
     el.querySelector('[data-set="skipped"]').addEventListener('click', function () {
       var s = STATE[role.key] || {};
       if (s.decision === 'skipped') {
-        // Un-skip. Clears the decision and its reason together.
+        // Un-skip. Clears the decision and its reason together, and returns
+        // the role to undecided -- so it un-archives too (see the Applied
+        // handler's comment: archived is derived from "has a decision").
         var hist = Array.isArray(s.history) ? s.history.slice() : [];
         hist.push({ decision: 'cleared', from: 'skipped', at: new Date().toISOString() });
-        commit(merged(role, { decision:'', decidedAt:null, reasonTag:'', reason:'', history:hist }), render);
+        commit(merged(role, { decision:'', decidedAt:null, reasonTag:'', reason:'', archived:false, history:hist }), render);
         return;
       }
       skipEl.setAttribute('data-open','1');
@@ -1006,7 +1011,7 @@ order by decided_at desc nulls last;</code>
       hist.push({ decision:'skipped', from: s.decision || '', at: new Date().toISOString(), tag: chosenTag });
       commit(merged(role, {
         decision:'skipped', reasonTag: chosenTag, reason: txt,
-        decidedAt: new Date().toISOString(), history: hist
+        decidedAt: new Date().toISOString(), archived: true, history: hist
       }), render);
     });
 
@@ -1188,6 +1193,7 @@ order by decided_at desc nulls last;</code>
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
 
 
 
