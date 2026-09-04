@@ -213,7 +213,12 @@
     // Every write is followed by a READ-BACK before anything on screen says
     // "saved". A 200 is a claim, not proof, and a silent failure on a board he
     // actually runs his day off is worse than no feature at all.
-    var NOTES_API = cfg.notesApi || 'https://agentshq.boubacarbarry.com/api/orc/content-review-decisions';
+    // Atlas Mission Control -- the second of the two surfaces Boubacar runs his day
+  // from. Canonical URL per docs/LIVE_STATE.md. PIN-locked; not a /review/ page, and
+  // NOT boubacarbarry.com/monitor, which is a demoted demo prop.
+  var MISSION_CONTROL_URL = 'https://agentshq.boubacarbarry.com/atlas';
+
+  var NOTES_API = cfg.notesApi || 'https://agentshq.boubacarbarry.com/api/orc/content-review-decisions';
     var NOTES_SLUG = cfg.notesSlug || ('money-map-' + BOARD);
     var NOTES = {};             // item key -> [ { note_text, created_at }, ... ]
     var NOTES_OPEN = {};        // item key -> true while its notes panel is open
@@ -445,6 +450,15 @@
               '<a href="#sec-later">Later</a>' +
               '<a href="#sec-done">Done</a>' +
               '<a href="#sec-notes">Notes</a>' +
+              // The other half of the pair. Boubacar runs his day from exactly two
+              // surfaces -- this page and Atlas Mission Control -- and said "the two of
+              // them even communicate together." Atlas already deep-links INTO the Money
+              // Map from its row-0 strip; until 2026-09-04 there was no way back, so he
+              // had to hold the second URL in his head. Host is stable and is the
+              // canonical URL recorded in docs/LIVE_STATE.md; it is not cycle-scoped, so
+              // there is nothing to derive. rel=noopener because target=_blank.
+              '<a class="mm-nav-out" href="' + MISSION_CONTROL_URL + '"' +
+                ' target="_blank" rel="noopener noreferrer">Mission Control &#8599;</a>' +
             '</div>' +
           '</nav>' +
 
