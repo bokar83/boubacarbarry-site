@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Friday Morning Brief</title>
+<!--
+  CANONICAL REVIEW-PAGE TEMPLATE for boubacarbarry.com/review/<slug>/
+
+  Start every review page from this file. It is compliant with the layout hard standard out
+  of the box, and scripts/validate-review-page.ps1 (which publish-review.ps1 runs on every
+  publish and REFUSES to ship past) is written against exactly this structure.
+
+  THE FIVE RULES, Boubacar verbatim 2026-08-11:
+    1. TL;DR at the very top, sections underneath it.
+    2. The TL;DR itself is collapsible.
+    3. Every section collapsible with a toggle.
+    4. A back-to-top button on every page.
+    5. Hamburger nav on mobile, normal nav on desktop, floating if practical.
+
+  THE REASON, which matters more than the list:
+    "I don't want to have to read 30 pages of a TL;DR to get to the content every single
+     time. I need to be able to just quickly jump into this after future reviews."
+    => Design for the SECOND visit. Rules 4 and the fold-state memory that makes the second
+       visit fast are AUTO-INJECTED at publish time by scripts/inject-review-furniture.ps1,
+       so do not hand-roll a back-to-top button here -- you would get two.
+
+  WHAT YOU EDIT: the {{PLACEHOLDERS}}, the nav links, and the <section> blocks. Keep the
+  <details><summary><h2>...</h2></summary> shape on every section; that shape IS the check.
+
+  STANDS ALONE ON PURPOSE: no external CSS, no external JS, no fonts, no CDN. He opens these
+  on a phone on bad wifi, and a shared include that fails to load would take the furniture
+  down with the page. Duplicated bytes are the cheaper trade.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+
+<style>
+  .lead-box{background:#182420; border-left:3px solid var(--good); padding:12px 14px; border-radius:0 8px 8px 0;}
+  .risk-box{background:#26201a; border-left:3px solid var(--warn); padding:12px 14px; border-radius:0 8px 8px 0;}
+  .callout{background:var(--bg2); border:1px solid var(--accent); padding:12px 14px; border-radius:8px;}
+  .kv{color:var(--text-dim); font-size:.92rem;}
+  h3{font-size:1rem; margin:20px 0 8px; color:var(--accent2);}
+  pre{white-space:pre-wrap; word-wrap:break-word;}
+  .nolink{color:var(--text);}
+</style>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-03-19:50:32 MT</div><!-- DEPLOY_STAMP_END -->
+
+<meta name="format-detection" content="telephone=no">
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Friday morning &middot; two calls</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">10:00 Dyno Nobel</a>
+      <a href="#sec-2">10:30 Energy4Life</a>
+      <a href="#sec-3">The handoff</a>
+      <a href="#sec-4">Follow-up emails</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Friday morning: two calls, back to back</h1>
+    <div class="meta">Dyno Nobel 10:00 &middot; Energy4Life 10:30 &middot; Friday 2026-09-04</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR: the pre-flight card</h2></summary>
+    <div class="sec-body">
+
+      <p><strong>Two calls, back to back, zero buffer.</strong> 10:00 to 10:30 Dyno Nobel on Teams. 10:30 to 11:15 Energy4Life on the phone, and she calls you.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Time</th><th>Who</th><th>How it connects</th><th>Lead with</th></tr>
+        <tr>
+          <td><strong>10:00<br>10:30</strong></td>
+          <td><strong>Dyno Nobel</strong><br>Ryan Reeder, Sr. Recruiter<br>VP Human Resources</td>
+          <td>Microsoft Teams. <a href="https://teams.microsoft.com/meet/224523722917121?p=hUMu59mFCxarMxKPJG">Join link</a>. Dial-in <span class="nolink">+1 385-429-5630</span>, conference ID 647 167 530.</td>
+          <td>Plants, not corporate. Then name the title gap yourself before he has to.</td>
+        </tr>
+        <tr>
+          <td><strong>10:30<br>11:15</strong></td>
+          <td><strong>Energy4Life</strong><br>Rachel Kent Manning, Waterstone<br>Technical Product Lead</td>
+          <td><strong>She calls you.</strong> Nothing to join, nothing to click. Phone on the desk, off silent, from 10:25.</td>
+          <td>The seams. A twelve-person company fails between the wearable, the app and the model, not inside any one of them.</td>
+        </tr>
+      </table>
+      </div>
+      <p><strong>The one rule for the handoff:</strong> aim to wrap Ryan at 10:27. If he is running long because it is going well, let it run and call Rachel straight back.</p>
+      <p>Full prep, still current: <a href="https://boubacarbarry.com/review/20260904-dynonobel-vp-hr-prep/">Dyno Nobel</a> &middot; <a href="https://boubacarbarry.com/review/20260902-energy4life-prep/">Energy4Life</a>. Follow-up emails for both are drafted below, ready to send.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>10:00 &middot; Dyno Nobel, VP Human Resources</h2></summary>
+    <div class="sec-body">
+
+      <p class="kv"><strong>Ryan Reeder</strong>, Sr. Recruiter, Dyno Nobel Inc. <span class="nolink">ryan.reeder@dynonobel.com</span> &middot; mobile <span class="nolink">385-347-1513</span>. Friday 10:00 to 10:30 MT, Microsoft Teams, 30 minutes. Assume it is recorded.</p>
+      <p><strong>Join:</strong> <a href="https://teams.microsoft.com/meet/224523722917121?p=hUMu59mFCxarMxKPJG">teams.microsoft.com/meet/224523722917121</a><br>
+      Meeting ID <strong>224 523 722 917 121</strong>, passcode <strong>uh3YT38E</strong>.<br>
+      <strong>If Teams misbehaves:</strong> <span class="nolink">+1 385-429-5630,,647167530#</span> (phone conference ID 647 167 530). Put it in your phone tonight.</p>
+
+      <h3>Lead with this</h3>
+      <p class="lead-box">Plants, not corporate. Madison and the Dubai repair shop and the power plants are why you do not read like the other VP HR resumes on his desk. Ten years in global HR leadership for a Fortune 100 company, most recently four years in Dubai, and most of it spent close to operations. He is a career talent acquisition leader, so the hiring Kaizen you helped lead, roughly 60 days down to under 30, lands harder with him than with anyone else in that building.</p>
+
+      <h3>Your three questions</h3>
+      <ol>
+        <li><strong>The reporting line.</strong> "The posting names the Chief People Officer among the key relationships. Does this role report directly to Rob Mill, or does it sit under the President of Dyno Nobel Americas?" Highest value, and it shows you read the req.</li>
+        <li><strong>New role or backfill, and what is driving the hire right now?</strong> Post-demerger, new Americas president, new CFO. Build or steady are very different jobs.</li>
+        <li><strong>What does the HR team under this role look like today, and where is the biggest gap?</strong> Team size, structure, and where the pain actually sits.</li>
+      </ol>
+      <p>Close with the process and the timeline, and ask what range the role sits in, since the posting carries no band.</p>
+
+      <h3>The one risk to manage</h3>
+      <p class="risk-box"><strong>The title jump.</strong> Your record reads business partner. This role reads Vice President. Do not let him ask it silently. Put it on the table yourself in the first ten minutes: your titles were business partner titles, and what sat under them was executive-band work, co-leading the restructuring of a global engineering organization and building the multi-year workforce plan for it. You would rather he heard that from you than wondered about it. Do not apologize for it, do not inflate a title, and never say you ran HR for a Fortune 100.</p>
+    </div>
+  </details>
+  <details class="sec" id="sec-2" open>
+    <summary><h2>10:30 &middot; Energy4Life, Technical Product Lead</h2></summary>
+    <div class="sec-body">
+
+      <p class="kv"><strong>Rachel Kent Manning</strong>, Recruiting Principal, Waterstone Human Capital. Friday 10:30 to 11:15am MT, 45 minutes. First conversation with an external recruiter, not an interview, and no company-side contact yet.</p>
+      <p class="callout"><strong>She rings you.</strong> Her own words on the booking form: "I'll ring you on the number listed on your CV. (This is NOT a Zoom.)" There is nothing to join at 10:30. Phone on the desk, charged, ringer on, from 10:25.</p>
+
+      <h3>Lead with this</h3>
+      <p class="lead-box">The seams. A company of twelve to fifteen people with a wearable, a device, an app and an AI layer does not fail on any one of those, it fails on the seams between them, and owning the seams inside a global engineering organization is what you did for a decade. Then name the gap yourself in the first five minutes: no wearables, no biosignals, no product management title, no engineering credential.</p>
+
+      <h3>Your three questions</h3>
+      <ol>
+        <li><strong>Send me the written job description.</strong> There is no public posting with this title anywhere. Get the req so you react to what they wrote, not to a summary.</li>
+        <li><strong>Who does this person report to, and who reports to them?</strong> "Conductor" can mean a lead with a team or a lead with influence and no authority. Different jobs, different prices.</li>
+        <li><strong>Is $130,000 to $150,000 the approved band, and where in it would someone with my background land?</strong> Do not name a number first. Their floor sits under yours.</li>
+      </ol>
+      <p>If there is room, the due-diligence question is worth asking calmly: the category has published criticism, including an upheld UK advertising complaint under the prior name. How does the leadership team talk about that internally, and what does the evidence roadmap look like? A defensive answer tells you something. A specific, unbothered one tells you something better.</p>
+
+      <h3>The one risk to manage</h3>
+      <p class="risk-box"><strong>Do not let a startup story talk you under your floor, and do not leave the category question unpriced.</strong> Their band starts below your working floor of $140,000, the equity is unproven, and you would be the technical lead on a product whose category is publicly contested while you are building a name people are supposed to trust on AI and HR. That is a real cost, it is asymmetric against the other roles in play, and it belongs in the decision now rather than being discovered later. None of that is a reason to skip the call. Take it, ask the three questions, and keep it as leverage.</p>
+    </div>
+  </details>
+  <details class="sec" id="sec-3" open>
+    <summary><h2>The handoff: 10:25 to 10:32</h2></summary>
+    <div class="sec-body">
+
+      <p>The Dyno Nobel call ends at the exact minute the Energy4Life call starts. Nothing sits between them.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Clock</th><th>Do this</th></tr>
+        <tr><td><strong>9:50</strong></td><td>Teams open and tested. Dial-in number already in your phone. Water on the desk.</td></tr>
+        <tr><td><strong>10:25</strong></td><td>Phone on the desk, off silent, ringer on. If Ryan is still going, say it plainly: "Ryan, I have a hard stop at 10:30. What is the best way to keep this moving?" That is a normal thing to say, and it signals you are in demand.</td></tr>
+        <tr><td><strong>10:27</strong></td><td>Aim to wrap. Ask the process and timeline question here if you have not already.</td></tr>
+        <tr><td><strong>10:30</strong></td><td>Rachel rings. If she rings while you are still on Teams, let it go and call her back the moment you hang up. Apologize once, say only "I was on another call", and move on. Never try to hold two conversations at once.</td></tr>
+        <tr><td><strong>11:15</strong></td><td>Leave 11:15 to 11:45 empty. Write your notes on both calls while they are fresh, then send the two follow-ups below.</td></tr>
+      </table>
+      </div>
+      <p><strong>The exception that overrides the clock:</strong> if Ryan runs long because it is going well, let it run. A recruiter who blows past his own thirty minutes is telling you something. Be two or three minutes late to Rachel and apologize, rather than cutting off the better opportunity.</p>
+    </div>
+  </details>
+  <details class="sec" id="sec-4" open>
+    <summary><h2>After each call: the two follow-up emails</h2></summary>
+    <div class="sec-body">
+
+      <p>Both drafted, both voice-checked. Fill the bracket after each call and send. Do not add a sign-off or your name, your mail client appends the signature itself.</p>
+
+      <h3>To Ryan Reeder, after the Dyno Nobel call</h3>
+      <p class="kv"><span class="nolink">ryan.reeder@dynonobel.com</span></p>
+      <p><strong>Subject</strong></p>
+      <pre>Thank you for your time today</pre>
+      <p><strong>Body</strong></p>
+      <pre>Hi Ryan, thank you for the time this morning. I enjoyed the conversation, and [ONE SPECIFIC THING HE SAID] is the part that stayed with me. This is the kind of HR seat I want, close to the sites and close to the work. Happy to send anything else that helps you move this forward with the hiring leader. Looking forward to hearing about next steps.</pre>
+
+      <h3>To Rachel Kent Manning, after the Energy4Life call</h3>
+      <p class="kv">Reply on her existing thread in the Catalyst Works mailbox.</p>
+      <p><strong>Subject</strong></p>
+      <pre>Thank you for the call today</pre>
+      <p><strong>Body</strong></p>
+      <pre>Hi Rachel, thank you for the call this morning. I enjoyed getting a fuller picture of Energy4Life, and [ONE SPECIFIC THING FROM THE CALL] was useful to hear. When you have it, could you send over the written job description? I would rather react to what they wrote than to a summary. Looking forward to hearing what comes back from them.</pre>
+
+      <p>The bracket is the only thing that needs you. One concrete thing they actually said, in your own words. If nothing specific stands out, cut the clause rather than inventing one.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Built 2026-09-03 for the Friday 2026-09-04 morning. Logistics read from the two live prep pages, not from recollection:
+    <a href="https://boubacarbarry.com/review/20260904-dynonobel-vp-hr-prep/">Dyno Nobel prep</a> and
+    <a href="https://boubacarbarry.com/review/20260902-energy4life-prep/">Energy4Life prep</a>. This page is a pre-flight card, not a replacement for either.
+    Both follow-up emails were voice-gated before publishing. Pipeline tracker: <a href="/review/job-pipeline/">/review/job-pipeline/</a>.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
