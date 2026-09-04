@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Routing Review</title>
+<!--
+  CANONICAL REVIEW-PAGE TEMPLATE for boubacarbarry.com/review/<slug>/
+
+  Start every review page from this file. It is compliant with the layout hard standard out
+  of the box, and scripts/validate-review-page.ps1 (which publish-review.ps1 runs on every
+  publish and REFUSES to ship past) is written against exactly this structure.
+
+  THE FIVE RULES, Boubacar verbatim 2026-08-11:
+    1. TL;DR at the very top, sections underneath it.
+    2. The TL;DR itself is collapsible.
+    3. Every section collapsible with a toggle.
+    4. A back-to-top button on every page.
+    5. Hamburger nav on mobile, normal nav on desktop, floating if practical.
+
+  THE REASON, which matters more than the list:
+    "I don't want to have to read 30 pages of a TL;DR to get to the content every single
+     time. I need to be able to just quickly jump into this after future reviews."
+    => Design for the SECOND visit. Rules 4 and the fold-state memory that makes the second
+       visit fast are AUTO-INJECTED at publish time by scripts/inject-review-furniture.ps1,
+       so do not hand-roll a back-to-top button here -- you would get two.
+
+  WHAT YOU EDIT: the {{PLACEHOLDERS}}, the nav links, and the <section> blocks. Keep the
+  <details><summary><h2>...</h2></summary> shape on every section; that shape IS the check.
+
+  STANDS ALONE ON PURPOSE: no external CSS, no external JS, no fonts, no CDN. He opens these
+  on a phone on bad wifi, and a shared include that fails to load would take the furniture
+  down with the page. Duplicated bytes are the cheaper trade.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-04-08:05:55 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Model Routing Review</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">Fable 5.1</a>
+      <a href="#sec-2">The money</a>
+      <a href="#sec-3">The alarm</a>
+      <a href="#sec-4">Roles</a>
+      <a href="#sec-5">The change</a>
+      <a href="#sec-6">Decisions</a>
+        </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Model Routing Review</h1>
+    <div class="meta">Live OpenRouter audit of the automation system's model choices &middot; 2026-09-04</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>No to Fable 5.1 as the coordination model. Keep Sonnet 5.</strong> It is 5x the
+price, and the role it would upgrade recorded <strong>zero calls in 30 days</strong>. It is
+now registered by name so you can call for it any time; nothing routes to it automatically.
+If you ever want more headroom there, it is Opus 5 at half Fable's price, not Fable.</p>
+
+<p><strong>The real finding is not about models.</strong> This entire system costs
+<strong>$18.45 a month</strong>, and <strong>83% of it is one health check</strong> asking
+whether the system is awake, using a premium reasoning model to do it.</p>
+
+<p><strong>The scheduled review you asked about does not exist.</strong> Worse: a daily
+model-death alarm was built, reviewed, and <strong>has never run once</strong>, while the
+code claimed in writing that it runs daily. I corrected the false claim and wrote the
+installer. <strong>I did not install it. That is your call.</strong></p>
+
+<p><strong>No role needed its model changed.</strong> All 20 models in use are alive and
+correctly priced. Branch <code>fix/orchestrator-model-routing-refresh</code>, commit
+<code>c9ed6a15b2a1</code>, pushed for the gate, not merged by me.</p>
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1">
+    <summary><h2>Verdict on Fable 5.1</h2></summary>
+    <div class="sec-body">
+      <p><strong>No. Do not move the coordination role to Fable 5.1. Keep it on Sonnet 5.</strong>
+Fable 5.1 is now registered by name so you can call for it on any single task, but nothing
+routes to it automatically.</p>
+
+<p>The reason is not that Fable is weak. It is that the thing you would be paying 5x for
+<strong>is not running</strong>.</p>
+
+<div class="table-scroll">
+<table>
+<tr><th>Model</th><th>Input / MTok</th><th>Output / MTok</th><th>Context</th><th>vs Sonnet 5</th></tr>
+<tr><td>Sonnet 5 <em>(current)</em></td><td>$2.00</td><td>$10.00</td><td>1M</td><td>baseline</td></tr>
+<tr><td>Opus 5</td><td>$5.00</td><td>$25.00</td><td>1M</td><td>2.5x</td></tr>
+<tr><td>Fable 5.1</td><td>$10.00</td><td>$50.00</td><td>1M</td><td><strong>5x</strong></td></tr>
+</table>
+</div>
+
+<p>You gave a tiebreaker: prefer the cheaper model unless the dearer one is meaningfully
+stronger, and let dollars per week carry the call. So here are the dollars.</p>
+
+<p>The coordination role had <strong>zero recorded calls in the last 30 days</strong>. The
+entire automation system's model spend, every crew, every role, is
+<strong>$18.45 a month</strong>. Switching that role to Fable 5.1 would change
+<strong>under $1 a week</strong> in either direction, which means dollars per week cannot
+carry the decision at all. When the money is silent, your standing rule speaks: Sonnet by
+default, Opus or Fable only when you name it.</p>
+
+<p><strong>On the observation that other companies default their orchestrator to Fable
+5.1.</strong> That is true and it does not transfer. In those products the coordinator is
+the thing doing the thinking, at volume, for a paying user. Here the coordinator delegates
+to specialist workers, stops after five turns, and everything it produces waits for your
+approval before anything acts on it. You are paying a frontier premium for judgment that
+you then personally review anyway.</p>
+
+<p>If you ever do want to buy more headroom on that role, the answer is
+<strong>Opus 5, not Fable 5.1</strong>: half the price, same million-token context, same
+provider, and Anthropic's own position is that it matches Fable in many domains. Say the
+word and it is a one-line change.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2">
+    <summary><h2>Where the money actually goes</h2></summary>
+    <div class="sec-body">
+      <p>This is the part worth your attention, and it is not the part you asked about.</p>
+
+<p>Read from the system's own spend ledger, which records every single model call with its
+cost. Last 30 days:</p>
+
+<div class="table-scroll">
+<table>
+<tr><th>What</th><th>Calls</th><th>Cost</th><th>Share</th></tr>
+<tr><td><strong>A health check</strong></td><td>742</td><td><strong>$15.33</strong></td><td><strong>83%</strong></td></tr>
+<tr><td>Video and channel production</td><td>1,410</td><td>$1.74</td><td>9%</td></tr>
+<tr><td>Untagged</td><td>70</td><td>$0.89</td><td>5%</td></tr>
+<tr><td>The five-voice review panel</td><td>210</td><td>$0.38</td><td>2%</td></tr>
+<tr><td>Cheap availability probe</td><td>7,427</td><td>$0.09</td><td>&lt;1%</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>~9,860</strong></td><td><strong>$18.45</strong></td><td></td></tr>
+</table>
+</div>
+
+<p>Four fifths of the bill is a monitor asking the system whether it is awake. It burns
+4.5 million input tokens a month to do it, because it does not just ping. It runs a full
+reasoning agent and asks it a real question, on the premium model, roughly once an hour,
+forever.</p>
+
+<p><strong>This was caught before.</strong> In June the same check was found eating about
+$140 a month and the fix cut how often it runs. The other half of that fix, written down at
+the time as "probe with a cheap model", was never done. Three months later it is still the
+single largest line item.</p>
+
+<p><strong>I did not change it, deliberately.</strong> Its model is set by the live chat
+agent it calls, so making it cheaper would stop it testing the real thing, which is the
+entire point of a health check. And its schedule lives on the server outside version
+control, which puts it in shared infrastructure. The right fix is the one nobody has asked
+yet: <em>why is a liveness check running a functional test on the same timer?</em> A cheap
+ping every few minutes and a real functional test once a day would cost a fraction and
+tell you more. That needs a decision and an owner, not a drive-by edit.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3">
+    <summary><h2>The alarm that never rang</h2></summary>
+    <div class="sec-body">
+      <p>You asked me to check whether the routing review runs on a schedule. Here is exactly
+what I found, checked against the server itself rather than the documentation.</p>
+
+<div class="table-scroll">
+<table>
+<tr><th>Mechanism</th><th>Supposed to</th><th>Actual state</th></tr>
+<tr><td>Daily model-death check</td><td>Run daily, alert within 24h</td><td><strong>Never installed. Has never run once.</strong></td></tr>
+<tr><td>Weekly model quality review</td><td>Run weekly</td><td><strong>Never scheduled.</strong></td></tr>
+<tr><td>Manual routing review</td><td>Weekly, by a human</td><td><strong>Never happened.</strong> Was due 2026-08-19.</td></tr>
+</table>
+</div>
+
+<p>The first one is the one that stings. After a model was retired out from under the system
+and broke the same content flow three times in a row, a daily checker was written to catch
+the next one within a day. It was designed, reviewed, and shipped. <strong>It has zero
+schedulers and zero callers. It has never executed.</strong></p>
+
+<p>And the routing code carried two comments stating, as fact, "the daily check catches the
+next death within 24 hours." That sentence was false the entire time it sat there. Anyone
+reading that file, human or agent, was told the room was monitored. I corrected both
+comments to say plainly that nothing is watching.</p>
+
+<p>Three separate mechanisms built to keep this honest. None of them running. The common
+thread is that every one of them was designed to need a person to remember to start it.</p>
+
+<p>I have written the one-line installer that makes the daily check real. <strong>I have
+deliberately not run it</strong>, because adding a scheduled job to the server is shared
+infrastructure and that is your call. It is a yes or no, and it takes ten seconds.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4">
+    <summary><h2>Every role, checked</h2></summary>
+    <div class="sec-body">
+      <p>I resolved all eleven worker roles at all three difficulty levels against the live code,
+then checked each against the live catalog. <strong>All 20 models currently in use are still
+alive</strong> and their prices are accurate.</p>
+
+<p><strong>No role needed its model changed.</strong> That is the honest result, and it is
+worth more than a manufactured change list. Details on the three that look wrong but are not:</p>
+
+<div class="table-scroll">
+<table>
+<tr><th>Role</th><th>Now</th><th>Verdict</th><th>Why</th></tr>
+<tr><td>Coordination</td><td>Sonnet 5</td><td><strong>Keep</strong></td><td>See the verdict above. Zero measured calls.</td></tr>
+<tr><td>Code</td><td>Sonnet 5</td><td>Keep</td><td>Meets your code floor. Opus only on your ask.</td></tr>
+<tr><td>Client deliverables</td><td>Sonnet 5</td><td>Keep</td><td>Client facing. Correctly pinned.</td></tr>
+<tr><td>Research (hard)</td><td>Sonnet 5</td><td>Keep</td><td>Feeds real client briefs. Correctly pinned.</td></tr>
+<tr><td>Planning (hard)</td><td>cheap model</td><td>Leave alone</td><td><strong>Never called.</strong> No code path reaches it.</td></tr>
+<tr><td>Skill building</td><td>cheap model</td><td>Leave alone</td><td><strong>Never called, at any level.</strong> Dead setting.</td></tr>
+<tr><td>Writing (hard)</td><td>cheap model</td><td>Leave alone</td><td>Its one caller writes image prompts, not your words.</td></tr>
+<tr><td>Social / voice</td><td>Grok 4.3</td><td>Keep</td><td>Correct after the August fix.</td></tr>
+<tr><td>Quality checks</td><td>cheapest</td><td>Keep</td><td>Correctly cheap for mechanical work.</td></tr>
+</table>
+</div>
+
+<p>An earlier audit had flagged those three "cheap model on hard work" rows as suspicious
+but stopped short of changing them. <strong>That caution was right</strong>, and I confirmed
+it by looking for the code that calls them rather than by re-arguing it. Two are never
+called at all. The third writes prompts for image tools, so it never touches anything in
+your voice. Upgrading them would have been pure cost on paths that either never run or
+carry none of your words.</p>
+
+<p>One thing I did not fix and want visible: the catalog has moved, and it has moved in a
+consistent direction. Every model in use that has a newer replacement is <strong>more
+expensive than the current generation doing the same job</strong>. The cheap fast model in
+use costs twice what today's equivalent does. There is a same-price OpenAI model a full
+generation ahead of the one registered. None of this is urgent at $18 a month, but it is
+exactly the drift a real scheduled review would catch, and it is why the scheduled review
+matters more than any single model choice.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5">
+    <summary><h2>What changed, and the proof</h2></summary>
+    <div class="sec-body">
+      <p>Branch <code>fix/orchestrator-model-routing-refresh</code>, commit
+<code>c9ed6a15b2a1</code>. Pushed for the merge gate. <strong>I did not merge it myself.</strong></p>
+
+<p>The change is deliberately close to nothing:</p>
+<ul>
+<li>Fable 5.1 registered by name and correctly priced, so calling for it is one word instead of a code change. <strong>Nothing routes to it.</strong></li>
+<li>The two false "a daily check is watching" comments corrected to say nothing is watching.</li>
+<li>One price corrected to the live value.</li>
+<li>The dead settings documented, so the next review does not re-argue them.</li>
+<li>The installer for the daily check, shipped but not run.</li>
+</ul>
+
+<p>Both required review gates ran <strong>before</strong> anything was applied. The
+ten-principle audit returned <strong>HOLD</strong>, not a pass, on the grounds that I had
+reasoned that adding Fable was harmless rather than measured it. That was the right catch:
+this exact kind of reasoning has been wrong twice before in this file. The five-voice panel
+returned <strong>proceed, with changes</strong>, and forced one specific constraint that I
+applied.</p>
+
+<p>So it was measured, not assumed:</p>
+<ul>
+<li>All 33 role and difficulty combinations resolved before and after. <strong>All 33 identical.</strong></li>
+<li>All 42 possible capability and budget combinations swept. <strong>Fable selected zero times</strong>, including through the fallback path that caused the August misfire.</li>
+<li>Tests: 49 passed. One failure, confirmed <strong>already failing on the main branch</strong> before my change and unrelated to it.</li>
+</ul>
+
+<p>The panel's constraint is worth naming: it blocked me from tagging Fable as a creative
+model. That single tag is what silently sent every social and voice call to the expensive
+model for weeks in August. Keeping Fable out of it keeps it out of the one path that has
+already misfired.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6">
+    <summary><h2>Two decisions for you</h2></summary>
+    <div class="sec-body">
+      <p><strong>1. Install the daily model-death check?</strong></p>
+<p>The checker exists, is written, and has never run. Installing it means one scheduled job
+that makes one web request a day and sends you a message only if something it depends on
+has been retired. It never changes any setting on its own. It touches shared
+infrastructure, which is why it is your call and not mine.</p>
+<ul>
+<li><strong>Yes</strong> is my recommendation. This is the cheapest insurance available against a repeat of the failure that broke the same flow three times.</li>
+<li><strong>No</strong> is defensible too. Nothing is dead right now, I verified all 20 by hand today, and you would be accepting that the next retirement is found by something breaking.</li>
+</ul>
+
+<p><strong>2. Should the next review look at a different bill entirely?</strong></p>
+<p>This whole audit covered a system that costs <strong>$18.45 a month</strong>. That is
+real but it is small. The reasoning you actually rely on all day, the sessions that plan
+and build and argue with you, runs on your subscription, which is a different and far
+larger bill. I was scoped out of touching that deliberately, and it is the right scope for
+a code change. But if the question behind your question was "am I paying for the right
+brains", <strong>the answer lives on that other bill</strong>, and I would point the next
+review there.</p>
+
+<p><strong>Not a decision, but it needs an owner:</strong> the health check eating 83% of
+this budget. It should be split into a cheap frequent ping and a real functional test that
+runs once a day. It has now been flagged twice, three months apart, and gone unfixed both
+times. It needs a date on it or it will be flagged a third time in December.</p>
+    </div>
+  </details>
+
+
+  <footer class="foot">
+    Model prices and availability read live from the OpenRouter catalog on 2026-09-04. Spend figures read from the system's own call ledger, not estimated. Review gates: ten-principle audit returned HOLD then satisfied; five-voice panel returned proceed-with-changes.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
