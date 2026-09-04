@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Role Decisions</title>
+<style>
+  :root{
+    --bg:#14171f; --card:#1b1f29; --card2:#212734; --line:rgba(236,226,210,.14);
+    --ink:#e7e9ee; --dim:#a3abbb; --faint:#7b8497;
+    --terracotta:#FF8F5E; --brass:#C19A6B; --verdigris:#7FB07E; --bronze:#B87333;
+    --rose:#E8836F; --amber:#E5B769;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  /* NO BLUE ON DARK -- explicit base rule, never the browser default. */
+  a{color:var(--terracotta);text-decoration:none;border-bottom:1px solid rgba(255,143,94,.35);}
+  a:visited{color:var(--bronze);border-bottom-color:rgba(184,115,51,.35);}
+  a:hover,a:active{color:#FFB08A;border-bottom-color:#FFB08A;}
+  a:focus-visible{outline:2px solid var(--terracotta);outline-offset:2px;}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 18px 90px;}
+
+  /* ---- nav ---- */
+  nav.nav-bar{position:sticky;top:0;z-index:50;background:rgba(20,23,31,.94);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);}
+  .nav-inner{max-width:1080px;margin:0 auto;padding:10px 18px;
+    display:flex;align-items:center;gap:14px;}
+  .nav-brand{font-weight:700;letter-spacing:.02em;color:var(--ink);border:0;}
+  .nav-links{display:flex;gap:16px;margin-left:auto;}
+  .nav-links a{color:var(--dim);border:0;font-size:14px;font-weight:600;}
+  .nav-links a:hover{color:var(--terracotta);}
+  .nav-toggle{display:none;margin-left:auto;appearance:none;background:transparent;
+    border:1px solid var(--line);border-radius:9px;color:var(--ink);
+    font-size:19px;line-height:1;padding:7px 11px;cursor:pointer;}
+  @media (max-width:760px){
+    .nav-toggle{display:block;}
+    .nav-links{display:none;position:absolute;left:0;right:0;top:100%;
+      flex-direction:column;gap:0;background:#181c25;border-bottom:1px solid var(--line);padding:6px 0;}
+    .nav-links.open{display:flex;}
+    .nav-links a{padding:12px 20px;font-size:15px;}
+  }
+
+  h1{font-size:clamp(25px,4.4vw,36px);margin:26px 0 8px;letter-spacing:-.01em;}
+  h2{font-size:clamp(18px,2.6vw,23px);margin:0;display:inline;}
+  .lede{color:var(--dim);margin:0 0 14px;max-width:62ch;}
+
+  /* ---- the boundary line (Council requirement #3) ---- */
+  .boundary{background:var(--card2);border:1px solid var(--line);
+    border-left:3px solid var(--brass);border-radius:10px;
+    padding:12px 15px;margin:0 0 22px;color:var(--dim);font-size:14.5px;}
+  .boundary strong{color:var(--ink);}
+
+  /* ---- stat tiles ---- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+    gap:10px;margin:0 0 24px;}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px;}
+  .tile .n{font-size:27px;font-weight:750;line-height:1.1;letter-spacing:-.02em;}
+  .tile .l{font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--faint);margin-top:4px;font-weight:650;}
+  .tile[data-k="applied"] .n{color:var(--verdigris);}
+  .tile[data-k="skipped"] .n{color:var(--faint);}
+  .tile[data-k="open"] .n{color:var(--amber);}
+  .tile[data-k="interview"] .n{color:var(--terracotta);}
+
+  details{background:var(--card);border:1px solid var(--line);border-radius:13px;
+    margin:0 0 16px;overflow:hidden;}
+  details>summary{cursor:pointer;padding:14px 17px;list-style:none;
+    display:flex;align-items:center;gap:10px;font-weight:650;}
+  details>summary::-webkit-details-marker{display:none;}
+  details>summary::before{content:"\25B8";color:var(--brass);font-size:13px;
+    transition:transform .16s ease;flex:none;}
+  details[open]>summary::before{transform:rotate(90deg);}
+  details>summary:hover{background:rgba(255,143,94,.05);}
+  .dbody{padding:2px 17px 18px;}
+  details.tldr{border-color:rgba(193,154,107,.4);}
+  details.tldr ul{margin:6px 0 0;padding-left:20px;}
+  details.tldr li{margin:5px 0;color:var(--dim);}
+  details.tldr li b{color:var(--ink);}
+
+  /* ---- role cards ---- */
+  .role{background:var(--card2);border:1px solid var(--line);border-radius:12px;
+    padding:15px 16px;margin:0 0 14px;}
+  .role[data-decision="applied"]{border-left:3px solid var(--verdigris);}
+  .role[data-decision="skipped"]{border-left:3px solid var(--faint);opacity:.82;}
+  .rhead{display:flex;align-items:flex-start;gap:11px;flex-wrap:wrap;}
+  .tick{flex:none;width:26px;height:26px;border-radius:50%;
+    border:1.5px solid var(--line);color:transparent;
+    display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;
+    margin-top:2px;transition:.16s;}
+  .tick[data-done="1"]{background:var(--verdigris);border-color:var(--verdigris);color:#12160f;}
+  .tick[data-done="skip"]{background:transparent;border-color:var(--faint);color:var(--faint);}
+  .rtitle{flex:1 1 260px;min-width:0;}
+  .rtitle .t{font-weight:700;font-size:17px;line-height:1.35;}
+  .rtitle .c{color:var(--dim);font-size:14px;margin-top:2px;}
+  .score{flex:none;background:rgba(193,154,107,.16);border:1px solid rgba(193,154,107,.4);
+    color:var(--brass);border-radius:8px;padding:4px 9px;font-weight:750;font-size:13.5px;}
+  .meta{display:flex;flex-wrap:wrap;gap:7px;margin:11px 0 0;}
+  .meta span{background:rgba(255,255,255,.045);border:1px solid var(--line);
+    border-radius:7px;padding:4px 9px;font-size:12.5px;color:var(--dim);}
+  .meta span b{color:var(--ink);font-weight:650;}
+
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:13px;}
+  .btn{appearance:none;cursor:pointer;font:650 13.5px/1 inherit;color:var(--ink);
+    background:rgba(255,255,255,.06);border:1px solid var(--line);
+    border-radius:9px;padding:10px 14px;min-height:40px;transition:.15s;}
+  .btn:hover:not(:disabled){background:rgba(255,143,94,.14);border-color:var(--terracotta);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn:focus-visible{outline:2px solid var(--terracotta);outline-offset:2px;}
+  .btn[aria-pressed="true"][data-set="applied"]{background:rgba(127,176,126,.2);
+    border-color:var(--verdigris);color:var(--verdigris);}
+  .btn[aria-pressed="true"][data-set="skipped"]{background:rgba(163,171,187,.16);
+    border-color:var(--faint);color:var(--dim);}
+  .btn.apply{background:rgba(255,143,94,.15);border-color:rgba(255,143,94,.5);
+    color:var(--terracotta);text-decoration:none;display:inline-flex;align-items:center;}
+  .btn.apply:hover{background:rgba(255,143,94,.26);}
+  .btn.ghost{font-weight:600;color:var(--dim);padding:8px 11px;min-height:34px;font-size:12.5px;}
+
+  select,textarea{width:100%;background:#161a22;color:var(--ink);
+    border:1px solid var(--line);border-radius:9px;padding:10px 11px;
+    font:inherit;font-size:14px;}
+  select{width:auto;min-width:200px;min-height:40px;}
+  textarea{resize:vertical;min-height:74px;margin-top:7px;}
+  select:focus,textarea:focus{outline:2px solid var(--terracotta);outline-offset:1px;border-color:var(--terracotta);}
+  label.fld{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--faint);font-weight:650;margin:14px 0 5px;}
+
+  /* ---- skip panel ---- */
+  .skip{display:none;margin-top:13px;padding:13px 14px;border-radius:11px;
+    background:rgba(232,131,111,.07);border:1px solid rgba(232,131,111,.34);}
+  .skip[data-open="1"]{display:block;}
+  .skip h4{margin:0 0 3px;font-size:14.5px;color:var(--rose);}
+  .skip p.why{margin:0;color:var(--dim);font-size:13.5px;}
+  .tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;}
+  .tag{appearance:none;cursor:pointer;font:600 13px/1 inherit;color:var(--dim);
+    background:rgba(255,255,255,.05);border:1px solid var(--line);
+    border-radius:999px;padding:9px 13px;min-height:36px;transition:.15s;}
+  .tag:hover{border-color:var(--rose);color:var(--ink);}
+  .tag[aria-pressed="true"]{background:rgba(232,131,111,.24);border-color:var(--rose);
+    color:#ffd9cf;}
+  .tag:focus-visible{outline:2px solid var(--rose);outline-offset:2px;}
+  .gate{display:none;margin-top:10px;padding:9px 12px;border-radius:9px;
+    background:rgba(232,131,111,.16);border:1px solid var(--rose);
+    color:#ffd0c4;font-size:13.5px;font-weight:600;}
+  .gate[data-shown="1"]{display:block;}
+
+  .saved{font-size:12.5px;color:var(--verdigris);}
+  .saved[data-dirty="1"]{color:var(--amber);}
+  .err{display:none;margin-top:10px;padding:11px 13px;border-radius:9px;
+    background:rgba(232,131,111,.16);border:1px solid var(--rose);
+    color:#ffd0c4;font-size:13.5px;}
+  .err[data-shown="1"]{display:block;}
+  .err code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;font-size:12px;}
+
+  .banner{margin:0 0 18px;padding:13px 15px;border-radius:11px;
+    background:rgba(232,131,111,.15);border:1px solid var(--rose);color:#ffd6cb;font-size:14px;}
+  .banner code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;}
+
+  .codebox{position:relative;background:#0f1219;border:1px solid var(--line);
+    border-radius:10px;padding:13px 15px;margin-top:10px;overflow-x:auto;}
+  .codebox code{font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#e2ddd4;white-space:pre;}
+  .copy{position:absolute;top:8px;right:8px;}
+
+  .empty{color:var(--faint);font-style:italic;padding:6px 0;}
+  .note{color:var(--faint);font-size:13px;margin-top:12px;}
+  @media (max-width:560px){
+    .wrap{padding:0 13px 90px;}
+    .role{padding:13px 13px;}
+    .btn{padding:10px 12px;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-03-22:31:17 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <a class="nav-brand" href="#top">Role Decisions</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#live">Live roles</a>
+      <a href="#archive">Archive</a>
+      <a href="#how">How this works</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap" id="top">
+
+  <h1>Role decisions</h1>
+  <p class="lede">Every role the search turned up, what you decided, and why. The why is the
+    part that teaches the next cycle what not to send you.</p>
+
+  <div class="boundary">
+    <strong>What this board is.</strong> It tracks roles the automated search sourced and your
+    decisions on them. Your broader job-search tracker, the one with leads you added by hand,
+    lives at <a href="/review/job-pipeline/">review/job-pipeline/</a>. Some roles will appear on
+    both. That overlap is expected, not a bug.
+  </div>
+
+  <div class="tiles" id="tiles" aria-live="polite">
+    <div class="tile" data-k="total"><div class="n" data-n="total">&mdash;</div><div class="l">Roles</div></div>
+    <div class="tile" data-k="applied"><div class="n" data-n="applied">&mdash;</div><div class="l">Applied</div></div>
+    <div class="tile" data-k="skipped"><div class="n" data-n="skipped">&mdash;</div><div class="l">Skipped</div></div>
+    <div class="tile" data-k="open"><div class="n" data-n="open">&mdash;</div><div class="l">No call yet</div></div>
+    <div class="tile" data-k="interview"><div class="n" data-n="interview">&mdash;</div><div class="l">Interviewing</div></div>
+    <div class="tile" data-k="archived"><div class="n" data-n="archived">&mdash;</div><div class="l">Archived</div></div>
+  </div>
+
+  <details class="tldr" id="tldr" open>
+    <summary>TL;DR</summary>
+    <div class="dbody">
+      <ul>
+        <li><b>Five roles are live below</b>, senior and executive band, all confirmed still
+          posted on 2026-09-03.</li>
+        <li><b>Two calls, kept separate.</b> First the decision: applied, or skipped. Later, and
+          only if you applied, the outcome: interview, offer, rejected, withdrawn.</li>
+        <li><b>Skipping asks for a reason and will not accept a blank one.</b> Tap the tag that
+          fits, then say it in your own words, even briefly. Both are required.</li>
+        <li><b>That reason is the whole point.</b> The next search cycle reads these rows before
+          it proposes anything, so a role you already turned down does not come back.</li>
+        <li><b>Notes are always open</b>, on every role, decided or not.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details id="live" open>
+    <summary><h2>Live roles</h2></summary>
+    <div class="dbody" id="liveMount">
+      <p class="empty">Loading roles&hellip;</p>
+    </div>
+  </details>
+
+  <details id="archive" open>
+    <summary><h2>Archive</h2></summary>
+    <div class="dbody">
+      <p class="note">Nothing is ever deleted here. Archiving moves a role out of the working
+        list and keeps its decision, its reason and its notes exactly as they were.</p>
+      <div id="archiveMount"><p class="empty">Nothing archived yet.</p></div>
+    </div>
+  </details>
+
+  <details id="how" open>
+    <summary><h2>How this works</h2></summary>
+    <div class="dbody">
+      <p class="lede">Every decision on this page is a row in a real database, not a note in a
+        browser. That is what lets the next search cycle read your history before it proposes
+        anything, and it is why a skip reason is required rather than optional.</p>
+
+      <p class="note" style="margin-top:16px">The contract the search cycle runs against, if you
+        ever need to hand it to someone:</p>
+      <div class="codebox">
+        <button class="btn ghost copy" data-copy="#contract">Copy</button>
+        <code id="contract">Before proposing any role, a cycle must query public.bloodhound_decisions for a matching company + title with decision = 'skipped' and must NOT re-propose it. A row with parse_ok = false is UNKNOWN, not "not skipped" -- surface it, never silently re-propose.</code>
+      </div>
+
+      <p class="note" style="margin-top:16px">And the query itself:</p>
+      <div class="codebox">
+        <button class="btn ghost copy" data-copy="#sql">Copy</button>
+        <code id="sql">select company, title, decision, reason_tag, reason, decided_at, outcome, parse_ok
+from public.bloodhound_decisions
+where decision is not null or parse_ok = false
+order by decided_at desc nulls last;</code>
+      </div>
+
+      <p class="note" style="margin-top:16px">If a save ever fails you will see it in red, on the
+        role itself, and it will not clear on its own. A save that looks like it worked and did
+        not is the one failure this page is built to make impossible.</p>
+    </div>
+  </details>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
+        integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug"
+        crossorigin="anonymous"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---- nav --------------------------------------------------------------
+  var nt = document.getElementById('navToggle'), nl = document.getElementById('navLinks');
+  nt.addEventListener('click', function () {
+    var open = nl.classList.toggle('open');
+    nt.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  nl.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') { nl.classList.remove('open'); nt.setAttribute('aria-expanded','false'); }
+  });
+
+  // ---- copy buttons -----------------------------------------------------
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-copy]');
+    if (!b) { return; }
+    var src = document.querySelector(b.getAttribute('data-copy'));
+    var txt = src ? (src.textContent || '') : (b.getAttribute('data-copy-text') || '');
+    var done = function () { var o = b.textContent; b.textContent = 'Copied'; setTimeout(function(){ b.textContent = o; }, 1400); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, function () { b.textContent = 'Copy failed'; });
+    } else {
+      var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta);
+      ta.select(); try { document.execCommand('copy'); done(); } catch (err) { b.textContent = 'Copy failed'; }
+      document.body.removeChild(ta);
+    }
+  });
+
+  // =======================================================================
+  //  BOARD
+  // =======================================================================
+  var CFG = {
+    boardId: 'bloodhound',
+    boardToken: 'bh_T4mQz8XrLv2NpKd9WsYc6HbJfA3gE7Ru',
+    supabaseUrl: 'https://jscucboftaoaphticqci.supabase.co',
+    supabaseAnon: 'sb_publishable_MxzgX_TRIJha-vU8xAjWdA_aMry3E5S'
+  };
+  var TABLE = 'y0_money_map_state', RPC = 'y0_upsert', LS = 'bh-draft:';
+
+  // Seed roles. Keys are stable slugs, never positions -- a positional key would
+  // silently reattach a decision to the wrong company the first time a role is
+  // added or dropped, which reads as data but is a lie.
+  var ROLES = [
+    { key:'role:dayforce-vp-hrbp-leader', score:'6/6',
+      title:'VP, HR Business Partner Leader', company:'Dayforce',
+      location:'Remote, US or Canada', salary:'$198,200 - $309,700 base',
+      applyUrl:'https://www.linkedin.com/jobs/view/4460763595',
+      context:'Reports to the CHRO and builds the global HRBP organization. AI adoption, M&A and restructuring are named in scope.' },
+    { key:'role:circana-vp-global-hrbp-ai-tech', score:'6/6',
+      title:'VP, Global HR Business Partner, Business AI, Technology & Product', company:'Circana',
+      location:'Remote US, CT/ET preferred not required', salary:'Base begins at $200,000 plus bonus',
+      applyUrl:'https://www.linkedin.com/jobs/view/4439221104',
+      context:'Global VP seat leading an HR team across countries. Org design, workforce planning and change management, a direct read of the Atlanta scope.' },
+    { key:'role:ge-healthcare-exec-hrbp-uscan', score:'5/6',
+      title:'Executive, HR Business Partnership, USCAN Service Delivery', company:'GE HealthCare',
+      location:'Listed Salt Lake City, can be located anywhere in US', salary:'$192,000 - $288,000 base',
+      applyUrl:'https://www.linkedin.com/jobs/view/4462720645',
+      context:'3,500 employees, reports to the USCAN Zone HR Leader. Confirm remote versus relocation before applying.' },
+    { key:'role:passivelogic-head-of-people-ops', score:'5/6',
+      title:'Head of People Operations', company:'PassiveLogic',
+      location:'Holladay UT, about 20 minutes out', salary:'Not posted',
+      applyUrl:'https://www.linkedin.com/jobs/view/4461369922',
+      context:'Local AI company, you build the function. Closest thing on the table to the seat you described wanting. No pay posted, so it cannot clear the floor on a stated number.' },
+    { key:'role:kraken-hr-people-ma-lead', score:'4/6',
+      title:'HR (People) M&A Lead', company:'Kraken',
+      location:'Listed Salt Lake City, United States', salary:'$110,400 - $220,800 base',
+      applyUrl:'https://www.linkedin.com/jobs/view/4461385665',
+      context:'A step down on rung, and the M&A integration work is one of the four things that make a role interesting to you. The band spans your floor, so the offer conversation decides it.' }
+  ];
+
+  var TAGS = [
+    ['comp',     'Comp too low'],
+    ['location', 'Wrong location'],
+    ['scope',    'Title / scope mismatch'],
+    ['company',  "Company doesn't interest me"],
+    ['other',    'Other']
+  ];
+
+  var OUTCOMES = [
+    ['',          'No outcome yet'],
+    ['nothing',   'Nothing'],
+    ['interview', 'Interview'],
+    ['offer',     'Offer'],
+    ['rejected',  'Rejected'],
+    ['withdrawn', 'Withdrawn']
+  ];
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c];
+    });
+  }
+  function pretty(iso) {
+    if (!iso) { return ''; }
+    var d = new Date(iso); if (isNaN(d.getTime())) { return iso; }
+    var M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var h=d.getHours(), m=String(d.getMinutes()).padStart(2,'0'), ap=h>=12?'pm':'am';
+    h=h%12; if(h===0){h=12;}
+    return M[d.getMonth()]+' '+d.getDate()+', '+h+':'+m+ap;
+  }
+  function parseRow(raw) {
+    if (!raw) { return null; }
+    try { var v = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return (v && typeof v === 'object') ? v : null; } catch (e) { return null; }
+  }
+
+  var liveMount = document.getElementById('liveMount');
+  var archMount = document.getElementById('archiveMount');
+  var wrap = document.querySelector('.wrap');
+  var STATE = {};      // key -> stored object
+  var READ_FAILED = false;
+
+  function banner(html) {
+    var el = document.createElement('div');
+    el.className = 'banner';
+    el.innerHTML = html;
+    wrap.insertBefore(el, wrap.firstChild);
+  }
+
+  if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+    banner('<strong>The board could not load.</strong> The database client script did not load, so ' +
+           'nothing here can be saved. Every control is disabled on purpose rather than accepting a ' +
+           'click it cannot honour.');
+    READ_FAILED = true;
+    render();
+    return;
+  }
+
+  var sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnon);
+
+  sb.from(TABLE).select('item_id,value').eq('board_id', CFG.boardId)
+    .then(function (res) {
+      if (res.error) { throw res.error; }
+      (res.data || []).forEach(function (r) {
+        var v = parseRow(r.value);
+        if (v) { STATE[r.item_id] = v; }
+      });
+      render();
+    })
+    .catch(function (err) {
+      READ_FAILED = true;
+      banner('<strong>Could not read the saved decisions.</strong> Every role below is showing blank ' +
+             'because the read failed, <em>not</em> because nothing is recorded. Do not trust an empty ' +
+             'status on this load. Error: <code>' + esc(err && err.message ? err.message : String(err)) + '</code>');
+      render();
+    });
+
+  function write(key, obj) {
+    return sb.rpc(RPC, {
+      p_board: CFG.boardId, p_item: key, p_value: JSON.stringify(obj), p_token: CFG.boardToken
+    }).then(function (res) { if (res.error) { throw res.error; } return true; });
+  }
+
+  // Every write sends the WHOLE row, prior decision pushed onto history first.
+  // A decision never silently replaces the one it overrode.
+  function merged(role, patch) {
+    var s = STATE[role.key] || {};
+    var next = {
+      company: role.company, title: role.title, applyUrl: role.applyUrl,
+      decision:   s.decision   || '',
+      reasonTag:  s.reasonTag  || '',
+      reason:     s.reason     || '',
+      decidedAt:  s.decidedAt  || null,
+      outcome:    s.outcome    || '',
+      outcomeUpdated: s.outcomeUpdated || null,
+      notes:      s.notes      || '',
+      notesUpdated: s.notesUpdated || null,
+      archived:   !!s.archived,
+      history: Array.isArray(s.history) ? s.history.slice() : []
+    };
+    Object.keys(patch).forEach(function (k) { next[k] = patch[k]; });
+    return next;
+  }
+
+  function computeTiles() {
+    var t = { total:0, applied:0, skipped:0, open:0, interview:0, archived:0 };
+    ROLES.forEach(function (r) {
+      var s = STATE[r.key] || {};
+      t.total++;
+      if (s.archived) { t.archived++; }
+      if (s.decision === 'applied') { t.applied++; }
+      else if (s.decision === 'skipped') { t.skipped++; }
+      else { t.open++; }
+      if (s.outcome === 'interview') { t.interview++; }
+    });
+    Object.keys(t).forEach(function (k) {
+      var el = document.querySelector('[data-n="' + k + '"]');
+      if (el) { el.textContent = READ_FAILED ? '?' : t[k]; }
+    });
+  }
+
+  function render() {
+    liveMount.innerHTML = '';
+    archMount.innerHTML = '';
+    var nLive = 0, nArch = 0;
+    ROLES.forEach(function (role) {
+      var s = STATE[role.key] || {};
+      var card = buildCard(role);
+      if (!READ_FAILED && s.archived) { archMount.appendChild(card); nArch++; }
+      else { liveMount.appendChild(card); nLive++; }
+    });
+    if (!nLive) { liveMount.innerHTML = '<p class="empty">Every role is archived.</p>'; }
+    if (!nArch) { archMount.innerHTML = '<p class="empty">Nothing archived yet.</p>'; }
+    computeTiles();
+  }
+
+  function buildCard(role) {
+    var s = READ_FAILED ? {} : (STATE[role.key] || {});
+    var dec = s.decision || '';
+    var el = document.createElement('div');
+    el.className = 'role';
+    el.setAttribute('data-decision', dec);
+    el.setAttribute('data-role', role.key);
+
+    var tickAttr = dec === 'applied' ? '1' : dec === 'skipped' ? 'skip' : '0';
+    var tickChar = dec === 'skipped' ? '&ndash;' : '&#10003;';
+
+    var statusLine = READ_FAILED ? 'Unknown, the read failed'
+      : dec === 'applied' ? 'Applied on ' + esc(s.decidedAt ? String(s.decidedAt).slice(0,10) : '')
+      : dec === 'skipped' ? 'Skipped on ' + esc(s.decidedAt ? String(s.decidedAt).slice(0,10) : '')
+      : 'No call yet';
+
+    el.innerHTML =
+      '<div class="rhead">' +
+        '<div class="tick" data-done="' + tickAttr + '" aria-hidden="true">' + tickChar + '</div>' +
+        '<div class="rtitle"><div class="t">' + esc(role.title) + '</div>' +
+          '<div class="c">' + esc(role.company) + ' &middot; <span class="st">' + statusLine + '</span></div></div>' +
+        '<div class="score">' + esc(role.score) + '</div>' +
+      '</div>' +
+      '<div class="meta">' +
+        '<span><b>Location</b> ' + esc(role.location) + '</span>' +
+        '<span><b>Pay</b> ' + esc(role.salary) + '</span>' +
+        '<span><b>Score</b> ' + esc(role.score) + '</span>' +
+      '</div>' +
+      '<p class="note">' + esc(role.context) + '</p>' +
+      '<div class="row">' +
+        '<a class="btn apply" href="' + esc(role.applyUrl) + '" target="_blank" rel="noopener">Open the posting &rarr;</a>' +
+        '<button class="btn ghost" data-copy-link="1">Copy link</button>' +
+        '<button class="btn" data-set="applied" aria-pressed="' + (dec==='applied'?'true':'false') + '">Applied</button>' +
+        '<button class="btn" data-set="skipped" aria-pressed="' + (dec==='skipped'?'true':'false') + '">Skipped</button>' +
+      '</div>' +
+
+      '<div class="skip" data-open="' + (dec === 'skipped' ? '1' : '0') + '">' +
+        '<h4>Why are you passing on this one?</h4>' +
+        '<p class="why">Both are required. The tag makes it countable across every role you skip, ' +
+        'the sentence is what a person reads back. One line is plenty.</p>' +
+        '<div class="tags">' +
+          TAGS.map(function (t) {
+            return '<button type="button" class="tag" data-tag="' + t[0] + '" aria-pressed="' +
+              (s.reasonTag === t[0] ? 'true' : 'false') + '">' + esc(t[1]) + '</button>';
+          }).join('') +
+        '</div>' +
+        '<textarea class="reason" rows="2" placeholder="In your own words. One sentence is fine.">' +
+          esc(s.reason || '') + '</textarea>' +
+        '<div class="row">' +
+          '<button class="btn" data-confirm-skip="1">Save this skip</button>' +
+          '<button class="btn ghost" data-cancel-skip="1">Cancel</button>' +
+        '</div>' +
+        '<div class="gate"></div>' +
+      '</div>' +
+
+      '<label class="fld">Outcome, once you hear back</label>' +
+      '<select class="outcome">' +
+        OUTCOMES.map(function (o) {
+          return '<option value="' + o[0] + '"' + (s.outcome === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+        }).join('') +
+      '</select>' +
+
+      '<label class="fld">Notes</label>' +
+      '<textarea class="notes" rows="3" placeholder="What happened, what you would do differently.">' +
+        esc(s.notes || '') + '</textarea>' +
+      '<div class="row">' +
+        '<button class="btn" data-save-note="1">Save note</button>' +
+        '<button class="btn ghost" data-archive="1">' + (s.archived ? 'Restore from archive' : 'Archive') + '</button>' +
+        '<span class="saved">' + (s.notesUpdated ? 'Saved ' + esc(pretty(s.notesUpdated)) : '') + '</span>' +
+      '</div>' +
+      '<div class="err"></div>';
+
+    wire(el, role);
+    return el;
+  }
+
+  function wire(el, role) {
+    var errEl   = el.querySelector('.err');
+    var gateEl  = el.querySelector('.gate');
+    var skipEl  = el.querySelector('.skip');
+    var reasonEl= el.querySelector('.reason');
+    var notesEl = el.querySelector('.notes');
+    var savedEl = el.querySelector('.saved');
+    var outEl   = el.querySelector('.outcome');
+    var btns    = Array.prototype.slice.call(el.querySelectorAll('.btn, .tag, select, textarea'));
+
+    if (READ_FAILED) {
+      btns.forEach(function (b) { if (b.tagName !== 'A') { b.disabled = true; } });
+      savedEl.textContent = 'Controls disabled: the page could not read its own saved state.';
+      return;
+    }
+
+    // A local draft only ever WARNS. It is never served back as the saved value.
+    try {
+      var d = window.localStorage.getItem(LS + role.key);
+      var s0 = STATE[role.key] || {};
+      if (d && d !== (s0.notes || '')) {
+        notesEl.value = d;
+        savedEl.setAttribute('data-dirty','1');
+        savedEl.textContent = 'Unsaved draft on this device. Press Save note.';
+      }
+    } catch (e) {}
+
+    function showErr(what, err) {
+      errEl.setAttribute('data-shown','1');
+      errEl.innerHTML = '<strong>' + esc(what) + ' was NOT saved.</strong> Your text is still in the box ' +
+        'and a copy is kept on this device, so nothing is lost. Try again, and if it keeps failing say ' +
+        'so rather than assuming it went through. Error: <code>' +
+        esc(err && err.message ? err.message : String(err)) + '</code>';
+    }
+    function clearErr() { errEl.removeAttribute('data-shown'); errEl.innerHTML = ''; }
+    function lock(on) { btns.forEach(function (b) { if (b.tagName !== 'A') { b.disabled = !!on; } }); }
+    function commit(payload, after) {
+      lock(true); clearErr();
+      return write(role.key, payload).then(function () {
+        STATE[role.key] = payload;
+        if (after) { after(); }
+      }).catch(function (err) {
+        showErr('That change', err);
+      }).then(function () { lock(false); });
+    }
+
+    el.querySelector('[data-copy-link]').addEventListener('click', function () {
+      var b = this, o = b.textContent;
+      var txt = role.title + ' - ' + role.company + ' - ' + role.applyUrl;
+      var done = function () { b.textContent = 'Copied'; setTimeout(function(){ b.textContent = o; }, 1400); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done, function(){ b.textContent='Copy failed'; });
+      } else { done(); }
+    });
+
+    // ---- Applied: one tap, writes immediately ---------------------------
+    el.querySelector('[data-set="applied"]').addEventListener('click', function () {
+      var s = STATE[role.key] || {};
+      var next = s.decision === 'applied' ? '' : 'applied';
+      var hist = Array.isArray(s.history) ? s.history.slice() : [];
+      hist.push({ decision: next || 'cleared', from: s.decision || '', at: new Date().toISOString() });
+      // Clearing a decision also clears the skip reason it belonged to, rather than
+      // leaving an orphan reason attached to a role with no decision.
+      var payload = merged(role, {
+        decision: next,
+        decidedAt: next ? new Date().toISOString() : null,
+        reasonTag: next === 'applied' ? '' : (next ? (s.reasonTag||'') : ''),
+        reason:    next === 'applied' ? '' : (next ? (s.reason||'')    : ''),
+        history: hist
+      });
+      commit(payload, render);
+    });
+
+    // ---- Skipped: opens the gate. This click alone writes NOTHING. ------
+    el.querySelector('[data-set="skipped"]').addEventListener('click', function () {
+      var s = STATE[role.key] || {};
+      if (s.decision === 'skipped') {
+        // Un-skip. Clears the decision and its reason together.
+        var hist = Array.isArray(s.history) ? s.history.slice() : [];
+        hist.push({ decision: 'cleared', from: 'skipped', at: new Date().toISOString() });
+        commit(merged(role, { decision:'', decidedAt:null, reasonTag:'', reason:'', history:hist }), render);
+        return;
+      }
+      skipEl.setAttribute('data-open','1');
+      gateEl.removeAttribute('data-shown');
+      reasonEl.focus();
+    });
+
+    el.querySelector('[data-cancel-skip]').addEventListener('click', function () {
+      skipEl.setAttribute('data-open','0');
+      gateEl.removeAttribute('data-shown');
+    });
+
+    var chosenTag = (STATE[role.key] || {}).reasonTag || '';
+    Array.prototype.forEach.call(el.querySelectorAll('.tag'), function (t) {
+      t.addEventListener('click', function () {
+        chosenTag = t.getAttribute('data-tag');
+        Array.prototype.forEach.call(el.querySelectorAll('.tag'), function (o) {
+          o.setAttribute('aria-pressed', o === t ? 'true' : 'false');
+        });
+        gateEl.removeAttribute('data-shown');
+      });
+    });
+
+    // ---- THE GATE. Tag AND freeform, both required, no exceptions. ------
+    el.querySelector('[data-confirm-skip]').addEventListener('click', function () {
+      var txt = (reasonEl.value || '').trim();
+      var missing = [];
+      if (!chosenTag) { missing.push('pick a reason tag'); }
+      if (!txt)       { missing.push('write at least one sentence'); }
+      if (missing.length) {
+        gateEl.setAttribute('data-shown','1');
+        gateEl.textContent = 'Not saved. Please ' + missing.join(' and ') + '. ' +
+          'Both are required, because a skip with no reason teaches the next cycle nothing.';
+        (chosenTag ? reasonEl : el.querySelector('.tag')).focus();
+        return;
+      }
+      gateEl.removeAttribute('data-shown');
+      var s = STATE[role.key] || {};
+      var hist = Array.isArray(s.history) ? s.history.slice() : [];
+      hist.push({ decision:'skipped', from: s.decision || '', at: new Date().toISOString(), tag: chosenTag });
+      commit(merged(role, {
+        decision:'skipped', reasonTag: chosenTag, reason: txt,
+        decidedAt: new Date().toISOString(), history: hist
+      }), render);
+    });
+
+    // ---- outcome, separate from the decision ---------------------------
+    outEl.addEventListener('change', function () {
+      commit(merged(role, { outcome: outEl.value, outcomeUpdated: new Date().toISOString() }), computeTiles);
+    });
+
+    // ---- notes, always available ---------------------------------------
+    notesEl.addEventListener('input', function () {
+      savedEl.setAttribute('data-dirty','1');
+      savedEl.textContent = 'Not saved yet. Press Save note.';
+      try { window.localStorage.setItem(LS + role.key, notesEl.value); } catch (e) {}
+    });
+    el.querySelector('[data-save-note]').addEventListener('click', function () {
+      var stamp = new Date().toISOString();
+      commit(merged(role, { notes: notesEl.value, notesUpdated: stamp }), function () {
+        savedEl.removeAttribute('data-dirty');
+        savedEl.textContent = 'Saved ' + pretty(stamp);
+        try { window.localStorage.removeItem(LS + role.key); } catch (e) {}
+      });
+    });
+
+    el.querySelector('[data-archive]').addEventListener('click', function () {
+      var s = STATE[role.key] || {};
+      commit(merged(role, { archived: !s.archived }), render);
+    });
+  }
+})();
+</script>
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
+
