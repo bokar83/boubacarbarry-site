@@ -184,9 +184,26 @@
     padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--faint);}
   .clbadge[data-has="1"]{color:#2a2016;background:var(--verdigris);border-color:var(--verdigris);}
   .clbody{padding:0 14px 14px;}
-  .cltext{background:#0f1219;border:1px solid var(--line);border-radius:10px;
-    padding:15px 17px;margin:0 0 11px;max-height:420px;overflow:auto;
+  textarea.cltext{background:#0f1219;border:1px solid var(--line);border-radius:10px;
+    padding:15px 17px;margin:0 0 9px;min-height:220px;max-height:520px;overflow:auto;
     font:14.5px/1.72 Georgia,'Times New Roman',serif;color:#e2ddd4;
+    white-space:pre-wrap;word-wrap:break-word;width:100%;box-sizing:border-box;
+    resize:vertical;display:block;}
+  .clmeta{display:flex;align-items:center;gap:10px;margin:0 0 9px;font-size:12.5px;}
+  .cledited{font:650 11px/1 inherit;letter-spacing:.03em;text-transform:uppercase;
+    padding:3px 8px;border-radius:999px;background:rgba(255,143,94,.16);
+    border:1px solid rgba(255,143,94,.45);color:#ffb08a;display:none;}
+  .cledited[data-shown="1"]{display:inline-block;}
+  .cloriginal{display:none;margin-top:11px;padding:12px 14px;border-radius:10px;
+    background:#0f1219;border:1px dashed var(--line);}
+  .cloriginal[data-open="1"]{display:block;}
+  .cloriginal h4{margin:0 0 8px;font-size:12.5px;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--faint);}
+  .cldiff{font:14px/1.7 Georgia,'Times New Roman',serif;color:#e2ddd4;
+    white-space:pre-wrap;word-wrap:break-word;margin:0 0 10px;}
+  .cldiff del{background:rgba(232,131,111,.22);color:#ffd0c4;text-decoration:line-through;}
+  .cldiff ins{background:rgba(127,176,126,.22);color:#cdeacb;text-decoration:none;}
+  .clorigtext{margin:0;font:13px/1.65 Georgia,'Times New Roman',serif;color:var(--faint);
     white-space:pre-wrap;word-wrap:break-word;}
   .clnone{color:var(--faint);font-size:13.5px;margin:0 0 11px;line-height:1.6;}
   .clerr{display:none;margin-top:11px;padding:11px 13px;border-radius:9px;
@@ -205,7 +222,9 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v6 · 2026-09-04-16:23:18 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{top:auto !important;right:auto !important;bottom:10px !important;left:10px !important;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v8 · 2026-09-04-16:42:50 MT</div><!-- DEPLOY_STAMP_END -->
+
+
 
 
 
@@ -340,7 +359,11 @@ order by decided_at desc nulls last;</code>
     var b = e.target.closest && e.target.closest('[data-copy]');
     if (!b) { return; }
     var src = document.querySelector(b.getAttribute('data-copy'));
-    var txt = src ? (src.textContent || '') : (b.getAttribute('data-copy-text') || '');
+    // A textarea's .textContent is its INITIAL text, not the live edited value --
+    // 'value' in src catches textarea/input so an edited cover letter copies
+    // what is actually on screen, not what first loaded.
+    var txt = src ? ((src.value !== undefined ? src.value : src.textContent) || '')
+                  : (b.getAttribute('data-copy-text') || '');
     var done = function () { var o = b.textContent; b.textContent = 'Copied'; setTimeout(function(){ b.textContent = o; }, 1400); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(done, function () { b.textContent = 'Copy failed'; });
@@ -448,6 +471,37 @@ order by decided_at desc nulls last;</code>
     h=h%12; if(h===0){h=12;}
     return M[d.getMonth()]+' '+d.getDate()+', '+h+':'+m+ap;
   }
+  // Word-level diff, original vs. current cover-letter text, so an edited
+  // marker is never just a flag -- he can see exactly what moved. Plain LCS,
+  // fine at cover-letter length (a few hundred words).
+  function wordDiff(a, b) {
+    var aw = a.split(/(\s+)/), bw = b.split(/(\s+)/);
+    var n = aw.length, m = bw.length;
+    var dp = [];
+    for (var i = 0; i <= n; i++) { dp.push(new Array(m + 1).fill(0)); }
+    for (i = n - 1; i >= 0; i--) {
+      for (var j = m - 1; j >= 0; j--) {
+        dp[i][j] = aw[i] === bw[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    var out = []; i = 0; j = 0;
+    while (i < n && j < m) {
+      if (aw[i] === bw[j]) { out.push(['eq', bw[j]]); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { out.push(['del', aw[i]]); i++; }
+      else { out.push(['ins', bw[j]]); j++; }
+    }
+    while (i < n) { out.push(['del', aw[i]]); i++; }
+    while (j < m) { out.push(['ins', bw[j]]); j++; }
+    return out;
+  }
+  function renderDiff(orig, cur) {
+    return wordDiff(orig, cur).map(function (p) {
+      if (p[0] === 'eq') { return esc(p[1]); }
+      if (p[0] === 'del') { return '<del>' + esc(p[1]) + '</del>'; }
+      return '<ins>' + esc(p[1]) + '</ins>';
+    }).join('');
+  }
+
   function parseRow(raw) {
     if (!raw) { return null; }
     try { var v = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -519,6 +573,7 @@ order by decided_at desc nulls last;</code>
       // the row. It is carried through every merge so a decision or a note never
       // silently drops the letter that was already stored against this role.
       coverLetter: s.coverLetter || '',
+      coverLetterOriginal: s.coverLetterOriginal || '',
       coverLetterUpdated: s.coverLetterUpdated || null,
       archived:   !!s.archived,
       history: Array.isArray(s.history) ? s.history.slice() : []
@@ -618,7 +673,8 @@ order by decided_at desc nulls last;</code>
         '<div class="gate"></div>' +
       '</div>' +
 
-      // ---- cover letter, read-only. Copy it, or take it away as a PDF. ----
+      // ---- cover letter: text is the deliverable, edited in place. PDF is ----
+      // ---- generated on demand from whatever is currently in the box. ------
       '<details class="cl">' +
         '<summary>Cover letter' +
           '<span class="clbadge" data-has="' + (hasCL ? '1' : '0') + '">' +
@@ -627,21 +683,37 @@ order by decided_at desc nulls last;</code>
         '</summary>' +
         '<div class="clbody">' +
           (hasCL
-            ? '<pre class="cltext" id="' + clId + '">' + esc(s.coverLetter) + '</pre>' +
+            ? '<textarea class="cltext" id="' + clId + '" rows="10" spellcheck="true">' +
+                esc(s.coverLetter) + '</textarea>' +
+              '<div class="clmeta">' +
+                '<span class="cledited" data-shown="' +
+                  (s.coverLetterOriginal && s.coverLetterOriginal !== s.coverLetter ? '1' : '0') +
+                  '">Edited</span>' +
+                '<span class="saved">' +
+                  (s.coverLetterUpdated ? 'Saved ' + esc(pretty(s.coverLetterUpdated)) : '') +
+                '</span>' +
+              '</div>' +
               '<div class="row">' +
                 '<button class="btn ghost" data-copy="#' + clId + '">Copy</button>' +
+                '<button class="btn" data-cl-save="1">Save edits</button>' +
                 '<button class="btn" data-cl-pdf="1">Download as PDF</button>' +
-                '<span class="saved">' +
-                  (s.coverLetterUpdated ? 'Written ' + esc(pretty(s.coverLetterUpdated)) : '') +
-                '</span>' +
+                (s.coverLetterOriginal && s.coverLetterOriginal !== s.coverLetter
+                  ? '<button class="btn ghost" data-cl-original="1">View original</button>'
+                  : '') +
+              '</div>' +
+              '<div class="cloriginal" data-open="0">' +
+                '<h4>What changed since the first version</h4>' +
+                '<div class="cldiff"></div>' +
+                '<h4>Original, unedited</h4>' +
+                '<pre class="clorigtext">' + esc(s.coverLetterOriginal || '') + '</pre>' +
               '</div>'
             : READ_FAILED
               ? '<p class="clnone">This panel is blank because the page could not read its own ' +
                 'saved state, <em>not</em> because no letter exists. Reload before concluding ' +
                 'anything from it.</p>'
               : '<p class="clnone">No letter is stored against this role yet. Nothing is hidden ' +
-                'and nothing failed to load. When one is written it appears here in full, ready ' +
-                'to copy or to take away as a PDF.</p>') +
+                'and nothing failed to load. When one is written it appears here as plain text, ' +
+                'ready to copy, edit in place, or take away as a PDF.</p>') +
           // Deliberately NOT class="err". The card's own error box is queried with
           // querySelector('.err'), which takes the FIRST match, so giving this one
           // that class would silently redirect every save-failure message into a
@@ -746,8 +818,12 @@ order by decided_at desc nulls last;</code>
     var pdfBtn = el.querySelector('[data-cl-pdf]');
     if (pdfBtn) {
       pdfBtn.addEventListener('click', function () {
-        var s2 = STATE[role.key] || {};
-        var text = String(s2.coverLetter || '').trim();
+        // Read the LIVE textarea, not the last-saved STATE value -- an edit he
+        // just typed but has not clicked "Save edits" on yet still has to make
+        // it into the PDF, or the button is producing a document that quietly
+        // does not match what is on screen.
+        var taLive = el.querySelector('.cltext');
+        var text = String((taLive ? taLive.value : '') || '').trim();
         var clErr = el.querySelector('.clerr');
         clErr.removeAttribute('data-shown'); clErr.innerHTML = '';
         if (!text) {
@@ -788,6 +864,46 @@ order by decided_at desc nulls last;</code>
       });
     }
 
+    // ---- Cover letter: save an in-place edit. The FIRST save on a role ----
+    // captures the pre-edit text as coverLetterOriginal so "Edited" and the
+    // diff have something honest to compare against; later saves leave the
+    // original alone.
+    var clSaveBtn = el.querySelector('[data-cl-save]');
+    if (clSaveBtn) {
+      clSaveBtn.addEventListener('click', function () {
+        var taEl = el.querySelector('.cltext');
+        var s2 = STATE[role.key] || {};
+        var newText = taEl.value;
+        if (newText === (s2.coverLetter || '')) { return; }
+        var o = clSaveBtn.textContent;
+        clSaveBtn.disabled = true; clSaveBtn.textContent = 'Saving...';
+        commit(merged(role, {
+          coverLetter: newText,
+          coverLetterOriginal: s2.coverLetterOriginal || s2.coverLetter || '',
+          coverLetterUpdated: new Date().toISOString()
+        }), function () {
+          clSaveBtn.textContent = 'Saved'; clSaveBtn.disabled = false;
+          setTimeout(function () { clSaveBtn.textContent = o; }, 1400);
+          render();
+        });
+      });
+    }
+
+    var clOrigBtn = el.querySelector('[data-cl-original]');
+    if (clOrigBtn) {
+      clOrigBtn.addEventListener('click', function () {
+        var s2 = STATE[role.key] || {};
+        var panel = el.querySelector('.cloriginal');
+        var open = panel.getAttribute('data-open') === '1';
+        if (!open) {
+          panel.querySelector('.cldiff').innerHTML =
+            renderDiff(s2.coverLetterOriginal || '', s2.coverLetter || '');
+        }
+        panel.setAttribute('data-open', open ? '0' : '1');
+        clOrigBtn.textContent = open ? 'View original' : 'Hide original';
+      });
+    }
+
     el.querySelector('[data-copy-link]').addEventListener('click', function () {
       var b = this, o = b.textContent;
       var txt = role.title + ' - ' + role.company + ' - ' + role.applyUrl;
@@ -797,7 +913,15 @@ order by decided_at desc nulls last;</code>
       } else { done(); }
     });
 
-    // ---- Applied: one tap, writes immediately ---------------------------
+    // ---- Applied: one tap, writes immediately, and archives the role -----
+    // out of the live/undecided list. ACTIVE/ROLLING is a decision queue
+    // (corrected 2026-09-04); a role he has applied to is no longer
+    // undecided, so it moves to the archive tab automatically. Never
+    // deleted, and notes/outcome/cover-letter stay fully editable there --
+    // buildCard/wire render archived roles the same way as live ones.
+    // Un-applying (second tap) does NOT auto-restore it to live; that stays
+    // a deliberate action via the existing Archive/Restore button so a
+    // mis-tap never silently repopulates the queue.
     el.querySelector('[data-set="applied"]').addEventListener('click', function () {
       var s = STATE[role.key] || {};
       var next = s.decision === 'applied' ? '' : 'applied';
@@ -810,6 +934,7 @@ order by decided_at desc nulls last;</code>
         decidedAt: next ? new Date().toISOString() : null,
         reasonTag: next === 'applied' ? '' : (next ? (s.reasonTag||'') : ''),
         reason:    next === 'applied' ? '' : (next ? (s.reason||'')    : ''),
+        archived:  next === 'applied' ? true : s.archived,
         history: hist
       });
       commit(payload, render);
@@ -1047,6 +1172,8 @@ order by decided_at desc nulls last;</code>
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
+
 
 
 
