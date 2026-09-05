@@ -1,0 +1,212 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>agentsHQ Adversarial Code Review â€” 2026-09-04</title>
+<style>
+:root{--ink:#18202b;--muted:#617083;--paper:#f6f3ec;--card:#fff;--red:#a92e2e;--amber:#986300;--green:#18724a;--line:#d8d2c6;--bronze:#3b2a20}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.58 system-ui,-apple-system,Segoe UI,sans-serif}header{background:var(--bronze);color:#fff;padding:48px max(24px,calc((100% - 1040px)/2)) 38px}header p{color:#f0e5d8;max-width:780px}.wrap{max-width:1040px;margin:auto;padding:28px 24px 70px}.meta,.finding,.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 24px;margin:18px 0;box-shadow:0 2px 10px #1624330d}.verdict{display:inline-block;background:#ffe4e1;color:#8b1d1d;border:1px solid #e6aaa4;border-radius:999px;padding:6px 12px;font-weight:750}.sev{font-size:.76rem;letter-spacing:.08em;font-weight:800;color:#fff;border-radius:5px;padding:4px 7px;background:var(--red)}.medium{background:var(--amber)}.low{background:var(--green)}h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.05;margin:0 0 15px}h2{margin-top:42px;border-bottom:2px solid var(--line);padding-bottom:7px}h3{line-height:1.3;margin:.3rem 0 1rem}h4{margin-bottom:.15rem;color:var(--bronze)}p{margin:.45rem 0 1rem}code{background:#eee9df;padding:.1em .35em;border-radius:4px;font-size:.9em}table{width:100%;border-collapse:collapse;background:#fff;font-size:.92rem}th,td{border:1px solid var(--line);padding:9px;vertical-align:top;text-align:left}th{background:#e9eef2}ul,ol{padding-left:1.3rem}.callout{border-left:5px solid var(--red)}.good{border-left:5px solid var(--green)}.voice{border-left:5px solid var(--bronze)}.small{font-size:.9rem;color:var(--muted)}nav a{color:#f0e5d8;margin-right:16px}footer{color:var(--muted);border-top:1px solid var(--line);margin-top:40px;padding-top:20px}@media(max-width:700px){header{padding-top:30px}.wrap{padding:18px 14px 50px}.meta,.finding,.panel{padding:16px}table{display:block;overflow-x:auto}}
+</style><style>html{scroll-padding-top:72px}.nav-bar{position:sticky;top:0;z-index:50;background:#3b2a20;padding:9px}.nav-inner{max-width:1040px;margin:auto;display:flex;gap:10px;align-items:center}.nav-title{color:white;font-weight:700;margin-right:auto}.nav-links{display:flex;gap:8px;flex-wrap:wrap}.nav-links a{color:white;text-decoration:none;border:1px solid #8ba0b4;border-radius:20px;padding:5px 9px}.nav-toggle{display:none;min-width:44px;min-height:40px}details.sec,details.tldr{background:white;border:1px solid var(--line);border-radius:12px;margin:18px 0;overflow:hidden}summary{cursor:pointer;padding:16px 20px}summary h2{display:inline;margin:0;border:0;padding:0}.sec-body{padding:0 20px 18px}@media(max-width:700px){.nav-inner{flex-wrap:wrap}.nav-toggle{display:block}.nav-links{display:none;flex-direction:column;width:100%}.nav-bar.open .nav-links{display:flex}}</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-09-04-19:00:03 MT</div><!-- DEPLOY_STAMP_END --><nav class="nav-bar" id="navBar"><div class="nav-inner"><span class="nav-title">Adversarial review</span><button class="nav-toggle" id="navToggle" aria-expanded="false">&#9776;</button><div class="nav-links"><a href="#tldr">TL;DR</a><a href="#findings">Findings</a><a href="#controls">Controls</a><a href="#karpathy">Karpathy</a><a href="#council">Council</a><a href="#reviewer">Reviewer</a></div></div></nav>
+<header>
+  <h1>agentsHQ Adversarial Code Review</h1>
+  <p>Security, architecture, reliability, Karpathy, and Sankofa Council review of revision <code>59f634e</code>. Read-only review; no product code or runtime configuration changed.</p>
+  <span class="verdict">HOLD for targeted security hardening</span>
+</header>
+<main class="wrap">
+  <section class="meta">
+    <strong>Review date:</strong> 2026-09-04<br>
+    <strong>Scope:</strong> 13,057 tracked files; focused review of externally influenced control planes<br>
+    <strong>Verification:</strong> git hygiene OK; configured secret scan 0 findings; 25 targeted tests passed in 1.01s<br>
+    <strong>Limitation:</strong> bounded source review, not a live penetration test or line-by-line audit of 527K+ Python lines
+  </section>
+
+  <details class="tldr" id="tldr" open><summary><h2>TL;DR</h2></summary><div class="sec-body"><section class="panel callout"><h3>Executive conclusion</h3>
+    <p>agentsHQ has real defensive controls, but identity enforcement is inconsistent. Telegram and Djeli retain fail-open defaults, while several state-changing â€œpersonalâ€ HTTP routers intentionally have no application-layer authentication. Localhost binding and CORS reduce some exposure; neither proves caller identity. The repository itself records that this configuration assumption already failed once in production.</p>
+  </section></div></details><details class="sec" id="findings" open><summary><h2>Findings</h2></summary><div class="sec-body">
+  <article class="finding"><h3><span class="sev">HIGH</span> AHQ-01 â€” Telegram authorization fails open</h3><p><strong>Evidence:</strong> <code>handlers.py:219-226</code>, <code>handlers_ritual.py:88-93,214-217</code>, and <code>handlers_approvals.py:974-978</code> reject only when <code>ALLOWED_USER_IDS</code> produces a non-empty set. <code>startup_check.py:17-24</code> does not require it. <code>docker-compose.yml:193-212</code> documents the prior incident.</p><p><strong>Action:</strong> fail closed, require the setting when Telegram is enabled, and add negative tests for absent/empty/malformed values.</p></article>
+  <article class="finding"><h3><span class="sev">HIGH</span> AHQ-02 â€” Mutating routers lack authentication</h3><p><strong>Evidence:</strong> personal research, contact board, Upwork board, mover notes, cash-generation decisions, content-review decisions, and review-checklist modules declare a no-auth posture. They are mounted at <code>app.py:201-220</code> without router-level dependencies.</p><p><strong>Action:</strong> apply a shared authentication dependency to state-changing routers. CORS is not authentication; explicitly classify signed public webhooks/forms as exceptions.</p></article>
+  <article class="finding"><h3><span class="sev">HIGH</span> AHQ-03 â€” Djeli token bypass is designed in</h3><p><strong>Evidence:</strong> <code>handlers_djeli.py:61-85</code> accepts spoofable Origin/Referer headers without a token and skips authentication when <code>DJELI_TOKEN</code> is absent. The upload cap is 500 MB.</p><p><strong>Action:</strong> require a signed session or secret for every write; use Origin only as CSRF context; add edge/application quotas.</p></article>
+  <article class="finding"><h3><span class="sev medium">MEDIUM</span> AHQ-04 â€” TLS verification disabled</h3><p><strong>Evidence:</strong> <code>upwork_job_scanner.py:200-210,309-328</code> disables TLS while sending session cookies; <code>quick_audit.py:154-163,363-383</code> disables TLS for site fetches.</p><p><strong>Action:</strong> restore certificate verification or repair the CA chain. Never combine credentials with <code>CERT_NONE</code>.</p></article>
+  <article class="finding"><h3><span class="sev medium">MEDIUM</span> AHQ-05 â€” Secret scanner has broad blind spots</h3><p><strong>Evidence:</strong> <code>scan_secrets.py:13-24</code> has a narrow fixed pattern list; lines 62-91 skip all docs, all <code>.env*</code>, and every <code>SKILL.md</code>/<code>AGENT.md</code>.</p><p><strong>Action:</strong> use entropy/history-aware scanning and narrow reviewed allowlists; scan generated artifacts and history.</p></article>
+  <article class="finding"><h3><span class="sev medium">MEDIUM</span> AHQ-06 â€” Floating build inputs</h3><p><strong>Evidence:</strong> unpinned base image, apt packages, <code>hyperframes</code>, model revision, broad Python ranges, and floating GitHub Action tags.</p><p><strong>Action:</strong> pin digests/SHAs/lockfiles/hashes, generate an SBOM, and review automated dependency bumps.</p></article>
+  <article class="finding"><h3><span class="sev medium">MEDIUM</span> AHQ-07 â€” No repository-wide deterministic CI gate</h3><p><strong>Evidence:</strong> GitHub workflows do not invoke repository-wide pytest, type checking, linting, SAST, or dependency audit. Existing targeted tests are useful but not universally enforced.</p><p><strong>Action:</strong> require a fast fail-closed unit/security/static-analysis gate; expose slower integration results separately.</p></article>
+  <article class="finding"><h3><span class="sev medium">MEDIUM</span> AHQ-08 â€” Complexity and duplicate security agents</h3><p><strong>Evidence:</strong> seven control-plane modules total 27,736 lines. Both <code>agents/security-agent/security_agent.py</code> and <code>agents/security_agent/security_agent.py</code> exist and materially differ.</p><p><strong>Action:</strong> declare one canonical implementation; characterize large modules before splitting stable responsibility boundaries.</p></article>
+  <article class="finding"><h3><span class="sev low">LOW</span> AHQ-09 â€” Caller-supplied shell test command</h3><p><strong>Evidence:</strong> <code>skills/coordination/proposal.py:74-82,178-194</code> exposes <code>test_cmd</code> and executes it with <code>shell=True</code>.</p><p><strong>Action:</strong> use argument vectors or allowlisted test profiles; severity rises if untrusted tasks can set this value.</p></article></div></details><details class="sec" id="controls" open><summary><h2>Controls that worked</h2></summary><div class="sec-body"><section class="panel good"><ul><li>Core orchestration and Atlas routes use API-key/JWT dependencies.</li><li>Missing core API key fails closed.</li><li>Compose binds the orchestrator to localhost and declares resource limits.</li><li>Quick-audit validates resolved IPs and redirects against SSRF.</li><li>Git hygiene and configured secret scans passed.</li><li>25 selected security/authentication tests passed.</li><li>No production dynamic <code>eval()</code>/<code>exec()</code> was found in the focused scan.</li></ul></section></div></details><details class="sec" id="karpathy" open><summary><h2>Karpathy audit</h2></summary><div class="sec-body">
+  <table><thead><tr><th>Principle</th><th>Status</th><th>Conclusion</th></tr></thead><tbody>
+  <tr><td>1. Think</td><td>WARN</td><td>Trust assumptions are documented but not consistently enforced.</td></tr>
+  <tr><td>2. Simplicity</td><td>WARN</td><td>Parallel auth patterns and duplicate security trees expand policy surface.</td></tr>
+  <tr><td>3. Surgical</td><td>PASS</td><td>Review-only task; no product code changed.</td></tr>
+  <tr><td>4. Goal-driven</td><td>WARN</td><td>No required repository-wide deterministic ship gate.</td></tr>
+  <tr><td>5. Complexity</td><td>WARN</td><td>Seven central modules total 27,736 lines.</td></tr>
+  <tr><td>6. Verification</td><td>WARN</td><td>Useful tests exist; key default-deny negative cases are absent.</td></tr>
+  <tr><td>7. Debugging</td><td>PASS</td><td>Incident comments, RCAs, and regressions preserve evidence.</td></tr>
+  <tr><td>8. Dependencies</td><td>FAIL</td><td>Build and dependency inputs are not reproducibly pinned.</td></tr>
+  <tr><td>9. Communication</td><td>PASS</td><td>Risky intent is documented clearly; policy remains permissive.</td></tr>
+  <tr><td>10. Failure modes</td><td>WARN</td><td>Optimistic configuration and network assumptions recur.</td></tr>
+  </tbody></table></div></details><details class="sec" id="council" open><summary><h2>Sankofa Council</h2></summary><div class="sec-body">
+  <section class="panel voice"><h3>THE CONTRARIAN</h3><p>The fatal flaw is treating missing configuration as permission after that exact assumption already failed in production.</p></section>
+  <section class="panel voice"><h3>THE FIRST PRINCIPLES THINKER</h3><p>The real question is â€œwho may cause state or spend?â€ Answer it once at ingress; CORS, hostnames, and obscurity are not identity.</p></section>
+  <section class="panel voice"><h3>THE EXPANSIONIST</h3><p>Generate a route-policy inventory and fail CI whenever a mutating route lacks an explicit public/authenticated/webhook classification.</p></section>
+  <section class="panel voice"><h3>THE OUTSIDER</h3><p>A new operator cannot tell which security agent is canonical or which personal routes are publicly reachable. Security knowledge is scattered through historical comments.</p></section>
+  <section class="panel voice"><h3>THE EXECUTOR</h3><p>Start with negative tests for absent credentials and a mutating-route inventory. Establish the contract before changing behavior or refactoring.</p></section>
+  <section class="panel callout"><h3>CHAIRMAN SYNTHESIS</h3><p><strong>HOLD for targeted hardening, then re-review.</strong> Require an explicit policy on every mutating ingress, fail closed on missing security configuration, and enforce those properties in required CI. Address reproducibility and decomposition as separate follow-on work.</p><h3>MONDAY MORNING</h3><p>Create one failing test matrix for missing/empty/invalid credentials across Telegram, Djeli, and every mutating board router.</p><p><strong>Open question:</strong> Should personal board routes be public-domain reachable at all, or live behind authenticated private access?</p></section></div></details><details class="sec" id="reviewer" open><summary><h2>Independent reviewer checklist</h2></summary><div class="sec-body">
+  <ol><li>Trace live Traefik exposure for every unauthenticated route.</li><li>Verify required runtime variables exist without printing their values.</li><li>Map all 78 mutating route decorators to an explicit auth policy.</li><li>Identify the security-agent implementation actually invoked by cron.</li><li>Run the full suite in the canonical supported environment.</li><li>Check for external edge authentication, lockfiles, and attestations not present here.</li><li>Downgrade findings only when durable controls are evidenced and tested.</li></ol></div></details><footer><p>Full evidence, line references, remediation sequence, cross-review, and caveats are in the companion Markdown report: <code>2026-09-04-agentshq-adversarial-code-review.md</code>.</p></footer>
+</main>
+<script>document.getElementById("navToggle").addEventListener("click",function(){var n=document.getElementById("navBar");n.classList.toggle("open");this.setAttribute("aria-expanded",n.classList.contains("open"));});</script><!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
+
