@@ -118,7 +118,7 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-05-08:27:52 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-05-08:35:01 MT</div><!-- DEPLOY_STAMP_END -->
 
 
 <nav class="nav-bar" id="navBar" aria-label="Section navigation">
@@ -756,17 +756,22 @@ Do not add scarcity at the last minute.</p>
     return ReviewSaveClient.fetchWithRetry(API + '/state?page_slug=' + encodeURIComponent(PAGE_SLUG), {})
       .then(function (r) { return r.json(); });
   }).then(function (st) {
-    var byId = {};
-    (st.items || []).forEach(function (r) { byId[r.item_id] = r; });
+    // GET /state returns items as an OBJECT keyed by item_id (not an array),
+    // and notes as a FLAT list carrying its own item_id. Read from the API's
+    // real shape, verified against orchestrator/db.py::get_content_review_decisions_state.
+    var byId = st.items || {};
+    var notesById = {};
+    (st.notes || []).forEach(function (n) {
+      (notesById[n.item_id] = notesById[n.item_id] || []).push(n);
+    });
     items.forEach(function (el) {
       var r = byId[el.dataset.item];
       if (!r) { return; }
       render(el, r.decision === 'park' ? null : r.decision);
-      var notes = (st.notes || {})[el.dataset.item] || [];
       var log = el.querySelector('[data-role="notelog"]');
-      notes.forEach(function (n) {
+      (notesById[el.dataset.item] || []).forEach(function (n) {
         var d = document.createElement('div');
-        d.textContent = (n.created_at || '').slice(0, 16).replace('T', ' ') + '  ' + (n.note_text || '');
+        d.textContent = String(n.created_at || '').slice(0, 16).replace('T', ' ') + '  ' + (n.note_text || '');
         log.appendChild(d);
       });
     });
