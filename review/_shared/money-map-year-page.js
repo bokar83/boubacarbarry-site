@@ -1337,8 +1337,30 @@
 
       if (resState === 'ready') {
         var text = resource && resource.text;
+        // Two-box email shape (2026-09-05): a marker MAY carry `subject` and
+        // `body` instead of (or in addition to) a single `text` blob. When
+        // both are present, render them as two SEPARATE .mm-code boxes, each
+        // with its own Copy button, so a drafted email's Subject and Body
+        // paste cleanly on their own -- his own words: "I need only the
+        // subject in its own code box and then the body in its own code
+        // box." `note` is optional surrounding context (the reminder framing,
+        // voice-score info, a draft link) that renders as plain text OUTSIDE
+        // both boxes, never inside one, so it is never accidentally copied
+        // along with the subject or the body. Backward compatible: a marker
+        // with only `text` (every existing row) renders exactly as before.
+        var subj = resource && resource.subject;
+        var bodyText = resource && resource.body;
+        var note = resource && resource.note;
         var box;
-        if (text) {
+        if (subj != null && bodyText != null) {
+          box = (note ? '<div class="mm-res-link">' + linkify(note, false) + '</div>' : '') +
+            '<div class="mm-stat-label">Subject</div>' +
+            '<div class="mm-code" data-rescode="' + esc(k) + '-subject">' + linkify(subj, false) +
+              '<button class="mm-copy" type="button" data-rescopy="' + esc(k) + '-subject">Copy</button></div>' +
+            '<div class="mm-stat-label">Body</div>' +
+            '<div class="mm-code" data-rescode="' + esc(k) + '-body">' + linkify(bodyText, false) +
+              '<button class="mm-copy" type="button" data-rescopy="' + esc(k) + '-body">Copy</button></div>';
+        } else if (text) {
           box = '<div class="mm-code" data-rescode="' + esc(k) + '">' + linkify(text, false) +
             '<button class="mm-copy" type="button" data-rescopy="' + esc(k) + '">Copy</button></div>';
         } else if (resource && resource.url) {
