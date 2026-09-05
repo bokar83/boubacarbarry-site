@@ -83,22 +83,42 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           git config user.name  "review-bot"
           git config user.email "review-bot@users.noreply.github.com"
-          git add review/
-          # [skip ci] keeps this push from re-triggering this same workflow.
-          git commit -m "chore(review): self-heal hub sync in CI [skip ci]"
-          # The daily archive sweep pushes to this branch too. A collision should be a
-          # non-event, not a red X -- rebase onto the remote and retry rather than failing.
+          # The daily archive sweep and ordinary review publishes push to this branch too.
+          # A collision must be a non-event, not a red X.
+          #
+          # NEVER REBASE THIS COMMIT (fixed 2026-09-05, run 33932312798 / commit 8c7bb12).
+          # review/index.html and review/.review-manifest.json are GENERATED files. When a
+          # push landed 11 seconds after this one, `git pull --rebase` hit
+          # "CONFLICT (content): Merge conflict in review/index.html" -- a conflict in
+          # content no human wrote and no human can meaningfully resolve -- then aborted and
+          # exited 1. The correct move for a generated artifact is not to merge two versions
+          # of it, it is to throw ours away, take their tip, and regenerate from it. The
+          # rebuild is idempotent, so the result is identical whichever push "won".
+          #
+          # Exiting 0 blindly on rejection would be simpler and is WRONG: the colliding push
+          # may not touch review/** at all, in which case it triggers no run of this workflow
+          # and nobody else heals the drift. Regenerating is what makes the early exit safe.
           for attempt in 1 2 3; do
+            git add review/
+            # After a retry's regenerate, the newer push may already have left the hub in
+            # sync, leaving nothing staged. `git commit` exits non-zero on an empty commit,
+            # and `set -e` would turn that no-op into a red X -- so check git's own view of
+            # the index rather than letting the commit fail.
+            if git diff --cached --quiet; then
+              echo "Nothing left to commit -- a concurrent push already left the hub in sync."
+              echo "A concurrent push superseded this heal; the hub is in sync at origin/${GITHUB_REF_NAME}." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            # [skip ci] keeps this push from re-triggering this same workflow.
+            git commit -m "chore(review): self-heal hub sync in CI [skip ci]"
             if git push origin "HEAD:${GITHUB_REF_NAME}"; then
               echo "Pushed the heal commit on attempt ${attempt}."
               exit 0
             fi
-            echo "Push rejected (attempt ${attempt}); rebasing onto origin/${GITHUB_REF_NAME} and retrying."
-            if ! git pull --rebase origin "${GITHUB_REF_NAME}"; then
-              git rebase --abort || true
-              echo "::error::Rebase onto origin/${GITHUB_REF_NAME} conflicted; the heal commit needs a human."
-              exit 1
-            fi
+            echo "Push rejected (attempt ${attempt}); resetting onto origin/${GITHUB_REF_NAME} and regenerating."
+            git fetch origin "${GITHUB_REF_NAME}"
+            git reset --hard "origin/${GITHUB_REF_NAME}"
+            pwsh -File ./scripts/rebuild-review-index.ps1
           done
           echo "::error::Could not push the self-heal commit after 3 attempts."
           exit 1
