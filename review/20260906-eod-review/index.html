@@ -1,0 +1,1221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Everything built today, one review</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;}
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{position:sticky; top:0; z-index:50; background:rgba(15,17,21,0.93);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border); padding:10px 0;}
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim); margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{color:var(--text); text-decoration:none; font-size:.82rem; border:1px solid var(--border);
+    border-radius:999px; padding:6px 12px; background:var(--bg2); white-space:nowrap;}
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{display:none; appearance:none; -webkit-appearance:none; cursor:pointer; background:var(--bg2);
+    color:var(--text); border:1px solid var(--border); border-radius:10px; padding:9px 12px;
+    font-size:1rem; line-height:1; min-width:44px; min-height:40px;}
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;}
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;}
+  details.sec > summary::-webkit-details-marker, details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{content:"\25B8"; color:var(--accent);
+    font-size:.9rem; transition:transform .15s ease; flex:none;}
+  details[open].sec > summary::before, details[open].tldr > summary::before{transform:rotate(90deg);}
+  details.sec > summary h2, details.tldr > summary h2{margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;}
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);} a:visited{color:var(--accent-visited);} a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;} ul,ol{margin:0 0 12px; padding-left:22px;} li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px; padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px; padding:12px 14px;
+    overflow-x:auto; white-space:pre-wrap; word-wrap:break-word; font-size:.85rem; margin:0;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px; border-top:1px solid var(--border); margin-top:26px;}
+  .dim{color:var(--text-dim);}
+  .callout{border-left:3px solid var(--accent); background:var(--bg2); padding:10px 14px; border-radius:0 8px 8px 0;}
+  .pill{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.03em;
+    padding:2px 8px; border-radius:999px; border:1px solid;}
+  .pill.new{color:var(--accent); border-color:var(--accent);}
+  /* ---- decidable items ---- */
+  .item{border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin:0 0 14px; background:var(--bg2);}
+  .item.decided-approve{border-color:var(--good);}
+  .item.decided-reject{opacity:.5; border-color:var(--bad);}
+  .item.decided-park{opacity:.6; border-color:var(--warn);}
+  .item-head{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap;}
+  .item-title{font-weight:650; flex:1 1 auto;}
+  .item-state{font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim);}
+  .item.decided-approve .item-state{color:var(--good);}
+  .item.decided-reject .item-state{color:var(--bad);}
+  .item.decided-park .item-state{color:var(--warn);}
+  .item-meta{font-size:.82rem; margin:4px 0 4px;}
+  .item-link{font-size:.82rem; margin:0 0 8px;}
+  .ask{font-size:.85rem; border-left:3px solid var(--accent); padding:6px 10px; margin:0 0 10px;
+    background:rgba(255,143,94,.07); border-radius:0 6px 6px 0;}
+  .item-body{font-size:.88rem;}
+  .item-controls{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px;}
+  .btn{cursor:pointer; font-size:.8rem; padding:7px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--card); color:var(--text); min-height:36px;}
+  .btn:hover{border-color:var(--accent);}
+  .btn.done{border-color:var(--good); color:var(--good);}
+  .btn.skip{border-color:var(--bad); color:var(--bad);}
+  .btn.park{border-color:var(--warn); color:var(--warn);}
+  .copy-btn{cursor:pointer; font-size:.75rem; padding:5px 10px; border-radius:7px;
+    border:1px solid var(--accent); background:transparent; color:var(--accent);}
+  .cb{margin:0 0 6px;}
+  .cb-head{display:flex; align-items:center; gap:10px; margin:0 0 5px;}
+  .cb-label{font-size:.76rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); font-weight:700;}
+  textarea.draft{width:100%; background:#11141b; color:var(--text); border:1px solid var(--border);
+    border-radius:8px; padding:10px 12px; font-size:.88rem; font-family:inherit; line-height:1.5;}
+  .draft-controls{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px;}
+  .edited-marker{font-size:.76rem; color:var(--warn); font-weight:700;}
+  .origwrap{margin-top:8px;}
+  .origwrap summary{cursor:pointer; font-size:.8rem; color:var(--text-dim);}
+  .orig{margin-top:8px;}
+  .diff{font-size:.84rem; margin-top:8px; line-height:1.7;}
+  .diff ins{background:rgba(127,224,184,.18); color:var(--good); text-decoration:none; border-radius:3px; padding:0 2px;}
+  .diff del{background:rgba(255,122,122,.16); color:var(--bad); border-radius:3px; padding:0 2px;}
+  .save-flag{font-size:.76rem;}
+  .save-flag.saving{color:var(--warn);}
+  .save-flag.saved{color:var(--good);}
+  .save-flag.failed{color:var(--bad); font-weight:700;}
+  .notewrap{margin-top:10px;}
+  .notewrap summary{cursor:pointer; font-size:.8rem; color:var(--text-dim);}
+  textarea.note{width:100%; background:#11141b; color:var(--text); border:1px solid var(--border);
+    border-radius:8px; padding:8px 10px; font-size:.85rem; font-family:inherit; margin:8px 0;}
+  .notelog{font-size:.8rem; color:var(--text-dim); margin-top:8px;}
+  .notelog div{border-left:2px solid var(--border); padding-left:8px; margin:0 0 6px;}
+  #banner{position:sticky; top:56px; z-index:60; display:none; padding:10px 14px; border-radius:8px;
+    margin:10px 0; font-size:.85rem; font-weight:600;}
+  #banner.bad{display:block; background:#3a1616; border:1px solid var(--bad); color:#ffd2d2;}
+  #counter{font-size:.9rem; color:var(--text-dim); margin:0 0 6px; font-weight:600;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch; gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;} .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{ .nav-bar{position:static;} details{border:0;} details > summary::before{display:none;} }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-06-09:42:26 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Today, one review</span>
+    <button type="button" class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">Plan Check</a><a href="#sec-2">Workshop videos</a><a href="#sec-3">Newsletter Oct-Nov</a><a href="#sec-4">Live fix</a><a href="#sec-5">Plans</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Everything built today, in one review</h1>
+    <div class="meta">22 things waiting on you, grouped by the campaign they belong to &middot; built 2026-09-06 15:42 UTC</div>
+  </header>
+
+  <div id="banner"></div>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+<p><b>Everything today's lanes built that still needs you, on one page.</b> Twenty-two rows in five
+groups, in the order the clock cares about. Approve, reject, or skip each one, change the words
+right in the box where it is copy, and leave a note on anything at all &mdash; including the ones
+you skip.</p>
+
+<p><b>Start at the top of the second group.</b> The September 9 video is the first thing due and
+nothing else on this page has a date that close.</p>
+
+<p><b>Two rows you should not approve casually.</b> The July 30 recap cut is blocked on face
+consent that was never collected from the people in the footage. And the Plan Check posts were
+scored by one model, not two, so their 92-and-up gate scores are a single opinion.</p>
+
+<p><b>Nothing here is a copy of a decision you already made.</b> The 09-28 duplicate scare from
+this morning is resolved and is deliberately not on this page. The Money Map rows appear as a
+pointer only, because the Money Map stays their one home.</p>
+
+<p><b>Two things were still being built when this page went up</b> and are not on it: the
+lead-magnet campaign and the pallet and live-auction lane. Both were still running with nothing
+handed back. When they land, their rows get added to this same page at this same address rather
+than a new one. <b>One thing could not be found at all:</b> an earlier note about 82
+unsourced-approval rows and two title conflicts &mdash; searched the whole repo, the decision
+docs, memory and the message bus, and it is not written down anywhere, so whoever raised it needs
+to say where it lives.</p>
+<div id="counter"></div></div>
+  </details>
+
+  
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. The Plan Check giveaway <span class="pill new">3</span></h2></summary>
+    <div class="sec-body"><p class="callout">Two posts, one campaign: give one seat-holder a live plan teardown after the September 24 session. Both sit on the Content Board as <b>Draft, not approved</b>, so neither can publish until you decide here. Both passed the voice and social gates (93/92 and 92/91); the cross-model check was <b>not</b> run, so the gate score is one model's opinion, not two.</p>
+  <div class="item" data-item="plan-check-li-0918">
+    <div class="item-head">
+      <span class="item-title">LinkedIn, September 18 — the long version</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">LinkedIn · scheduled 2026-09-18 · Content Board status Draft · Approved by you: no</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d3bcf1a30298188aa5ec93c85428a10" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">Approve to let it run on the 18th, reject to kill it, or skip if you want to sit with it. Edit the words in the box first if any of it is not how you would say it.</div>
+    <div class="cb">  <div class="cb-head"><span class="cb-label">The copy &mdash; edit it right here</span>  <button type="button" class="copy-btn" data-copy="body-plan-check-li-0918">Copy</button></div>  <textarea class="draft" data-role="draft" rows="10">One person in the room on September 24 is going to bring me the thing they are about to spend money on, and we are going to find out together whether it holds up. A name comes out of the hat. We sit down for forty five minutes in the week after. For the first twenty I give no advice at all. I only ask. What exactly are you about to buy, and who is it for. What have you already tried, and what did that cost you. What would have to be true for this to be worth doing. Then we go and look, while you watch. Who is already doing this near you, and how well. What people say about them. What the work is actually worth. Whether anyone is paying money right now to reach the same buyer you want. You walk away with a verdict on your own plan. Go, wait, or leave it, with the reason and the source sitting next to every line. Where we could not find out, it says so instead of guessing. I built this check for myself first. It strips out the parts of a plan that are only there because they look clever, and it earned its place in my own week, which is the only reason it is in front of you. One name gets it done with me. Everyone in the room leaves able to run it themselves, which is the actual point. Your seat is your entry. Thursday September 24, in Sandy. catalystworks.consulting/workshop</textarea>  <div class="draft-controls">    <button type="button" class="btn save-edit">Save my edit</button>    <button type="button" class="btn revert-edit">Revert to original</button>    <span class="edited-marker" data-role="edited"></span>  </div>  <details class="origwrap"><summary>Show the original, and what changed</summary>    <pre class="orig" id="body-plan-check-li-0918" data-role="original">One person in the room on September 24 is going to bring me the thing they are about to spend money on, and we are going to find out together whether it holds up. A name comes out of the hat. We sit down for forty five minutes in the week after. For the first twenty I give no advice at all. I only ask. What exactly are you about to buy, and who is it for. What have you already tried, and what did that cost you. What would have to be true for this to be worth doing. Then we go and look, while you watch. Who is already doing this near you, and how well. What people say about them. What the work is actually worth. Whether anyone is paying money right now to reach the same buyer you want. You walk away with a verdict on your own plan. Go, wait, or leave it, with the reason and the source sitting next to every line. Where we could not find out, it says so instead of guessing. I built this check for myself first. It strips out the parts of a plan that are only there because they look clever, and it earned its place in my own week, which is the only reason it is in front of you. One name gets it done with me. Everyone in the room leaves able to run it themselves, which is the actual point. Your seat is your entry. Thursday September 24, in Sandy. catalystworks.consulting/workshop</pre>    <div class="diff" data-role="diff"></div>  </details></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="plan-check-x-0921">
+    <div class="item-head">
+      <span class="item-title">X, September 21 — the short version</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">X · scheduled 2026-09-21 · Content Board status Draft · Approved by you: no</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d3bcf1a3029816097dafc63ddd33fdd" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">Same call as the LinkedIn one, but they are independent — you can run one and kill the other.</div>
+    <div class="cb">  <div class="cb-head"><span class="cb-label">The copy &mdash; edit it right here</span>  <button type="button" class="copy-btn" data-copy="body-plan-check-x-0921">Copy</button></div>  <textarea class="draft" data-role="draft" rows="10">One person in the room on September 24 brings me the thing they are about to spend money on. Forty five minutes. For the first twenty I give no advice at all. I only ask. What are you buying, who is it for, what have you tried, what did it cost. Then we go and look while you watch. Who else does this near you. What the work is worth. Whether anyone is paying right now to reach your buyer. You leave with a verdict on your own plan and the source next to every line. I built this check for myself first. One name gets it done with me. Everyone in the room leaves able to run it themselves. Your seat is your entry. catalystworks.consulting/workshop</textarea>  <div class="draft-controls">    <button type="button" class="btn save-edit">Save my edit</button>    <button type="button" class="btn revert-edit">Revert to original</button>    <span class="edited-marker" data-role="edited"></span>  </div>  <details class="origwrap"><summary>Show the original, and what changed</summary>    <pre class="orig" id="body-plan-check-x-0921" data-role="original">One person in the room on September 24 brings me the thing they are about to spend money on. Forty five minutes. For the first twenty I give no advice at all. I only ask. What are you buying, who is it for, what have you tried, what did it cost. Then we go and look while you watch. Who else does this near you. What the work is worth. Whether anyone is paying right now to reach your buyer. You leave with a verdict on your own plan and the source next to every line. I built this check for myself first. One name gets it done with me. Everyone in the room leaves able to run it themselves. Your seat is your entry. catalystworks.consulting/workshop</pre>    <div class="diff" data-role="diff"></div>  </details></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="plan-check-cross-model">
+    <div class="item-head">
+      <span class="item-title">The cross-model check on both posts was never run</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Quality gate · affects both posts above</div>
+    
+    <div class="ask">Approve to say the single-model score is good enough and let them run as-is, or skip to hold both until a second model has scored them.</div>
+    <div class="cb"><div class="item-body"><p>Both posts were scored by one model: voice 93 and 92, social 92 and 91, virality 9 out of 10. The bar is 90, so they clear it. What did not happen is the second-model pass that normally catches a score a single model is flattering itself on.</p><p>Running it costs a few minutes and delays nothing — the first post is not due until the 18th. Approving here means you are fine shipping on one opinion.</p></div><pre id="body-plan-check-cross-model" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+</div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. September workshops — the video and social drafts <span class="pill new">7</span></h2></summary>
+    <div class="sec-body"><p class="callout">Seven pieces for the September 16 online session and the September 24 room, all sitting as <b>Draft, not approved</b>, in date order. The first one is due to go out on the 9th, so this group is the one with a clock on it. Four are scripts you would record on a phone; three are motion graphics or an edit of footage that already exists. <b>One of them carries a consent problem</b> and is marked.</p>
+  <div class="item" data-item="cb-vid-on-1">
+    <div class="item-head">
+      <span class="item-title">Sept 9 — founder invite for the online session (VID-ON-1)</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Facebook page, Instagram, X · Reel, spoken to camera, 65-70 sec · scheduled 2026-09-09 · Draft</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d1bcf1a302981cfb817f1e46bf3afaf" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">This is the first one due. Approve it and you record it; reject or skip and the 9th goes quiet.</div>
+    <div class="cb">  <div class="cb-head"><span class="cb-label">The copy &mdash; edit it right here</span>  <button type="button" class="copy-btn" data-copy="body-cb-vid-on-1">Copy</button></div>  <textarea class="draft" data-role="draft" rows="10">[SPOKEN SCRIPT, phone-recorded, vertical 9:16, ~65-70 sec]
+
+You&#x27;ve been meaning to actually use AI for two years now. Everybody has. And if you are like most of the owners I talk to, you poked at ChatGPT a few times, got a useless answer back, and went back to doing it the old way. That is not on you. It gave you a useless answer because it did not know your business. Not what you sell, not who buys it, not what you charge. On Wednesday, September 16th, eleven in the morning Mountain, I am running an hour online where you build the one file that fixes that. Paste it in once, and every answer after that comes back about your business instead of a business that does not exist. Turn the wifi off partway through and it still runs. I would rather show you that than promise it. It costs you an hour of a working day, not an evening at home. Link is right here. Come build it with me.
+
+On-screen text: &#x27;Sept 16 - 11am MT - online&#x27; / &#x27;the file that knows your business&#x27; / &#x27;catalystworks.consulting/online&#x27;</textarea>  <div class="draft-controls">    <button type="button" class="btn save-edit">Save my edit</button>    <button type="button" class="btn revert-edit">Revert to original</button>    <span class="edited-marker" data-role="edited"></span>  </div>  <details class="origwrap"><summary>Show the original, and what changed</summary>    <pre class="orig" id="body-cb-vid-on-1" data-role="original">[SPOKEN SCRIPT, phone-recorded, vertical 9:16, ~65-70 sec]
+
+You&#x27;ve been meaning to actually use AI for two years now. Everybody has. And if you are like most of the owners I talk to, you poked at ChatGPT a few times, got a useless answer back, and went back to doing it the old way. That is not on you. It gave you a useless answer because it did not know your business. Not what you sell, not who buys it, not what you charge. On Wednesday, September 16th, eleven in the morning Mountain, I am running an hour online where you build the one file that fixes that. Paste it in once, and every answer after that comes back about your business instead of a business that does not exist. Turn the wifi off partway through and it still runs. I would rather show you that than promise it. It costs you an hour of a working day, not an evening at home. Link is right here. Come build it with me.
+
+On-screen text: &#x27;Sept 16 - 11am MT - online&#x27; / &#x27;the file that knows your business&#x27; / &#x27;catalystworks.consulting/online&#x27;</pre>    <div class="diff" data-role="diff"></div>  </details></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="cb-vid-ip-1">
+    <div class="item-head">
+      <span class="item-title">Sept 10 — title sting announcing the in-person session (VID-IP-1)</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Facebook page, LinkedIn · motion graphics, no camera, no voice, 16:9, 20 sec · scheduled 2026-09-10 · Draft</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d1bcf1a30298151b472f2c18b949745" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">Nothing to record here, it is a card. Approve the words on it, or change them in the box.</div>
+    <div class="cb">  <div class="cb-head"><span class="cb-label">The copy &mdash; edit it right here</span>  <button type="button" class="copy-btn" data-copy="body-cb-vid-ip-1">Copy</button></div>  <textarea class="draft" data-role="draft" rows="10">[MOTION-GRAPHICS TITLE CARD, no camera, no voice, 16:9, 20 sec]
+
+On-screen text sequence:
+  brand mark
+  -&gt; &#x27;WHAT I BUILT FOR MYSELF FIRST&#x27;
+  -&gt; &#x27;Three tools. Ninety minutes.&#x27;
+  -&gt; &#x27;September 24 - Sandy, Utah.&#x27;
+
+Venue slot reads &#x27;Sandy, Utah&#x27; only -- room not confirmed, do not name the specific room.</textarea>  <div class="draft-controls">    <button type="button" class="btn save-edit">Save my edit</button>    <button type="button" class="btn revert-edit">Revert to original</button>    <span class="edited-marker" data-role="edited"></span>  </div>  <details class="origwrap"><summary>Show the original, and what changed</summary>    <pre class="orig" id="body-cb-vid-ip-1" data-role="original">[MOTION-GRAPHICS TITLE CARD, no camera, no voice, 16:9, 20 sec]
+
+On-screen text sequence:
+  brand mark
+  -&gt; &#x27;WHAT I BUILT FOR MYSELF FIRST&#x27;
+  -&gt; &#x27;Three tools. Ninety minutes.&#x27;
+  -&gt; &#x27;September 24 - Sandy, Utah.&#x27;
+
+Venue slot reads &#x27;Sandy, Utah&#x27; only -- room not confirmed, do not name the specific room.</pre>    <div class="diff" data-role="diff"></div>  </details></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="cb-vid-on-2">
+    <div class="item-head">
+      <span class="item-title">Sept 15 — last call for the online session (VID-ON-2)</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">X, Instagram · Reel, spoken to camera, 35-40 sec · scheduled 2026-09-15 · Draft</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d1bcf1a302981119795c18fdabcc170" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">Approve, reject, or skip. Runs the day before the session.</div>
+    <div class="cb">  <div class="cb-head"><span class="cb-label">The copy &mdash; edit it right here</span>  <button type="button" class="copy-btn" data-copy="body-cb-vid-on-2">Copy</button></div>  <textarea class="draft" data-role="draft" rows="10">[SPOKEN SCRIPT, phone-recorded, vertical 9:16, ~35-40 sec]
+
+Last call on this one. The online session I told you about is tomorrow, September 16th, eleven in the morning Mountain. Sixty minutes, and you do not need to be anywhere but your own desk. You build one file, the one that holds what you sell, who buys it, what you charge. It keeps working after we hang up. I run this on my own business first. That is the only reason I know which parts are worth your hour. Link is right here. See you tomorrow.
+
+On-screen text: &#x27;TOMORROW - 11am MT&#x27; / &#x27;60 min - online&#x27; / &#x27;catalystworks.consulting/online&#x27;</textarea>  <div class="draft-controls">    <button type="button" class="btn save-edit">Save my edit</button>    <button type="button" class="btn revert-edit">Revert to original</button>    <span class="edited-marker" data-role="edited"></span>  </div>  <details class="origwrap"><summary>Show the original, and what changed</summary>    <pre class="orig" id="body-cb-vid-on-2" data-role="original">[SPOKEN SCRIPT, phone-recorded, vertical 9:16, ~35-40 sec]
+
+Last call on this one. The online session I told you about is tomorrow, September 16th, eleven in the morning Mountain. Sixty minutes, and you do not need to be anywhere but your own desk. You build one file, the one that holds what you sell, who buys it, what you charge. It keeps working after we hang up. I run this on my own business first. That is the only reason I know which parts are worth your hour. Link is right here. See you tomorrow.
+
+On-screen text: &#x27;TOMORROW - 11am MT&#x27; / &#x27;60 min - online&#x27; / &#x27;catalystworks.consulting/online&#x27;</pre>    <div class="diff" data-role="diff"></div>  </details></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="cb-fb-on-3">
+    <div class="item-head">
+      <span class="item-title">Sept 16 — day-of Facebook post for the online session (FB-ON-3)</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Facebook page · written post · scheduled 2026-09-16, the morning of the session · Draft</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d1bcf1a302981339e01d73bb06a5c14" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">Goes out hours before the session starts. Approve, or change the words.</div>
+    <div class="cb">  <div class="cb-head"><span class="cb-label">The copy &mdash; edit it right here</span>  <button type="button" class="copy-btn" data-copy="body-cb-fb-on-3">Copy</button></div>  <textarea class="draft" data-role="draft" rows="10">Eleven this morning, Mountain time. Sixty minutes.
+
+You have seen this page describe the one file that runs this whole hour: what you sell, who buys it, what you charge, and what you have already ruled out. Paste it in once and every answer after that comes back about your business instead of a business that does not exist.
+
+Reading about that file and building your own, against the tool you actually use, are not the same hour. Come build it live with me rather than take my word for it.
+
+Bring the business and a laptop, not a phone. Registration closes when we start.
+
+catalystworks.consulting/online</textarea>  <div class="draft-controls">    <button type="button" class="btn save-edit">Save my edit</button>    <button type="button" class="btn revert-edit">Revert to original</button>    <span class="edited-marker" data-role="edited"></span>  </div>  <details class="origwrap"><summary>Show the original, and what changed</summary>    <pre class="orig" id="body-cb-fb-on-3" data-role="original">Eleven this morning, Mountain time. Sixty minutes.
+
+You have seen this page describe the one file that runs this whole hour: what you sell, who buys it, what you charge, and what you have already ruled out. Paste it in once and every answer after that comes back about your business instead of a business that does not exist.
+
+Reading about that file and building your own, against the tool you actually use, are not the same hour. Come build it live with me rather than take my word for it.
+
+Bring the business and a laptop, not a phone. Registration closes when we start.
+
+catalystworks.consulting/online</pre>    <div class="diff" data-role="diff"></div>  </details></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="cb-vid-ip-2">
+    <div class="item-head">
+      <span class="item-title">Sept 17 — founder invite for the in-person session (VID-IP-2)</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Facebook page, Instagram, X · spoken to camera, vertical, 70-80 sec · scheduled 2026-09-17 · Draft</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d1bcf1a302981bb8091ead5b0f740e7" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">The main invite for the 24th. Approve, reject, or skip.</div>
+    <div class="cb">  <div class="cb-head"><span class="cb-label">The copy &mdash; edit it right here</span>  <button type="button" class="copy-btn" data-copy="body-cb-vid-ip-2">Copy</button></div>  <textarea class="draft" data-role="draft" rows="10">[SPOKEN SCRIPT, phone-recorded, vertical 9:16, ~70-80 sec]
+
+I ran this in Sandy in July, and a few people came and built real things in the room. On September 24 I am doing it again. Ninety minutes, in person, Sandy, Utah. Three tools this time, not one. A file that knows your business. A second opinion you can argue with, three different points of view that go at the thing you have been chewing on and then one of them calls it. And a check on your own plans, the kind that strips out the parts that only look clever. I pull the wifi down partway through and show you it keeps running. I would rather show you that than promise it. No technical skill needed. Bring a laptop. Link is right here.
+
+On-screen text: &#x27;Sept 24 - 7pm - Sandy, UT&#x27; / &#x27;3 tools - 90 minutes&#x27; / &#x27;catalystworks.consulting/workshop&#x27;</textarea>  <div class="draft-controls">    <button type="button" class="btn save-edit">Save my edit</button>    <button type="button" class="btn revert-edit">Revert to original</button>    <span class="edited-marker" data-role="edited"></span>  </div>  <details class="origwrap"><summary>Show the original, and what changed</summary>    <pre class="orig" id="body-cb-vid-ip-2" data-role="original">[SPOKEN SCRIPT, phone-recorded, vertical 9:16, ~70-80 sec]
+
+I ran this in Sandy in July, and a few people came and built real things in the room. On September 24 I am doing it again. Ninety minutes, in person, Sandy, Utah. Three tools this time, not one. A file that knows your business. A second opinion you can argue with, three different points of view that go at the thing you have been chewing on and then one of them calls it. And a check on your own plans, the kind that strips out the parts that only look clever. I pull the wifi down partway through and show you it keeps running. I would rather show you that than promise it. No technical skill needed. Bring a laptop. Link is right here.
+
+On-screen text: &#x27;Sept 24 - 7pm - Sandy, UT&#x27; / &#x27;3 tools - 90 minutes&#x27; / &#x27;catalystworks.consulting/workshop&#x27;</pre>    <div class="diff" data-role="diff"></div>  </details></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="cb-vid-ip-3-consent">
+    <div class="item-head">
+      <span class="item-title">Sept 19 — recap cut of the real July 30 footage (VID-IP-3) — BLOCKED ON FACE CONSENT</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Facebook page, Instagram · edit of existing real footage, vertical, 30-45 sec · scheduled 2026-09-19 · Draft</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d1bcf1a302981b28b48e69e9cdd9116" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">Do not approve this one on the copy alone. The footage shows recognisable attendees and written consent has not been collected. Approve only if you want it built AND you will chase consent first; skip is the safe call until consent is in hand.</div>
+    <div class="cb">  <div class="cb-head"><span class="cb-label">The copy &mdash; edit it right here</span>  <button type="button" class="copy-btn" data-copy="body-cb-vid-ip-3-consent">Copy</button></div>  <textarea class="draft" data-role="draft" rows="10">[VIDEO EDIT of existing real footage -- straight cut of clip-01.mov, clip-02.mov, session-recording-full.mov from the July 30 workshop shoot, mirrored to Drive. Vertical 9:16, ~30-45 sec.]
+
+Caption card sequence, timed to the cuts:
+  &#x27;July 30. Sandy, Utah.&#x27;
+  &#x27;Real room. Real business.&#x27;
+  &#x27;Same session runs again September 24.&#x27;
+  &#x27;catalystworks.consulting/workshop&#x27;
+
+OPEN GATE, carried verbatim from the board row: needs a face-consent pass before this goes out publicly. The photo README flags recognisable attendee faces in several frames with written consent not yet collected, and the three video clips almost certainly show the same faces.</textarea>  <div class="draft-controls">    <button type="button" class="btn save-edit">Save my edit</button>    <button type="button" class="btn revert-edit">Revert to original</button>    <span class="edited-marker" data-role="edited"></span>  </div>  <details class="origwrap"><summary>Show the original, and what changed</summary>    <pre class="orig" id="body-cb-vid-ip-3-consent" data-role="original">[VIDEO EDIT of existing real footage -- straight cut of clip-01.mov, clip-02.mov, session-recording-full.mov from the July 30 workshop shoot, mirrored to Drive. Vertical 9:16, ~30-45 sec.]
+
+Caption card sequence, timed to the cuts:
+  &#x27;July 30. Sandy, Utah.&#x27;
+  &#x27;Real room. Real business.&#x27;
+  &#x27;Same session runs again September 24.&#x27;
+  &#x27;catalystworks.consulting/workshop&#x27;
+
+OPEN GATE, carried verbatim from the board row: needs a face-consent pass before this goes out publicly. The photo README flags recognisable attendee faces in several frames with written consent not yet collected, and the three video clips almost certainly show the same faces.</pre>    <div class="diff" data-role="diff"></div>  </details></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="cb-vid-ip-4">
+    <div class="item-head">
+      <span class="item-title">Sept 22 — quote card, last call for the room (VID-IP-4)</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Facebook page, Instagram · motion graphics quote card, no camera, 8 sec · scheduled 2026-09-22 · Draft</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d1bcf1a3029810092c5cd282f7fc5a0" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">The quote is your own already-public line, not an attendee&#x27;s, because no verified attendee quote exists. Approve as-is, or skip and we swap in a real one if the after-action pack turns one up before the 22nd.</div>
+    <div class="cb">  <div class="cb-head"><span class="cb-label">The copy &mdash; edit it right here</span>  <button type="button" class="copy-btn" data-copy="body-cb-vid-ip-4">Copy</button></div>  <textarea class="draft" data-role="draft" rows="10">[MOTION-GRAPHICS QUOTE CARD, no camera, no voice, vertical 9:16, 8 sec]
+
+Quote: &#x27;I would rather show you that than promise it.&#x27; — Boubacar, on pulling the wifi mid-session.
+
+On-screen sequence: title card &#x27;AI WITHOUT GETTING BURNED&#x27; -&gt; the quote card -&gt; CTA card &#x27;September 24 - Sandy, Utah - catalystworks.consulting/workshop&#x27;</textarea>  <div class="draft-controls">    <button type="button" class="btn save-edit">Save my edit</button>    <button type="button" class="btn revert-edit">Revert to original</button>    <span class="edited-marker" data-role="edited"></span>  </div>  <details class="origwrap"><summary>Show the original, and what changed</summary>    <pre class="orig" id="body-cb-vid-ip-4" data-role="original">[MOTION-GRAPHICS QUOTE CARD, no camera, no voice, vertical 9:16, 8 sec]
+
+Quote: &#x27;I would rather show you that than promise it.&#x27; — Boubacar, on pulling the wifi mid-session.
+
+On-screen sequence: title card &#x27;AI WITHOUT GETTING BURNED&#x27; -&gt; the quote card -&gt; CTA card &#x27;September 24 - Sandy, Utah - catalystworks.consulting/workshop&#x27;</pre>    <div class="diff" data-role="diff"></div>  </details></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+</div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. The newsletter, October into November <span class="pill new">6</span></h2></summary>
+    <div class="sec-body"><p class="callout">Five Monday slots proposed, none confirmed, nothing written into Beehiiv yet. The shape of the month is give, give, give, ask, reset — three issues hand something over before one asks for anything. The four new slots exist as Draft rows carrying only the angle and the hook; <b>no body has been written for any of them</b>, deliberately, because writing four issues you have not signed off on is the waste this page exists to prevent. Full reasoning per slot is on <a href="https://boubacarbarry.com/review/20260905-newsletter-plan-oct-nov/" target="_blank" rel="noopener">the newsletter plan page</a>.</p>
+  <div class="item" data-item="nl-anchor-monday">
+    <div class="item-head">
+      <span class="item-title">Put the anchor day back on Monday, 17:00 UTC</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Cadence decision · affects every remaining slot</div>
+    
+    <div class="ask">Approve to lock Monday, reject to stay on Tuesday, or skip to decide later.</div>
+    <div class="cb"><div class="item-body"><p>Three sends drifted to Tuesday — 08-25, 09-01 and 09-08 — while still being logged as Monday. It was a labelling error from the one-week reslot, not a decision, and it already self-corrected: every slot from 09-14 onward is on Monday.</p><p>So this confirms the anchor rather than moving anything. The reason it matters: your stated cadence is the issue on Monday, then the same piece as a LinkedIn article Wednesday or Thursday. A Tuesday send squeezes that gap to one day, and that repost cadence has never once run.</p><p>One consequence worth naming: with Monday fixed, 09-08 stays exactly where Beehiiv already has it. Moving a scheduled post to fix a label would cost more than the label is worth.</p></div><pre id="body-nl-anchor-monday" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="nl-1005-date">
+    <div class="item-head">
+      <span class="item-title">Oct 5 — &#x27;Build the kill switch first&#x27;, confirm the date only</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Beehiiv · 2026-10-05 · body is your own approved copy, already drafted and gated at 92</div>
+    
+    <div class="ask">Nothing to write and nothing to edit. Approve to confirm it sits on Monday October 5.</div>
+    <div class="cb"><div class="item-body"><p>This one is already written from your own approved board copy, subject and subtitle gated at 92, and it is already on a Monday. The only open question was the date.</p><p>Why it opens October: both September sessions are done by then, so this is the first issue that can point at something you actually ran. It is the credibility piece, and credibility is what buys the right to ask three weeks later on 10-26.</p></div><pre id="body-nl-1005-date" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="nl-1012-system-works">
+    <div class="item-head">
+      <span class="item-title">Oct 12 — &#x27;The system works. Nobody runs it.&#x27;</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Beehiiv · 2026-10-12 · CTA: the free scan · Draft row, date PROPOSED, no body written</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d2bcf1a3029811cb51ae66affd45a47" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">Approve the angle and it gets drafted. Reject and the slot needs a different one.</div>
+    <div class="cb"><div class="item-body"><p><b>The hook as it stands:</b> &ldquo;I built the thing. It worked on the first try. Then the one step that needed a human never happened, and it kept not happening for months.&rdquo;</p><p>This replaces the room-Q&amp;A angle you rejected on 09-05 — you said you did not want to write that one until after the events, and you were right, it could not have been drafted without questions nobody wrote down. That topic is deferred, not dead, and the same row was updated in place so nothing was duplicated.</p><p>The instance it would tell is real and dated: the repost habit designed for this very newsletter has never once run. The system was fine. The habit was never built.</p></div><pre id="body-nl-1012-system-works" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="nl-1019-two-page-policy">
+    <div class="item-head">
+      <span class="item-title">Oct 19 — &#x27;The AI policy that fits on two pages&#x27;</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Beehiiv · 2026-10-19 · CTA: the free scan · Draft row, date PROPOSED, no body written</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d2bcf1a3029815cbe77cce25afca41c" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">Approve the angle to have it drafted, reject to swap the slot.</div>
+    <div class="cb"><div class="item-body"><p><b>The hook as it stands:</b> &ldquo;Most small businesses have no AI policy because every template they find is thirty pages. Here is the two-page version.&rdquo;</p><p>Reuses an outline that already existed and was never written, so this is not a new idea competing for the slot.</p></div><pre id="body-nl-1019-two-page-policy" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="nl-1026-retainer">
+    <div class="item-head">
+      <span class="item-title">Oct 26 — &#x27;A retainer built to shrink&#x27; — this is the one ask of the month</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Beehiiv · 2026-10-26 · CTA: the fractional retainer · Draft row, date PROPOSED, no body written</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d2bcf1a3029816e8729c659352d0416" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">This is the only issue in the month that asks for money, and the retainer has been pointed at exactly once in twelve issues. Approve, reject, or skip.</div>
+    <div class="cb"><div class="item-body"><p><b>The hook as it stands:</b> &ldquo;Most retainers are designed to grow. Mine is designed to end. Here is what that costs and what it buys.&rdquo;</p><p>The row carries a standing instruction on itself: the live price ladder gets read before this is drafted, so the issue cannot go out quoting a stale number.</p></div><pre id="body-nl-1026-retainer" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="nl-1102-decisions-nobody-owns">
+    <div class="item-head">
+      <span class="item-title">Nov 2 — &#x27;The decisions nobody owns&#x27;</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Beehiiv · 2026-11-02 · CTA: the free scan · Draft row, date PROPOSED, no body written</div>
+    <div class="item-link"><a href="https://app.notion.com/p/3d2bcf1a30298179b181d6749faf02f2" target="_blank" rel="noopener">Open the Content Board row &#8599;</a></div>
+    <div class="ask">Approve the angle to have it drafted, reject to swap the slot.</div>
+    <div class="cb"><div class="item-body"><p><b>The hook as it stands:</b> &ldquo;The expensive thing in your business is not a bad decision. It is the decision nobody is on the hook for.&rdquo;</p><p>Also reuses an existing never-written outline. It sits after the ask on purpose, so the run goes straight back to giving and never stacks two asks in a row.</p></div><pre id="body-nl-1102-decisions-nobody-owns" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+</div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. One live fix in an issue that is already scheduled <span class="pill new">1</span></h2></summary>
+    <div class="sec-body"><p class="callout">This is not a draft. It is already sitting in Beehiiv with a send date, and it says something that is no longer true.</p>
+  <div class="item" data-item="beehiiv-0921-room-line">
+    <div class="item-head">
+      <span class="item-title">Sept 21 issue still says the room is not confirmed. It is.</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Beehiiv · &#x27;the-room-is-thursday&#x27; · confirmed scheduled for 2026-09-21 · needs an edit in Beehiiv itself</div>
+    <div class="item-link"><a href="https://boubacarbarry.com/review/20260905-beehiiv-schedule-today/" target="_blank" rel="noopener">Open the scheduling page this came from &#8599;</a></div>
+    <div class="ask">Approve the replacement line below and it gets swapped into the scheduled Beehiiv draft. Edit the line first if you would say it differently.</div>
+    <div class="cb">  <div class="cb-head"><span class="cb-label">The copy &mdash; edit it right here</span>  <button type="button" class="copy-btn" data-copy="body-beehiiv-0921-room-line">Copy</button></div>  <textarea class="draft" data-role="draft" rows="10">The room booking is confirmed. Alex Dotter wrote on 2026-08-25: &quot;I do have the room available on the 24th and have moved your event over.&quot;
+
+The issue as pasted into Beehiiv still says &quot;The room booking is not confirmed in writing yet.&quot; That one sentence needs replacing before the 21st. The replacement:
+
+The date is set, the room is booked, and I am running it.</textarea>  <div class="draft-controls">    <button type="button" class="btn save-edit">Save my edit</button>    <button type="button" class="btn revert-edit">Revert to original</button>    <span class="edited-marker" data-role="edited"></span>  </div>  <details class="origwrap"><summary>Show the original, and what changed</summary>    <pre class="orig" id="body-beehiiv-0921-room-line" data-role="original">The room booking is confirmed. Alex Dotter wrote on 2026-08-25: &quot;I do have the room available on the 24th and have moved your event over.&quot;
+
+The issue as pasted into Beehiiv still says &quot;The room booking is not confirmed in writing yet.&quot; That one sentence needs replacing before the 21st. The replacement:
+
+The date is set, the room is booked, and I am running it.</pre>    <div class="diff" data-role="diff"></div>  </details></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+</div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. Plans waiting on your yes or no <span class="pill new">5</span></h2></summary>
+    <div class="sec-body"><p class="callout">Five plans were published today. None of them is content — each one is a direction that other work will be built on, so a plan left undecided quietly stops everything downstream of it. The full argument for each is on its own page, linked in the row. Decide the direction here.</p>
+  <div class="item" data-item="plan-gtm-where-customers">
+    <div class="item-head">
+      <span class="item-title">Go-to-market: the leak is at the bottom of the funnel, not the top</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Published today · a direction, not a document</div>
+    <div class="item-link"><a href="https://boubacarbarry.com/review/20260905-gtm-where-customers-come-from/" target="_blank" rel="noopener">Read the full plan &#8599;</a></div>
+    <div class="ask">Approve the diagnosis and the order of the three moves, or reject if you read the numbers differently.</div>
+    <div class="cb"><div class="item-body"><p>Measured live today across every channel you own: 68,346 paid impressions, 52 LinkedIn posts, 80 X posts, 63 YouTube videos, several hundred cold emails and 16 newsletters have produced one paid workshop seat, zero newsletter clicks and zero positive cold email replies.</p><p>The conclusion is that this is a conversations problem, not a visibility problem, and that adding traffic to it does nothing. The plan is three moves in a fixed order, starting with converting the one motion already running: the comments you leave on other people's posts.</p></div><pre id="body-plan-gtm-where-customers" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="plan-thirty-day-reach">
+    <div class="item-head">
+      <span class="item-title">The next thirty days: 500 emails is not supported by anything we have</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Published today · contains a straight question for you about paid acquisition</div>
+    <div class="item-link"><a href="https://boubacarbarry.com/review/20260906-thirty-day-reach-and-revenue-plan/" target="_blank" rel="noopener">Read the full plan &#8599;</a></div>
+    <div class="ask">There are three named options and they cost different things. Approve to take the recommendation, or skip and leave a note saying which of the three you want.</div>
+    <div class="cb"><div class="item-body"><p>The honest number is 150 emails by 6 October, or 500 by 5 December, or 500 inside thirty days for roughly $1,400 to $2,300 of paid acquisition. That third one is your call and nobody else's.</p><p>The plan also argues for moving the scoreboard: sixteen newsletters produced zero clicks, 195 paid visitors produced zero sales, 331 cold emails produced zero positive replies. When every channel returns zero, the problem is the offer and not the reach, and a 500-person list in front of that offer is worth zero.</p></div><pre id="body-plan-thirty-day-reach" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="plan-sept-workshops-action">
+    <div class="item-head">
+      <span class="item-title">September workshops: twenty private messages this week, not more posts</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Published today · the most time-sensitive of the five</div>
+    <div class="item-link"><a href="https://boubacarbarry.com/review/20260905-sept-workshops-action-plan/" target="_blank" rel="noopener">Read the full plan &#8599;</a></div>
+    <div class="ask">Approve the week&#x27;s shape, or reject if you want the effort somewhere else.</div>
+    <div class="cb"><div class="item-body"><p>The 24th is confirmed. That error was ours: the record said &ldquo;room being confirmed&rdquo; and so did your live page, for ten days. Both are fixed and the fix is live.</p><p>The 44 posts are already written and dated; they need one approval and then they run. What no campaign can do for you is ask twenty named Utah people directly.</p><p>The cheapest miss on the board: your 46 newsletter subscribers have never been told the 16th exists. Three issues scheduled, zero mention. That is free reach you already own.</p></div><pre id="body-plan-sept-workshops-action" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="plan-reach-and-conversion">
+    <div class="item-head">
+      <span class="item-title">Reach and conversion: one list, five touches, a fixed number every day</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Published today · the shape borrowed from an outside method, held against our own numbers</div>
+    <div class="item-link"><a href="https://boubacarbarry.com/review/20260905-reach-and-conversion-plan/" target="_blank" rel="noopener">Read the full plan &#8599;</a></div>
+    <div class="ask">Approve the shape, or reject it and we keep the current approach.</div>
+    <div class="cb"><div class="item-body"><p>The transferable part of the method is the shape, not the tooling: one list, five touches, a fixed number every single day, and a same-day reply loop.</p><p>Held against our own record it changes the plan. We have emailed 351 people in four months and had two real human replies, both of which said STOP. Meanwhile the posts everyone thought were stuck are in fact publishing, and the workshops still have zero registrations.</p></div><pre id="body-plan-reach-and-conversion" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+
+  <div class="item" data-item="plan-growth-money-map-rows">
+    <div class="item-head">
+      <span class="item-title">Four new Money Map rows landed from the growth plan</span>
+      <span class="item-state" data-role="state">undecided</span>
+    </div>
+    <div class="item-meta dim">Written to the Money Map (year one), not duplicating any existing row</div>
+    <div class="item-link"><a href="https://boubacarbarry.com/review/money-map-y1/" target="_blank" rel="noopener">Open the Money Map &#8599;</a></div>
+    <div class="ask">Approve here to say the four rows belong on the board. The rows themselves are worked on the Money Map page, not this one — this page does not own them and will not fight it for state.</div>
+    <div class="cb"><div class="item-body"><p>The growth-implementation lane added four rows to the year-one Money Map today and checked each one against what was already there, so none of them duplicates a row you already have.</p><p>Flagging them here only so a decision made on a board you were not looking at does not go unseen. The Money Map stays the one canonical home for those rows.</p></div><pre id="body-plan-growth-money-map-rows" hidden></pre></div>
+    <div class="item-controls">
+      <button type="button" class="btn done" data-decide="approve">Approve</button>
+      <button type="button" class="btn skip" data-decide="reject">Reject</button>
+      <button type="button" class="btn park" data-decide="park">Skip for now</button>
+      <span class="save-flag" data-role="flag"></span>
+    </div>
+    <details class="notewrap">
+      <summary>Add a note (saved on any status, including skipped)</summary>
+      <textarea class="note" rows="3" placeholder="Why, or what needs explaining. Saved with a timestamp."></textarea>
+      <button type="button" class="btn note-save">Save note</button>
+      <div class="notelog" data-role="notelog"></div>
+    </details>
+  </div>
+</div>
+  </details>
+
+
+  <footer class="foot">
+    Every click on this page writes straight to Postgres through the existing
+    <code>content_review_decisions</code> stack, page slug <code>20260906-eod-review</code>. Nothing lives only in
+    your browser, and nothing here is stored in a file that can go stale. If a save ever fails you get a
+    red banner at the top and the item stays exactly as it was, so a silent loss is not possible.
+    Edits keep the original: the untouched version stays under &ldquo;Show the original&rdquo; on every row,
+    and the word-level diff shows precisely what moved.
+  </footer>
+
+</div>
+
+<script src="/review/shared/review-save-client.js"></script>
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var API = 'https://agentshq.boubacarbarry.com/api/orc/content-review-decisions';
+  var PAGE_SLUG = '20260906-eod-review';
+  var banner = document.getElementById('banner');
+  var items = Array.prototype.slice.call(document.querySelectorAll('.item'));
+
+  function fail(msg) {
+    banner.className = 'bad';
+    banner.textContent = 'SAVE FAILED. ' + msg +
+      ' Nothing was lost, but nothing was saved either. Try again, or tell an agent.';
+  }
+  function clearFail() { banner.className = ''; banner.textContent = ''; }
+
+  function post(path, body) {
+    return ReviewSaveClient.fetchWithRetry(API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok || !j.ok) { throw new Error(j.error || ('HTTP ' + r.status)); }
+        return j;
+      });
+    });
+  }
+
+  function flag(el, cls, text) {
+    var f = el.querySelector('[data-role="flag"]');
+    if (!f) { return; }
+    f.className = 'save-flag ' + cls;
+    f.textContent = text;
+    if (cls === 'saved') {
+      setTimeout(function () { f.textContent = ''; f.className = 'save-flag'; }, 2200);
+    }
+  }
+
+  // "Approved with edits" is DERIVED, never a fourth enum value: decision
+  // 'approve' plus a non-null edited_text.
+  function render(el, decision) {
+    el.classList.remove('decided-approve', 'decided-reject', 'decided-park');
+    var state = el.querySelector('[data-role="state"]');
+    var edited = el.querySelector('[data-role="edited"]');
+    var isEdited = edited && edited.dataset.edited === '1';
+    if (decision === 'approve') {
+      el.classList.add('decided-approve');
+      state.textContent = isEdited ? 'approved with edits' : 'approved as written';
+    } else if (decision === 'reject') {
+      el.classList.add('decided-reject'); state.textContent = 'rejected';
+    } else if (decision === 'park') {
+      el.classList.add('decided-park'); state.textContent = 'skipped for now';
+    } else {
+      state.textContent = 'undecided';
+    }
+    count();
+  }
+
+  function count() {
+    var c = document.getElementById('counter');
+    if (!c) { return; }
+    var a = 0, ae = 0, r = 0, p = 0;
+    items.forEach(function (el) {
+      var ed = el.querySelector('[data-role="edited"]');
+      var isEdited = ed && ed.dataset.edited === '1';
+      if (el.classList.contains('decided-approve')) { if (isEdited) { ae++; } else { a++; } }
+      else if (el.classList.contains('decided-reject')) { r++; }
+      else if (el.classList.contains('decided-park')) { p++; }
+    });
+    c.textContent = a + ' approved as written, ' + ae + ' approved with edits, ' + r +
+      ' rejected, ' + p + ' skipped, ' + (items.length - a - ae - r - p) +
+      ' still undecided, out of ' + items.length + '.';
+  }
+
+  // Word-level diff so he can confirm nothing but the words he touched moved.
+  function diff(oldText, newText) {
+    var a = String(oldText).split(/(\s+)/), b = String(newText).split(/(\s+)/);
+    var n = a.length, m = b.length;
+    var start = 0;
+    while (start < n && start < m && a[start] === b[start]) { start++; }
+    var endA = n, endB = m;
+    while (endA > start && endB > start && a[endA - 1] === b[endB - 1]) { endA--; endB--; }
+    var out = document.createElement('div');
+    function put(tag, words) {
+      if (!words.length) { return; }
+      var e = tag ? document.createElement(tag) : document.createTextNode('');
+      if (tag) { e.textContent = words.join(''); out.appendChild(e); }
+      else { out.appendChild(document.createTextNode(words.join(''))); }
+    }
+    put(null, a.slice(0, start));
+    put('del', a.slice(start, endA));
+    put('ins', b.slice(start, endB));
+    put(null, a.slice(endA));
+    return out;
+  }
+
+  function markEdited(el, editedText) {
+    var marker = el.querySelector('[data-role="edited"]');
+    var orig = el.querySelector('[data-role="original"]');
+    var box = el.querySelector('[data-role="diff"]');
+    if (!marker || !orig) { return; }
+    if (editedText != null && editedText !== '' && editedText !== orig.textContent) {
+      marker.dataset.edited = '1';
+      marker.textContent = 'EDITED — your version is what publishes';
+      if (box) { box.innerHTML = ''; box.appendChild(diff(orig.textContent, editedText)); }
+    } else {
+      marker.dataset.edited = '0';
+      marker.textContent = '';
+      if (box) { box.innerHTML = ''; }
+    }
+  }
+
+  items.forEach(function (el) {
+    el.querySelectorAll('[data-decide]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var d = btn.dataset.decide;
+        flag(el, 'saving', 'saving...');
+        post('/decision', { page_slug: PAGE_SLUG, item_id: el.dataset.item, decision: d })
+          .then(function () { clearFail(); flag(el, 'saved', 'saved'); render(el, d); })
+          .catch(function (err) { flag(el, 'failed', 'NOT SAVED'); fail(String(err.message || err)); });
+      });
+    });
+
+    var saveEdit = el.querySelector('.save-edit');
+    if (saveEdit) {
+      saveEdit.addEventListener('click', function () {
+        var ta = el.querySelector('textarea.draft');
+        flag(el, 'saving', 'saving...');
+        post('/edit-text', { page_slug: PAGE_SLUG, item_id: el.dataset.item, edited_text: ta.value })
+          .then(function () {
+            clearFail(); flag(el, 'saved', 'edit saved');
+            markEdited(el, ta.value);
+            render(el, el.classList.contains('decided-approve') ? 'approve'
+              : el.classList.contains('decided-reject') ? 'reject'
+              : el.classList.contains('decided-park') ? 'park' : null);
+          })
+          .catch(function (err) { flag(el, 'failed', 'NOT SAVED'); fail(String(err.message || err)); });
+      });
+    }
+    var revert = el.querySelector('.revert-edit');
+    if (revert) {
+      revert.addEventListener('click', function () {
+        var ta = el.querySelector('textarea.draft');
+        var orig = el.querySelector('[data-role="original"]');
+        if (!ta || !orig) { return; }
+        ta.value = orig.textContent;
+        flag(el, 'saving', 'saving...');
+        post('/edit-text', { page_slug: PAGE_SLUG, item_id: el.dataset.item, edited_text: orig.textContent })
+          .then(function () { clearFail(); flag(el, 'saved', 'reverted'); markEdited(el, null); count(); })
+          .catch(function (err) { flag(el, 'failed', 'NOT SAVED'); fail(String(err.message || err)); });
+      });
+    }
+
+    var nb = el.querySelector('.note-save');
+    if (nb) {
+      nb.addEventListener('click', function () {
+        var ta = el.querySelector('textarea.note');
+        var txt = (ta.value || '').trim();
+        if (!txt) { return; }
+        flag(el, 'saving', 'saving...');
+        post('/note', { page_slug: PAGE_SLUG, item_id: el.dataset.item, note_text: txt })
+          .then(function () {
+            clearFail(); flag(el, 'saved', 'note saved');
+            var log = el.querySelector('[data-role="notelog"]');
+            var d = document.createElement('div');
+            d.textContent = new Date().toISOString().slice(0, 16).replace('T', ' ') + '  ' + txt;
+            log.appendChild(d); ta.value = '';
+          })
+          .catch(function (err) { flag(el, 'failed', 'NOT SAVED'); fail(String(err.message || err)); });
+      });
+    }
+  });
+
+  post('/run', {
+    page_slug: PAGE_SLUG,
+    items: items.map(function (el) {
+      return { item_id: el.dataset.item, item_label: el.querySelector('.item-title').textContent.trim() };
+    })
+  }).then(function () {
+    return ReviewSaveClient.fetchWithRetry(
+      API + '/state?page_slug=' + encodeURIComponent(PAGE_SLUG), {}
+    ).then(function (r) { return r.json(); });
+  }).then(function (st) {
+    var byId = st.items || {};
+    var notesById = {};
+    (st.notes || []).forEach(function (n) {
+      (notesById[n.item_id] = notesById[n.item_id] || []).push(n);
+    });
+    items.forEach(function (el) {
+      var r = byId[el.dataset.item];
+      if (!r) { return; }
+      if (r.edited_text) {
+        var ta = el.querySelector('textarea.draft');
+        if (ta) { ta.value = r.edited_text; }
+        markEdited(el, r.edited_text);
+      }
+      render(el, r.decision);
+      var log = el.querySelector('[data-role="notelog"]');
+      (notesById[el.dataset.item] || []).forEach(function (n) {
+        var d = document.createElement('div');
+        d.textContent = String(n.created_at || '').slice(0, 16).replace('T', ' ') + '  ' + (n.note_text || '');
+        log.appendChild(d);
+      });
+    });
+    count();
+  }).catch(function (err) {
+    fail('Could not load your saved decisions: ' + String(err.message || err) +
+         ' Everything below is showing its DEFAULT, not what you saved. Do not trust the counter until this clears.');
+  });
+
+  document.querySelectorAll('.copy-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var el = b.closest('.item');
+      var ta = el && el.querySelector('textarea.draft');
+      var src = ta ? null : document.getElementById(b.dataset.copy);
+      var text = ta ? ta.value : (src ? src.textContent : '');
+      navigator.clipboard.writeText(text).then(function () {
+        var t = b.textContent; b.textContent = 'Copied';
+        setTimeout(function () { b.textContent = t; }, 1400);
+      }).catch(function () { b.textContent = 'Select manually'; });
+    });
+  });
+  count();
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
