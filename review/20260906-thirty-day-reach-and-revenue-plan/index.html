@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The next thirty days: reach, list and revenue</title>
+
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.93rem;}
+  th,td{border:1px solid var(--border);padding:9px 11px;text-align:left;vertical-align:top;}
+  th{background:var(--bg2);color:var(--text-dim);font-size:.82rem;text-transform:uppercase;letter-spacing:.04em;}
+  td.num{white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .hi{color:var(--accent2);font-weight:700;}
+  .bad{color:var(--warn);}
+  .dim{color:var(--text-dim);font-size:.92rem;}
+  .lead{font-weight:600;margin-top:20px;}
+  .mt{margin-top:12px;}
+  .callout{border:1px solid var(--accent);border-left-width:4px;border-radius:8px;background:var(--bg2);padding:14px 16px;margin:20px 0;}
+  .callout.warn{border-color:var(--warn);}
+  h3{margin:26px 0 8px;font-size:1.06rem;color:var(--accent2);}
+  .sec-body ul{padding-left:20px;}
+  .sec-body li{margin:7px 0;}
+  code{background:var(--bg2);padding:1px 5px;border-radius:4px;font-size:.88em;}
+  @media(max-width:640px){table,th,td{font-size:.86rem;}th,td{padding:7px 8px;}}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-06-09:17:02 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">30-day plan</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">The number</a>
+      <a href="#sec-2">The three things</a>
+      <a href="#sec-3">Your week</a>
+      <a href="#sec-4">Runs without you</a>
+      <a href="#sec-5">What the review found</a>
+      <a href="#sec-6">Your decisions</a>
+      <a href="#sec-7">On the board</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>The next thirty days: reach, list and revenue</h1>
+    <div class="meta">Every absorb from today turned into dated actions, the honest email math, and what you do each day &middot; 6 September 2026</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      
+<p><strong>500 emails in thirty days is not supported by anything we have. The honest number is
+150 by 6 October, or 500 by 5 December, or 500 inside thirty days for about $1,400 to $2,300 of
+paid acquisition, which is your call.</strong></p>
+<p>And I want to move the scoreboard, because sixteen newsletters produced zero clicks, 195 paid
+visitors produced zero sales, and 331 cold emails produced zero positive replies. When every
+channel returns zero the problem is the offer, not the reach. A 500 person list in front of that
+offer is worth zero.</p>
+<p><strong>Three things for thirty days.</strong> Answer the offer question through the twenty
+Utah messages rewritten as a question. Borrow rooms instead of building an audience, because the
+only two real registrations this business has ever had came from one partner referral. One
+forty five minute recording block a week that we cut into everything else.</p>
+<p><strong>Your time: two hours and ten minutes a week.</strong> Less than the video block alone
+that you offered.</p>
+<p><strong>One thing I found that changes the plan:</strong> seven finished lead magnets already
+exist, built in August, sitting on the archived humanatwork.ai with nobody being sent to them. We
+do not need to build an eighth. Section four.</p>
+<p><strong>Six decisions are yours</strong>, and one of them is due tomorrow. Section six.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>The email number, honestly</h2></summary>
+    <div class="sec-body">
+<p>You asked for 40 to 500 in thirty days. I am not going to agree with the number to be
+agreeable. Here is the arithmetic, built from what we can actually do, not from what would
+sound good.</p>
+
+<p class="lead">Where the list really is today, read live off the database tonight:</p>
+<table>
+<tr><th>What</th><th>Number</th><th>Source</th></tr>
+<tr><td>Newsletter subscribers</td><td class="num">76</td><td>Beehiiv</td></tr>
+<tr><td class="hi">Of those, actually valid</td><td class="num hi">46</td><td>30 are invalid, 39 percent of the list is dead</td></tr>
+<tr><td>Genuine inbound captures on our own pages, last 60 days</td><td class="num">about 45</td><td><code>leads</code> table, counted by source tonight</td></tr>
+<tr><td>Real capture rate today</td><td class="num">0.75 a day</td><td>derived from the above</td></tr>
+<tr><td>Rate needed to hit 500 in 30 days</td><td class="num bad">15.3 a day</td><td>a twentyfold step change</td></tr>
+</table>
+
+<p>The 703 other rows in that table are a migrated scraped local business list. They are not
+subscribers and counting them would be lying to ourselves.</p>
+
+<p class="lead">What each mechanism can actually produce by 6 October:</p>
+<table>
+<tr><th>Mechanism</th><th>30 day yield</th><th>Why that number</th></tr>
+<tr><td>Partner rooms, 2 to 3 booked</td><td class="num">40 to 90</td><td>a room holds 20 to 40 and they arrive pre endorsed</td></tr>
+<tr><td>The two September sessions</td><td class="num">15 to 40</td><td>every registration is an email</td></tr>
+<tr><td>Newsletter and site captures, once tagged and promoted</td><td class="num">20 to 30</td><td>the forms work, nobody is being sent to them</td></tr>
+<tr><td>LinkedIn, asking people to raise a hand</td><td class="num">20 to 40</td><td>capped by an audience averaging 4.8 likes a post</td></tr>
+<tr><td>The $300 Meta buy, if you spend it</td><td class="num">about 7</td><td>our own figure is $40 a registration</td></tr>
+<tr><td class="hi">Honest total</td><td class="num hi">110 to 200</td><td>every build landing on time</td></tr>
+</table>
+
+<div class="callout">
+<p><strong>So: 500 in thirty days is not supported by any mechanism we have.</strong> There are
+exactly two ways to get there.</p>
+<ul>
+<li><strong>Pay for it.</strong> About 460 emails at $3 to $5 each on a lead magnet that does not
+exist yet. That is <strong>$1,400 to $2,300</strong>, spent inside thirty days. It is a real path.
+It is your money, so it is your call, and I have put it in the decisions below rather than
+deciding it for you.</li>
+<li><strong>Earn it, and land in early December.</strong> Same mechanisms, compounding, with video
+and the partner rooms doing the work in month two that they cannot do in month one.</li>
+</ul>
+<p class="mt"><strong>What I recommend: commit to 150 by 6 October and 500 by 5 December, and
+stop using list size as the scoreboard.</strong></p>
+</div>
+
+<p>Here is why I want to move the scoreboard, and it is not a dodge. Sixteen newsletters have
+gone out. Zero clicks. Not few, zero, on all sixteen. One thousand three hundred people clicked
+a paid ad, 195 of them landed on the workshop page, and none of them paid $50. Three hundred and
+thirty one people got a cold email over four months and two replied, both to say stop.</p>
+
+<p>When every single channel returns zero, the thing they have in common is not the channel.
+A five hundred person list standing in front of an offer that has converted at zero everywhere
+is worth exactly zero. Thirty real conversations is worth three clients. The board's own goal
+for this cycle is <strong>$5,000 a month by 22 November</strong>, and emails are only worth
+counting to the extent they move that.</p>
+
+<p>The number that settles the argument: phase one closed on 29 August at <strong>zero of three
+paying clients and $0 collected, against roughly $10,108 spent.</strong> That was not a year short
+of audience. It was a year short of the thing audience is meant to lead to.</p>
+
+<p class="dim">One thing I cannot tell you: how many people actually see your posts. LinkedIn
+impressions were recorded as fabricated zeros from 7 May until yesterday, so reach is genuinely
+unknown. Engagement is known and it is low. I am not going to convert one into the other and
+present it as a fact.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>The three things, and nothing else</h2></summary>
+    <div class="sec-body">
+<p>The first version of this plan had nine workstreams. Council and the Karpathy pass both
+killed it for the same reason, and it is a reason with four months of evidence behind it: a
+traffic strategy written on 6 May had two next actions at the top and neither was ever done.
+Adding tasks is not the thing that has been missing.</p>
+
+<h3>1. Answer the offer question. This week. It blocks everything else.</h3>
+<p>One hundred and ninety five people who clicked a paid ad read the workshop page and walked
+away. Nobody has ever asked one of them why. That is the only step in this whole plan that
+produces new information instead of more output.</p>
+<p><strong>Your move:</strong> the twenty named Utah people, seven Monday, seven Tuesday, six
+Wednesday, by hand, as already planned. What changes is the message. It stops being an
+invitation and becomes a question: what would you actually pay me to fix. Same action, same
+day, different payload.</p>
+<p>Read cold, <em>AI Without Getting Burned</em> names a feeling, not an outcome. Until someone
+can say what they walk out owning, the lead magnet, the ad copy and the workshop page are all
+being written against a blank.</p>
+
+<h3>2. Borrow rooms instead of building an audience.</h3>
+<p>The only two real registrations in the history of this business both came from one SBDC
+partner referral. Not from $835 of ads. Not from 331 cold emails. Not from 195 posts. That is
+the single mechanism in the entire dataset with a conversion rate above zero, and in the first
+draft of this plan it was item six of nine.</p>
+<p>It is also the fastest email engine we have. A booked room is twenty to forty addresses in
+one evening, arriving already trusted because someone they know invited them.</p>
+<p><strong>Your move is five minutes, not a research task.</strong> We hand you ten organisations
+with the named program chair and their contact already found. You cross out seven. Then two asks
+a week, Thursdays, twenty minutes.</p>
+<p class="dim">You have been asked for three organisation names once already, on yesterday's
+go to market page, and it is still open. Asking again the same way would just block the best
+mechanism behind the hardest thing to start. So we are doing the finding.</p>
+
+<h3>3. One recording block a week. You record, we do the rest.</h3>
+<p>Tuesday, forty five minutes, raw. You said you would give an hour or two to video and I am
+asking for less than that, because the constraint is not your willingness, it is that sitting
+down with no prompts produces nothing.</p>
+<p><strong>Our side of the contract:</strong> five questions land on your phone by Monday night.
+If they do not, the block does not happen and that is our failure, not yours. Then agents cut,
+caption and publish. One block feeds the newsletter, LinkedIn, the faceless channels and the
+search test from the same forty five minutes.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>Your week: two hours and ten minutes</h2></summary>
+    <div class="sec-body">
+<table>
+<tr><th>Day</th><th>Time</th><th>What you do</th></tr>
+<tr><td><strong>Monday</strong></td><td class="num">45 min</td><td>Seven of the twenty messages, by hand, rewritten as a question. Then ten comments, and a connection request to every author you commented on.</td></tr>
+<tr><td><strong>Tuesday</strong></td><td class="num">45 min</td><td>Record raw video against the five questions sitting on your phone. No script, no editing, no thinking about format.</td></tr>
+<tr><td><strong>Wednesday</strong></td><td class="num">10 min</td><td>The last six of the twenty messages.</td></tr>
+<tr><td><strong>Thursday</strong></td><td class="num">20 min</td><td>Two room asks off the list you crossed down to three.</td></tr>
+<tr><td><strong>Friday</strong></td><td class="num">15 min</td><td>Approve the week's content in one pass, and paste the newsletter issue we drafted into Beehiiv. Their plan will not let us send it for you.</td></tr>
+<tr><td><strong>Saturday</strong></td><td class="num">5 min</td><td>Read the board. Paid seats on each date. That is the whole dashboard.</td></tr>
+<tr><td><strong>Sunday</strong></td><td class="num">0</td><td>Dark.</td></tr>
+<tr><td class="hi"><strong>Total</strong></td><td class="num hi">2h 10m</td><td></td></tr>
+</table>
+
+<div class="callout warn">
+<p><strong>The connection requests are the cheapest thing on this page.</strong> Fifty two posts
+have gone out and you have sent eight connection requests in the entire history of the account.
+That is broadcasting into a room you never walked into. Ten a day, attached to a comment you
+already wrote, costs nothing and is the only lever here with no ceiling.</p>
+</div>
+
+<p><strong>The tripwire, so we both know early.</strong> If Monday's messages do not go out on
+Monday, everything downstream of them is dead by Friday, and we will know Monday night. That is
+the one thing to watch in week one.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>What runs without you, lane by lane</h2></summary>
+    <div class="sec-body">
+<p>None of the below needs a minute of your time. It is here so you know it is covered and can
+tell me if any of it is wrong.</p>
+
+<h3>Consulting, both brands</h3>
+<ul>
+<li><strong>Newsletter restarted, but the send stays yours.</strong> It has been dark 47 days.
+Every subscriber gets tagged at last and the 30 invalid addresses get cleaned. Worth knowing:
+Beehiiv will not let us send programmatically on the current plan, it returns a hard refusal, so
+every issue is a human paste into their editor. That is why "automate the newsletter" has never
+happened. Fifteen minutes of your Friday, not ours.</li>
+<li><strong>Cold outreach continues, small and correct.</strong> The twenty named Utah people and
+the Keith Gritton insider signal test. What we do <em>not</em> do is spend $100 to $200 a month on
+a mailbox pool while zero messages from one mailbox have ever produced one positive reply. That
+decision stays parked exactly where you left it.</li>
+</ul>
+
+<div class="callout">
+<p><strong>The lead magnet finding is the best thing I turned up today, and it inverts the plan.</strong></p>
+<p>I went looking for what to build and found that <strong>seven finished lead magnets already
+exist</strong>, as real PDFs with real landing pages and working forms: the AI use policy
+checklist, the exposure self scan, the workflow finder, the cleanup playbook, the mini atlas, the
+review loop field guide, the five prompts starter. All built in August.</p>
+<p>They sit on humanatwork.ai, which was archived on 29 August. Nobody is sent to them. That site
+has fifty three products listed and has never recorded a single sale.</p>
+<p>So the problem was never that no magnet exists. It is that seven of them are parked behind a
+door nobody walks through. <strong>The fastest list move available is not building number eight,
+it is pointing live traffic at the best one that already exists</strong>, on a brand that is not
+archived. That costs a page move, not a build.</p>
+<p class="mt">And the eighth one is already in flight anyway: the AI use policy generator, which you
+picked yourself and said proceed to. Its spec carries a hard ship date of <strong>16 September</strong>
+and it is currently on hold behind three unanswered scoping questions. It has not started. If you
+want a new magnet, that is the one, and unblocking it is three answers.</p>
+</div>
+
+<h3>Search and answer engines, the thing we keep planning</h3>
+<p>One keyword, end to end, on one channel, by <strong>16 September</strong>. Keyword to article to
+video to multi platform publish, using tooling we already own and already paid for. Not a
+programme. A test with a date on it. If it produces nothing, we stop calling it a channel and
+say so out loud.</p>
+
+<h3>Cowrie, the pallet lane</h3>
+<p>The live auction route is the missing exit for roughly sixty percent of every pallet, which
+currently has no exit at all in the plan. Your sourcing budget decision from 3 September is still
+open and is in the list below. Nothing moves there until it is answered, and that is correct
+rather than stalled.</p>
+<p class="dim">One housekeeping thing I found and am not going to fix without telling you: Cowrie
+has no row in the roadmap registry, which is supposed to be the one list of every lane with no
+second list anywhere. It exists in memory, on the board and on a review page, but not in the
+register. Its Money Map rows are still labelled pallet rather than Cowrie. Small, but that is
+exactly how a lane goes quiet.</p>
+
+<h3>The faceless channels, and your voice</h3>
+<p>They take the offcuts from your Tuesday recording block. They are the one place where volume is
+free, because none of it is in your name and none of it needs your approval to be drafted.</p>
+<p><strong>You do not need to make a voice clone this weekend. You already have one.</strong> It is
+registered, locked and pointed at the personal brand and the AI channel. What I cannot tell you
+from here is whether it still works on the account, because that needs a live call rather than a
+file read, and I found no evidence it has been used to render anything recently. We will check it
+before the pipeline is built rather than after.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>What the Council and the audit actually found</h2></summary>
+    <div class="sec-body">
+<p>You asked for both gates. Neither one rubber stamped this.</p>
+
+<h3>Council: change the plan, do not ship it as written</h3>
+<ul>
+<li><strong>The Contrarian</strong> found the flaw I was flattering. The plan quietly assumed the
+twenty names would behave differently from the 331 cold emails, with no evidence for it, and it
+scheduled your time the way three previous plans scheduled your time. Its verdict: the binding
+constraint may not be conversations at all, it may be that the human outreach step specifically
+is the one that does not happen. Everything the machines own runs fine.</li>
+<li><strong>First Principles</strong> refused the question. It is not a reach problem and it is not
+even a conversations problem, it is an offer problem, and the proof is that every channel returns
+zero rather than low. When all of them return zero the constant is the offer.</li>
+<li><strong>The Expansionist</strong> said the partner rooms are dramatically under scaled.
+Utah holds five or so SHRM chapters, twenty odd chambers, an SBDC network, accelerators,
+coworking spaces, and payroll, benefits, bank and insurance partners who sell to the same owner
+and do not compete with you. Forty plus rooms. And the nine HR leaders on your own list are not
+buyers, they are doors, each with an internal audience and a training budget. Ask for the room,
+not the seat.</li>
+<li><strong>The Outsider</strong> read it cold and said the quiet part: fifty two posts and eight
+connection requests means broadcasting into a room you never entered. And a $50 evening class
+called <em>AI Without Getting Burned</em>, from a name they do not know, gives them nothing to
+repeat to a colleague.</li>
+<li><strong>The Executor</strong> found three different "first steps" and no first step. It also
+caught that asking you again for three organisation names re asks an open question and blocks the
+best mechanism behind the hardest task. Hence the cross out.</li>
+</ul>
+
+<p><strong>The one tension I am not smoothing over.</strong> First Principles wants everything
+paused until five conversations tell us what people will pay for. The Executor says momentum dies
+if Monday is quiet. Those genuinely conflict. The reconciliation is the only one that does not
+sacrifice either: the messages go out Monday as planned, rewritten to ask the question instead of
+making the invitation.</p>
+
+<h3>Karpathy: ship, with four corrections applied</h3>
+<ul>
+<li><strong>Failed on simplicity.</strong> Nine workstreams for someone with a few hours a week.
+Cut to three, with the rest named as running without you.</li>
+<li><strong>Failed on goal.</strong> It was optimising 500 emails while the cycle's real goal is
+$5,000 a month by 22 November. Emails are a leading indicator, not the scoreboard. Re anchored.</li>
+<li><strong>Warned on the board itself.</strong> Your board shows the first twenty pending items
+and caps must do at five a day, against 733 rows already there. Adding fifteen rows would push
+the September workshop rows off your screen. So this plan adds four, and I verified afterwards
+that today's completed rows are still there and still ticked.</li>
+<li><strong>Warned on honesty.</strong> Rooms asked and conversations had have no automatic signal.
+They are self reported, one tick on a row you already see. I am not going to imply instrumentation
+that does not exist, and I am not building a form for it.</li>
+</ul>
+</div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>The six decisions only you can make</h2></summary>
+    <div class="sec-body">
+<p>Every one of these is on the board or in the ledger already. None of them is a question I am
+handing back because I could not work it out.</p>
+
+<table>
+<tr><th>#</th><th>Decision</th><th>Due</th><th>My recommendation</th></tr>
+<tr><td>1</td><td><strong>What does someone walk out of the workshop owning?</strong> One sentence, an outcome not a feeling.</td><td class="bad">Blocks everything</td><td>Answer it before we write another line of ad copy, magnet or page. This is the critical path.</td></tr>
+<tr><td>2</td><td><strong>The $300 Meta buy.</strong></td><td class="bad">Tomorrow, 7 Sept</td><td>Do not spend it on cold traffic to the same page. $835 and 1,308 clicks already bought that answer. If you spend, retarget the 1,308 who clicked and the 195 who visited, with the outcome from decision 1 in the headline. That tests the offer instead of buying the same data point twice.</td></tr>
+<tr><td>3</td><td><strong>Three partner rooms.</strong></td><td>Mon 7 Sept</td><td>We hand you ten with the program chair named. Cross out seven. Five minutes.</td></tr>
+<tr><td>4</td><td><strong>Paid list acquisition, $1,400 to $2,300, to actually hit 500 inside thirty days.</strong></td><td>Your call, no deadline</td><td>Not yet. It is the only path to 500 in thirty days and it is a real one, but spending it before decision 1 is answered buys 460 emails for an offer nobody has agreed to buy.</td></tr>
+<tr><td>5</td><td><strong>Cold email mailbox pool, $100 to $200 a month.</strong> Parked as D-20260905-41655d.</td><td>Parked</td><td>Keep it parked. Unpark it the day one message from one mailbox produces one positive reply.</td></tr>
+<tr><td>6</td><td><strong>Pallet sourcing budget.</strong> D-20260903-54e6d2, open since 3 September.</td><td>Open</td><td>Answer it or park it with a return date. It is quietly blocking that whole lane.</td></tr>
+</table>
+
+<p>One more that needs a word rather than a decision: the re introduction email to the 46 real
+subscribers is drafted and waiting. It is a send, so it does not go anywhere without you saying
+send it.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>What went on the Money Map</h2></summary>
+    <div class="sec-body">
+<p>Four rows, deliberately. Your board renders the first twenty pending items and caps must do at
+five a day, and there are already 733 rows on it. Fifteen new rows would have pushed the September
+workshop items off your screen, which would be damage rather than help.</p>
+<table>
+<tr><th>On your board</th><th>Day</th><th>Minutes</th></tr>
+<tr><td><strong>Write one sentence saying what a person walks out of the workshop owning.</strong> An outcome, not a feeling.</td><td>Mon 7 Sep</td><td class="num">10</td></tr>
+<tr><td><strong>Open the candidate list, cross out seven, keep three.</strong></td><td>Mon 7 Sep</td><td class="num">5</td></tr>
+<tr><td><strong>Answer the three scoping questions holding up the AI use policy generator.</strong> It ships 16 September or it does not ship.</td><td>Tue 8 Sep</td><td class="num">15</td></tr>
+<tr><td><strong>Decide yes or no on paid list acquisition.</strong></td><td>Thu 10 Sep</td><td class="num">10</td></tr>
+</table>
+
+<p>Written and read back off board y1 tonight. All four carry their artifact row alongside them, so
+each one opens with the link and the reasoning already attached rather than sending you looking.
+The board went from 733 rows to 742 and all 54 previously completed rows are still present and
+still ticked, which I checked rather than assumed.</p>
+
+<p class="dim">Two things worth telling you about the write. First, the board refused one of the
+four on its own, because the word "paid" matched a row you quietly closed on 20 August about
+getting one paid signup by Friday. That guard was right to stop and ask. It is a different subject,
+an ad budget rather than a workshop deadline, and the August question died with the August
+cancellation, so I recorded the override in the row itself instead of quietly working around it.
+Second, I checked before writing and deliberately did not add rows for the Meta relaunch, the
+September newsletters, the SBDC re ask or the lead magnet plumbing. All four already exist on your
+board and are pending. Duplicating them would have cost you screen space and told you nothing.</p>
+</div>
+  </details>
+
+  <footer class="foot">
+    Built from live database reads on 6 September 2026, the three review pages published 5 September, and the decision ledger. Pressure-tested through the five-voice Council and the ten-principle Karpathy audit before publishing; both changed the plan and both are summarised in section five.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
