@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The lead magnet that starts a conversation</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+
+  .callout{background:var(--bg2); border-left:3px solid var(--accent); padding:12px 16px; border-radius:8px;}
+  .big{font-size:1.5rem; font-weight:700; color:var(--accent); margin:6px 0 2px;}
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:.92rem; display:block; overflow-x:auto;}
+  th,td{border:1px solid var(--border); padding:9px 11px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim); font-weight:650;}
+  .good{color:var(--good);} .warn{color:var(--warn);} .bad{color:var(--bad);}
+  pre{background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:14px;
+      overflow-x:auto; white-space:pre-wrap; font-size:.88rem; line-height:1.6;}
+  h3{font-size:1rem; margin:22px 0 8px; color:var(--accent2);}
+  ol,ul{padding-left:22px;}
+  li{margin:6px 0;}
+
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-06-21:28:30 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Lead magnet</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">What the video actually teaches</a>
+      <a href="#sec-2">What we already have, and why it inverts the plan</a>
+      <a href="#sec-3">The magnet</a>
+      <a href="#sec-4">What the adversarial pass changed</a>
+      <a href="#sec-5">The week</a>
+      <a href="#sec-6">The copy, in draft</a>
+      <a href="#sec-7">How this fits with today's other two plans</a>
+      <a href="#sec-8">Your decisions</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>The lead magnet that starts a conversation</h1>
+    <div class="meta">Internal working review &middot; nothing sent, posted or published &middot; 6 September 2026</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      
+<p><strong>The magnet was never the missing piece.</strong> Seven finished lead magnets already exist, and one of them is
+live right now at a working URL with a working PDF and a free booking link behind it. Nobody has ever been sent to any of
+them on purpose. So the constraint is not what to offer. It is that a stranger has never once been asked for anything by
+hand: <strong>eight connection requests in the entire history of the account.</strong></p>
+
+<p>What changes this week is the <em>shape</em> of the magnet and the <em>direction</em> of the ask. Stop offering
+information to download. Start delivering a finished piece of work, unrequested, to five named owners, with no ask
+attached. The artifact is a one page AI policy written for their specific company, and it goes in a direct message,
+which means <strong>the delivery is the conversation.</strong></p>
+
+<p>Five, not twenty. The public post runs as the second channel, not the thing the week depends on.</p>
+
+<p class="callout"><strong>What I need from you:</strong> five names, and the go-ahead Monday night on the five specific
+drafts once you have read them. About 65 minutes of your week in total. Everything else is built and waiting.</p>
+
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1" open>
+    <summary><h2>What the video actually teaches</h2></summary>
+    <div class="sec-body">
+
+<p>Paraphrased throughout, nothing quoted.</p>
+
+<p><strong>The traditional lead magnet is dead because information stopped being scarce.</strong> A 46 page ultimate
+guide worked when downloading it from you was the only way to get the answer. Now the answer is one search or one
+question to an AI assistant away. Nobody on a feed is looking for more information to read.</p>
+
+<p><strong>So stop offering information and start offering a result.</strong> His image is a splinter in someone's hand.
+The magnet that works is not seven steps to remove your splinter. It is the tool that pulls the splinter out. The
+recipient does not have to learn anything or understand anything. Like a light switch: you do not need to know how
+electrons work to get light.</p>
+
+<p><strong>The hot versus easy grid</strong> is the useful part. Every magnet sits somewhere on two axes: how desirable
+it is, and how much effort it costs to get the value out.</p>
+
+<table>
+<tr><th>Quadrant</th><th>Example</th><th>Verdict</th></tr>
+<tr><td>Desirable, high effort</td><td>A five day challenge, a video course</td><td>The juice is not worth the squeeze</td></tr>
+<tr><td>Easy, not desirable</td><td>An email newsletter</td><td>Nobody wants it</td></tr>
+<tr><td>Not desirable, high effort</td><td>A free strategy session</td><td class="bad">The worst quadrant. He is blunt that a free consultation reads as time spent with someone who wants your money</td></tr>
+<tr><td>Desirable and easy</td><td>A finished result handed over</td><td class="good">The only one that works</td></tr>
+</table>
+
+<p><strong>The title test.</strong> You can tell the quadrant from the title alone. "How to write emails that sell"
+against "the nine word email that revives dead leads." The second promises an instant portable result. The first
+promises homework.</p>
+
+<p><strong>The hand raiser post</strong> is the distribution half and is inseparable from the magnet. His worked example:
+an operator pair spotted a small problem, built a useful list in about fifteen minutes, posted it, and got over a
+thousand people to hand over an email inside 24 hours at roughly 91 cents each.</p>
+
+<p><strong>The part most people miss.</strong> Getting the hand up is not the point. Redirecting that attention to the
+next easy yes is the point. He is explicit that this is what a funnel actually is.</p>
+
+<h3>What survives contact with our numbers, and what does not</h3>
+
+<p>His thousand leads in a day ran on paid ads against an existing audience. Ours does not. Applying his cadence
+unmodified to an account averaging 4.8 likes with genuinely unknown reach would produce a handful of comments and a
+conclusion that the mechanism failed, when the sample was simply too small to say anything.</p>
+
+<p>What transfers completely: <strong>stop offering information, offer a finished result, and make the value cost the
+recipient nothing to obtain.</strong> What does not transfer: the assumption of distribution.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>What we already have, and why it inverts the plan</h2></summary>
+    <div class="sec-body">
+
+<p>All read live today.</p>
+
+<table>
+<tr><th>Asset</th><th>State</th></tr>
+<tr><td>AI use policy checklist capture page</td><td class="good">LIVE, returns 200, noindex, not in nav</td></tr>
+<tr><td>Its PDF</td><td class="good">LIVE</td></tr>
+<tr><td>Free AI audit booking, 45 min, 5 qualifier questions</td><td class="good">LIVE</td></tr>
+<tr><td>Six further finished magnets built in August</td><td>Exposure self scan, workflow finder, cleanup playbook, mini atlas, review loop field guide, five prompts starter</td></tr>
+<tr><td>April field guide, 3,571 words, in your voice</td><td class="warn">Written, never published</td></tr>
+<tr><td>An eighth magnet, the policy generator</td><td class="warn">Spec'd, ships 16 Sept, on hold behind three unanswered questions, not started</td></tr>
+<tr><td>LinkedIn</td><td>4,511 connections, 1,411 decision makers, 524 founders, CEOs or owners. Only 2.2% expose an email</td></tr>
+<tr><td>$19 Employee Relations Investigation Pack</td><td class="warn">Stripe live. Nothing posted about it in 18 days</td></tr>
+<tr><td>$497 Signal Session, Drive Cleanup, Install Your First 3 Agents</td><td class="good">All live, all taking money</td></tr>
+<tr><td>The $150 to $200 rung</td><td class="bad">Empty</td></tr>
+</table>
+
+<p class="callout"><strong>One tension I am not going to smooth over.</strong> Today's distribution review recorded
+humanatwork.ai as archived on 29 August with nobody sent to its magnets. A separate check today found the checklist page
+and its PDF both returning 200. Both are true. The door exists and is unlocked. Nothing points at it, it is set to
+noindex, and it is not in the nav. That is a distribution failure, not a build failure.</p>
+
+<h3>What has failed, measured not inferred</h3>
+<ul>
+<li>331 or more cold emails over four months. Zero positive replies ever. Two replies, both asking to stop.</li>
+<li>16 newsletters, zero clicks. On all sixteen.</li>
+<li>$835 of Meta spend, 68,346 impressions, 1,308 clicks, 195 landing page views, one paid seat.</li>
+<li>195 people read the workshop page and walked away, and nobody has ever asked one of them why.</li>
+<li>Phase one closed 29 August at zero of three paying clients and $0 collected, against roughly $10,108 spent.</li>
+</ul>
+
+<h3>What has worked</h3>
+<p>Exactly one mechanism above zero: a single partner referral, which produced the only two real registrations in the
+history of the business.</p>
+
+<h3>The actual gap</h3>
+<p>Not a missing magnet. Seven exist. Every one of them is shaped as information behind a door, and no traffic has ever
+been pointed at the door. Underneath that sits the harder fact: eight connection requests in the account's entire
+history. The offer is the thing an agent can build overnight. The ask is the thing only you can do, and it is the thing
+that has never happened.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>The magnet</h2></summary>
+    <div class="sec-body">
+
+<h3>Named as the outcome, not the format</h3>
+<p class="big">Where the Line Is</p>
+<p>A one page AI policy written for one specific company.</p>
+
+<p>The framework pass caught the naming failure directly. "AI use policy" is a format, and naming the format rather than
+the outcome is a named anti pattern. It is also the exact naming failure of the checklist already sitting dead on the
+archived site. "Where the Line Is" names what the reader gets, and it echoes the language of the post itself, where the
+problem is that nobody ever drew their people a line.</p>
+
+<h3>What it is</h3>
+<p>One page. Their industry, the work their people actually do, the record types they actually touch. Under 500 words.
+Written so an HR or operations lead could hand it to staff on Monday with light edits, rather than a framework they have
+to translate first. It is not a checklist about policies. It is the policy.</p>
+
+<h3>How someone gets it</h3>
+<p><strong>Primary channel: the policy is written first and sent unrequested.</strong> Five named owners a week, chosen
+from the 524 founders, CEOs and owners already connected. An agent drafts overnight from public information, you review
+against a fact ledger, and you send it in a direct message.</p>
+
+<p>Two things this buys, and both are load bearing:</p>
+<ul>
+<li><strong>It removes the dependency on post reach</strong>, which is the one number that is genuinely unknown. A direct
+message does not need an algorithm.</li>
+<li><strong>It removes the email problem entirely.</strong> Only 2.2% of your connections expose an address, so any email
+first plan aimed at your own network fails structurally. This one does not need an address.</li>
+</ul>
+
+<p><strong>Second channel: the hand raiser post.</strong> It runs, and it costs nothing, but the week does not depend on
+it. At 4.8 average likes the honest expected yield is low single digits.</p>
+
+<h3>What happens immediately after</h3>
+<p>The delivery message contains no ask of any kind. The page closes on one real question, which is the enforcement gap:
+a rule does not tell you what your people are actually using, and at their size nobody has a way to see it. Every
+competent owner arrives at that thought within a sentence of reading the policy. Their reply to that question is the
+sales conversation, and it is where the next rung enters. Not before.</p>
+
+<h3>Where it plugs into the ladder</h3>
+<p>The next rung is <strong>not</strong> the free 45 minute audit call and <strong>not</strong> a 20 minute walkthrough
+with their leadership. Both were tested against the video's own grid and both land in the worst quadrant. A free
+consultation reads as time spent with someone who wants your money, and a meeting with their leadership is a bigger
+commitment than the gift justifies. The adversarial review reached the same conclusion independently, from the
+recipient's side.</p>
+
+<p>The right next rung is the <strong>$19 Employee Relations Investigation Pack.</strong> It is live, Stripe works, it is
+instantly legible to exactly this buyer with no education required, and it turns a stranger into a customer for nineteen
+dollars. The cheapest available transfer of trust is a small paid transaction, not another free one. That pack has had
+zero distribution in 18 days and its own pass criterion is ten buyers. This gives it its first real distribution at zero
+cost. The $497 session and the September 24 seat sit above it and are reached through conversation, not through the
+artifact.</p>
+
+<p>The free audit booking stays live because it costs nothing. It is a destination for someone who asks for it, never
+the next step we push.</p>
+
+<h3>How it scores</h3>
+<table>
+<tr><th>Lever</th><th>Score</th><th>Why</th></tr>
+<tr><td>Dream outcome</td><td>7 / 10</td><td>Relief from a low grade worry, not a burning desire. Honest 7.</td></tr>
+<tr><td>Perceived likelihood</td><td>9 / 10</td><td>Nothing to believe. The finished thing is already in their hand.</td></tr>
+<tr><td>Time delay</td><td>10 / 10</td><td>Zero. Value arrives in the same message as the offer.</td></tr>
+<tr><td>Effort and sacrifice</td><td>10 / 10</td><td>They do nothing. Not a click, not an email address.</td></tr>
+<tr><td><strong>Total</strong></td><td class="good"><strong>36 / 40, production ready</strong></td><td>The score comes almost entirely from the bottom of the equation, which is where the leverage is. It is also exactly why the seven existing magnets score badly: find the page, click, hand over an email, download, read. This one has no bottom half at all.</td></tr>
+</table>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>What the adversarial pass changed</h2></summary>
+    <div class="sec-body">
+
+<p>Five voices, then a premortem. Only what changed the design is recorded.</p>
+
+<table>
+<tr><th>Before</th><th>After</th><th>Caught by</th></tr>
+<tr><td>Cap of 20 a week</td><td class="good">Cap of 5</td><td>Twenty personalised policies means twenty reviews. At six minutes each that is two hours, your entire weekly budget across all lanes, spent on delivery and leaving nothing for the conversation the mechanism exists to create. Less than six minutes each is not review, it is rubber stamping a draft going out under your name.</td></tr>
+<tr><td>The post is the mechanism</td><td class="good">Five targeted messages are the mechanism, the post is the second channel</td><td>A gift beats homework, and this removes the dependency on reach, which is genuinely unknown.</td></tr>
+<tr><td>Next step is a 20 minute leadership walkthrough</td><td class="good">Next rung is the $19 pack, entered through their reply</td><td>"Twenty minutes with my leadership is a much bigger ask than the policy is a gift. That is not the next easy yes, that is a meeting with my boss."</td></tr>
+<tr><td>Named "AI use policy"</td><td class="good">"Where the Line Is"</td><td>Naming the format rather than the outcome, the same failure as the dead checklist.</td></tr>
+<tr><td>The policy solves a problem and reveals nothing</td><td class="good">It closes on the enforcement gap</td><td>A magnet has to reveal the next problem. Fixed in one paragraph at zero build cost.</td></tr>
+<tr><td>Email captured at delivery</td><td class="good">No email this week unless a real row gets written</td><td>The endpoint those magnet pages post to does not write to the leads table. Persisting is the rule. Capturing is not.</td></tr>
+</table>
+
+<h3>The one thing the outside reader said that reshaped the whole design</h3>
+<p class="callout">"The word policy is a problem. Nobody wakes up wanting a policy. What I actually feel is a low grade
+worry that my people are pasting client information into ChatGPT and I do not know. Name that, not the artifact. And the
+thing that would actually make me reply is if he had already looked. A gift is a completely different message from
+homework I have to opt into."</p>
+
+<h3>The tension I am not averaging away</h3>
+<p>One voice holds that an agent drafted document going out under your name is disqualifying at volume. Another holds
+that this exact artifact is the productisable core and the whole point. Both are right, and it resolves on volume rather
+than on principle. At five it is a craftsman's gift you genuinely review. At twenty it is a mail merge with your name on
+it. <strong>The cap is the safety mechanism, which is why it is five.</strong></p>
+
+<h3>Premortem: it is Friday and there were zero conversations</h3>
+<p>Working backward, most likely first.</p>
+<ol>
+<li><strong>The post never went out on Tuesday</strong> because it needed approval Monday night and Monday's messages ate
+the slot. This has precedent: a traffic strategy written 6 May had two next actions at the top and neither was ever done.
+Highest probability cause by a wide margin.</li>
+<li><strong>The overnight run had no trigger</strong> and nobody ran it, so delivery slipped three days and the moment
+died.</li>
+<li><strong>The policies read generic.</strong> Research was thin, the agent padded rather than narrowing, and recipients
+recognised a mail merge. This is the one that costs something real.</li>
+<li><strong>The gift landed and the ask was too big.</strong> People took the free thing and left, exactly as 195 landing
+page visitors did.</li>
+<li><strong>Emails were collected and vanished</strong> into an endpoint that writes no row, so conversations existed but
+nothing downstream could follow up.</li>
+<li><strong>Five went out, all five landed, and nobody replied by Friday.</strong> Five is a small sample and four days is
+a short window. This is not failure, it is impatience, and calling it failure on Friday is how a working mechanism gets
+killed in week two.</li>
+</ol>
+<p>That last one is why the success floor below is stated in messages sent, not replies received.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>The week</h2></summary>
+    <div class="sec-body">
+
+<h3>Ready now, needing only your approval</h3>
+<ul>
+<li>The generator that writes each policy, with a fact ledger, a never invent constraint, an instruction for what to do
+when public information is thin, and a four check review gate.</li>
+<li>The post copy and the delivery message copy, both through the voice, social and lead gen batteries.</li>
+</ul>
+
+<h3>What I need from you before Tuesday</h3>
+<ol>
+<li><strong>Five names.</strong> Filtered by title inside LinkedIn, which is where the message gets sent anyway. Five
+minutes of crossing names off a list of ten, not a research task.</li>
+<li><strong>The go ahead to send.</strong> Monday night, on the five specific drafts, after you have read them.</li>
+<li><strong>The email decision.</strong> My recommendation is no email this week. The message thread is the record.</li>
+</ol>
+
+<table>
+<tr><th>Day</th><th>Who</th><th>What</th></tr>
+<tr><td>Sun / Mon</td><td>Agents</td><td>Research the five companies. Five fact ledgers, five drafts and five messages sitting in front of you Monday night.</td></tr>
+<tr><td>Mon</td><td>You, 20 min</td><td>Read five fact ledgers, then five policies. Four check gate on each. Approve or reject.</td></tr>
+<tr><td>Tue</td><td>You, 10 min</td><td>Send five messages. This is the whole ask.</td></tr>
+<tr><td>Tue</td><td>You, 5 min</td><td>Post the hand raiser post. Second channel.</td></tr>
+<tr><td>Wed / Thu</td><td>Agents</td><td>Draft a reply to every response. You edit and send.</td></tr>
+<tr><td>Thu</td><td>You, 20 min</td><td>One partner room ask. The only mechanism ever above zero here.</td></tr>
+<tr><td>Fri</td><td>You, 10 min</td><td>Read the count. Five sent, N replies, N conversations.</td></tr>
+<tr><td><strong>Total</strong></td><td colspan="2" class="good"><strong>About 65 minutes, inside the 2h10m budget, and it does not displace the commenting motion.</strong></td></tr>
+</table>
+
+<p class="callout"><strong>The tripwire.</strong> If the five drafts are not in front of you Monday night, Tuesday does
+not happen and the week is dead by Friday. That is our failure, not yours, and we will know Monday night. It is the only
+thing worth watching in week one.</p>
+
+<h3>Floors, set before launch rather than after</h3>
+<ul>
+<li><strong>Pass:</strong> five policies delivered. The only thing entirely inside your control.</li>
+<li><strong>Reply floor:</strong> two of five. Below that the artifact or the targeting is wrong, not the channel.</li>
+<li><strong>Conversation floor:</strong> one real conversation by Friday.</li>
+<li><strong>Stop rule:</strong> zero replies across two weeks, meaning ten sends, and the personalisation is not landing.
+Read the ten fact ledgers before sending an eleventh.</li>
+</ul>
+
+<h3>A deviation I am naming rather than hiding</h3>
+<p>Five a week is roughly 5% of the volume the lead gen framework calls for, and that framework is explicit that the
+honest answer to "how do we improve" is usually "do more." We are deviating deliberately. Your demonstrated sustained
+rate is around eight actions a day, and a plan built on a hundred would not survive week two, which is the failure mode
+with four months of evidence behind it. Volume goes up after the habit holds, not before.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>The copy, in draft</h2></summary>
+    <div class="sec-body">
+
+<p class="callout"><strong>Nothing here has been sent or posted.</strong> Both pieces are drafts awaiting your explicit
+go ahead. Three hard gate failures were caught and fixed before they reached this page.</p>
+
+<h3>The hand raiser post, second channel</h3>
+<pre>Somebody on your team put a client file into ChatGPT this week and you would have no way of knowing.
+
+They are not being careless. It is faster, the tool is right there, and nobody ever drew them a line.
+
+So here is what I will do. Send me your company and I will write your AI policy. One page. Your industry, the work your people actually do, the records they actually touch. Something you hand your team on Monday instead of a framework you have to translate first.
+
+Every template online was drafted for a bank with a compliance department. Yours will not be.
+
+I run my own business on these tools every day, which is how I know where a small team actually gets burned, and it is never the place the templates warn you about.
+
+Comment below with your industry. Five this week. That is as many as I can do properly.</pre>
+
+<h3>The delivery message, primary channel, sent with the policy already written</h3>
+<pre>[Name], I wrote something for you and I would like to just hand it over.
+
+It is a one page AI policy for [Company]. Not a template. I looked at the kind of work [industry] teams actually do and the records they actually touch, and wrote the version I would want if I were running your shop.
+
+It is attached. Use it, change it, throw it out.
+
+One thing I could not decide for you, and it sits at the bottom of the page: [the open question]. At your size that is a real judgment call and not a technicality, and I would be curious how you land on it.</pre>
+
+<h3>What the batteries caught</h3>
+<ul>
+<li><strong>A credentials line, cut.</strong> Your own standing instruction from yesterday: credentials do not go inside
+post copy, your profile carries them. A year count tied to a field and a named employer tier are both explicitly banned
+there. The practitioner anchor replaced it, and it is stronger because it is unavailable to anyone else.</li>
+<li><strong>An unsourced first person anecdote, cut rather than softened.</strong> A specific claim about something that
+happened to you that is not on file anywhere.</li>
+<li><strong>"Five this week, because I write them myself", rewritten.</strong> An agent drafts and you review, so sole
+authorship is an overclaim, and it sat on the exact line carrying the offer's credibility. "That is as many as I can do
+properly" is true and the scarcity survives intact.</li>
+<li>The offer of <strong>labour</strong> was buried at line five. An offer to do work is rare in a feed. Information is
+not. Moved up.</li>
+<li>The call to action had two doors, halving both. One door now.</li>
+</ul>
+
+<p><strong>Not run:</strong> the cross model adversarial check, which needs a live model call. Saying so rather than
+implying the copy cleared it.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>How this fits with today's other two plans</h2></summary>
+    <div class="sec-body">
+
+<p>Today's distribution review named LinkedIn, in platform, by hand, five messages a weekday as the one channel, and
+observed that agents drafting overnight is what solves the blank page. Today's thirty day plan found the seven existing
+magnets and concluded the fastest move is pointing live traffic at the best one rather than building an eighth. Neither
+had an artifact to send.</p>
+
+<p>This is that artifact, and it fits both without contradicting either. Same channel, same cadence, same overnight draft
+motion, and no eighth magnet built. What it adds is <strong>the reason to send the message</strong>, which is the thing
+that has been missing every time the messages did not go out.</p>
+
+<h3>On the eighth magnet</h3>
+<p>The policy generator is spec'd with a 16 September ship date and is on hold behind three unanswered questions. It is
+not the week one move. It is the correct week two build, and the sequencing matters: five hand delivered policies produce
+exactly the evidence those three questions are asking for. Week one is the demand test that unblocks the build, rather
+than a build made on guesses.</p>
+
+<h3>On the seven parked magnets</h3>
+<p>They are not wasted. The live checklist page is the fallback and the scale path, and pointing traffic at it costs a
+page move rather than a build. It is not the mechanism this week because a door nobody walks through does not become
+useful by being mentioned.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>Your decisions</h2></summary>
+    <div class="sec-body">
+
+<p>Four, with a recommendation on each.</p>
+
+<table>
+<tr><th>Decision</th><th>My recommendation</th></tr>
+<tr><td><strong>Do agent drafted documents carrying your name go to decision makers you have a real relationship with, and at what review depth are you comfortable putting your standing behind one?</strong> This is the one only you can answer, and it is what the cap of five is protecting.</td><td>Yes at five a week with the four check gate. No at any volume where the gate becomes a formality.</td></tr>
+<tr><td><strong>The five names.</strong></td><td>Filter by title inside LinkedIn. Pick five owners in industries where the record types are obvious. Cross off anything where you would hesitate to be wrong in public.</td></tr>
+<tr><td><strong>Email this week, yes or no.</strong></td><td>No. The subscribe endpoint those magnet pages use writes no row to the leads table, and a capture that does not persist is worse than none, because the page looks like it is working. The message thread is the record this week. That endpoint defect is a separate open decision with a 16 September trigger and it should not block Tuesday.</td></tr>
+<tr><td><strong>The go ahead to send.</strong></td><td>Give it Monday night on the five specific drafts after you have read them. Not now, and not in advance.</td></tr>
+</table>
+
+    </div>
+  </details>
+
+  <footer class="foot">
+    Transcript fetched and paraphrased, nothing quoted. Asset inventory, live URLs and every failure number read
+from the repository, the decision ledger and today's published reviews on 6 September 2026. Gates run: lateral leverage,
+promptfix on the generator, a five voice adversarial pass plus premortem, and the full copy battery. The cross model
+check was not run and is not claimed. Nothing sent, nothing posted, nothing published.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
