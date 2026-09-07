@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead generation: the assembly</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+
+  /* page-specific additions */
+  .stat-row{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;}
+  .stat{flex:1 1 150px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 14px;}
+  .stat .n{font-size:1.7rem;font-weight:800;letter-spacing:-.02em;line-height:1.1;color:var(--accent);}
+  .stat .l{font-size:.79rem;color:var(--text-dim);margin-top:5px;line-height:1.4;}
+  .callout{border-left:4px solid var(--accent);background:var(--bg2);padding:13px 15px;border-radius:0 10px 10px 0;margin:16px 0;}
+  .callout.bad{border-left-color:var(--bad);}
+  .callout.good{border-left-color:var(--good);}
+  .callout > :first-child{margin-top:0;}
+  .callout > :last-child{margin-bottom:0;}
+  .pill{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap;border:1px solid var(--border);}
+  .p-good{color:var(--good);border-color:var(--good);}
+  .p-warn{color:var(--warn);border-color:var(--warn);}
+  .p-bad{color:var(--bad);border-color:var(--bad);}
+  .opt{border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:11px 0;background:var(--bg2);}
+  .opt.rec{border-color:var(--good);border-width:2px;}
+  .opt h3{margin:0 0 6px;font-size:1rem;}
+  .opt p{margin:.3em 0;font-size:.93rem;}
+  .ask{border:1px solid var(--warn);border-radius:12px;padding:16px 18px;margin:16px 0;background:var(--bg2);}
+  .ask h3{margin-top:0;color:var(--warn);font-size:1rem;}
+  .ask ol{margin-bottom:0;}
+  .lede{font-size:1.03rem;}
+  @media (max-width:520px){ .stat{flex:1 1 100%;} }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-06-21:25:18 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Lead gen strategy</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">Numbers</a>
+      <a href="#sec-2">Failure pattern</a>
+      <a href="#sec-3">The video</a>
+      <a href="#sec-4">We own it</a>
+      <a href="#sec-5">Risks</a>
+      <a href="#sec-6">Tuesday</a>
+      <a href="#sec-7">Why it beats</a>
+      <a href="#sec-8">Decision</a>
+      <!-- one link per section; keep ids in sync with the <details id="sec-N"> below -->
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Lead generation: the assembly</h1>
+    <div class="meta">Partner distribution, and the three plans it unblocks &middot; 2026-09-06</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      
+      <p class="lede"><strong>This is not a new tactic.</strong> Over four months, four sessions that did not know about each other each built one part of the same machine and then stopped. A scorecard was fully specced in May and never built, because its own guardrail said <em>do not build until the channel is named</em>. A distribution plan was Council-reviewed in June and its first pitch was never sent. A different scorecard <em>was</em> built, shipped, and is live right now, and it has produced one lead ever, because nobody named a channel for that one either. And this morning a follow-up drafter was built that is sitting one Telegram tap from live.</p>
+      <p class="lede">The video supplies the piece all four were missing. <strong>The work is assembly. Almost nothing here has to be built, and nothing has to be bought.</strong></p>
+      <p class="lede">Tuesday is three small things, and I need three small decisions from you. Jump straight to <a href="#sec-8">the decision</a>.</p>
+
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1" open>
+    <summary><h2>The numbers, read out of the database today</h2></summary>
+    <div class="sec-body">
+      <div class="stat-row">
+        <div class="stat"><div class="n">343</div><div class="l">emails actually sent</div></div>
+        <div class="stat"><div class="n">1</div><div class="l">reply, ever (about 0.3%)</div></div>
+        <div class="stat"><div class="n">$3,391</div><div class="l">that one reply became a live engagement</div></div>
+        <div class="stat"><div class="n">1</div><div class="l">lead ever from the live scorecard</div></div>
+      </div>
+      <div class="callout good">
+        <p><strong>One reply produced one deal.</strong> Reply-to-revenue conversion is 100% and has never been the problem. The entire constraint sits at the top of the funnel, and every one of today's eight improvements was made below it.</p>
+      </div>
+      <p>Your own verdict on the 0.3%, from the draft you have not shipped: <em>"the system runs fine and the message still is not landing."</em></p>
+      <p>Also on file: 892 leads sourced, 703 of them in a single block untouched since 2026-07-14. The scorecard at geolisted.co/rank-check is live and returning 200 right now. It has produced one lead because nothing sends anyone to it.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>The real failure pattern: three instances, one shape</h2></summary>
+    <div class="sec-body">
+      <div class="table-scroll">
+      <table>
+      <thead><tr><th>The asset</th><th>When</th><th>What happened</th></tr></thead>
+      <tbody>
+      <tr><td><strong>The AI Where-To-Start Scorecard</strong></td><td>2026-05-30</td><td><span class="pill p-bad">Never built</span><br>Full spec, premortem-guardrailed, eight questions drafted. Its own non-negotiable rule: <em>"Do NOT build until the channel to feed it is named. No audience = dead magnet."</em> The channel was never named. Dead 14 weeks.</td></tr>
+      <tr><td><strong>The borrowed-audience plan</strong></td><td>2026-06-24</td><td><span class="pill p-bad">Never sent</span><br>Council-reviewed, 14 shows, 8 events, two pitches scored 92/100 on voice. Pitch number one has still never gone out. Eleven weeks.</td></tr>
+      <tr><td><strong>The live AI-visibility scan</strong></td><td>shipped</td><td><span class="pill p-warn">1 lead ever</span><br>Built anyway, with no channel named. The May spec's premortem predicted this exact outcome, in writing, and we produced it with a different asset.</td></tr>
+      </tbody>
+      </table>
+      </div>
+      <div class="callout bad">
+        <p><strong>We build the asset and never name the channel. And on the one occasion we named the channel, the pitch was an ask, so it was never sent.</strong></p>
+        <p>That second half is not my diagnosis. It is this morning's, from a separate absorb: <em>"an ask requires the sender to feel he has earned the slot. That is precisely the feeling a plan cannot manufacture, which is why a good plan sat unexecuted for seven weeks and then four more."</em></p>
+        <p>Two independent sources, absorbed on the same day, converging on the same missing piece. That convergence is the reason to act on this rather than file it.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>What the video actually gave us</h2></summary>
+    <div class="sec-body">
+      <p>One axis that nothing we own touches. Everything we have runs <strong>us to prospect</strong>: one to one, cold, bounded by how many messages a human can personally send. The video runs <strong>us to partner to their trusted audience</strong>: one to many, warm by association, bounded by relationships rather than by volume.</p>
+      <p>A partner is defined narrowly and usefully: someone who <strong>already serves our exact buyer, already has their trust, and does not compete with us</strong>. Not a referral source to be asked for favours. A distribution channel to be handed something valuable.</p>
+      <h3>The mechanisms worth taking</h3>
+      <ul>
+      <li><strong>An assessment beats a PDF.</strong> It qualifies while it gives. His book-launch figure: roughly 270 of 290 people who started one finished it.</li>
+      <li><strong>Only about 8% of any market is shopping</strong> for what you sell. That is the most competitive and most price-driven slice, and by the time you reach it the shortlist is already written. Reach the people who have the symptom but have not gone shopping yet.</li>
+      <li><strong>Write the symptom in their language.</strong> The recurring correction all workshop long: we describe the buyer's problem as the absence of our service. A junk hauler does not worry about his AI visibility. He worries the phone is not ringing.</li>
+      <li><strong>Start at the C-list.</strong> <em>You serve the same people I do, we do not compete, would you be open to fifteen minutes to see whether there is a way to collaborate.</em></li>
+      <li><strong>The partner call is a give.</strong> Listen for ten minutes. Find what <em>they</em> are trying to achieve. Slot the asset into their goal, or do not bring it out at all. His own start: he did not ask a co-working space for clients, he offered a free session that solved the space's own retention problem. It produced his first six-figure year.</li>
+      <li><strong>Write the agreement in an email</strong> the same day. I do this, you do that, in this channel, on this date. Offer to draft their email so their only remaining action is pressing send.</li>
+      <li><strong>Reverse-engineer whether they can pay you.</strong> Roughly 10% of revenue is the marketing budget, minus the internal salary it already funds, minus 10 to 20% held back for contingency.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>Everything expensive in it, we already own</h2></summary>
+    <div class="sec-body">
+      <p>The workshop builds on a paid subscription, a set of custom GPTs, and a partner CRM. <strong>All cut.</strong> Every component already exists here:</p>
+      <div class="table-scroll">
+      <table>
+      <thead><tr><th>What the paid stack does</th><th>What we own</th><th>State</th></tr></thead>
+      <tbody>
+      <tr><td>Scorecard page plus email capture</td><td><code>llm_rank_check.py</code>, live at geolisted.co/rank-check</td><td><span class="pill p-good">Live</span></td></tr>
+      <tr><td>The scored report they receive</td><td><code>ai_visibility/reporter.py</code>, a premium mobile-first score report</td><td><span class="pill p-good">Built</span></td></tr>
+      <tr><td>Qualified sees a booking link, unqualified sees a resource</td><td>the lead-scoring tiered-routing pattern</td><td><span class="pill p-warn">Specced today, not wired</span></td></tr>
+      <tr><td>Wake up with calls booked</td><td><code>fast_nurture.py</code></td><td><span class="pill p-warn">Built today, at the gate</span></td></tr>
+      <tr><td>Quiz-funnel architecture</td><td>already absorbed into the lead-gen skill</td><td><span class="pill p-good">On file</span></td></tr>
+      <tr><td>A second, better-targeted scorecard</td><td>the May build spec</td><td><span class="pill p-warn">Specced, unbuilt</span></td></tr>
+      <tr><td>Partner-finder, hooks, pitch copy, CRM</td><td>contact-hunter, hormozi-lead-gen, the voice battery, local_crm</td><td><span class="pill p-good">Built</span></td></tr>
+      <tr><td>Who the audience holders are, and how to pitch them</td><td>the borrowed-audience relief playbook</td><td><span class="pill p-good">Built today</span></td></tr>
+      </tbody>
+      </table>
+      </div>
+      <div class="callout"><p><strong>Zero new tools. Zero new spend.</strong> One scan costs about five to fifteen cents in model spend we already pay for.</p></div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>The two things that could kill this</h2></summary>
+    <div class="sec-body">
+      <h3>1. We already tried audience holders and got zero</h3>
+      <p>On 2026-08-07, five chambers and BNI chapters were emailed. The result: <strong>one out-of-office auto-responder, zero human replies.</strong> Those are audience holders. That is this strategy, already tried, already failed.</p>
+      <p>Why that is not a refutation: those five were <strong>asks</strong>, variations of <em>here is what I do, would you put me in front of your members</em>. The mechanic being adopted is the opposite shape: <em>I have something ready for your empty slot</em>.</p>
+      <p>But honesty first. That is a hypothesis, not a result. <strong>The chamber test is the only partner-channel data we own, and it says zero.</strong> So this plan treats a partner reply rate as unknown and to be measured. The video's quoted 50 to 80% response rate is <strong>not</strong> inherited, because it is explicitly conditioned on already knowing the person.</p>
+      <h3>2. The parachute test</h3>
+      <p>Your standing rule: warm leads are a bonus, never foundational. Dropped somewhere you know nobody, the system must still work. The video's mechanism is literally <em>someone in your network already has them</em>, which taken at face value would violate that rule.</p>
+      <p><strong>The resolution is not a compromise: partners are sourced by category, not by network.</strong> The question is "who else sells to this exact buyer and does not compete with me", and that is answerable from a standing start, anywhere, by anyone, from public websites. Suppliers, adjacent trades, associations, trade publishers, the software vendor everyone in the vertical uses. Checking that category list against people you happen to know is a <em>second</em> pass that speeds things up. It is never what generates the list.</p>
+      <p><strong>This is more parachute-compliant than cold email, not less.</strong> A stranger in a new city can name the adjacent vendor categories for any local trade in an afternoon.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>What starts Tuesday, and the weekly rhythm</h2></summary>
+    <div class="sec-body">
+      <p>Tuesday is deliberately light. The HARTING interview is at 14:00.</p>
+      <ol>
+      <li><strong>Clear the gate tap on the follow-up drafter.</strong> Ten seconds. Nothing else is safe to start until a captured lead actually gets chased.</li>
+      <li><strong>Fix one ICP.</strong> One buyer, one city, one vertical, describable as a real person.</li>
+      <li><strong>Run the message test.</strong> Draft, never send, a short <em>question</em> to 15 contacts drawn from the dormant list: <em>I built something that tells you whether you show up when a customer asks an AI for a recommendation in your area, and who it names instead of you. One to ten, how useful is that to you?</em></li>
+      </ol>
+      <div class="callout">
+      <p><strong>The gate:</strong> a median rating of 7 or above, go to partners. <strong>Below 7, stop and fix the asset</strong> before spending a single unit of partner goodwill. That is a real stop, and if it fires it is this plan working, not failing.</p>
+      </div>
+      <h3>Then, weekly</h3>
+      <ul>
+      <li><strong>Thirty minutes a day</strong>, on the calendar, defended like a client meeting. Two partner touches a day, <strong>maximum</strong>. Volume is the failure mode being escaped, not the goal.</li>
+      <li><strong>Any yes becomes a fifteen-minute call.</strong> Three questions, and listen for the first ten minutes. Here is what I already know about your business, what have I missed. What are you trying to achieve right now. What is getting in the way. Do not pitch.</li>
+      <li><strong>Friday, four numbers and only four:</strong> conversations held, share commitments, scans completed per share, qualified scans that booked.</li>
+      <li><strong>Stop rule:</strong> two weeks with no share commitments, <em>or any single week with four or more touches and zero conversations</em>, and you go back to the message test.</li>
+      <li><strong>Week three, in parallel:</strong> run the scan across about 100 businesses in one vertical, roughly five to fifteen dollars, and publish the aggregate. It becomes the thing partners <em>ask</em> to share.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>Why this should beat what came before</h2></summary>
+    <div class="sec-body">
+      <ol>
+      <li><strong>It fixes the constraint we can actually see.</strong> One reply produced one deal. Everything improved today was improved below that constraint.</li>
+      <li><strong>It is the first motion that instruments itself.</strong> A completed scan is a row in the database, a hard, recorded, queryable event. A failure becomes visible within a week instead of invisible for a quarter. The cold channel, by contrast, has one reply flag and no bounce field at all.</li>
+      <li><strong>Almost nothing has to be built.</strong> The two unwired pieces are a ten-second approval and a small routing change.</li>
+      <li><strong>It unblocks two plans already paid for.</strong> The May spec has waited 14 weeks for exactly one thing, a named channel. The June plan has waited 11 weeks for exactly one thing, a pitch that is a give.</li>
+      </ol>
+      <div class="callout bad">
+      <p><strong>The honest caveat.</strong> Partner distribution does not fix a weak offer, it amplifies whatever the offer is, faster and more publicly than cold email did, and it burns something that does not grow back. That is exactly why the message test is a hard stop and not a formality.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>The decision only you can make</h2></summary>
+    <div class="sec-body">
+      <p>Your thirty minutes a day may only buy one of these.</p>
+      <div class="opt rec">
+        <h3>A. Run both <span class="pill p-good">recommended</span></h3>
+        <p>Dormant-list re-open for September cash, partner motion building behind it for Q4.</p>
+        <p><strong>Why:</strong> a ninety-day programme does not pay a September bill, and the message test <em>is</em> the dormant-list re-open <em>and</em> the partner gate. One action, both outcomes, and it is the cheapest thing in the plan.</p>
+      </div>
+      <div class="opt">
+        <h3>B. Partner motion only</h3>
+        <p>Cleaner and single-focus, but it concedes September.</p>
+      </div>
+      <div class="opt">
+        <h3>C. Dormant list only, partners deferred to October</h3>
+        <p>Maximum September pressure, but it leaves the structural fix unstarted for a fourth month.</p>
+      </div>
+      <div class="ask">
+      <h3>Three things I need from you</h3>
+      <ol>
+      <li><strong>The Telegram tap</strong> on the follow-up drafter held at the gate. Ten seconds. Without it a captured lead is never chased, which is exactly what the premortem says kills this.</li>
+      <li><strong>Go-ahead to send the 15 message-test drafts.</strong> One batch, one approval, and it does not carry to any later batch.</li>
+      <li><strong>Confirm the ICP.</strong> Junk hauling by default, or name another.</li>
+      </ol>
+      <p><strong>Plus A, B or C above.</strong> Everything else is either already ready or does not need you.</p>
+      </div>
+    </div>
+  </details>
+
+  <!-- duplicate the <details class="sec"> block per section; add a matching nav link -->
+
+  <footer class="foot">
+    <p>Full working document, with all five Council voices, the premortem, the three data simulations and every source path: <code>docs/playbooks/2026-09-06-leadgen-strategy-tuesday-launch.md</code> on branch <code>feature/leadgen-strategy-2026-09-06</code>.</p><p>Gates run: promptfix on the operating SOP, lateral-leverage (which killed the entire paid stack), Council five-voice, Council premortem, and three simulations against live data. Each one changed the plan.</p><p><strong>No emails were sent.</strong> Every outbound artifact is a draft awaiting per-batch go-ahead.</p>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
