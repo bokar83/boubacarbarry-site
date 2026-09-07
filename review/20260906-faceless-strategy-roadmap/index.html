@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Faceless Problem: Strategy and Roadmap</title>
+<!--
+  CANONICAL REVIEW-PAGE TEMPLATE for boubacarbarry.com/review/<slug>/
+
+  Start every review page from this file. It is compliant with the layout hard standard out
+  of the box, and scripts/validate-review-page.ps1 (which publish-review.ps1 runs on every
+  publish and REFUSES to ship past) is written against exactly this structure.
+
+  THE FIVE RULES, Boubacar verbatim 2026-08-11:
+    1. TL;DR at the very top, sections underneath it.
+    2. The TL;DR itself is collapsible.
+    3. Every section collapsible with a toggle.
+    4. A back-to-top button on every page.
+    5. Hamburger nav on mobile, normal nav on desktop, floating if practical.
+
+  THE REASON, which matters more than the list:
+    "I don't want to have to read 30 pages of a TL;DR to get to the content every single
+     time. I need to be able to just quickly jump into this after future reviews."
+    => Design for the SECOND visit. Rules 4 and the fold-state memory that makes the second
+       visit fast are AUTO-INJECTED at publish time by scripts/inject-review-furniture.ps1,
+       so do not hand-roll a back-to-top button here -- you would get two.
+
+  WHAT YOU EDIT: the {{PLACEHOLDERS}}, the nav links, and the <section> blocks. Keep the
+  <details><summary><h2>...</h2></summary> shape on every section; that shape IS the check.
+
+  STANDS ALONE ON PURPOSE: no external CSS, no external JS, no fonts, no CDN. He opens these
+  on a phone on bad wifi, and a shared include that fails to load would take the furniture
+  down with the page. Duplicated bytes are the cheaper trade.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-06-21:38:38 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Faceless Strategy</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">What the research actually says</a>
+      <a href="#sec-2">The diagnosis: why nothing launched</a>
+      <a href="#sec-3">The strategy</a>
+      <a href="#sec-4">The roadmap</a>
+      <a href="#sec-5">How to measure whether this is working</a>
+      <a href="#sec-6">How this connects to today's other work</a>
+      <a href="#sec-7">What the adversarial pass changed</a>
+      <a href="#sec-8">Ready now vs. needs you</a>
+      <!-- one link per section; keep ids in sync with the <details id="sec-N"> below -->
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>The Faceless Problem: Strategy and Roadmap</h1>
+    <div class="meta">Why nothing launched, what to run instead, and the Tuesday-start sequence &middot; 2026-09-06</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      
+<p><strong>You do not have a faceless problem, a tooling problem, or a credibility problem. You have a send problem.</strong> Two podcast pitches that scored 92/100 in your own voice have been sitting in the repo, finished, for 77 days. Nobody sent them. That single fact explains the last four months better than any strategy document, including the three written before this one.</p>
+
+<p class="callout"><strong>The recommendation, in one line:</strong> stop the anonymous channels, keep the factory, point it at your own face, and put a non-negotiable daily send floor underneath everything so this plan cannot die the way the last three did.</p>
+
+<p>Three things that are uncomfortable and load-bearing:</p>
+<ol>
+  <li><strong>The anonymous channels have to stop.</strong> 191 posts across three channels, roughly 1,159 total views, dark since early July, $0. Not because the content was bad, but because no offer ever sat behind any of them, and the daily hand-warmup they need is 45-60 minutes a day that nobody ever budgeted.</li>
+  <li><strong>The seed videos sell a business model that would score the wrong objective.</strong> Your own standing rule says booked fractional AI work is the north star and products are means. The honest base rates: median digital-product income is about <strong>$72 a month</strong>, and <strong>44% of Gumroad products have earned exactly nothing</strong>.</li>
+  <li><strong>Going faceless throws away the only thing the 20-year-olds cannot copy.</strong> They go faceless because anonymity is their only option. You would be volunteering to hide ten years in global HR leadership at a Fortune 100, an MBA, and a working AI system you built and run. The Gen X angle is not "faceless, but better." It is: <strong>the factory is faceless, the operator is not.</strong></li>
+</ol>
+
+<p><strong>Both live refinements are folded in.</strong> "How do we build the roads that lead to me?" moved the spine of this plan from content mechanics to go-to-market. "Sell the problem before the solution" is now the structural rule for every piece of copy here. The stuck-agency-builder audience is in, but narrowed hard, because "people building agencies" as written is the most saturated audience online.</p>
+
+<p class="warn"><strong>The one question only you can answer:</strong> what is the daily send floor you will actually hold? 1, 3, or 5. A plan built on 5 that you hold at 0 is worth less than a plan built on 1 that you hold. Three plans have died because this number was never named.</p>
+
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. What the research actually says</h2></summary>
+    <div class="sec-body">
+
+<h3>The two seed videos</h3>
+<p>Both are Richard Yu. Neither is a faceless-channel tutorial. Both are pitches for a digital-product business and both end at a free masterclass funnel, which shapes everything they say.</p>
+<p><strong>Video 1</strong> sorts the "one-person AI business" into three models and disqualifies two. The agency is a job with extra bosses, because clients fire agencies in 3-6 months (he says he does this himself as a buyer). Software is real but the wrong first move: his own AI software company took a year, a team of engineers, and over a million dollars. That leaves digital products, built in four parts: the product (copy proven demand, never invent), the store, the content, and the ladder, where a $27-47 entry product exists to convert a stranger into a buyer and a several-thousand-dollar tier sits above it.</p>
+<p><strong>Video 2</strong> is 35 product ideas in six buckets. The genuinely portable mechanics, stripped of the pitch:</p>
+<ul>
+  <li><strong>Price by the size of the buyer's problem, not the size of your deliverable.</strong> A budget tracker protects $40 and sells for $10; a rental-property analyzer protects a $200,000 decision and sells for $99. Same build effort.</li>
+  <li><strong>The narrow version of a saturated market is wide open.</strong> You cannot win "weight loss." You can own "weight loss for women in menopause."</li>
+  <li><strong>Sell the tool, not the lesson.</strong> Buyers want the finished thing, not to become experts.</li>
+  <li><strong>Collect the money before you build.</strong> One page, a buy button, three places the buyer already is.</li>
+  <li><strong>Find the cold-start wall</strong> and sell the ladder over it.</li>
+  <li><strong>Everything small is an on-ramp to one high-ticket offer</strong>, delivered done-with-you so it does not become a prison.</li>
+</ul>
+
+<h3>The skepticism these videos have earned</h3>
+<p>Every number in both is an unverifiable claim from someone selling a masterclass on the strategy those numbers are meant to prove. The $80,000-a-month friend, the $31,000-in-40-days student, the $32 million lifetime, the calligraphy community at $11,000 a month: treat all of it as marketing, not data. He is also open that he no longer runs a one-person business (75 staff across three companies), which quietly undercuts the model he is selling.</p>
+<table>
+  <thead><tr><th>Claim shape</th><th>What independent data says</th></tr></thead>
+  <tbody>
+    <tr><td>"Faceless channels print money"</td><td>~3% success rate. Newly monetized channels typically make $50-500/month early, reaching $500-5,000/month only after <strong>12-18 months</strong> of consistent uploads in a high-RPM niche.</td></tr>
+    <tr><td>"Digital products are passive income"</td><td><strong>Median creator: $72/month.</strong> Top 10% clear $1,000/month. <strong>44% of Gumroad products have earned $0.</strong> Most "passive" setups still need 5-12 hours a week.</td></tr>
+    <tr><td>"Anyone can do this"</td><td>The gap between top and bottom earners comes from product type, pricing, positioning and channel, not audience size or luck. B2B-focused creators earn <strong>3.4x</strong> more than B2C on the same follower base.</td></tr>
+  </tbody>
+</table>
+<p class="callout"><strong>The one number that should change your plan:</strong> inbound leads close at <strong>14.6%</strong> against <strong>1.7%</strong> for outbound. Authority is not vanity, it is an 8.6x conversion multiplier. But the authority that converts comes from specificity, not volume: a consultant with 2,000 followers sharing narrow, real work outperforms one with 20,000 posting general advice.</p>
+
+<h3>What the broader research says about your actual angle</h3>
+<ul>
+  <li><strong>Podcast guesting is the highest-ROI credibility channel available</strong>, because it borrows trust instead of building it. A host's introduction transfers authority instantly, and guesting beats hosting for anyone without an audience.</li>
+  <li><strong>Gen X is an underserved audience with money, and Gen X creators are under-supplied.</strong> Audiences over 45 are markedly less receptive to obviously AI-generated content. This cuts directly against running anonymous AI-persona channels and directly for being visible.</li>
+  <li><strong>Displacement is real but not where the headlines say.</strong> Workers aged 22-30 are being displaced at roughly <strong>three times</strong> the rate of workers 40-55, while 59% of US workers need reskilling by 2030. Your instinct is directionally right, but the better-funded buyer is not the displaced individual. It is the HR leader who has to absorb the disruption and has a budget line.</li>
+</ul>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2">
+    <summary><h2>2. The diagnosis: why nothing launched</h2></summary>
+    <div class="sec-body">
+
+<p>This is the most important section, because three plans have died and a fourth that does not explain the deaths is worthless.</p>
+
+<h3>The infrastructure is real. That is not the problem.</h3>
+<table>
+  <thead><tr><th>Asset</th><th>Actual state</th></tr></thead>
+  <tbody>
+    <tr><td>22 x <code>orchestrator/studio_*.py</code></td><td><strong>Real, maintained code.</strong> Trend scout, QA crew, script/voice/visual generation, composer, scene builder, render publisher, clip pipeline, analytics scraper. Committed through September.</td></tr>
+    <tr><td><code>skills/content_multiplier</code></td><td><strong>Real and battle-tested.</strong> Four build iterations, graded ~76% = ship.</td></tr>
+    <tr><td><code>orchestrator/griot.py</code></td><td><strong>Real, 1,422 lines</strong>, deterministic, zero LLM cost, 07:00 weekday schedule. Content-board picker for LinkedIn/X/newsletter.</td></tr>
+    <tr><td>The four <code>studio-*</code> skills</td><td><strong>Documentation and reference packs only.</strong> One SKILL.md says outright it is a stub that exists to satisfy lint.</td></tr>
+    <tr><td>8 handles + 20 Blotato slots</td><td><strong>Real, registered, wired.</strong></td></tr>
+  </tbody>
+</table>
+<p><strong>The switches are off.</strong> <code>autonomy_state.json</code> carries <code>studio: {enabled: false, dry_run: true}</code> and the same for <code>griot</code>. The Studio default has been off since 2026-04-25 and was never flipped.</p>
+<p><strong>It produced output, then stopped.</strong> First Generation Money ~109 posts (last 2026-07-09), Under the Baobab ~63 (last 2026-06-23), AI Catalyst ~19 (last 2026-07-08). 31 videos rendered by 2026-05-20 at 37 average views. Render queue now empty everywhere. Revenue: <strong>$0</strong>, with monetization gated behind subscriber thresholds no channel is near.</p>
+
+<h3>The four real causes</h3>
+<p><strong>1. No offer ever sat behind a channel.</strong> The repo already says it, dated 2026-08-31: <em>"Right now not one of our three channels has any offer behind it, which is the actual reason 191 posts have produced zero dollars."</em> Same defect as the no-roads-to-the-mall finding, in a different coat.</p>
+<p><strong>2. The one irreducible task is human-only and was never budgeted.</strong> IG and TikTok warm-up cannot be safely automated without ban risk. The honest cost is 45-60 minutes a day, every day, from you. That number was recorded as a placeholder and <strong>never confirmed by you</strong>.</p>
+<p><strong>3. The tracking container auto-destroyed itself.</strong> The 2026-08-19 plan became eight Money Map rows. <strong>Seven were closed by an automated stale-sweep the same day they were written.</strong> The survivor is a prose paragraph nothing reads or writes. Ten days later: zero sessions. Your words at the time: <em>"I should be able to see if I have done what I agreed to do... We need DATA!"</em> You were asking for the mechanism that had silently deleted itself.</p>
+<p><strong>4. Studio was severed from revenue by design.</strong> The June framing states it: Studio is <em>"totally separate from CW/SW/GW."</em> Lighthouse calls its contribution <em>"indirect"</em> and the channels a <em>"revenue stub."</em> Work whose payoff is indirect and 12-18 months out loses to anything revenue-proximate, every week, forever. Deprioritizing it was correct every time.</p>
+
+<h3>The cause underneath all four</h3>
+<p class="callout"><strong>The pitches were finished and never sent.</strong> On 2026-06-24 a visibility master plan was written and Council-reviewed: fourteen shows, eight events, per-show angles. Two pitch drafts scored <strong>92/100 on your own voice</strong>. On 2026-08-10 a lane found seven weeks at zero and killed the stated blocker as stale. It is now eleven weeks. <strong>Zero pitches sent.</strong></p>
+<table>
+  <thead><tr><th>Date</th><th>The frustration</th><th>The response</th><th>Outcome</th></tr></thead>
+  <tbody>
+    <tr><td>2026-06-02</td><td><em>"19/20/30/50-year-olds do this on their own in a couple of weeks."</em></td><td>Build Studio, 1-2 channels weekly</td><td>191 posts, $0</td></tr>
+    <tr><td>2026-08-19</td><td><em>"We need to START the channel warm ups like we agreed upon."</em></td><td>8 Money Map rows</td><td>7 auto-closed, 0 sessions</td></tr>
+    <tr><td>2026-09-06</td><td><em>"We have the seed funding... we just are not doing it."</em></td><td>this document</td><td>?</td></tr>
+  </tbody>
+</table>
+<p>Each response was a better document than the last. Each was correct. Each died. <strong>If plan quality were the constraint, the second one would have worked.</strong></p>
+<p class="warn">Honest context: Lighthouse Phase 1 closed 2026-08-29 having missed. <strong>0 paying clients, $0 collected against roughly $10,108 spent.</strong> Phase 2 wants the first $5,000 of MRR, with an interim gate: <strong>first dollar collected by 2026-09-20.</strong> That is 14 days from Tuesday.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3">
+    <summary><h2>3. The strategy</h2></summary>
+    <div class="sec-body">
+
+<p><em>Strategy is what the business is and why it should work. The roadmap is the sequence. You asked for both, separately.</em></p>
+
+<h3>3.1 The core move: the factory is faceless, the operator is not</h3>
+<p>The 20-year-olds go faceless because anonymity is their only option. They have no credential to put a face on, so the format hides a weakness. <strong>Copying the format copies the weakness and discards your only unfair advantage.</strong> You would enter a 3%-success-rate, 12-18-month lottery against people with more time and less to lose, having first hidden ten years in global HR leadership for a Fortune 100 company, most recently four years based in Dubai, an MBA, and a working multi-agent AI system you built and run your own business on.</p>
+<p>So invert it. <strong>Keep the faceless machinery. Retire the faceless identity.</strong></p>
+<ul>
+  <li><strong>Faceless is a manufacturing method.</strong> The studio modules, content multiplier and render stack stay, eventually repointed at producing volume around <em>your</em> material. Same factory, different product on the line, no new build.</li>
+  <li><strong>The face is the product.</strong> Nobody in the AI-content space can say what you can say.</li>
+  <li><strong>The eight anonymous handles become syndication endpoints</strong>, later, once there is something worth syndicating. Not the business, not September's work.</li>
+</ul>
+
+<h3>3.2 The positioning is already decided. Do not reopen it.</h3>
+<p>Your words, on file since 2026-08-28: <em>"I need to be an expert, the expert, when it comes to the merging of AI and HR."</em> Settled, and this document does not reopen it. It needs one honest correction, which came from the adversarial pass, from the voice arguing as a cold outsider who is literally the buyer:</p>
+<blockquote>"Go-to person for the merging of AI and HR" means nothing to me, and I am the buyer. I do not wake up wanting AI and HR merged. I wake up because roles sit unfilled for 70 days, because my managers write the same review four times, because onboarding eats a week per hire.</blockquote>
+<p><strong>Both are true at different layers.</strong> "AI and HR" is the <em>category you are claiming</em>. It is correct positioning and it is what makes hosts and newsletters want you. It is <strong>not an offer</strong>, and a buyer cannot buy it. Underneath it you need named operational pains with a budget line already attached: time-to-fill at 60-70 days, manager time burned on repeated performance narratives, onboarding eating a week per hire, policy nobody can find or trust, and <strong>an AI initiative that was announced, funded, and has produced nothing measurable.</strong> That last one is the sharpest, and it is the one you can prove.</p>
+
+<h3>3.3 The Gen X differentiation, stated precisely</h3>
+<p>Not "I am older, therefore trustworthy." That is a claim anyone can make and nobody can check. Three things nobody in this niche has together:</p>
+<ol>
+  <li><strong>You have sat on the buyer's side of the table.</strong> When an HR leader describes their constraint, you have lived inside it, with that budget, in that political weather. A 24-year-old AI creator is guessing.</li>
+  <li><strong>You built the thing and run your business on it.</strong> Not a course about AI. A working multi-agent system, plus a real analytics and automation dashboard delivered inside a Fortune 100 organization.</li>
+  <li><strong>You will publish the losses.</strong> This is the whitespace, and it was the single largest missed opportunity in the entire analysis.</li>
+</ol>
+
+<h3>3.4 The asset nobody else will make: the honest operating ledger</h3>
+<p>For four months this system has generated something rare and treated it as internal exhaust: <strong>a dated, evidence-backed, brutally honest post-mortem of an AI operator failing to convert his own AI system into revenue.</strong> 191 posts. 1,159 views. $10,108 spent. $0 collected. Task rows that deleted themselves. Finished pitches unsent for 77 days.</p>
+<p>Every HR and AI newsletter on your comment rotation is starving for this and cannot get it, because everyone else publishes only wins. AIHR (222k followers), Leading HR by AIHR (123k), Hacking HR (2M+ practitioners), Dave Ulrich's audience: practitioners being told daily that AI will transform their function, by vendors who have never shown a number.</p>
+<p>This single asset is simultaneously the <strong>relief-pitch payload</strong>, the <strong>credibility proof</strong>, the <strong>lead magnet</strong>, <strong>book source material</strong>, and <strong>a story only you could write</strong>, which satisfies your own rule that a post needs a day, a person, and a thing that happened. It also resolves the hardest objection raised against this plan: that a relief pitch presumes a shelf of publishable assets that does not exist. <strong>It exists. It has been mistaken for exhaust.</strong></p>
+
+<h3>3.5 The offer ladder, corrected against your own north-star rule</h3>
+<p>Your standing rule: <em>"Workshops are nice but I need to get in front of people and get people to get me as a fractional AI expert."</em> Booked fractional work is the objective; content and products are instruments. A plan reporting post impressions while no fractional conversation moved is <strong>scoring the wrong objective</strong>. That disqualifies the seed videos' business model as the plan, though not their laddering mechanic.</p>
+<p class="warn"><strong>Correction to an earlier draft of this plan, and it matters.</strong> The first version invented a new "$500-1,500 diagnostic" rung. That was wrong, and it is exactly the reflex this document exists to stop. <strong>The rungs already exist and are already taking money.</strong></p>
+<table>
+  <thead><tr><th>Rung</th><th>Status right now</th></tr></thead>
+  <tbody>
+    <tr><td>Sept 16 online session, <strong>$25</strong></td><td><strong>LIVE</strong>, Stripe link active</td></tr>
+    <tr><td>Sept 24 in-person session, <strong>$50</strong></td><td><strong>LIVE</strong> (metadata still says 08-27, flagged, unfixed)</td></tr>
+    <tr><td>Employee Relations Investigation Pack, <strong>$19</strong></td><td><strong>LIVE and taking money, and nothing has been posted about it in 18 days</strong></td></tr>
+    <tr><td>Signal Session / Drive Cleanup / Install Your First 3 Agents, <strong>$497</strong></td><td><strong>LIVE and transacting</strong></td></tr>
+    <tr><td>Site Walkthrough Audit, <strong>$250</strong></td><td>Active in Stripe, <strong>linked from nowhere</strong></td></tr>
+    <tr><td>Assessment <strong>$3,500</strong> / Sprint <strong>$8,500</strong></td><td>Defined, <strong>never shown to a buyer</strong></td></tr>
+    <tr><td>The <strong>$150-200</strong> rung</td><td><strong>Empty.</strong> A $197 fill is proposed, unapproved</td></tr>
+  </tbody>
+</table>
+<p>Nothing here needs building. Four live things are simply unpromoted. That is not a product problem, it is the send problem wearing a price tag.</p>
+<p><strong>No $27 product in September.</strong> It needs build time, converts strangers rather than buyers, has a $72/month median, and scores the wrong objective. <code>D-20260906-2fc0b8</code> already parked exactly this, with your own gate attached: <em>no path to get people there = useless.</em> That stands.</p>
+<p class="callout"><strong>Where September's dollar actually comes from:</strong> a $25 or $50 workshop seat, a $19 pack somebody finally hears about, or a $497 Signal Session, sold to people already inside your 4,511 LinkedIn connections, of whom 1,411 are decision-makers and 524 are founders, CEOs or owners. Not from a faceless channel, not from a digital product, not from strangers found this month.</p>
+
+<h3>3.6 The second audience: stuck agency-builders, in but narrowed</h3>
+<p>Your words: <em>"I got to sell the problem before I sell the solution. There are people out there who are like me, trying to start their own agencies, and they're stuck."</em></p>
+<p><strong>Why the instinct is right.</strong> Naming a reader's problem more precisely than they can name it themselves is what earns trust. The seed videos say the same in different words: find the cold-start wall and speak to it. And you have something almost nobody in that audience has, which is that you are not describing the stuck point from theory. You are currently living inside it, with dated numbers.</p>
+<p><strong>Why "people building agencies" as written is dangerous.</strong> It is the most saturated audience online. It is the exact audience Richard Yu and ten thousand others already monetize, largely by selling the dream of escape to people who have not made a dollar. It is mostly broke. It blurs the AI-and-HR position you decided on. And chasing it lands you precisely in the $72-median, 44%-earn-zero distribution.</p>
+<p class="callout"><strong>The narrowing that resolves it.</strong> Not "people starting agencies." The intersection where your evidence is unique and the competition is close to zero: <strong>operators who have already built the AI machine and are watching it produce no revenue.</strong></p>
+<p>They are not beginners looking for a business model. They have a working stack, real spend, real output, and nothing coming back. Their actual problems are the ones in Section 2, and you can name every one from the inside: the machine works and no offer sits behind it; the plan was correct and never executed; the tracker deleted its own rows and the miss stayed invisible for ten days; the irreducible task turned out to be an unbudgeted hour of the founder's day; the finished asset sat unsent for eleven weeks while better versions were written; $10,108 out and $0 in.</p>
+<p><strong>Nobody publishes this.</strong> Everyone in that space publishes wins.</p>
+<table>
+  <thead><tr><th></th><th>HR / operations buyers</th><th>Stuck AI-operators</th></tr></thead>
+  <tbody>
+    <tr><td>What the ledger proves</td><td>He is an operator who tells the truth about AI</td><td>He has been exactly where they are and came out with the diagnosis</td></tr>
+    <tr><td>The ask</td><td>Fractional engagement, workshop seat, Signal Session</td><td>Follow, subscribe, later buy the method</td></tr>
+    <tr><td>Time to money</td><td><strong>Now</strong>, this is September</td><td><strong>Later</strong>, this compounds over months</td></tr>
+    <tr><td>Priority</td><td><strong>Primary.</strong> It is the north star</td><td><strong>Secondary</strong>, rides free on the same content</td></tr>
+  </tbody>
+</table>
+<p><strong>Recommendation:</strong> run the narrowed operator audience as the audience-building layer and the HR buyer as the revenue layer, from the same published material, and do not let the second displace the first. If in six weeks the operator audience is growing and HR revenue is not, that is a real signal worth acting on. It is not a reason to reorder them now, and reordering now would repeat the exact mistake of chasing the audience that is easiest to reach rather than the one that pays.</p>
+
+<h3>3.7 Sell the problem before the solution</h3>
+<p>A format rule applied to every artifact in the roadmap, not a slogan:</p>
+<ol>
+  <li><strong>Name the problem in the reader's own words</strong>, more precisely than they would say it. Specific enough that they feel caught.</li>
+  <li><strong>Show the cost of it continuing.</strong> Concretely, ideally with a number, never with hype.</li>
+  <li><strong>Only then the mechanism</strong>, and only enough to prove the problem is solvable.</li>
+  <li><strong>The ask is small and singular.</strong></li>
+</ol>
+<p>Applied: a relief pitch leads with the audience-holder's problem (an empty slot on Thursday), never with your angle. A direct-buyer message leads with a named operational pain, never with "AI and HR." The ledger leads with $10,108 and $0, never with a lesson.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4">
+    <summary><h2>4. The roadmap</h2></summary>
+    <div class="sec-body">
+
+<h3>4.0 The spine: the send floor</h3>
+<p>Everything above is subordinate to one mechanism, because the adversarial pass converged hard on a single finding: <strong>the bottleneck is the act of sending, and every previous plan increased the amount of preparation standing between you and that act.</strong></p>
+<p class="callout"><strong>THE SEND FLOOR: a fixed number of outward asks you personally make every working day, that no other work is allowed to displace, counted daily on a surface that cannot auto-close itself.</strong></p>
+<p>Three rules make it work, each because a specific past failure is on record:</p>
+<ol>
+  <li><strong>It is counted daily, by you, on a durable surface.</strong> Not a Money Map prose row, those auto-closed. If the count is not written, the day is a zero. A visible zero is the whole point.</li>
+  <li><strong>Nothing may delay it, including improving it.</strong> The relief-pitch reframe in this document is <em>better</em> than the pitches sitting in the repo. It is also, mechanically, a fifth excuse not to send the ones you have. <strong>Day one sends the existing 92/100 drafts unedited.</strong> The improvement applies from pitch three onward.</li>
+  <li><strong>It has a kill-date.</strong> If the count is zero on Wednesday 2026-09-09, this plan is dead and it gets said out loud, not quietly rolled forward.</li>
+</ol>
+<p>The rest of this roadmap assumes <strong>3</strong>.</p>
+
+<h3>4.1 Week 1: Tuesday 09-08 to Friday 09-12, send then build</h3>
+<p><strong>Tuesday, first thing, ~9 minutes.</strong> Open the existing corrected pitch drafts. Send both, unedited, to the shows they were written for. Write "2" on the send-floor surface. This is 77 days late and it costs nine minutes. No new asset, no rewrite, no reframe.</p>
+<p><strong>Tuesday, rest of day.</strong> Draft the honest operating ledger. One piece, roughly 1,200-1,500 words; the material is already in the repo. Through voice mastery and social quality gates before it leaves the building.</p>
+<p><strong>Wednesday.</strong> Ledger published on your own LinkedIn first, so it exists as a link. Three relief pitches, the reframed kind, to audience-holders you <em>already comment on daily</em>. The message is never "here is my angle, would you book me." It is "I have a finished piece for your empty slot." A give needs no authority; an ask does. That inversion is the entire reason the last eleven weeks produced nothing.</p>
+<p><strong>Thursday.</strong> Three sends: two relief pitches, one <strong>direct buyer</strong> message. The direct-buyer road is the only one with a plausible path to a dollar before 09-20, because the content roads reach commentators and commentator attention does not convert inside 14 days.</p>
+<p class="callout"><strong>The direct-buyer message is a LinkedIn in-platform message, not an email.</strong> Only <strong>2.2%</strong> of your 4,511 connections expose an email address, which structurally kills any email-first plan against your own network, while 1,411 decision-makers and 524 founders/CEOs/owners are reachable in-platform today. This is the same channel the distribution-engine decision independently landed on.</p>
+<p>It leads with a named operational pain and ends in one small ask, usually a seat at the Sept 16 ($25) or Sept 24 ($50) session, which are live right now and are the cheapest possible yes.</p>
+<p><strong>Friday.</strong> Three sends. Then two things that take under an hour combined:</p>
+<ul>
+  <li><strong>Create the LinkedIn Event for Sept 24.</strong> Identified 2026-07-23, due 2026-08-11, never done. Fifteen minutes, and it produces a real attendee list.</li>
+  <li><strong>Post about the $19 Employee Relations Investigation Pack.</strong> Live, taking money, unmentioned for 18 days.</li>
+</ul>
+<p>Then record the five-minute close video in one take. You already record podcasts; this is not a production. It answers one question: what happens if you and I work together for a week. It publishes through the existing review pipeline behind the already-working capture form. No new funnel, no new landing-page stack, no new tool.</p>
+<p><strong>Friday check.</strong> Count sent. If the week is under 9, the problem is the floor number, not the strategy. Lower it to 1 and hold it, rather than keeping a number you do not hit.</p>
+
+<h3>4.2 Week 2: 09-15 to 09-19, convert in the shadow of the gate</h3>
+<ul>
+  <li><strong>Send floor continues, unbroken.</strong> Roughly 15 more sends, mix shifting toward direct-buyer as replies come in.</li>
+  <li><strong>Every reply gets a same-day response.</strong> The evidence is stark: across 343 outbound sends there has been exactly <strong>one</strong> reply, and that one became the <strong>$3,391 Wheeler engagement</strong>. Reply-to-revenue in this system is 100%. The entire constraint is top-of-funnel, so every reply is worth more than a day of building.</li>
+  <li><strong>Any audience-holder who says yes gets the finished asset within 24 hours.</strong> The credibility of a relief pitch is that you actually deliver relief.</li>
+  <li><strong>Two Gate taps get cleared.</strong> The auto follow-up on capture is built and one Telegram approval from live; right now a captured lead is chased by nothing at all. Self-hosted analytics is DNS-, database- and secret-ready with the container held at the same gate. Both need your thumb, not an agent's.</li>
+  <li><strong>Promote what is already live rather than building.</strong> The $250 audit is active in Stripe and linked from nowhere. The store has exactly one inbound link across every property you own.</li>
+  <li><strong>Friday 09-19 is the standing biweekly Council + Kairos action-plan review.</strong> This plan gets reviewed there against the Money Map, not in a vacuum.</li>
+  <li><strong>Saturday 09-20 is the first-dollar gate.</strong> Hit or miss, it gets called honestly. A miss is data, not a reason to write a fifth plan.</li>
+</ul>
+
+<h3>4.3 Weeks 3-4: 09-22 to 10-03, compound</h3>
+<ul>
+  <li><strong>Send floor continues.</strong> This is where it stops being a sprint and becomes the operating system.</li>
+  <li><strong>Appearances start landing</strong>, and this is where the built factory finally earns its keep: one appearance becomes the clip set, rendered, syndicated through the dormant handles as endpoints rather than brands.</li>
+  <li><strong>Turn the content-board picker on in dry-run first.</strong> It is built, deterministic, zero-cost, and has been sitting off. Review a week of proposals before trusting them.</li>
+  <li><strong>Leave the studio pipeline off through September.</strong> It is not on the critical path to a dollar, and it is where this plan's energy would leak. It returns in October, pointed at your material.</li>
+  <li><strong>The eight anonymous channels stay closed.</strong> Five were archived with your approval on 2026-08-29. The other three should be honestly closed rather than left dark.</li>
+</ul>
+
+<h3>4.4 What is explicitly NOT happening in September</h3>
+<p>Naming these matters as much as the plan, because each is a plausible-looking way to spend the month and produce nothing.</p>
+<ul>
+  <li>No $27 digital product, no product ladder build, no storefront.</li>
+  <li>No revival of the anonymous channels and no daily IG/TikTok warm-up hour.</li>
+  <li>No new tool, no new subscription, no tier upgrade.</li>
+  <li>No new landing-page stack, no new funnel, no new capture system.</li>
+  <li>No fifth strategy document.</li>
+</ul>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5">
+    <summary><h2>5. How to measure whether this is working</h2></summary>
+    <div class="sec-body">
+
+<p>You asked this specifically. Four tiers, leading indicators first, because by the time the lagging ones move it is too late to steer.</p>
+
+<h3>Tier 0: the one that predicts all the others</h3>
+<table>
+  <thead><tr><th>Metric</th><th>Target</th><th>Cadence</th><th>Fails if</th></tr></thead>
+  <tbody><tr><td><strong>Sends by Boubacar personally</strong></td><td><strong>3/working day, 15/week</strong></td><td>Daily, written</td><td>Any two consecutive zero days</td></tr></tbody>
+</table>
+<p>This is the only metric that has ever been the actual constraint. If it is green and everything below is red, the strategy is wrong. If it is red, nothing below matters.</p>
+
+<h3>Tier 1: discovery</h3>
+<table>
+  <thead><tr><th>Metric</th><th>Baseline</th><th>Sept target</th></tr></thead>
+  <tbody>
+    <tr><td>Relief pitches sent</td><td>0 in 11 weeks</td><td>30+ by 09-30</td></tr>
+    <tr><td>Audience-holder replies</td><td>0</td><td>6+ (a give should badly beat a cold ask's ~5%)</td></tr>
+    <tr><td>Appearances or placements secured</td><td>0</td><td>2-3</td></tr>
+    <tr><td>Pieces published on someone else's surface</td><td>0</td><td>2+</td></tr>
+    <tr><td>LinkedIn profile views / week</td><td>measure Tuesday</td><td>+50% by 09-30</td></tr>
+  </tbody>
+</table>
+
+<h3>Tier 2: credibility</h3>
+<table>
+  <thead><tr><th>Metric</th><th>Baseline</th><th>Sept target</th></tr></thead>
+  <tbody>
+    <tr><td>Inbound DMs or comments from <strong>strangers</strong>, not existing network</td><td>~0</td><td>10+</td></tr>
+    <tr><td>Comment-rotation surfaces where he is recognized by name</td><td>unknown, verify Tuesday</td><td>2+</td></tr>
+    <tr><td>Durable authority assets owned (episode, article, recorded talk)</td><td>0</td><td>3+</td></tr>
+  </tbody>
+</table>
+<p>The stranger qualifier is deliberate. Engagement from people who already know him measures nothing; posts generating DMs and connection requests get roughly 5x the reach of posts generating only likes.</p>
+
+<h3>Tier 3: lead flow</h3>
+<table>
+  <thead><tr><th>Metric</th><th>Baseline</th><th>Sept target</th></tr></thead>
+  <tbody>
+    <tr><td>Email list</td><td><strong>DISPUTED, establish first</strong></td><td>see below</td></tr>
+    <tr><td>New captures / week</td><td>near zero</td><td>10+</td></tr>
+    <tr><td>Capture writes proven by reading the row back</td><td>verified once today</td><td>verified weekly, never assumed</td></tr>
+    <tr><td>LinkedIn Event attendee list for Sept 24</td><td>does not exist</td><td>created week 1, real names on it</td></tr>
+  </tbody>
+</table>
+<p class="warn"><strong>The list number has to be settled before it can be a metric.</strong> You say 40. The system has reported 9, then 17, then "64 of 77" in different places today. An existing decision already makes establishing the authoritative baseline the first action, and another sets the target at 40 to 500 to 1,000 by 2026-10-06. This plan inherits those and adds the honest note that <strong>1,000 subscribers in 30 days is not achievable through the roads in this document</strong> and should be re-scoped at the 09-19 review rather than quietly missed.</p>
+<p><strong>A caveat that keeps this section honest:</strong> analytics are currently <strong>dark</strong>. The old provider is locked and permanently cancelled; the self-hosted replacement is staged but not running. Until it is up, the only trustworthy numbers are Stripe, the leads table, workshop registrations, and things counted by hand. Every reach metric above is directional, and any agent reporting one as verified without naming its source is guessing.</p>
+
+<h3>Tier 4: revenue</h3>
+<table>
+  <thead><tr><th>Metric</th><th>Baseline</th><th>Target</th></tr></thead>
+  <tbody>
+    <tr><td>Conversations with someone who could hire him fractionally</td><td>~0</td><td>8+ in September</td></tr>
+    <tr><td>Proposals or scoped offers sent</td><td>0</td><td>3+</td></tr>
+    <tr><td><strong>First dollar collected</strong></td><td>$0 against ~$10,108 spent</td><td><strong>by 2026-09-20</strong></td></tr>
+    <tr><td>Sept 16 ($25) + Sept 24 ($50) seats sold</td><td>measure Tuesday</td><td>any paid seat clears the gate</td></tr>
+    <tr><td>$497 Signal Sessions sold</td><td>0 recently</td><td>1 by 09-30</td></tr>
+  </tbody>
+</table>
+<p><strong>The honest arithmetic.</strong> 30 relief pitches at a 20% reply rate is 6 conversations and perhaps 2-3 placements. 15 direct-buyer messages at 10% is 1-2 conversations. The realistic September outcome that clears the gate is <strong>a workshop seat or a $19 pack</strong>, not a retainer. A $5,000 fractional retainer inside 24 days would be an outlier, not a plan.</p>
+<p class="warn"><strong>Counter-evidence, kept in view deliberately.</strong> The consulting funnel has already been tested with paid traffic and did not convert: $835 of spend produced 68,346 impressions, 1,308 clicks, 195 landing views, and <strong>one paid seat</strong>. 331 cold emails produced zero positive replies. 16 newsletter sends carrying real offer links produced zero clicks. <strong>More traffic is not the fix for that</strong>, which is exactly why this plan's spine is hand-sent messages to named people inside an audience that already exists.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6">
+    <summary><h2>6. How this connects to today's other work</h2></summary>
+    <div class="sec-body">
+
+<p>This must not become a fifth disconnected plan. It does not. All four builds are one system.</p>
+<table>
+  <thead><tr><th>Today's build</th><th>Its role</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Distribution engine</strong> (<em>"I have this huge mall and no roads lead to it"</em>)</td><td><strong>The road surface.</strong> Its finding that the capture form works, and that the real defect is a two-entry router whitelist rather than missing tags, is what makes Tier 3 measurable at all. Its choice of one in-platform LinkedIn channel is the same channel this document reaches independently.</td></tr>
+    <tr><td><strong>Lead-magnet work</strong></td><td><strong>The capture.</strong> This plan invents no magnet. Three diagnostic questions ship ungated as posts; the gated asset is a cut of the July 30 room footage, blocked on attendee consent. Capture reuses the live subscribe route, no new plumbing. The ledger becomes magnet <em>content</em>, not a competing magnet.</td></tr>
+    <tr><td><strong>Lead-gen strategy</strong></td><td><strong>The partner rails.</strong> It independently reached the relief-pitch inversion, banned the word "free," killed the paid tool stack, and set a 2-touch-per-day ceiling with a written failure contract. This plan adopts it rather than restating it.</td></tr>
+    <tr><td><strong>This document</strong></td><td><strong>The vehicle, the fuel, and the floor.</strong> What is actually sent, who makes it, and the daily count that guarantees anything moves.</td></tr>
+  </tbody>
+</table>
+
+<h3>6.1 The seam that actually needed closing</h3>
+<p>The three builds each picked a different channel and none arbitrated against the others: LinkedIn in-platform hand-sent messages; partner-led distribution with a junk-hauling ICP; ungated organic posts.</p>
+<p class="callout"><strong>They are not three channels. They are one channel and two motions on top of it</strong>, and the ordering is forced by a single fact: only 2.2% of his 4,511 connections expose an email. That kills email-first against his own network and makes in-platform LinkedIn the base layer, not one option among three. <strong>Partner relief pitches are the amplifier. Ungated posts are the surface.</strong> One road, three lanes.</p>
+<p><strong>One honest inconsistency, flagged rather than papered over:</strong> the lead-gen plan's default ICP is junk hauling in one city. That is a legitimate parachute-test choice, but it is not the AI-and-HR position and not the audience the ledger speaks to. Two different businesses. Running both at 3 sends a day means neither gets 3. <strong>Recommendation: pick AI-and-HR for September</strong>, hold junk hauling as the fallback if two weeks produce no HR conversation.</p>
+
+<h3>6.2 The fork underneath everything, still unanswered</h3>
+<p>A pending decision asks: <strong>services practice for the next 90 days, or products/audience business over 12 months?</strong> Every distribution repair sequences under it, and Section 3.6 is a direct answer: services first, audience second, from the same material. It should be closed at the 09-19 review, because an unanswered fork is how three plans ended up pointing three ways.</p>
+
+<h3>6.3 What is still broken, in priority order</h3>
+<p>Of the four severed links, <strong>three are still open and one is half-built</strong>:</p>
+<table>
+  <thead><tr><th>Repair</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>1. The store has effectively zero inbound links</td><td><strong>OPEN</strong></td></tr>
+    <tr><td>2. Analytics dark; the store fires 126 tracking calls into a dead account</td><td><strong>PARTIAL</strong>: replacement staged, container not running, Gate-held; a pixel shipped today</td></tr>
+    <tr><td>3. Welcome router whitelists 2 of 17 real tags, so 62 tagged people including 22 workshop attendees and 2 paying customers receive nothing, permanently</td><td><strong>OPEN</strong></td></tr>
+    <tr><td>4. Newsletter programmatic send returns 404, off-plan</td><td><strong>OPEN</strong></td></tr>
+  </tbody>
+</table>
+<p>Note the sequencing already recorded there: <strong>repairs 3 and 4 only matter together.</strong> Fixing routing while the send path is dead delivers nothing.</p>
+<p class="warn"><strong>Cheapest unblock in the entire system:</strong> the auto follow-up on capture is built and one Telegram tap from live. Until it is tapped, every lead this plan captures is followed up by nothing.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7">
+    <summary><h2>7. What the adversarial pass changed</h2></summary>
+    <div class="sec-body">
+
+<p>This plan was pressure-tested before it was written down and came out materially different. Recording what changed, because a review that changes nothing did not happen.</p>
+
+<h3>Lateral-leverage (reuse before build)</h3>
+<ul>
+  <li><strong>Killed:</strong> reviving the eight anonymous channels. It hands you 45-60 minutes of daily manual work you now owe, against a $0 track record and a 12-18 month horizon.</li>
+  <li><strong>Killed:</strong> the digital-product ladder as September's plan. Violates the north-star rule, carries a $72/month median.</li>
+  <li><strong>Killed:</strong> building a video-sales-letter funnel. The existing review pipeline plus the working capture form does the same job with nothing new.</li>
+  <li><strong>Shrunk:</strong> the five-minute video from "build a funnel" to "record once, publish through a pipeline we already run daily."</li>
+  <li><strong>Surfaced, and the plan now rests on it:</strong> the daily comment rotation has been quietly manufacturing the exact warm-relationship precondition the podcast pitch needed, and nobody had connected the two. Pitching a 123k-follower HR newsletter is not cold outreach when you have been visibly commenting there for weeks.</li>
+</ul>
+
+<h3>Council premortem (five voices, speaking from 2026-09-30 about a dead plan)</h3>
+<ul>
+  <li><strong>The bottleneck is sending, not strategy.</strong> Four of five voices reached this independently. The send floor became the spine rather than a supporting detail.</li>
+  <li><strong>The first action was not an action.</strong> "Send relief pitches to audience-holders" unpacked into six steps, two of them unbounded decisions, which is the exact shape that killed the last two plans. Day one is now nine minutes and two keystrokes.</li>
+  <li><strong>Improving the pitch is itself a way of not sending it.</strong> The reframe is explicitly deferred to pitch three.</li>
+  <li><strong>The relief pitch presumed an asset shelf that does not exist</strong>, since the factory makes faceless brand video, not publishable thought-leadership. Resolved by the honest ledger.</li>
+  <li><strong>The buyer was missing entirely.</strong> All three original roads targeted content producers, not people with budget. The direct-buyer road was added as September's actual revenue road.</li>
+  <li><strong>Divergence left standing:</strong> the outsider voice argues "AI and HR" is a category ambition rather than an offer. Section 3.2 keeps the positioning and adds named operational pains underneath it. Not a compromise, a stack.</li>
+</ul>
+
+<h3>Two live refinements mid-build</h3>
+<ul>
+  <li><em>"How do we build the roads that lead to me?"</em> moved the spine from content mechanics to go-to-market. The faceless factory became one vehicle inside a GTM plan, Section 6 became a real arbitration between four builds, and Section 5 exists because you asked for it by name.</li>
+  <li><em>"Sell the problem before the solution... people trying to build agencies who are stuck"</em> produced Sections 3.6 and 3.7. It was not accepted as stated: "people building agencies" is the most saturated audience online and would blur the AI-and-HR position, so it was narrowed to operators who already built the machine and are watching it produce nothing.</li>
+</ul>
+<p class="warn"><strong>A late evidence pass corrected this document's own worst mistake.</strong> An earlier draft invented a new "$500-1,500 diagnostic" rung. Four paid rungs are already live and transacting, and one has been taking money unmentioned for eighteen days. Inventing a fifth was the exact reflex this plan exists to stop, and it is recorded here rather than quietly fixed.</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8">
+    <summary><h2>8. Ready now vs. needs you</h2></summary>
+    <div class="sec-body">
+
+<h3>Ready now, no input needed</h3>
+<ul>
+  <li>Two pitch drafts exist, voice-passed at 92/100, and can go Tuesday morning.</li>
+  <li>The honest ledger can be drafted immediately; every number is already in the repo.</li>
+  <li>The capture form works and was verified today by reading a row back.</li>
+  <li>The review publishing pipeline works and is used daily.</li>
+  <li>The content multiplier, render stack, contact-finding, outreach, voice and quality skills are all live.</li>
+  <li>The comment rotation is specified with named targets.</li>
+  <li><strong>Four paid rungs are already live and taking money</strong> ($19, $25, $50, $497) plus a live audit call. Nothing needs building to sell something this week.</li>
+  <li>4,511 LinkedIn connections, 1,411 of them decision-makers, all reachable in-platform today.</li>
+</ul>
+
+<h3>Needs you, in the order they block</h3>
+<ol>
+  <li><strong>The send-floor number: 1, 3, or 5.</strong> The single most important open question here. An agent cannot set it. Three plans died because it was never named. <em>Recommendation: 3.</em></li>
+  <li><strong>Two Telegram taps.</strong> The auto follow-up (without it, captured leads are chased by nothing) and analytics (without it, every reach number in Section 5 is a guess). Both are built. Both are one thumb.</li>
+  <li><strong>Confirmation the comment rotation is actually running.</strong> Specced 08-18, corrected three times since. Every plan in this family was also written, also correct, and also never executed.</li>
+  <li><strong>Which ICP for September:</strong> AI-and-HR, or the lead-gen plan's junk-hauling default. Different businesses; 3 sends a day does not cover both. <em>Recommendation: AI-and-HR.</em></li>
+  <li><strong>Close the services-vs-products fork.</strong> <em>Recommendation: services first, audience second.</em></li>
+  <li><strong>July 30 footage consent</strong>, which blocks the gated lead magnet.</li>
+  <li><strong>Sign-off on honestly closing the three remaining anonymous channels</strong>, rather than leaving them dark and quietly guilt-inducing.</li>
+  <li><strong>You record the five-minute video.</strong> Nobody can do this for you.</li>
+</ol>
+
+<h3>Deliberately deferred to October</h3>
+<p>Flipping the studio pipeline on, the syndication build, any product rung (already parked by decision), the publishing-tier upgrade, and the store's inbound-link repair.</p>
+
+<h3>The one sentence</h3>
+<p class="callout">Stop hiding the only asset the 20-year-olds cannot copy, point the machine you already built at your own face, publish the losses nobody else will publish, and send three things a day whether or not the strategy is finished, because the strategy has been finished for seventy-seven days and that was never what was missing.</p>
+
+    </div>
+  </details>
+
+  <!-- duplicate the <details class="sec"> block per section; add a matching nav link -->
+
+  <footer class="foot">
+    Source: <code>docs/playbooks/2026-09-06-faceless-business-strategy-and-roadmap.md</code> &middot; branch <code>feature/faceless-solution-2026-09-06</code> &middot; lane research-02. Reviewed with lateral-leverage, Council premortem, and promptfix on the nightly operating SOP.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
