@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Niche Operating System</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  h3{font-size:1rem; margin:22px 0 8px; color:var(--accent2);}
+  code{background:#0b0d11; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.85em;}
+  pre{background:#0b0d11; border:1px solid var(--border); border-radius:10px;
+    padding:14px; overflow-x:auto; font-size:.8rem; line-height:1.5;}
+  pre code{background:none; border:0; padding:0;}
+  .tbl-wrap{overflow-x:auto; margin:14px 0;}
+  table{border-collapse:collapse; width:100%; font-size:.86rem; min-width:520px;}
+  th,td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim); font-weight:650;}
+  blockquote{border-left:3px solid var(--accent); margin:14px 0; padding:2px 0 2px 14px;
+    color:var(--text-dim); font-style:italic;}
+  .bad{color:var(--bad); font-weight:650;}
+  .good{color:var(--good); font-weight:650;}
+  .warn{color:var(--warn); font-weight:650;}
+  .callout{background:var(--bg2); border:1px solid var(--border); border-left:3px solid var(--accent);
+    border-radius:8px; padding:12px 16px; margin:16px 0;}
+  .callout.danger{border-left-color:var(--bad);}
+  .callout.ok{border-left-color:var(--good);}
+  footer.foot{color:var(--text-dim); font-size:.82rem; margin:30px 0 0;
+    border-top:1px solid var(--border); padding-top:14px;}
+  .voice{margin:18px 0; padding-left:14px; border-left:2px solid var(--border);}
+  .voice h4{margin:0 0 6px; font-size:.92rem; color:var(--accent); letter-spacing:.04em;}
+  @media (max-width:768px){
+    .nav-toggle{display:block;}
+    .nav-links{display:none; width:100%; flex-direction:column; gap:6px; padding-top:8px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{width:100%;}
+    header.mast h1{font-size:1.4rem;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-06-21:23:18 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Niche OS &middot; 09-06</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-tuesday">Tuesday</a>
+      <a href="#sec-video">The video</a>
+      <a href="#sec-numbers">The numbers</a>
+      <a href="#sec-rules">Two rules</a>
+      <a href="#sec-strategy">The strategy</a>
+      <a href="#sec-council">Council</a>
+      <a href="#sec-sim">Simulation</a>
+      <a href="#sec-prompt">The prompt</a>
+      <a href="#sec-corrections">Corrections</a>
+      <a href="#sec-why">Why it holds</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>The Niche Operating System</h1>
+    <div class="meta">Absorb &rarr; promptfix &rarr; lateral-leverage &rarr; council + premortem &rarr; simulation &middot; 2026-09-06</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>The niche problem is not a picking problem. It is a finishing problem, and it is measurable.</strong></p>
+      <p>The system holds 23 niche labels. Eight were worked for exactly one day. Not one has ever been run to a verdict, because the outcome data was never keyed on niche. So every niche has been permanently <code>PENDING</code> since May.</p>
+      <p>A join nobody had ever run &mdash; <code>email_events.to_addr</code> to <code>leads.email</code> &mdash; produced the first per-niche numbers in the system's history in about thirty seconds, from data that was already sitting there. Roofing: 148 prospects, 323 sends, <span class="bad">1 reply</span>. Auto repair, the vertical a rigorous 21-market sweep validated eight days ago: <span class="bad">5 prospects, 6 sends</span>.</p>
+      <p>So the strategy is not a better way to choose. It is a mechanism that makes a choice <em>finishable</em>: a cheap supply test before any contact, a commitment window that cannot lapse quietly, and a verdict that is computed rather than remembered.</p>
+      <p><strong>Tuesday is not a picking day.</strong> The pick was made on 8/29 and never executed. Tuesday is five pre-flight items, and one decision that only you can make.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-tuesday" open>
+    <summary><h2>Tuesday, 2026-09-08</h2></summary>
+    <div class="sec-body">
+      <h3>Ready to run, no input needed</h3>
+      <ol>
+        <li><strong>Ship the niche-keyed view.</strong> Same body as the existing funnel view, plus a join to <code>leads</code> and <code>niche</code> in the <code>GROUP BY</code>. Then feed niche into <code>gate_cohort()</code> instead of sequence stage. No schema change, no backfill.</li>
+        <li><strong>Record the roofing angle-kill</strong> with its reason and its numbers, and take roofing out of tier 1 in <code>expansion_ladder.py</code>. It failed the supply test on 8/29 and has eaten 323 sends since.</li>
+        <li><strong>Instrument check.</strong> Open-counts currently read 116%, 134%, 152% and 350% of sends. That is impossible for humans. Until it is understood, every reply rate here is directionally useful and quantitatively suspect. <span class="warn">This is the load-bearing item, not housekeeping.</span></li>
+        <li><strong>Email-reachability cost check.</strong> Pull 20 auto-repair shops and measure what fraction yields a verified email. The signal that makes auto repair attractive is <em>no website</em>, which is also the strongest predictor there is no email to find. If it is under 50%, the 100-prospect window is unreachable. Measurement only, no sends.</li>
+        <li><strong>Domain re-warm plan</strong> before any volume. The last send to any trade vertical was 2026-07-10.</li>
+      </ol>
+
+      <h3>Needs you</h3>
+      <div class="callout danger">
+        <p><strong><code>D-20260906-840dbb</code> &mdash; services business or products/audience business for the next 90 days. Still PENDING, and it sits upstream of everything here.</strong></p>
+        <p>A services answer makes the commitment window the right next move. A products answer makes the microsite read the better use of the same auto-repair data. This document deliberately does not resolve it.</p>
+      </div>
+      <p><strong>Open the first window, or not.</strong> Committing to one cohort for 21 days with no second one harvested is a real constraint in a revenue-urgent month. That trade is yours.</p>
+      <p><strong>And the council's question:</strong> after twenty-three cohorts, is the thing you want a niche, or permission to stop looking for one? If it is the second, a better selection process is not the fix.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-video" open>
+    <summary><h2>What the video says</h2></summary>
+    <div class="sec-body">
+      <p>Chris Do, live Q&amp;A, roughly 2,800 words of transcript. Ten usable ideas, paraphrased.</p>
+      <p><strong>Why it hurts.</strong> Serving everyone serves no one. His claim is stronger than the usual one: specialization and success are not merely correlated, they are causal. He asks the room to identify as generalist or specialist, and the specialists are the ones doing well.</p>
+      <p><strong>The real failure mode, and this is the part that matters here.</strong> He asks a man struggling to niche how long he tried the last one. A few months. He points out the man pursued his wife for three years. Then he draws Seth Godin's <em>Dip</em>: early effort produces easy results, then results collapse while effort rises, and that trough is where nearly everyone quits and starts over. Each restart resets the clock. He likes difficult things because everyone else quits in the trough.</p>
+      <p><strong>The false dilemma.</strong> The money business and the soul business do not have to be the same business. One funds the other.</p>
+      <p><strong>The picking method.</strong> Forced binary cuts where "both" is not an allowed answer. Men or women. Early, middle or late career. Then age, the shared trait, the industry shape, a revenue band as a specific number, a region, their morning complaint, and how they currently get inquiries. Two questions eliminated most of the market. His framing: picking is easy, deciding is what people avoid.</p>
+      <p><strong>The ICP shortcut.</strong> Think of the best client you ever had &mdash; paid well, paid on time, easy, decided fast, and <em>there are many of them</em>. Look at your own history.</p>
+      <p><strong>On prompting.</strong> Use the term ICP directly. Require clarifying questions before any recommendation. Require a market-size check first. Then pressure-test the answer yourself, because sloppy input produces sloppy output and that is the operator's fault, not the model's.</p>
+      <p><strong>On finding the offer.</strong> Ask for the buyer's problems in the buyer's own words, never marketing language. Rank them by pain and separately by willingness to pay. His closing point: you will probably find you sell none of the top-ranked ones. That gap is the opportunity.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-numbers" open>
+    <summary><h2>The diagnosis, in numbers</h2></summary>
+    <div class="sec-body">
+      <p>All figures queried live from the production database on 2026-09-06.</p>
+
+      <h3>The join nobody had run</h3>
+      <p>The funnel view is keyed on <code>(brand, pipeline, variant_id)</code>, where <code>pipeline</code> is the <em>sequence stage</em> &mdash; t1 through t5. So the ICP gate has been using <em>touch number</em> as its sub-niche proxy. No niche has ever been on the outcome axis at all.</p>
+      <p>But the events table carries the recipient address, and the leads table carries email and niche. One join, no schema change, and history resolves:</p>
+      <div class="tbl-wrap">
+      <table>
+        <tr><th>Niche</th><th>Prospects</th><th>Sends</th><th>Human replies</th><th>Reply %</th></tr>
+        <tr><td>(unlabeled)</td><td>449</td><td>1,993</td><td>34</td><td>7.6%</td></tr>
+        <tr><td>roofing</td><td>148</td><td>323</td><td>1</td><td class="bad">0.7%</td></tr>
+        <tr><td>hvac</td><td>49</td><td>89</td><td>1</td><td>2.0%</td></tr>
+        <tr><td>chiropractic</td><td>24</td><td>62</td><td>1</td><td>4.2%</td></tr>
+        <tr><td>landscaping</td><td>23</td><td>74</td><td>0</td><td>0.0%</td></tr>
+        <tr><td>plumbing</td><td>19</td><td>47</td><td>1</td><td>5.3%</td></tr>
+        <tr><td>electrical</td><td>15</td><td>52</td><td>0</td><td>0.0%</td></tr>
+        <tr><td>recruiting</td><td>12</td><td>68</td><td>0</td><td>0.0%</td></tr>
+        <tr><td><strong>auto repair</strong></td><td class="bad"><strong>5</strong></td><td class="bad"><strong>6</strong></td><td>0</td><td>0.0%</td></tr>
+      </table>
+      </div>
+      <p>821 of 2,198 outbound sends resolve to a niche. The dimension was never missing from the data. It was missing from the <code>GROUP BY</code>.</p>
+
+      <h3>"How long did you try it for?"</h3>
+      <p>The video's central question, answered honestly against the send dates.</p>
+      <p>Fifteen niches have ever had an email sent. <strong>Eight of them have a first-send date identical to their last-send date</strong> &mdash; one day, then never again. The longest sustained attempt in system history is roofing at 21 days. The last outbound send to any trade vertical was <strong>2026-07-10</strong>, nearly two months ago.</p>
+      <p>The video describes people who quit after a few months. The measured behaviour here is quitting after an afternoon.</p>
+
+      <h3>The verdict that could never fire</h3>
+      <p>The gate needs 30 sends to read at all and 100 to kill. Only one labelled niche has ever crossed 100 prospects. So it returns <code>PENDING</code> for essentially everything, forever. Confirmed independently in the ledger: after the 09-05 opt-out migration, the gate over all 16 live rows returned <strong>kill 2, iterate 2, pending 12, SCALE 0</strong>.</p>
+      <p>Nothing can be scaled. Nothing can be killed. So the only available move is to start something else &mdash; which is exactly what has happened, 23 times.</p>
+
+      <h3>This was diagnosed 15 weeks ago</h3>
+      <p>From the SW niche council of 2026-05-22, the Critic voice, verbatim:</p>
+      <blockquote>HVAC &rarr; roofing &rarr; attorney &rarr; contractor &rarr; electrician &rarr; marketing/accounting/financial. Six putative niches, zero completed reply windows. Each pivot resets your learning curve.</blockquote>
+      <p>And your own framing that triggered it: <em>"Pattern observed: tool fails &rarr; swap tool. Never: niche fails &rarr; reconsider niche."</em></p>
+      <div class="callout">
+        <p>That council was right and changed nothing, <strong>because it produced a verdict and this document produces a mechanism.</strong> A verdict has to be remembered. A mechanism does not.</p>
+      </div>
+
+      <h3>The validated answer that was never executed</h3>
+      <p>The 2026-08-29 national sweep tested 21 markets in two rounds. Auto repair returned <strong>39.8% KEEP (231 of 580)</strong> across 11 cities, against <strong>12.5%</strong> for every other vertical, driven by website adoption of 43-72% versus near-100% elsewhere. The standing recommendation written that day: make it the primary sourcing vertical.</p>
+      <p>In the eight days since: <span class="bad">six emails</span>. The 580 scanned records were never saved as leads &mdash; the five auto-repair rows in the database predate the sweep by six weeks.</p>
+      <p>That is the disease in one line. The picking machinery works. Nothing downstream of it runs.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-rules" open>
+    <summary><h2>Two standing rules this had to reconcile</h2></summary>
+    <div class="sec-body">
+      <p>Both were nearly violated. Naming them is what keeps this from being generic advice.</p>
+
+      <h3>Pain, not industry (2026-07-16)</h3>
+      <blockquote>I don't come in with a hammer looking for a nail&hellip; pain is industry agnostic.</blockquote>
+      <p>Resolution on file: narrow on WHAT, broad on WHO, and <strong>do not re-litigate industry breadth.</strong> The video's method narrows on WHO. Taken naively, it contradicts a standing hard rule.</p>
+      <div class="callout ok">
+        <p><strong>The reconciliation, and it is the load-bearing idea here:</strong> the forced-binary pick is not a positioning decision. Positioning is locked and stays locked. The pick chooses a <strong>sourcing cohort</strong> &mdash; which list gets harvested next. The boring-business mandate is explicitly a sourcing rule, filed as "same axis, opposite end of the pipe" from the pain rule. Pain defines the offer; the cohort defines the list.</p>
+      </div>
+      <p>Nearly all of the felt anxiety is a category error. Three separate layers keep collapsing into one question:</p>
+      <div class="tbl-wrap">
+      <table>
+        <tr><th>Layer</th><th>Status</th><th>Who decides</th></tr>
+        <tr><td><strong>Positioning</strong> &mdash; AI + HR / org design / future of work</td><td class="good">LOCKED 08-31, clarified 09-02. Never re-opened.</td><td>Settled</td></tr>
+        <tr><td><strong>Offer</strong> &mdash; services or products for 90 days</td><td class="warn">OPEN. <code>D-20260906-840dbb</code>, PENDING.</td><td>You only</td></tr>
+        <tr><td><strong>Sourcing cohort</strong> &mdash; which list next</td><td>Open, and the <em>only</em> thing this strategy decides</td><td>The system</td></tr>
+      </table>
+      </div>
+
+      <h3>A competitor count is a supply signal (2026-09-06)</h3>
+      <p>Before any agent calls a market saturated it must answer, in its output: did I look at sellers, or at buyers?</p>
+      <p>Answered explicitly. The KEEP rate is a <strong>supply-side</strong> signal about website adoption. It may veto a cohort for saturation. It may <strong>never</strong> confirm demand. "39.8% of auto shops lack a website" and "an auto shop will reply to Boubacar" are different claims, and treating the first as evidence for the second is exactly the substitution the crucible's evidence grader exists to reject.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-strategy" open>
+    <summary><h2>The strategy &mdash; six layers</h2></summary>
+    <div class="sec-body">
+      <p>Net new code across all six: <strong>one SQL view and one argument change.</strong> Everything else is existing assets pointed at a new job.</p>
+
+      <h3>L0 &mdash; Separate the three layers</h3>
+      <p>Say out loud which layer a question belongs to before answering it. A positioning question gets refused, not answered. An offer question routes to you. Only a sourcing question enters the machine.</p>
+
+      <h3>L1 &mdash; Pick the cohort in twenty minutes, capped</h3>
+      <p>Reuse the filter written earlier today in the one-system playbook. One question, not six:</p>
+      <blockquote>Does this business lose money when the phone does not get answered?</blockquote>
+      <p>Then the economics: is a <strong>$500-$1,000 repeatable</strong> customer plausible here. Then the rewritten ICP prompt to turn the cohort into a profile. Output is one sentence with no "or" in it. If it has an "or", it failed.</p>
+
+      <h3>L2 &mdash; Supply test before any contact</h3>
+      <p>The geo scanner across three metros, piped into the category-whitespace profiler. Roughly six API calls of a 900/month cap that is currently near-idle. Under an hour.</p>
+      <ul>
+        <li>KEEP &ge; 25% &rarr; opening, proceed.</li>
+        <li>KEEP &le; 12.5% &rarr; saturated, stop. This vetoes.</li>
+        <li>Under 30 rows &rarr; too thin to act on. The tool says so itself.</li>
+      </ul>
+      <p><strong>Stated limit:</strong> supply signal only. It can stop a cohort. It cannot start one.</p>
+
+      <h3>L3 &mdash; The commitment window (the actual mechanism)</h3>
+      <div class="callout">
+        <p>Once committed, a cohort gets <strong>100 unique prospects or 21 days, whichever comes LATER.</strong></p>
+        <p>"Later," not "sooner." That word is the whole anti-quit clause.</p>
+      </div>
+      <p>Enforced with a coordination claim on <code>niche:&lt;name&gt;</code> with a 21-day TTL &mdash; a mutex built for agents, repurposed as a commitment device. While it is held, <strong>no second cohort may be harvested.</strong> Two additions the council forced:</p>
+      <ul>
+        <li><strong>The claim cannot lapse silently.</strong> A TTL that simply expires is indistinguishable from a commitment honoured. Release requires a verdict string attached. An expiry without one is itself the alarm.</li>
+        <li><strong>Days 4 through 20 need defined content.</strong> A lock with nothing behind it is three weeks of watching a number that has not moved yet &mdash; which is precisely the trough the video describes.</li>
+      </ul>
+      <p>Why 100: the kill threshold is already 100. Why 21 days: it is the longest real attempt in system history. The floor is set at the historical best, not at a fantasy.</p>
+
+      <h3>L4 &mdash; The verdict is computed, not remembered</h3>
+      <p>At the window's end the gate returns SCALE / KILL / ITERATE from the niche-keyed view, on a date. No judgement call, no feeling, no meeting.</p>
+
+      <h3>L5 &mdash; A bad result kills the angle, not the market</h3>
+      <p>The market only dies after two angles have died in it &mdash; which is an existing constant, not a new rule.</p>
+      <p>Live consequence: per the 09-05 ledger entry, the SW cohort at 294 sends <strong>already reads KILL on two angles</strong>. By the system's own constant, the SW audience review is not a proposal. It is <strong>due</strong>.</p>
+
+      <h3>L6 &mdash; One cohort in flight</h3>
+      <p>Everything else is a PARK with a return date and a trigger. The queue already exists and already has four rows opened today, including the speed-to-lead retainer whose blocker on file is literally <em>"no vertical or metro is chosen"</em> &mdash; which L1 and L2 exist to unblock.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-council" open>
+    <summary><h2>Council + premortem</h2></summary>
+    <div class="sec-body">
+      <h3>Lateral-leverage first: the one "new build" did not survive</h3>
+      <p>Proposed build to beat: a new niche-outcomes table plus pipeline instrumentation. <strong>Killed.</strong> The events table already joins to leads on email. One view over data already stored &mdash; no schema change, no backfill, and it works on <em>history</em>, where a new instrumented table would only work going forward. Verified live.</p>
+      <p>Also cut: a niche-scoring service. The validator already scores; the gap is that no code invokes it. Capability was never the problem.</p>
+
+      <h3>The five voices, speaking from December</h3>
+
+      <div class="voice">
+        <h4>THE CONTRARIAN</h4>
+        <p>It died on the third Tuesday. Week 1 went perfectly, which was the problem. Forty sends at a 2% base rate returns zero replies about 45% of the time, and the window had no answer for zero. It became unfixable on day 11, when the board showed nothing moving and the system had only "keep going" to offer. He did not break the claim &mdash; he did the more predictable thing and left it running while doing something else. The TTL lapsed with no verdict. Second flaw, fatal alone: killing roofing outright on one angle's data violates L5 in the strategy's own opening move.</p>
+      </div>
+
+      <div class="voice">
+        <h4>THE FIRST PRINCIPLES THINKER</h4>
+        <p>The assumption nobody wrote down: that the bottleneck is <em>which</em> niche. 2,198 sends and 4 human replies across 23 verticals, three brands and five stages is not a niche-selection distribution &mdash; something upstream is absorbing the entire signal. The open rates read 116%, 134%, 152% and 350% of sends, which is arithmetically impossible for humans. If the thermometer reads 350 degrees you do not start reasoning about the weather.</p>
+      </div>
+
+      <div class="voice">
+        <h4>THE EXPANSIONIST</h4>
+        <p>Nobody tried selling to the people who already replied. And auto repair's 43-72% website adoption is far better evidence for a microsite or rank-and-rent business &mdash; where revenue needs a ranking, not a reply &mdash; than for cold email.</p>
+      </div>
+
+      <div class="voice">
+        <h4>THE OUTSIDER</h4>
+        <p>This is a document about a man's relationship with his own attention, dressed as a data pipeline. The evidence is superb; the conclusion is a rule saying hold on for 21 days. By this document's own count he has failed to hold on 23 times, and the one new mechanism is a lock he can release himself that also expires by itself. From outside, that is the whole ballgame.</p>
+      </div>
+
+      <div class="voice">
+        <h4>THE EXECUTOR</h4>
+        <p>The earliest warning is Wednesday 09-09, and it is not a bad result &mdash; it is the absence of a send. All three original Tuesday actions were systems tasks; none put an email in front of a human. And nothing said where 100 auto-repair prospects with verified emails come from. The signal that makes auto repair attractive is <em>no website</em>, which is also the strongest predictor there is no email to find. If 60 of 100 are unreachable, the window cannot reach its own threshold and the gate stays PENDING &mdash; the same trap, rebuilt one level up.</p>
+      </div>
+
+      <h3>Chairman &mdash; verdict: CHANGE</h3>
+      <p>The diagnostic half ships as written. The prescriptive half inverted the strategy's own logic and was reordered. Three changes, all applied above: roofing becomes an angle-kill rather than a burial; a pre-flight runs before the window opens; the window gains weekly content and a verdict-bearing release.</p>
+      <p><strong>Divergence, named rather than averaged:</strong> the Contrarian and First Principles want auto repair demoted to a hypothesis. The Expansionist wants it <em>promoted</em>, into a different business &mdash; microsites, where no reply is required. These are not reconcilable, and the tension resolves only once the services-versus-products question is answered.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-sim" open>
+    <summary><h2>Simulation against real data</h2></summary>
+    <div class="sec-body">
+      <h3>Scenario A &mdash; auto repair, the validated candidate</h3>
+      <p>L1 passes: an auto shop with an unanswered phone loses a job. L2 passes on record at 39.8% KEEP across 11 metros, well above the gate. <strong>L3 stalls</strong> &mdash; the database holds five auto-repair leads and the 580 scanned records were never persisted. L4 cannot fire at 6 sends against a 30-send floor.</p>
+      <p>The strategy stops exactly where the Executor predicted, which is the useful result: the simulation caught the failure before the calendar did.</p>
+
+      <h3>Scenario B &mdash; roofing, the incumbent</h3>
+      <p>L2 would have <strong>rejected it outright</strong>: the 8/29 sweep returned 0% KEEP for roofing in every market tested. It has nonetheless been tier-1 for months and absorbed 323 sends. L4 on real data returns KILL. L5 holds it at angle level.</p>
+      <p>Verdict: roofing should never have entered, and the cheap test that would have stopped it costs six API calls.</p>
+
+      <h3>Scenario C &mdash; the 449-prospect cohort at 7.6%</h3>
+      <p>The council called this the most valuable unexamined fact in the document. I ran it.</p>
+      <div class="callout danger">
+        <p><strong>It is a measurement artifact, not an opportunity.</strong> The largest block is 79 prospects and 346 sends under a reply poller &mdash; meaning these are ongoing conversations rather than cold sends, so replies are counted where replies were guaranteed. The rest is 67 unattributed sends from April-May, before pipeline tagging existed.</p>
+      </div>
+      <p>Chasing it would have been a mistake, and the query that shows it took thirty seconds. This is also the strongest available argument for the instrument check: the funnel is not currently trustworthy enough to carry a verdict.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-prompt">
+    <summary><h2>The ICP prompt, after promptfix</h2></summary>
+    <div class="sec-body">
+      <p>Two-phase gate, licensed uncertainty preserved. Paste at the start of every cycle.</p>
+<pre><code>You are helping me define one ideal client profile (ICP) for a specific niche I am
+considering. I am Boubacar, 48, based in Salt Lake City. I sell AI automation and
+advisory services to small owner-operated service businesses in the US.
+
+Run this in two phases. Do not merge them.
+
+PHASE 1 - QUESTIONS ONLY.
+Ask me between 4 and 7 questions whose answers would most change your
+recommendation. Ask nothing you can answer yourself. Then STOP and wait.
+Do not propose an ICP, a niche, or a pain list in Phase 1. Output in Phase 1 is
+the questions and nothing else.
+
+PHASE 2 - after I answer, produce exactly these four blocks and nothing else.
+
+1. ICP - one paragraph, maximum 60 words. Name the business type, the owner's
+role, the revenue band as a single range, the employee count, and the geography.
+No "or", no alternatives. One profile.
+
+2. MARKET SIZE - how many US businesses match block 1. Give the number, the
+named source, and the year of the data. If you cannot find a source you can
+name, write "UNVERIFIED" and state exactly what you would need to look up. Do
+not estimate from general knowledge and present it as a figure. An honest
+UNVERIFIED is a correct answer here; a plausible invented number is a failure.
+
+3. PAIN LIST - 6 to 8 problems, each one sentence in the buyer's own spoken
+words, first person, the way he would say it to another owner at a counter.
+"I hate that...", "I can never...", "It drives me crazy when...". Never
+marketing language: no "streamline", "optimize", "leverage", "pain point",
+"solution", "efficiency". If a line could appear on a software vendor's
+homepage, rewrite it.
+Then rank the list in a table with these columns and no others:
+   Problem (his words) | Pain 1-10 | Will pay 1-10 | Why the two scores differ
+Pain and willingness-to-pay are scored independently. A problem he complains
+about constantly but has never paid to fix scores high on pain and low on pay,
+and saying so is the point of splitting the axes.
+
+4. THE GAP - from the ranked table, list every problem in the top 5 by
+willingness-to-pay that my current services do NOT solve. State plainly whether
+the highest-paying problem is one I currently sell against. If I already cover
+all five, say so rather than inventing a gap to fill this block.
+
+Hard limits: Phase 2 under 500 words. No preamble, no summary, no closing offer
+to help further. Blocks 1-4, in order, then stop.</code></pre>
+      <p><strong>What changed:</strong> "feel free to ask questions" became a hard two-phase gate with an explicit STOP, because a soft invitation gets skipped. The market-size check gained a named-source requirement and a licensed UNVERIFIED escape so it cannot invent a figure. The pain list gained a banned-vocabulary list and a concrete register test. The single ranking split into two independent axes with a required explanation of divergence. And the gap block was added as a required output with an anti-fabrication clause.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-corrections" open>
+    <summary><h2>Corrections to the record</h2></summary>
+    <div class="sec-body">
+      <p>Three things the brief asserted that the evidence does not support. Flagged rather than propagated.</p>
+      <ol>
+        <li><strong><code>D-20260906-fd5f0f</code> does not exist.</strong> No such entry appears anywhere in the decisions log or the ledger. It is cited as settled &mdash; "the current 90-day services-first priority" &mdash; inside <code>D-20260906-e3348e</code> and in two absorb-followup docs. The real row is <strong><code>D-20260906-840dbb</code>, status PENDING</strong>: services versus products is explicitly <em>unanswered</em>. Two documents currently treat a non-existent decision as decided, and the next agent to read them will inherit it.</li>
+        <li><strong>Junk hauling, water heaters and government contracting were not piloted today.</strong> No 09-05 or 09-06 absorb evaluates them. They appear only as your own rhetorical examples inside the boring-business mandate. No leads, no scans, no rows.</li>
+        <li><strong>The 449-prospect / 7.6% cohort is not a hidden winner.</strong> It is dominated by reply-poller threads where a reply was structurally guaranteed.</li>
+      </ol>
+      <p>These belong in the corrections log. Item 1 in particular is a live dangling reference.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-why" open>
+    <summary><h2>Why this should hold when twenty-three did not</h2></summary>
+    <div class="sec-body">
+      <p>Not because the rule is stricter. Because for the first time the loop closes without anyone remembering to close it.</p>
+      <p>Every prior attempt ended the same way: a decision was made, nothing measured it, and the absence of a result was indistinguishable from a bad result. The May council was right and changed nothing, because it produced a verdict rather than a mechanism.</p>
+      <p>Three things are different, and each is verifiable rather than aspirational:</p>
+      <ul>
+        <li><strong>The verdict is computed.</strong> The gate returns SCALE / KILL / ITERATE from data, on a date. No one has to feel like deciding.</li>
+        <li><strong>Quitting requires an act.</strong> Releasing the claim demands a verdict string. Silence becomes a detectable state instead of the default one.</li>
+        <li><strong>The cheap test runs before the expensive one.</strong> Six API calls would have kept roofing out and saved 323 sends.</li>
+      </ul>
+      <div class="callout danger">
+        <p><strong>And the honest caveat the council would not let pass:</strong> none of that survives if the funnel instrumentation is wrong. Open rates above 100% mean the measuring stick is bent. The instrument check is not housekeeping &mdash; it is load-bearing, and everything else here is worth less until it is done.</p>
+      </div>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Repo doc: <code>docs/playbooks/2026-09-06-niche-strategy-tuesday-launch.md</code> &middot;
+    branch <code>feature/niche-strategy-2026-09-06</code> &middot;
+    source absorb youtu.be/axkrL7UOxVw &middot;
+    all figures queried live from production on 2026-09-06.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
