@@ -357,9 +357,32 @@
     //     yesterday's (or today's) done marker AND a due date, because the
     //     next instance is genuinely new work. Without this guard the daily
     //     accountability message would disappear from his board every day.
+    // STANDING/RECURRING SHORT-CIRCUIT (2026-09-08). The `due` guard below
+    // assumed every recurring row carries a `BY <date>` marker that advances
+    // daily, so the "closed earlier but due today" exemption would keep
+    // re-admitting it. In practice `kpi-next-action-brandon-daily` carries no
+    // BY marker at all -- it is CADENCE: DAILY, rewritten in place every
+    // morning, with no date field on the row -- so `due` is always null and
+    // the exemption can never fire for it. A single done- tick on any one
+    // day's instance (2026-09-04, confirmed live) then reads as "closed
+    // forever" and the row never surfaces again on its own, silently, for as
+    // many days as nobody happens to notice -- 4 days, that time. Same marker
+    // convention `money_map.py`'s `_PG_STANDING_RE` already treats as special
+    // server-side (preserved verbatim across a rewrite): a row carrying it is
+    // never treated as permanently closed by a stale done- flag, full stop,
+    // independent of whether it also happens to carry a BY/DUE date.
+    // Narrowed to a stale DONE flag only, deliberately NOT to `archiveOf(k)`:
+    // archive carries its own JSON marker and is a genuine, rarer, deliberate
+    // "stop this" action (there is no separate "pause the recurrence"
+    // control today), so an actual archive still closes a recurring row.
+    // Only the bare, un-dated `done-<key>` flag is exempted -- that is the
+    // one with no way to ever clear itself.
+    var _RE_STANDING = /STATUS:\s*STANDING|CADENCE:\s*DAILY|RECURRING\s+DAILY/i;
+    function isStandingRecurring(item) { return _RE_STANDING.test(String(item.title || '')); }
     function closedEarlier(item) {
       var k = String(item.key);
       if (!isDone(k) && !archiveOf(k)) return null;
+      if (isDone(k) && !archiveOf(k) && isStandingRecurring(item)) return null;
       var ts = stateTs[doneKey(k)] || (archiveOf(k) || {}).ts;
       if (!ts) return null;
       var d = new Date(ts);
@@ -444,6 +467,7 @@
             '<div class="mm-nav-links">' +
               '<a href="#sec-tracker">Tracker</a>' +
               '<a href="#sec-hero">Do next</a>' +
+              '<a href="#sec-recurring">Recurring</a>' +
               '<a href="#sec-must">Must</a>' +
               '<a href="#sec-should">Should</a>' +
               '<a href="#sec-could">Could</a>' +
@@ -505,6 +529,21 @@
             // so every row here already carries its own resource panel, full
             // text and control bar with no second copy of that markup.
             '<div class="mm-sec-body"><div id="mmHeroBody"></div></div>' +
+          '</details>' +
+
+          // RECURRING (2026-09-08). Standing daily commitments -- CADENCE:
+          // DAILY / STATUS: STANDING / RECURRING DAILY rows, the Brandon
+          // check-in is the live example -- named on their own row as not
+          // competing for the 5 MUST-pick slots. Sits above Must, always
+          // open, so it is never something he has to remember to expand, and
+          // is genuinely never capped: see the RECURRING-EXEMPT comment in
+          // buildBoard().
+          '<details class="mm-sec" id="sec-recurring" open>' +
+            '<summary><span class="mm-chev">&#9656;</span><span class="mm-sec-title">Recurring</span>' +
+              '<span class="mm-sec-meta" id="mmRecurringMeta">&hellip;</span></summary>' +
+            '<div class="mm-sec-body">' +
+              '<p class="mm-lede">Standing daily commitments. Never capped, never bumped by anything else on the board.</p>' +
+              '<div id="mmRecurringList"></div></div>' +
           '</details>' +
 
           // THREE sections, in his order: MUST, then SHOULD, then COULD.
@@ -1689,6 +1728,11 @@
           if (meta) meta.textContent = 'nothing closed yet today';
           return;
         }
+        if (key === 'recurring') {
+          host.innerHTML = '<div class="mm-empty">No standing daily commitment is defined on the board right now.</div>';
+          if (meta) meta.textContent = '0 items';
+          return;
+        }
         var parts = [];
         if (closedN) parts.push(closedN + ' row' + (closedN === 1 ? ' is' : 's are') + ' done today, under <a href="#sec-done">Already done</a>');
         if (priorN) parts.push(priorN + ' row' + (priorN === 1 ? ' was' : 's were') + ' closed on an earlier day, under its own date in the strip above');
@@ -1791,6 +1835,29 @@
         if (ownerOf(i) === 'agent') agent.push(i); else mine.push(i);
       });
 
+      // RECURRING-EXEMPT (2026-09-08). A row carrying the STATUS: STANDING /
+      // CADENCE: DAILY / RECURRING DAILY marker names, on the row itself,
+      // that it "does not compete for the 5 MUST-pick slots" -- see
+      // `kpi-next-action-brandon-daily`'s own convention text. Until today
+      // that sentence was pure prose: the row still went through the same
+      // MUST/SHOULD/COULD ranking and the same TIER_CAP=5 cascade as every
+      // other row, so on any day 5 higher-ranked rows already filled its
+      // tier, it simply did not render -- indistinguishable, from where he
+      // sits, from the done-flag bug this same commit fixes. Pulled out here,
+      // before the tier split and before `pickCommitted`'s cap, into its own
+      // section (`sec-recurring` / `mmRecurringList`) that always renders
+      // every live recurring row, every day, regardless of rank. This is the
+      // named RECURRING_EXEMPT category from
+      // `scripts/oneshot_money_map_y1_scheduling_2026_08_31.py`'s own
+      // comment ("daily-recurring items don't need a [BY marker]") --
+      // confirmed live 2026-09-08 that the category was written down once and
+      // never wired into anything that reads it, on either side of the wire.
+      var recurring = [];
+      mine = mine.filter(function (i) {
+        if (isStandingRecurring(i)) { recurring.push(i); return false; }
+        return true;
+      });
+
       // Requirement 8, the demotion. A row moved to a future date, and a row
       // already decided, both stop competing for today -- they sink to the
       // bottom of their own tier rather than leaving the page. Sort is STABLE
@@ -1798,6 +1865,14 @@
       // each of the three groups; nothing is re-scored here.
       function sinkRank(i) {
         var k = String(i.key);
+        // Same STANDING/RECURRING exemption as `closedEarlier` above, and for
+        // the identical reason: without it, a recurring row would leave
+        // `closedEarlier`'s "Already done" bucket correctly, only to be sunk
+        // right back to the bottom of its tier and filtered out of
+        // `liveMustAll`/`liveShouldAll`/`liveCouldAll` (the `sinkRank(i)===0`
+        // filter below) by the exact same stale, undated done- flag -- the
+        // same silent disappearance one function later.
+        if (isDone(k) && !archiveOf(k) && isStandingRecurring(i)) return 0;
         if (isDone(k) || archiveOf(k)) return 2;   // decided and closed
         if (isFutureDated(i)) return 1;            // parked on a later date
         return 0;                                  // live today
@@ -2023,7 +2098,7 @@
       }
 
       return { wl: wl, tiers: tiers, closedOut: closedOut, laterOut: laterOut, priorOut: priorOut,
-        later: later, closed: closed, agent: agent,
+        later: later, closed: closed, agent: agent, recurring: recurring,
         heroMode: heroMode, heroItems: heroItems, heroKeys: heroKeys,
         mustLiveItems: displayMust, mustLiveCount: displayMust.length,
         shouldLiveItems: displayShould, shouldLiveCount: displayShould.length,
@@ -2034,6 +2109,7 @@
     function renderLists() {
       var b = buildBoard();
       if (b.fail) {
+        renderList('mmRecurringList', 'mmRecurringMeta', null, 'recurring', b.fail);
         renderList('mmMustList', 'mmMustMeta', null, 'must', b.fail);
         renderList('mmShouldList', 'mmShouldMeta', null, 'should', b.fail);
         renderList('mmCouldList', 'mmCouldMeta', null, 'could', b.fail);
@@ -2059,6 +2135,10 @@
       function withoutHero(rows) {
         return heroKeys.length ? rows.filter(function (i) { return heroKeys.indexOf(String(i.key)) === -1; }) : rows;
       }
+      // Never capped, never bumped, never subject to withoutHero() -- see the
+      // RECURRING-EXEMPT comment in buildBoard(). Empty is a real, sayable
+      // state (no standing daily commitment defined today), not a failure.
+      renderList('mmRecurringList', 'mmRecurringMeta', b.recurring, 'recurring', '');
       renderList('mmMustList', 'mmMustMeta', withoutHero(b.tiers.MUST), 'must', '', b.closedOut.MUST, b.laterOut.MUST, b.priorOut.MUST);
       renderList('mmShouldList', 'mmShouldMeta', withoutHero(b.tiers.SHOULD), 'should', '', b.closedOut.SHOULD, b.laterOut.SHOULD, b.priorOut.SHOULD);
       renderList('mmCouldList', 'mmCouldMeta', withoutHero(b.tiers.COULD), 'could', '', b.closedOut.COULD, b.laterOut.COULD, b.priorOut.COULD);
