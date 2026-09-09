@@ -1,0 +1,402 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thirty days: turn discovery into paid proof</title>
+<!--
+  CANONICAL REVIEW-PAGE TEMPLATE for boubacarbarry.com/review/<slug>/
+
+  Start every review page from this file. It is compliant with the layout hard standard out
+  of the box, and scripts/validate-review-page.ps1 (which publish-review.ps1 runs on every
+  publish and REFUSES to ship past) is written against exactly this structure.
+
+  THE FIVE RULES, Boubacar verbatim 2026-08-11:
+    1. TL;DR at the very top, sections underneath it.
+    2. The TL;DR itself is collapsible.
+    3. Every section collapsible with a toggle.
+    4. A back-to-top button on every page.
+    5. Hamburger nav on mobile, normal nav on desktop, floating if practical.
+
+  THE REASON, which matters more than the list:
+    "I don't want to have to read 30 pages of a TL;DR to get to the content every single
+     time. I need to be able to just quickly jump into this after future reviews."
+    => Design for the SECOND visit. Rules 4 and the fold-state memory that makes the second
+       visit fast are AUTO-INJECTED at publish time by scripts/inject-review-furniture.ps1,
+       so do not hand-roll a back-to-top button here -- you would get two.
+
+  WHAT YOU EDIT: the {{PLACEHOLDERS}}, the nav links, and the <section> blocks. Keep the
+  <details><summary><h2>...</h2></summary> shape on every section; that shape IS the check.
+
+  STANDS ALONE ON PURPOSE: no external CSS, no external JS, no fonts, no CDN. He opens these
+  on a phone on bad wifi, and a shared include that fails to load would take the furniture
+  down with the page. Duplicated bytes are the cheaper trade.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+:root{--bg:#071A2E;--bg2:#0D2A45;--card:#0D2A45;--accent:#FF8F5E;--accent2:#00B7C2;--accent-visited:#B47C57;--bad:#F2A900;}h1,h2{font-family:Spectral,Georgia,serif}body{font-family:"Public Sans",system-ui,sans-serif}code,.data{font-family:"JetBrains Mono",monospace}td{overflow-wrap:anywhere}.nav-links{max-height:50vh;overflow:auto}#local-controls{position:fixed;bottom:8px;right:8px;display:flex;gap:8px}#local-controls button{min-height:44px;background:#071A2E;color:#fff;padding:10px;border:1px solid #B47C57}@media print{#local-controls{display:none}details .sec-body{display:block!important}}</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1-review · 2026-09-09-09:30:43 MT</div><!-- DEPLOY_STAMP_END -->
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Revenue review</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">{{SECTION_1_NAV}}</a>
+      <a href="#sec-2">{{SECTION_2_NAV}}</a>
+      <!-- one link per section; keep ids in sync with the <details id="sec-N"> below -->
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Thirty days: turn discovery into paid proof</h1>
+    <div class="meta">September 8 evidence • Preliminary review • Prospect test incomplete</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body"><p><strong>PRELIMINARY REVIEW.</strong> Revenue analysis and proposed revisions are available below. The qualified-prospect test, full Money Map patch and final verification are incomplete. Dates refer to the September 8 snapshot; this is not a new audit of today’s board.</p>
+      <p><strong>KEEP WITH CHANGES.</strong> Keep the finalized master plan's sales engine, the free September 16 session, the must-run September 24 room, the two brand front doors, and the receptionist proving ladder. Correct its arithmetic, dependency ordering and operational rows before treating its forecast as dependable.</p><p>This is an executable experiment, not a supported promise of $1,700 or $4,500 collected. Its strongest mechanism is a specific buyer problem followed by a demonstrated service and an explicit paid offer. Its weakest assumptions are overlapping contact counts and unsupported conversion rates. The master explicitly separates distribution from revenue.</p><p>The guaranteed cash floor is $0. The plan's $400 pallet floor requires inventory, sell-through and payment. No live Stripe or Venmo balances were read in this review. The recorded zero-revenue baseline is a decision-backed historical fact, not a newly verified account balance.</p>
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+<details class="sec" id="sec-1" open><summary><h2>1. Executive verdict</h2></summary><div class="sec-body"><p><strong>KEEP WITH CHANGES.</strong> Keep the finalized master plan's sales engine, the free September 16 session, the must-run September 24 room, the two brand front doors, and the receptionist proving ladder. Correct its arithmetic, dependency ordering and operational rows before treating its forecast as dependable.</p><p>This is an executable experiment, not a supported promise of $1,700 or $4,500 collected. Its strongest mechanism is a specific buyer problem followed by a demonstrated service and an explicit paid offer. Its weakest assumptions are overlapping contact counts and unsupported conversion rates. The master explicitly separates distribution from revenue.</p><p>The guaranteed cash floor is $0. The plan's $400 pallet floor requires inventory, sell-through and payment. No live Stripe or Venmo balances were read in this review. The recorded zero-revenue baseline is a decision-backed historical fact, not a newly verified account balance.</p></div></details>
+<details class="sec" id="sec-2" open><summary><h2>2. Canonical-plan determination</h2></summary><div class="sec-body"><p>Authority: Boubacar's current-session confirmation that the TOP master plan is final; decision <strong>D-20260907-6347c9</strong>; then <strong>D-20260907-6586dd</strong>, which settles September 16 as free and L1 on the existing dedicated number. The canonical page is <a href="https://boubacarbarry.com/review/20260907-thirty-day-cash-plans-parachute/">30-Day Sprint</a>, sections m1-m14.</p><p>D-20260907-53926d selected V1; D-20260907-35c492 selected V3; both are explicitly superseded. V3's sales engine and cash table remain incorporated where the master says so, but V3's room-cancellation and paid-online branches do not override the master or later decision.</p><p>The September 6 reach-and-revenue page, September 7 V2/V3 page, and the two agentsHQ strategy copies were inspected as supporting records. They are not independent authority. Website and strategy files have different byte hashes; deployment furniture alone can cause this, so a hash difference is not proof of substantive drift. The September 8 Lighthouse handoff and Money Map PRD corroborate the subsequent row implementation and free-session change.</p><p>Source hierarchy for this review: current explicit user decision &gt; latest relevant explicit decision &gt; master plan &gt; incorporated V3 elements &gt; historical versions. Operational completion comes from live Money Map state, not the plan's future-tense prose.</p></div></details>
+<details class="sec" id="sec-3" open><summary><h2>3. Reconstructed revenue model</h2></summary><div class="sec-body"><p>Window: <strong>September 8 through October 7, 2026</strong>, 30 calendar days and 22 weekdays. The longer Year One goal is <strong>$5,000 MRR by November 22</strong>, with November 23 review. Do not add one-time pallet, ticket or triage receipts to MRR.</p><p>Master targets: first paying customer September 14; 35 strangers replying with a real problem; 150 captured emails; approximately 5,000 unique contacts including existing connections; four AI-mention measurements; at least one receptionist client through five clean unattended days.</p><div class="table-scroll"><table><tr><th>Motion</th><th>Buyer and offer</th><th>Action to cash</th><th>Main dependency</th></tr><tr><td>Receptionist</td><td>Owner-operated trades; $197 founding month, first five clients</td><td>Document a real call-handling gap → owner conversation → approved demo → scoped founding offer → payment → client forwarding proof</td><td>L0-L2 proof, approved rate/retention, a working promised summary channel</td></tr><tr><td>Employee-situation desk</td><td>Owners/HR leads and employment-service referrers; $19 pack, $250 triage, scoped deposit</td><td>Relevant finished resource/referral ask → stated problem → bounded triage → payment → scoped follow-on offer</td><td>Actual buyer fit, confidential intake and delivery scope</td></tr><tr><td>September sessions</td><td>Free online September 16; September 24 must run, initially $50</td><td>Invitation → registration → attendance → specific offer → payment</td><td>Attendee relevance and follow-up; attendance alone is not revenue</td></tr><tr><td>Cowrie</td><td>Local goods buyers</td><td>Inspected inventory → listings → buyer agreement → collection</td><td>Inventory spend, margin, logistics, sell-through</td></tr><tr><td>Distribution</td><td>Trades and HR audiences through separate front doors</td><td>Relevant exposure → response/capture → one of the above sales paths</td><td>Actual reach and consent; algorithms and invitations are not controlled outcomes</td></tr></table></div><p>The minimum producing motions are the receptionist and a capped referral/triage desk, with Cowrie separately accounted. Content, SEO/GEO, rooms and social are feeders, not additional revenue engines. Studio remains limited to approved syndication under the master constraint.</p></div></details>
+<details class="sec" id="sec-4" open><summary><h2>4. Revenue-math test</h2></summary><div class="sec-body"><p>The incorporated V3 sums are arithmetically correct: mid = 3×197 + 250 + 800 + 50 = <strong>$1,691</strong>; high = 6×197 + 3×250 + 1,250 + 1,100 + 200 = <strong>$4,482</strong>. Their assumptions need correction.</p><div class="table-scroll"><table><tr><th>Test</th><th>Recalculation</th><th>Meaning</th></tr><tr><td>Founding-rate ceiling</td><td>Five, not six, at $197; same other high assumptions produce $4,285</td><td>Client six requires a separately agreed price</td></tr><tr><td>Mid ticket assumption</td><td>Without a retained paid $50 seat, mid is $1,641</td><td>Free-room branch and receipts must reconcile</td></tr><tr><td>$5,000 MRR via $197</td><td>ceil(5000/197) = 26 clients</td><td>Not a 3-client sprint outcome; founding rate not approved for 26</td></tr><tr><td>At $297</td><td>ceil(5000/297) = 17 clients</td><td>Illustrative month-two sensitivity, not an approved price change</td></tr><tr><td>Three sales at 5% / 10% / 20% close of qualified conversations</td><td>60 / 30 / 15 qualified conversations</td><td>Scenario rates, not observed rates</td></tr><tr><td>Five sales at those rates</td><td>100 / 50 / 25 qualified conversations</td><td>Calls and replies are not automatically qualified conversations</td></tr><tr><td>35 problem replies at 5% / 10% / 20% reply-to-sale</td><td>1.75 / 3.5 / 7 expected sales</td><td>Illustrative, with substantial uncertainty and delivery limits</td></tr></table></div><p>No source establishes a reliable qualified-conversation close rate. Do not multiply an assumed missed-call share by an assumed purchase rate and label the result measured.</p><p>Contact arithmetic: listed stranger rows total 2,156. Excluding the mixed 180-node email/call row leaves 1,976. Adding 3,000 event invitations and 60 reactivations gives a 5,036 subtotal excluding that mixed row, not an exact deduplicated upper bound. Its email component overlaps the 660-email row; additional unique call recipients remain unknown. Repeat calls, emails, comments and invitations also overlap. A 60-node list cannot itself yield 180 unique nodes. Verify the identity-level union before claiming 5,000 unique contacts.</p><p>Keep 5,000 as a stretch target subject to deduplicated evidence, not a forecast. Count unique identities, unique businesses and touches separately. The network is load-bearing to the numerical 5,000 target; the cold sales experiment must also be assessed on its own.</p><p>The master calls for 360 sweep dials (18×20), whereas incorporated V3 uses roughly 320 including a room-cancellation branch now removed. Rebuild the denominator from dated sweeps. At a hypothetical 50% voicemail rate, 360 dials create at most 180 missed-call observations before duplicates, not 180 qualified buyers.</p><p>Cash accounting must show gross receipts, refunds, payment fees, inventory outlay, operating cost and net cash separately. A $1,250 deposit may carry a future delivery obligation. Do not call it profit.</p></div></details>
+<details class="sec" id="sec-5" open><summary><h2>5. Money Map implementation audit</h2></summary><div class="sec-body"><p>The configured read-only reader resolved the active board as <strong>y1</strong> and returned <strong>799 key/value state entries</strong>. That is not 799 tasks: entries include logs, dates, counters, push markers, completion flags and structured action payloads. A focused snapshot of sprint, goal and conflicting rows is preserved with this report. The full read exceeded display limits; exhaustive all-board duplicate and workload counts are therefore not claimed.</p><p>Verified findings:</p><div class="table-scroll"><table><tr><th>ID</th><th>Evidence</th><th>Severity and action</th></tr><tr><td>kpi-revenue-goal-note</td><td>Says Sep 1-Nov 23 while registry says Aug 31-Nov 22</td><td>High: correct prose to registry without changing goal</td></tr><tr><td>kpi-next-action-sprint-friday-readout-2026-09-12</td><td>Friday report due Saturday; next rewrite says Sep 19, also Saturday</td><td>High: move report deadline to Fridays before review</td></tr><tr><td>kpi-next-action-30day-sprint-first-paying-customer-2026-09-14</td><td>Says Sun 9/14; actual date is Monday</td><td>Medium: preserve date, correct weekday</td></tr><tr><td>kpi-next-action-sprint-w1-battery-l2-2026-09-10</td><td>Requires ten SMS</td><td>High: L1 says SMS blocked pending 10DLC; clarify tested delivery channel before promising it</td></tr><tr><td>kpi-next-action-sprint-w1-rehearsal-l1-2026-09-09</td><td>Uses dedicated number and Telegram; no explicit BY/MINS/LINK in current text</td><td>High: add executable metadata and distinguish rehearsal from client forwarding</td></tr><tr><td>kpi-next-action-unblock-ai-policy-generator-2026-09-08</td><td>Ready, 15 minutes, MUST selection; new build</td><td>High: conflicts with no-new-magnet master; propose hold, subject to user's prior explicit selection</td></tr><tr><td>kpi-next-action-video-five-questions-record-2026-09-08</td><td>Ready, 45-minute recording</td><td>Medium: competes with 15-minute daily capture; choose one output path, not both loads</td></tr><tr><td>done-kpi-next-action-sprint-w1-linkedin-hour-2026-09-08</td><td>Value 1</td><td>PROTECTED: completed; do not reopen or rewrite it</td></tr></table></div><p>The 30 daily log entries describe a journal, not 30 rankable executable actions. The PRD already identified that distinction and added dated week-one rows and recurring commitments. Do not claim the whole month is missing merely because future weekly action rows are intentionally generated at readout. Instead require the readout to generate approval-ready week-two work before week two starts.</p><p>The goal note and legacy statuses drift across time. Structured act- rows and done-kpi- markers are distinct schema elements, not automatic duplicates. Match their base IDs and inspect both before changing anything. A ranking bug documented in the Lighthouse handoff is not proof that today's completion is false.</p><p>No live Money Map rows were written, completed, reopened or archived.</p></div></details>
+<details class="sec" id="sec-6" open><summary><h2>6. Capacity and sequencing</h2></summary><div class="sec-body"><p>The master budgets 75 + 30 + 15 = <strong>120 founder minutes per weekday</strong>, or <strong>44 hours across 22 weekdays</strong>. This is the plan's budget, not evidence of Boubacar's actual free capacity. Four weeks of Cowrie at 6h plus maintenance at 2h adds roughly <strong>32 hours</strong>, before event preparation, travel, the 40-minute L2 battery, client delivery, approvals, job interviews and household commitments. Even if some work overlaps, the two-hour claim does not describe the whole workload.</p><p>The current recording row adds 45 minutes; replace three 15-minute capture slots if it is kept. September 16's 11:00 session overlaps the 10:00-11:15 morning block. Replace that day's block rather than silently adding a session. September 24 evening sweep must give way to the must-run room.</p><p>Sequence: (1) select actual buyer/problem, (2) verify offer and delivery proof, (3) prepare one evidence-backed prospect packet, (4) seek permission for that specific outbound batch, (5) measure conversations and offers, (6) deliver and collect, (7) create distribution content from valid observations. Infrastructure repairs should remove a demonstrated blocker; platform expansion should not occupy founder sales blocks.</p><p>A lunchtime unanswered call is not an after-hours result. Record local time, trade, unique number, outcome and follow-up separately; publish neither a misleading aggregate nor identifiable business observations.</p><p>Directly controlled: selecting prospects, preparing evidence, manual dials after authorization, offering a scope, recording results. Influenced: replies, demonstrations, bookings and conversion. External: platform allowances, event attendance, Gate turnaround, carrier support, buyers paying. Single points of failure: Boubacar as sole caller/approver; rehearsal line; correct summary delivery; unverified inventory. Each needs a fallback inside existing capacity.</p></div></details>
+<details class="sec" id="sec-7" open><summary><h2>7. Premortem</h2></summary><div class="sec-body"><div class="table-scroll"><table><tr><th>Probable cause of missing day 30</th><th>Earliest warning</th><th>Preventive move now</th></tr><tr><td>Distribution displaces buyer conversations</td><td>Two days of content completion but no owner problem or offer logged</td><td>Protect sales block; cap derivative content; stop a non-producing channel at weekly review</td></tr><tr><td>Contact count double-counts touches</td><td>Same business appears under dial, email and invitation</td><td>Maintain identity/source dedup; show touches separately</td></tr><tr><td>Demonstration does not match sold service</td><td>Telegram succeeds while proposal still promises SMS; no forwarded-client proof</td><td>Gate invoice on approved scope and L0-L2; gate client activation on L3</td></tr><tr><td>Founder calendar is overfilled</td><td>Under 80% of priorities completed or &gt;120min core work two days running</td><td>Apply master's two-block fallback; explicitly move optional work</td></tr><tr><td>Cash “floor” is inventory turnover illusion</td><td>Listings take hours; purchase costs missing from receipts tally</td><td>Separate receipts/net cash; no second buy absent existing sell-through trigger and liquidity</td></tr></table></div><p>These are risk hypotheses grounded in plan dependencies, not claims that failure has occurred. Friday Sep 11 is the first warning review, not Sep 12 after decisions need the report.</p></div></details>
+<details class="sec" id="sec-8" open><summary><h2>8. Astra prospect-teardown test</h2></summary><div class="sec-body"><p>INCOMPLETE — not a successful qualified-prospect test. The first candidate, Fisher HVAC SLC, was present in the existing dial sheet. Research identified Brian Fisher through the company about page and unfinished instructional copy on its contact page. A copy defect does not prove missed calls or lost revenue. The website-teardown qualification rule rejected the candidate because the site credits an agency. Current business-account unsent status was not established. An alternative was investigated but no cleared, completed result is included here. Nothing was sent. The recorded first-candidate elapsed interval was 47 minutes 41 seconds including tool and approval waits, not active model time. Exact intervention count, token cost and a recent teardown with verified Sol provenance were unavailable. Evidence gathering was useful; commercial readiness and model superiority were not demonstrated. Next step: verify a qualified, unsent alternative before commissioning a review-ready packet.</p></div></details>
+<details class="sec" id="sec-9" open><summary><h2>9. Council and Kairos findings</h2></summary><div class="sec-body"><p>Method: Council skill's documented in-session procedure, with five distinct analytical lenses, cross-review and synthesis. This is not a five-model engine run. An independent Astra Medium financial reviewer supplied a separate challenge pass. Kairos is applied to goal-fit, timing and portfolio coherence; its campaign publisher is not run.</p><h3>THE CONTRARIAN</h3><p>The fatal flaw is an unproven conversion chain presented beneath confident distribution targets. Five thousand touches can coexist with zero qualified buyers; the delivered summary channel can fail the written offer. Require actual buyer-response denominators and a proven scoped service.</p><h3>THE FIRST PRINCIPLES THINKER</h3><p>The problem is not simply discovery versus offers. The missing unit is a qualified buyer agreeing to pay for a delivered outcome. A first paid pilot with known delivery economics teaches more about the cash mechanism than maximizing audience count. Preserve the target, change what drives daily allocation.</p><h3>THE EXPANSIONIST</h3><p>The missed upside is a narrowly relevant referrer introducing multiple owners, or a qualified HR/AI-agency engagement that outranks low-ticket acquisition. Use the already-planned referral desk; do not open another channel or buy tools. Real call observations can become reusable content at marginal agent time.</p><h3>THE OUTSIDER</h3><p>A stranger cannot tell whether they are being sold a workshop, a receptionist, an HR investigation or a product pack. One front door must make one immediate problem and one next step clear. Never put the HR credential into the trades opener.</p><h3>THE EXECUTOR</h3><p>Friday cannot wait for Saturday's report. A battery requiring blocked SMS is not executable. One “LinkedIn hour” already marked done must not come back as new work. Correct those operational contracts and give the next owner conversation a specific packet.</p><h3>Cross-review</h3><div class="table-scroll"><table><tr><th>Voice</th><th>Strongest other argument</th><th>Blind spot</th><th>What the group must not miss</th></tr><tr><td>Contrarian</td><td>Executor's delivery mismatch</td><td>Treating a warm lead as cold proof</td><td>Zero cash remains possible</td></tr><tr><td>First Principles</td><td>Outsider's buyer confusion</td><td>Discarding useful distribution too early</td><td>Goal and experiment are separate</td></tr><tr><td>Expansionist</td><td>First Principles' paid-outcome unit</td><td>Too little exposure can also starve learning</td><td>Keep the capped referral route</td></tr><tr><td>Outsider</td><td>Contrarian's evidence quality</td><td>Internal jargon in client copy</td><td>The buyer sees one offer</td></tr><tr><td>Executor</td><td>Expansionist's reuse</td><td>Another report can replace calling</td><td>A draft is not an ask</td></tr></table></div><h3>CHAIRMAN SYNTHESIS</h3><p>Convergence: keep the sales engine and settled dates; fix unique counting, delivery gates and scheduling; protect founder selling capacity. Divergence: First Principles favors downplaying reach; Expansionist wants distribution retained. Resolution: keep 5,000 as a separately reported stretch measure and cap distribution effort; qualified problems, scoped offers, settled receipts and activated clients govern the next week's allocation. Do not invent a convergence percentage.</p><p>Recommendation: <strong>KEEP WITH CHANGES</strong>. One concrete next step: complete the dedicated-line rehearsal against the approved delivery scope, then prepare the first verified buyer packet. Open decision: what summary channel and retention policy may the founding offer actually promise?</p><h3>Kairos</h3><p>Keep phone/direct evidence and the capped referral route as cold foundations; use network invitations as a separately measured accelerator. Preserve the free session and must-run room, with one offer per audience. Move the Friday evidence review ahead of Saturday decisions. Keep Studio to syndication and the brand fronts distinct. Reject public “after-hours” claims drawn from lunch observations and promises of guaranteed indexing or AI citations. No campaign, post or live note was published.</p></div></details>
+<details class="sec" id="sec-10" open><summary><h2>10. Keep/change/stop redline</h2></summary><div class="sec-body"><p>All entries below are proposals effective after approval, not edits to the master or live board.</p><div class="table-scroll"><table><tr><th>Current element</th><th>Action</th><th>Evidence / reason</th><th>Replacement</th><th>Effective</th><th>Expected effect</th></tr><tr><td>V3 sales mechanism</td><td>KEEP</td><td>Concrete problem-to-offer route</td><td>Receptionist primary; referral desk capped</td><td>Now</td><td>Preserve learning</td></tr><tr><td>Sept16 free; Sept24 must-run</td><td>KEEP</td><td>D-6586dd and master</td><td>Maintain settled constraints</td><td>Now</td><td>Avoid re-planning</td></tr><tr><td>5,000 unique forecast</td><td>CHANGE</td><td>5,036 before remaining overlap</td><td>Stretch union count, touches separate</td><td>Sep9</td><td>Honest channel comparison</td></tr><tr><td>$400 cash floor</td><td>CHANGE</td><td>Conditional pallet sale</td><td>$0 downside; scenario receipts/net cash</td><td>Sep9</td><td>Avoid false certainty</td></tr><tr><td>Six at founding rate</td><td>CHANGE</td><td>First-five limit</td><td>Max five; sixth excluded until priced</td><td>Sep9</td><td>Prevent unsupported forecast</td></tr><tr><td>Friday report Saturday deadline</td><td>MOVE</td><td>Exact live row</td><td>Friday 15:00, before Saturday review</td><td>Sep11</td><td>Earlier adaptation</td></tr><tr><td>New policy-generator build</td><td>STOP/HOLD proposal</td><td>Ready MUST conflicts with no-new-magnet</td><td>Preserve idea; defer build through Oct7 unless explicit exception</td><td>Sep9</td><td>Remove build distraction</td></tr><tr><td>45min recording + daily capture</td><td>COMBINE</td><td>Both active time requirements</td><td>Weekly recording replaces three daily slots</td><td>Sep9</td><td>Save 45min duplicated capture</td></tr><tr><td>Lunch/evening observations</td><td>CHANGE</td><td>Different testing conditions</td><td>Separate cohorts; no pooled after-hours label</td><td>Next sweep</td><td>Evidence credibility</td></tr><tr><td>L2 SMS promise</td><td>CHANGE</td><td>L1 says SMS blocked</td><td>Approved channel-specific pass; preserve SMS acceptance if sold</td><td>Before invoice</td><td>Reduce delivery failure</td></tr><tr><td>SEO/extra profiles</td><td>MOVE</td><td>No immediate cash evidence</td><td>Agent capacity only after buyer packet; no founder spillover</td><td>Sep9</td><td>Protect selling time</td></tr><tr><td>Completed LinkedIn hour</td><td>KEEP untouched</td><td>done marker 1</td><td>No new row, no repeat task</td><td>Now</td><td>Preserve completed state</td></tr></table></div></div></details>
+<details class="sec" id="sec-11" open><summary><h2>11. Revised 30-day execution plan</h2></summary><div class="sec-body"><p>This revises execution within the existing Sep8-Oct7 window; it does not restart the clock. Numeric targets below are proposed experiments, not observed conversion forecasts. Preserve already-completed work.</p><div class="table-scroll"><table><tr><th>Week</th><th>Outcome / producing motion</th><th>Daily actions</th><th>Target</th><th>Evidence / review</th><th>Threshold / fallback</th></tr><tr><td>Sep8-14</td><td>Prove receptionist, first paid transaction</td><td>L1 Sep9, L2 Sep10; approved owner follow-ups; zero or one targeted teardown per working day, inside budget, using verified evidence and an existing offer link; no speculative builds</td><td>L1/L2 pass; first customer Sep14; count actual eligible follow-ups</td><td>Call sheet, proof artifacts, payment metadata; Fri Sep11</td><td>Two proof failures: stop selling receptionist, activate existing referral/triage path. Fewer than 80% founder priorities: two blocks</td></tr><tr><td>Sep15-21</td><td>Activate first paid client; free online session</td><td>Qualified follow-ups and approved offers; capped referral-node touches; Sep16 replaces morning work</td><td>One client L3; 8 new qualified problem conversations (proposed); actual session registrations/attendance</td><td>CRM + call proofs + cash; Fri Sep18 / Sat Sep19</td><td>No qualified response after meaningful documented sample: change buyer/opener; if sample too small, fix execution rather than declaring channel dead</td></tr><tr><td>Sep22-28</td><td>Run Sep24 room; progress client through L4</td><td>Follow-ups, delivery, fixed-scope triage; event replaces evening sweep; relevant attendee offer after approval</td><td>L4 for first client; 10 new qualified problems; 3 written qualified offers (proposed)</td><td>Five business days of service evidence, CRM, payouts; Fri Sep25 / Sat Sep26</td><td>Any service failure pauses expansion; insufficient offers moves time from derivative content into qualification</td></tr><tr><td>Sep29-Oct7</td><td>Close qualified pipeline and count real cash</td><td>Deliver, collect due payments, approved follow-ups; no new engines</td><td>35 cumulative problem replies retained; up to five founding clients capacity-permitting; 150 captures retained</td><td>Fri Oct2; Oct6 provisional; Oct7 final; CRM dedup + Stripe/Venmo</td><td>If recurring traction exists, propose October continuation on actual margin/retention; otherwise retain best measured channel and document failure honestly</td></tr></table></div><p>Week-one call threshold must use actual available owners. Four 20-call sweeps are 80 tests; with a hypothetical 50% voicemail rate, only about 30 from Tuesday-Thursday are available for next-day follow-up by Friday. An “8 conversations from 60 morning calls” gate cannot be mechanically applied to an unavailable 60-call sample.</p><p>Founder schedule: retain the master’s two-hour core budget until actual capacity is confirmed. Explicitly deduct interviews, events, travel and delivery. Cowrie's six-hour and maintenance's two-hour caps remain separate reported commitments, never invisible additions. Saturdays review/meetups only; no Sunday outbound.</p><p>Receptionist scope: L0-L2 are pre-sale proof of the approved service; L3 is client-specific forwarding proof within agreed onboarding; L4 is five clean business days before copying to the next client under the existing acceptance contract. A direct call to a standalone number alone does not prove customer forwarding.</p></div></details>
+<details class="sec" id="sec-12" open><summary><h2>12. Proposed Money Map patch</h2></summary><div class="sec-body"><p><strong>DRAFT proposal — not ready for live application. Owners, time budgets, exact companion-field changes and working links still require completion.</strong> No write code has been executed. Before applying, the existing writer must re-read each row, its act- companion, completion markers and push metadata; skip anything now completed or superseded. The baseline snapshot is evidence, not authority to overwrite newer work. Use apply_state_updates with the new approval reference, dry-run and readback.</p><div class="table-scroll"><table><tr><th>Exact existing row</th><th>Operation / priority</th><th>Proposed action and due date</th><th>Definition of done / evidence</th><th>Working link / goal relation</th></tr><tr><td>kpi-revenue-goal-note</td><td>CHANGE / MUST</td><td>State Aug31-Nov22, review Nov23; retain $5,000 MRR</td><td>Matches three registry dates; no amount change</td><td>Money Map; keeps sprint vs cycle clear</td></tr><tr><td>kpi-next-action-sprint-friday-readout-2026-09-12</td><td>RESCHEDULE / MUST</td><td>Same ID, effective due Sep11 15:00 MT; next dates Sep18,25,Oct2</td><td>Report available before founder reads; includes actual eligible sample, unique contacts, offers, settled cash</td><td>Master #m12; controls adaptation</td></tr><tr><td>kpi-next-action-30day-sprint-first-paying-customer-2026-09-14</td><td>CHANGE / MUST</td><td>Monday Sep14; retain target 1 and existing actual</td><td>Verified payment ID/date/amount or explicitly missed; never infer sale from signup</td><td>Master #m12; first cash</td></tr><tr><td>kpi-next-action-sprint-w1-rehearsal-l1-2026-09-09</td><td>CHANGE / MUST</td><td>Owner Boubacar; BY Sep9; budget 30min proposed; use existing dedicated line</td><td>Company greeting, capture and approved summary channel demonstrated; no client-forwarding claim</td><td>Master #m8; delivery proof</td></tr><tr><td>kpi-next-action-sprint-w1-battery-l2-2026-09-10</td><td>CHANGE / MUST</td><td>Sep10, 40min; ten cases against approved summary channel and retention</td><td>At least 8/10 correct routing; urgent/browsing distinction; independently verified approved-channel delivery. Unresolved SMS promise blocks an SMS-based offer</td><td>Master #m8; safe scoped sale</td></tr><tr><td>kpi-next-action-unblock-ai-policy-generator-2026-09-08</td><td>HOLD / SHOULD</td><td>Proposed defer through Oct7; user exception requires displaced task</td><td>Open idea retained; no build starts by default; preserve companion payload</td><td>Existing PRD link; protect sales capacity</td></tr><tr><td>kpi-next-action-video-five-questions-record-2026-09-08</td><td>COMBINE / SHOULD</td><td>If still open, schedule one 45min block replacing three capture slots; proposed Sep15</td><td>Raw recording delivered; no extra daily capture billed</td><td>Existing five-video-questions page; derivative content</td></tr><tr><td>status-30day-sprint</td><td>APPEND proposal / MUST</td><td>Retain goal 35 and real actual; add dedup and cash-source contract Sep9</td><td>Problems, offers, paid/activated clients and union contacts shown separately</td><td>Master #m10; evidence chain</td></tr></table></div><p>Exact duplicate consolidations approved now: <strong>none</strong>. The available state does not justify deleting act-/kpi- companions or completed work. The recording overlap is a workload consolidation, not proof of duplicate rows. Exact permanent archives approved now: <strong>none</strong>. The policy-generator hold is proposed because Boubacar previously chose it; this review does not silently revoke that choice.</p><p>Proposed new actions, only if a complete current-board semantic check finds no existing owner row:</p><div class="table-scroll"><table><tr><th>Proposed ID</th><th>Priority / owner / due</th><th>Exact action and definition of done</th><th>Link / metric / goal</th></tr><tr><td>kpi-next-action-sprint-contact-dedup-2026-09-09</td><td>MUST / agentshq-codex-rc / Sep9</td><td>Reconcile the existing contact sheet to unique people/businesses and repeat touches; preserve sources; no new platform</td><td>Master #m4; union count + qualified problems; prevents inflated 5,000</td></tr><tr><td>kpi-next-action-sprint-teardown-pilot-review-2026-09-10</td><td>MUST / Boubacar / Sep10</td><td>Review one evidence-backed prospect packet; approve, reject or return it with one reason; no automatic send</td><td>Local review section #sec-8; one disposition, zero assumed sends; next buyer action</td></tr><tr><td>kpi-next-action-sprint-cash-close-2026-10-07</td><td>MUST / lighthouse / Oct7</td><td>Reconcile settled receipts, refunds, fees, inventory outlays and recurring fees; retain Oct6 as provisional</td><td>Existing payment dashboards + master #m12; final net cash and MRR</td></tr></table></div><p>All new IDs are proposed, not reserved or created. Future approval must attach a real accessible hosted review link if publication is separately authorized; the pilot row is not ready for live insertion while its artifact is local-only. Existing page links are source pointers; reachability was not fully verified by the web tool.</p></div></details>
+<details class="sec" id="sec-13" open><summary><h2>13. Five actions to take first</h2></summary><div class="sec-body"><p>1. Complete the September 9 rehearsal on the existing number against an approved summary-channel and retention contract.</p><p>2. Approve the row corrections for Friday timing, Monday milestone, and delivery proof; do not reopen the completed LinkedIn hour.</p><p>3. Approve the proposed policy-generator hold through October 7 to protect selling time; do not reopen the settled strategy by default.</p><p>4. Review one qualified prospect packet and disposition it; sending requires a separate explicit batch instruction.</p><p>5. Read the first Friday report on September 11 using actual unique buyers, eligible follow-ups, offers and payments. Replace a non-producing action rather than adding a fifth plan.</p></div></details>
+<details class="sec" id="sec-14" open><summary><h2>14. Open decisions requiring Boubacar</h2></summary><div class="sec-body"><p>Already settled, do not ask again: authoritative master plan; September 16 free; September 24 runs; LinkedIn permitted with separate network accounting; dedicated-number L1 path.</p><p>Still requiring concrete approval: founding rate/retention if not already ratified elsewhere; whether Telegram is acceptable in the client-facing founding scope while SMS is unavailable; approved month-two price; policy-generator exception versus hold; actual founder capacity after personal commitments; the proposed Money Map revisions; publication was subsequently requested by Boubacar; that permission does not approve any Money Map edits.</p><p>No blanket send, spend, deploy or live-board approval is inferred from commissioning this review.</p></div></details>
+<details class="sec" id="sec-15" open><summary><h2>15. Confidence and evidence gaps</h2></summary><div class="sec-body"><p>High confidence: source hierarchy, quoted live row conflicts, calendar arithmetic, founding-rate mismatch and contact double-counting. Moderate confidence: which activities will consume founder time and likely failure modes. Low confidence: realized conversion, net cash, actual usable platform invitation volume and future client capacity.</p><p>Read-only evidence: master website files and strategy copies; decision log; Lighthouse; September 8 handoff; Money Map PRD; live y1 reader and focused snapshot; independent Astra Medium financial pass. The web tool could not open the live Money Map page; database access succeeded instead. No synthetic submission was used to “test” a live form.</p><p>No fresh Stripe/Venmo ledger, complete measured dial history, current platform allowance confirmation, or complete resolved future action inventory was obtained. Treat claims about guaranteed ranking, instant indexing, universal AI citations and conversion benchmarks in the plan as unverified; the proposed plan does not rely on them.</p><p>Review scope is the finalized 30-day sprint and relevant competing rows, not a comprehensive audit of every historical state entry. Missing evidence remains missing rather than being converted into zero, success or a fabricated confidence percentage.</p></div></details>
+<details class="sec" id="sec-16" open><summary><h2>16. Astra workflow decision</h2></summary><div class="sec-body"><p><strong>REVISE pending controlled-test evidence.</strong> Astra Medium produced specific, useful analytical corrections, independently challenged by another Astra Medium pass. That does not establish faster prospect delivery, lower cost or more revenue than Sol.</p><p>Permit evidence gathering and private draft preparation within the existing workflow. Do not scale outbound volume or assume a model upgrade fixes offer-market fit. The controlled teardown section must be completed, with any provenance gaps explicit, before the final model verdict is issued.</p></div></details>
+
+  <footer class="foot">
+    September 8 evidence snapshot. No outreach or live Money Map changes. <a href="source.md" download>Download Markdown source for another agent</a>.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
