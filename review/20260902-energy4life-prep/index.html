@@ -46,29 +46,38 @@
     min-width:44px; min-height:40px;
   }
   .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
-  details.sec, details.tldr{
+  details.sec, details.tldr, details.qref{
     background:var(--card); border:1px solid var(--border);
     border-radius:12px; margin:18px 0; overflow:hidden;
   }
   details.tldr{border-color:var(--accent); background:var(--bg2);}
-  details.sec > summary, details.tldr > summary{
+  details.qref{border-color:var(--accent2); background:var(--bg2);}
+  details.qref > summary h2{color:var(--accent2);}
+  details.sec > summary, details.tldr > summary, details.qref > summary{
     cursor:pointer; list-style:none; padding:14px 18px;
     display:flex; align-items:center; gap:10px;
     user-select:none;
   }
   details.sec > summary::-webkit-details-marker,
-  details.tldr > summary::-webkit-details-marker{display:none;}
-  details.sec > summary::before, details.tldr > summary::before{
+  details.tldr > summary::-webkit-details-marker,
+  details.qref > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before, details.qref > summary::before{
     content:"\25B8"; color:var(--accent); font-size:.9rem;
     transition:transform .15s ease; flex:none;
   }
-  details[open].sec > summary::before, details[open].tldr > summary::before{
+  details[open].sec > summary::before, details[open].tldr > summary::before, details[open].qref > summary::before{
     transform:rotate(90deg);
   }
-  details.sec > summary h2, details.tldr > summary h2{
+  details.sec > summary h2, details.tldr > summary h2, details.qref > summary h2{
     margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
   }
   details.tldr > summary h2{color:var(--accent);}
+  .qref-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 24px;}
+  .qref-grid h3{margin:0 0 6px; font-size:.92rem; color:var(--accent2);}
+  .qref-grid ul{margin:0 0 4px; padding-left:18px;}
+  .qref-grid li{margin:0 0 5px; font-size:.92rem;}
+  .qref-col{min-width:0;}
+  @media (max-width:640px){ .qref-grid{grid-template-columns:1fr;} }
   summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
   .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
   .sec-body > :first-child{margin-top:14px;}
@@ -109,6 +118,10 @@
   .tag.conf-med{background:var(--warn); color:#1a1206;}
   .tag.conf-low{background:var(--bad); color:#2a0d0d;}
   .unverified{color:var(--warn); font-size:.8rem; font-style:italic;}
+  .callout{border:1px solid var(--warn); background:rgba(242,184,75,0.07);
+    border-radius:10px; padding:12px 14px; margin:14px 0;}
+  .callout.good{border-color:var(--good); background:rgba(127,224,184,0.07);}
+  .callout.bad{border-color:var(--bad); background:rgba(255,122,122,0.07);}
   .rank{display:flex; gap:12px; align-items:flex-start; padding:12px 0;
     border-bottom:1px dashed var(--border);}
   .rank:last-child{border-bottom:none;}
@@ -135,7 +148,8 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-09-10:46:46 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-09-09-11:03:54 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -152,6 +166,7 @@
             aria-expanded="false" aria-controls="navLinks"
             aria-label="Toggle section navigation">&#9776;</button>
     <div class="nav-links" id="navLinks">
+      <a href="#quickref">Quick Reference</a>
       <a href="#tldr">TL;DR</a>
       <a href="#sec-logistics">Logistics</a>
       <a href="#sec-lead">The lead</a>
@@ -175,6 +190,50 @@
   <h1>Energy4Life &mdash; Technical Product Lead</h1>
   <div class="meta">Recruiter call with Rachel Kent Manning, Waterstone Human Capital. Friday 2026-09-04, 10:30 to 11:15am Mountain. Phone, she calls you. Built 2026-09-02 for lighthouse-actions-02.</div>
 </header>
+
+<details class="qref" id="quickref" open>
+  <summary><h2>Quick Reference &mdash; have this open during the call</h2></summary>
+  <div class="sec-body">
+    <div class="qref-grid">
+      <div class="qref-col">
+        <h3>Logistics</h3>
+        <ul>
+          <li><strong>Today, 2026-09-09, 11:30am&ndash;12:15pm Mountain</strong></li>
+          <li>Recruiter: Rachel Kent Manning, Recruiting Principal, Waterstone Human Capital</li>
+          <li>Role: <strong>Technical Product Lead</strong>, remote for now (onsite once they open a Salt Lake City office, timing TBD)</li>
+          <li>Comp as given: <strong>$130,000&ndash;$150,000 base</strong> + performance bonus + long-term equity eligibility</li>
+        </ul>
+        <h3>Energy4Life, fast</h3>
+        <ul>
+          <li><a href="https://e4l.com/">e4l.com</a> &mdash; 2024 rebrand of NES Health / Nutri-Energetics Systems, founded 2001, Harry Massey still CEO</li>
+          <li>~12&ndash;15 people (product team &mdash; LinkedIn lists the wider company larger). Bioenergetic wellness: a scanning platform, the miHealth device, the GEM wearable, infoceuticals, an AI insights layer, a practitioner portal</li>
+          <li>Category is scientifically contested in print (Science-Based Medicine critique, upheld UK ASA complaint against the predecessor entity) &mdash; real, priced-in trade-off, not a reason to skip the call</li>
+          <li>No written req found anywhere for this exact title &mdash; ask her for it</li>
+        </ul>
+      </div>
+      <div class="qref-col">
+        <h3>Your positioning</h3>
+        <ul>
+          <li>Frame: they need someone to own the seams between a wearable, a device, an app and an AI layer &mdash; not one more specialist. That's the decade you spent as the HR partner inside a global engineering org, now doing the same job solo on your own production AI system</li>
+          <li>Name the gap first: no wearables/biosignals background, no product-management title, no engineering credential. You've done product-shaped work, never held the seat</li>
+          <li>Never a coding/technical-authorship claim &mdash; you designed and operate the system, you didn't build it as a developer</li>
+          <li>Comp: their band floor ($130k) sits under your working floor ($140k). Don't name a number first; if pushed, $150k&ndash;$165k is the honest ask</li>
+        </ul>
+        <h3>Top questions to ask</h3>
+        <ul>
+          <li>Can you send me the written job description?</li>
+          <li>Is 12&ndash;15 the whole company or just the product team?</li>
+          <li>Who does this person report to, and who reports to them?</li>
+          <li>Do any devices carry FDA clearance, and how does leadership talk about the published category criticism?</li>
+          <li>What does long-term equity eligibility actually mean &mdash; options, phantom equity, or a bonus plan called equity?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout good" style="margin-top:14px;">
+      <p style="margin:0"><strong>Opening line, compressed:</strong> ten years in global HR leadership inside a global engineering org, doing exactly what their job description calls "conducting," now running your own production AI system solo since 2025. Then name the wearables/biosignals gap yourself before she finds it. Full scripted versions are in the What to Say section below.</p>
+    </div>
+  </div>
+</details>
 
 <details class="tldr" id="tldr" open>
   <summary><h2>TL;DR</h2></summary>
@@ -686,6 +745,7 @@
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
 
 
 
