@@ -145,8 +145,20 @@
       wrap.className = 'rt';
 
       var status = readFailed ? '' : (state.status || '');
+      // The two buttons only ever WRITE 'applied' or 'skipped', but a row's status
+      // can also arrive from elsewhere -- the 2026-09-09 mailbox reconciliation
+      // writes 'interviewed', 'rejected' and 'unclear' straight into the store.
+      // Those three used to fall through to "No decision yet", so a role that had
+      // actually reached an interview rendered as undecided. That is the exact
+      // failure mode this file's own header bans: a signal that lies is worse than
+      // a blank one. Label them for what they are; they stay read-only here,
+      // because nothing on this page should be able to downgrade an interview to
+      // "applied" with a stray click.
       var label = status === 'applied' ? 'Applied'
                 : status === 'skipped' ? 'Skipped'
+                : status === 'interviewed' ? 'Interviewed'
+                : status === 'rejected' ? 'Rejected'
+                : status === 'unclear' ? 'Status unclear'
                 : readFailed ? 'Unknown' : 'No decision yet';
       var when = state.statusDate ? ' on ' + esc(state.statusDate) : '';
 
@@ -228,13 +240,20 @@
       // keeping, and an overwrite would destroy exactly the history the notes
       // exist to build.
       function currentValue(patch) {
-        var next = {
-          status: state.status || '',
-          statusDate: state.statusDate || null,
-          notes: state.notes || '',
-          notesUpdated: state.notesUpdated || null,
-          history: Array.isArray(state.history) ? state.history.slice() : []
-        };
+        // Start from the WHOLE stored row, not a fixed whitelist of five keys.
+        // A row now carries catalog fields this widget never writes -- company,
+        // title, appliedDate, sourceMailbox, sweep, evidence -- put there by the
+        // 2026-09-09 mailbox reconciliation. Rebuilding the object from a
+        // whitelist silently dropped every one of them on the first click of
+        // Applied, Skipped or Save note: no error, no visible change, the row
+        // just quietly lost the data that says which company it is about.
+        var next = {};
+        Object.keys(state || {}).forEach(function (k) { next[k] = state[k]; });
+        next.status = state.status || '';
+        next.statusDate = state.statusDate || null;
+        next.notes = state.notes || '';
+        next.notesUpdated = state.notesUpdated || null;
+        next.history = Array.isArray(state.history) ? state.history.slice() : [];
         Object.keys(patch).forEach(function (k) { next[k] = patch[k]; });
         return next;
       }
