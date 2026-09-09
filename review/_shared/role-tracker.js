@@ -138,6 +138,62 @@
         var state = byId[key] || {};
         body.appendChild(buildControls(key, state, readFailed));
       });
+      renderUnbacked(byId, readFailed);
+    }
+
+    // ---- ROWS IN THE DB THAT THIS PAGE HAS NO HTML FOR ------------------
+    // The role write-ups on this page are baked into the HTML and the database
+    // only overlays status and notes onto them. That was fine while every row
+    // was authored by hand. It stops being fine the moment an automated sweep
+    // can INSERT a role: the row would be written correctly and be completely
+    // invisible here, which is the worst of both worlds -- the board would
+    // quietly disagree with the page and nobody would know which to believe.
+    //
+    // So: anything on the board with no matching [data-role] element is
+    // rendered into its own block at the top, from the row's own catalog
+    // fields. It is deliberately plain -- these have no write-up yet, and
+    // pretending otherwise would overstate what we know about them.
+    // Silent when there is nothing new, which is the normal case.
+    function renderUnbacked(byId, readFailed) {
+      if (readFailed) { return; }
+      var known = {};
+      rows.forEach(function (r) { known[r.getAttribute('data-role')] = true; });
+      var extras = Object.keys(byId).filter(function (k) {
+        return k.indexOf('role:') === 0 && !known[k];
+      });
+      if (!extras.length) { return; }
+
+      extras.sort(function (a, b) {
+        var da = (byId[a] || {}).appliedDate || '';
+        var db = (byId[b] || {}).appliedDate || '';
+        return db.localeCompare(da);
+      });
+
+      var box = document.createElement('section');
+      box.className = 'rt-unbacked';
+      box.innerHTML =
+        '<h2>Added by the daily sweep (' + extras.length + ')</h2>' +
+        '<p>These roles are on the board but have no write-up on this page yet. ' +
+        'They were found in the mailbox by the daily sweep. Status and notes below ' +
+        'save exactly like every other row.</p>';
+
+      extras.forEach(function (key) {
+        var st = byId[key] || {};
+        var card = document.createElement('div');
+        card.className = 'rank rt-unbacked-row';
+        card.setAttribute('data-role', key);
+        var head = document.createElement('div');
+        head.innerHTML =
+          '<strong>' + esc(st.company || key.replace('role:', '')) + '</strong>' +
+          (st.title ? ' &mdash; ' + esc(st.title) : '') +
+          (st.appliedDate ? ' <span class="rt-dim">(' + esc(st.appliedDate) + ')</span>' : '') +
+          (st.evidence ? '<div class="rt-dim">' + esc(st.evidence) + '</div>' : '');
+        card.appendChild(head);
+        card.appendChild(buildControls(key, st, false));
+        box.appendChild(card);
+      });
+
+      host.insertBefore(box, host.firstChild);
     }
 
     function buildControls(key, state, readFailed) {
