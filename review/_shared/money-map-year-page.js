@@ -490,6 +490,26 @@
             '<span class="mm-tag">' + esc(cfg.title || 'Money Map') + '</span>' +
             '<h1>' + esc(cfg.title || 'Money Map') + '</h1>' +
             '<p class="mm-sub">' + (cfg.tagline || '') + '</p>' +
+
+            // TOP CARD (2026-09-09). One piece of always-visible reference text
+            // directly under the headline, with a link out to the full version.
+            // Deliberately NOT a nav entry: `.mm-nav-links` is display:none behind
+            // the hamburger below 720px and he reads this board on his phone, so a
+            // nav item would be hidden exactly where he needs it. Deliberately not
+            // a board row either: this is reference text he reads, not a decision
+            // he acts on, so it carries no state and belongs in page config.
+            // Absent config renders nothing at all.
+            (cfg.topCard && cfg.topCard.text
+              ? '<div class="mm-topcard">' +
+                  (cfg.topCard.label ? '<span class="mm-topcard-label">' + esc(cfg.topCard.label) + '</span>' : '') +
+                  '<p class="mm-topcard-text">' + esc(cfg.topCard.text) + '</p>' +
+                  (cfg.topCard.href
+                    ? '<a class="mm-topcard-link" href="' + esc(cfg.topCard.href) + '">' +
+                        esc(cfg.topCard.linkLabel || 'Open') + '</a>'
+                    : '') +
+                '</div>'
+              : '') +
+
             '<div id="mmSync" class="mm-sync offline"><span class="dot"></span><span id="mmSyncText">Connecting</span></div>' +
           '</header>' +
 
