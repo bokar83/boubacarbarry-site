@@ -45,6 +45,41 @@
   var UPSERT_RPC = 'y0_upsert';
   var LS_PREFIX = 'rt-draft:';
 
+  /* ---- INTERVIEW STAGE (2026-09-10, his own words) ----------------------
+     "The job pipeline should show the stage of interview (recruiter, hiring
+      manager, etc.). So wgu, Edwards are all past recruiter the others are
+      with recruiter."
+
+     A status says a role IS at interview. It never says WHERE, and where is
+     the thing he scans for. This is one more optional key on the row's
+     existing JSON value -- `interviewStage` plus `interviewStageDate` -- not
+     a column, not a table, not a second store. The rows are free-form JSON
+     blobs already carrying company/title/appliedDate/evidence, so a new key
+     costs no migration and an old row without it renders as "stage not
+     recorded" rather than as a confident guess.
+
+     The ladder is ordered because "past recruiter" is a comparison, and a
+     comparison needs an order. It stops at `offer` deliberately: an offer is
+     an outcome, and outcomes belong to `status`, not here.
+
+     He sets it himself from the row. A stage an agent hardcodes into the page
+     is wrong within days; a stage he changes with one tap is not.
+     ---------------------------------------------------------------------- */
+  var STAGES = [
+    { v: 'recruiter',      label: 'Recruiter screen' },
+    { v: 'hiring-manager', label: 'Hiring manager' },
+    { v: 'panel',          label: 'Panel / team' },
+    { v: 'final',          label: 'Final round' },
+    { v: 'offer',          label: 'Offer stage' }
+  ];
+
+  function stageLabel(v) {
+    for (var i = 0; i < STAGES.length; i++) {
+      if (STAGES[i].v === v) { return STAGES[i].label; }
+    }
+    return '';
+  }
+
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
@@ -136,9 +171,45 @@
         var key = row.getAttribute('data-role');
         var body = row.children[1] || row;
         var state = byId[key] || {};
+        row.setAttribute('data-stage', readFailed ? '' : (state.interviewStage || ''));
+        row.setAttribute('data-stage-name', state.company ||
+          (row.getAttribute('data-role-label') || key.replace('role:', '')).split(' ')[0]);
         body.appendChild(buildControls(key, state, readFailed));
       });
       renderUnbacked(byId, readFailed);
+      renderStageSummary(readFailed);
+    }
+
+    // ---- STAGE SUMMARY, VISIBLE WHILE THE SECTION IS SHUT ---------------
+    // The interview section folds. Which stage each role is at is precisely
+    // what he is scanning for, so it has to survive the fold -- a label only
+    // visible after a tap is a label he will not see. This paints the chips
+    // into the <summary> itself, which stays on screen when the section is
+    // closed. Reads from the same DOM the rows were just rendered from, so
+    // it can never disagree with them.
+    function renderStageSummary(readFailed) {
+      var mount = document.querySelector(cfg.stageSummaryMount || '');
+      if (!mount) { return; }
+      var host2 = mount.querySelector('.rt-stagebar');
+      if (!host2) {
+        host2 = document.createElement('span');
+        host2.className = 'rt-stagebar';
+        mount.appendChild(host2);
+      }
+      if (readFailed) {
+        host2.innerHTML = '<span class="rt-chip rt-chip-none">stages unavailable, read failed</span>';
+        return;
+      }
+      var scope = mount.parentNode || document;
+      var chips = Array.prototype.slice.call(scope.querySelectorAll('[data-role^="role:"]'))
+        .map(function (r) {
+          var name = r.getAttribute('data-stage-name') || '';
+          var st = r.getAttribute('data-stage') || '';
+          return '<span class="rt-chip" data-stage="' + esc(st) + '">' +
+            '<b>' + esc(name) + '</b>' +
+            (st ? esc(stageLabel(st) || st) : 'stage not recorded') + '</span>';
+        });
+      host2.innerHTML = chips.join('');
     }
 
     // ---- ROWS IN THE DB THAT THIS PAGE HAS NO HTML FOR ------------------
@@ -218,6 +289,26 @@
                 : readFailed ? 'Unknown' : 'No decision yet';
       var when = state.statusDate ? ' on ' + esc(state.statusDate) : '';
 
+      // The stage row is offered whenever a role has reached an interview, or
+      // whenever a stage is already recorded. Showing it on an unapplied role
+      // would invite a stage on something that has no interview at all.
+      var stage = readFailed ? '' : (state.interviewStage || '');
+      var showStage = !readFailed && (status === 'interviewed' || !!stage);
+      var stageHtml = !showStage ? '' :
+        '<div class="rt-stagerow">' +
+          '<label class="rt-stagelabel" for="stg-' + esc(key) + '">Interview stage</label>' +
+          '<select class="rt-stage" id="stg-' + esc(key) + '">' +
+            '<option value=""' + (stage ? '' : ' selected') + '>Not recorded</option>' +
+            STAGES.map(function (s) {
+              return '<option value="' + s.v + '"' +
+                (stage === s.v ? ' selected' : '') + '>' + s.label + '</option>';
+            }).join('') +
+          '</select>' +
+          '<span class="rt-stagewhen">' +
+            (state.interviewStageDate ? 'set ' + esc(state.interviewStageDate) : '') +
+          '</span>' +
+        '</div>';
+
       wrap.innerHTML =
         '<div class="rt-head">' +
           '<span class="rt-state" data-state="' + esc(status) + '">' + esc(label) + '</span>' +
@@ -229,6 +320,7 @@
               (status === 'skipped' ? 'true' : 'false') + '">Skipped</button>' +
           '</span>' +
         '</div>' +
+        stageHtml +
         '<p class="rt-why">Why you applied, why you passed, what the recruiter said, what you would ' +
         'do differently. This is the part nobody can reconstruct later, and it is what the next ' +
         'application gets written from.</p>' +
@@ -343,6 +435,44 @@
           });
         });
       });
+
+      // ---- stage: same write path as everything else on this row ---------
+      // Reuses write()/currentValue(), so the whole row is sent, the prior
+      // stage is appended to history rather than overwritten, and a failed
+      // write is as loud here as it is for a note. On failure the select is
+      // put back to the value the database still holds -- a control showing a
+      // stage that was never saved is exactly the lie this file bans.
+      var stageEl = wrap.querySelector('.rt-stage');
+      if (stageEl) {
+        stageEl.addEventListener('change', function () {
+          clearErr();
+          var want = stageEl.value;
+          var prev = state.interviewStage || '';
+          if (want === prev) { return; }
+          var d = todayISO();
+          var hist = Array.isArray(state.history) ? state.history.slice() : [];
+          hist.push({ interviewStage: want || 'cleared', date: d, from: prev });
+          var payload = currentValue({
+            interviewStage: want,
+            interviewStageDate: want ? d : null,
+            history: hist
+          });
+          stageEl.disabled = true;
+          write(key, JSON.stringify(payload)).then(function () {
+            state = payload;
+            var whenS = wrap.querySelector('.rt-stagewhen');
+            if (whenS) { whenS.textContent = want ? 'set ' + d : ''; }
+            var rowEl = document.querySelector('[data-role="' + key + '"]');
+            if (rowEl) { rowEl.setAttribute('data-stage', want); }
+            renderStageSummary(false);
+          }).catch(function (err) {
+            stageEl.value = prev;
+            showErr('That interview stage', err);
+          }).then(function () {
+            stageEl.disabled = false;
+          });
+        });
+      }
 
       noteEl.addEventListener('input', function () {
         savedEl.setAttribute('data-dirty', '1');
