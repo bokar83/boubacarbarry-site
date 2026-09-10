@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Map: AI in HR (Sample)</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; white-space:pre-wrap;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.88rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  .node-group{border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin:0 0 14px; background:var(--bg2);}
+  .node-group h3{margin:0 0 8px; font-size:.98rem; color:var(--accent2);}
+  .node-group .node-list{display:flex; flex-wrap:wrap; gap:8px;}
+  .node-chip{border:1px solid var(--border); border-radius:8px; padding:6px 10px; background:var(--card); font-size:.85rem;}
+  .node-chip b{color:var(--text);}
+  .node-chip .type-tag{color:var(--text-dim); font-size:.72rem; display:block; margin-top:2px;}
+  .edge-row td:first-child{white-space:nowrap; color:var(--accent2);}
+  .tag{display:inline-block; font-size:.72rem; border:1px solid var(--border); border-radius:6px; padding:1px 6px; margin-left:6px; color:var(--text-dim);}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-09-22:15:47 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Market Map Sample</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-method">Method</a>
+      <a href="#sec-nodes">Node Types</a>
+      <a href="#sec-map">The Map</a>
+      <a href="#sec-edges">Relationships</a>
+      <a href="#sec-aliases">Dedup / Aliases</a>
+      <a href="#sec-proof">What This Proves</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Market Map: AI in HR (Sample Deliverable)</h1>
+    <div class="meta">Sample market-map deliverable &middot; built to prove a sellable offer &middot; 2026-09-09</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p>This is one sample of a deliverable type I can now sell: a "market map," a structured, graph-based competitive intelligence report on a specific industry, built once and re-runnable as a paid retainer. It costs almost nothing extra to build because it runs on infrastructure I already have working: multi-agent research, a database-backed task tracker, and a coordination system for keeping the work straight.</p>
+      <p>I built this one on a market I'm already close to. The AI-in-HR / People Ops landscape: the vendors, the boutique consultants, and the analysts a mid-market HR leader is currently trying to make sense of. It's real. 28 named entities, real relationships between them (acquisitions, coverage, competition), pulled from live web research, no invented names.</p>
+      <p>The deliverable itself proves the offer works. The next step is turning it into either (a) a paid report + retainer for a company that needs this exact kind of clarity, or (b) a lead magnet that hands an HR leader "the map nobody gave you" in exchange for a conversation.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-method" open>
+    <summary><h2>Method: How This Is Structured (Not a List)</h2></summary>
+    <div class="sec-body">
+      <p>Most competitive reports are a list of names with one-line descriptions. This is not that. It borrows three disciplines from graph-based intelligence work:</p>
+      <ol>
+        <li><b>A fixed schema.</b> Every entity gets a type before it gets a name. Types are locked before research starts, so the map stays consistent instead of turning into free-text notes.</li>
+        <li><b>Nodes and edges, not paragraphs.</b> Every entity is a node. Every relationship between two entities (acquired, competes with, covers, founded) is an edge, tagged with a type and a date where known. This is what makes the map re-runnable: next quarter, only the edges that changed need touching.</li>
+        <li><b>A dedup pass.</b> The same organization shows up under multiple names in public sources (a company renamed, an analyst's old firm vs. new firm). Those get merged into one node with an aliases list, so the map doesn't double-count the same player.</li>
+      </ol>
+      <p>Below is the schema actually used for this map.</p>
+      <pre>SCHEMA (node types)
+- vendor            : a company selling an AI/HR product
+- consulting_firm    : a firm selling AI/HR advisory or implementation services
+- analyst_firm       : a research/analyst organization covering this market
+- person             : a named individual (analyst, founder, thought leader)
+- event              : a recurring industry event/conference
+
+SCHEMA (edge types)
+- acquired_by        : vendor -> vendor/acquirer, with a date
+- founded            : person -> firm
+- covers             : analyst_firm/person -> vendor or market segment
+- competes_with       : vendor -> vendor (same buyer, same job-to-be-done)
+- speaks_at          : person -> event
+- sold_to            : firm -> firm (business sale, distinct from acquisition of a product)</pre>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-nodes" open>
+    <summary><h2>Node Inventory (28 entities, 5 types)</h2></summary>
+    <div class="sec-body">
+      <div class="node-group">
+        <h3>Vendors: Talent Acquisition Suites</h3>
+        <div class="node-list">
+          <div class="node-chip"><b>Phenom</b><span class="type-tag">vendor · 700+ enterprise customers · Gartner MQ Visionary 2025</span></div>
+          <div class="node-chip"><b>Greenhouse</b><span class="type-tag">vendor · structured high-volume hiring · Voice AI</span></div>
+          <div class="node-chip"><b>Beamery</b><span class="type-tag">vendor · talent CRM + internal mobility + workforce planning</span></div>
+          <div class="node-chip"><b>Paradox</b><span class="type-tag">vendor · conversational recruiting (now part of Workday)</span></div>
+        </div>
+      </div>
+      <div class="node-group">
+        <h3>Vendors: People Analytics / Skills Intelligence</h3>
+        <div class="node-list">
+          <div class="node-chip"><b>Visier</b><span class="type-tag">vendor · dedicated people analytics platform</span></div>
+          <div class="node-chip"><b>One Model</b><span class="type-tag">vendor · people analytics / workforce data</span></div>
+          <div class="node-chip"><b>Eightfold</b><span class="type-tag">vendor · skills + talent intelligence</span></div>
+          <div class="node-chip"><b>Gloat</b><span class="type-tag">vendor · internal talent marketplace</span></div>
+        </div>
+      </div>
+      <div class="node-group">
+        <h3>Vendors: Employee Experience / Agentic HR</h3>
+        <div class="node-list">
+          <div class="node-chip"><b>Leena AI</b><span class="type-tag">vendor · agentic "AI Colleagues" across HR/IT/finance</span></div>
+          <div class="node-chip"><b>Moveworks</b><span class="type-tag">vendor · conversational AI/enterprise search (acquired by ServiceNow, Dec 2025)</span></div>
+          <div class="node-chip"><b>Lattice</b><span class="type-tag">vendor · performance + AI Agent Platform (coach, onboarding concierge, IT help desk)</span></div>
+          <div class="node-chip"><b>HiBob</b><span class="type-tag">vendor · engagement signal + sentiment AI for fast-growing orgs</span></div>
+          <div class="node-chip"><b>Culture Amp</b><span class="type-tag">vendor · engagement + performance, AI-assisted insights</span></div>
+        </div>
+      </div>
+      <div class="node-group">
+        <h3>Vendors: HCM Suite Platforms (Acquirers)</h3>
+        <div class="node-list">
+          <div class="node-chip"><b>Workday</b><span class="type-tag">vendor · AI-first HCM · acquired HiredScore, Evisort, Paradox, Sana</span></div>
+          <div class="node-chip"><b>ServiceNow</b><span class="type-tag">vendor · acquired Moveworks (Dec 2025), launched EmployeeWorks</span></div>
+          <div class="node-chip"><b>SAP</b><span class="type-tag">vendor · SuccessFactors HCM ecosystem</span></div>
+          <div class="node-chip"><b>Oracle</b><span class="type-tag">vendor · Oracle HCM ecosystem</span></div>
+        </div>
+      </div>
+      <div class="node-group">
+        <h3>Consulting / Advisory Firms (the layer Catalyst Works sits adjacent to)</h3>
+        <div class="node-list">
+          <div class="node-chip"><b>MidMarket AI</b><span class="type-tag">consulting_firm · pragmatic AI adoption for mid-sized businesses</span></div>
+          <div class="node-chip"><b>ThirdEye Data</b><span class="type-tag">consulting_firm · boutique AI/data systems, governance frameworks</span></div>
+          <div class="node-chip"><b>Algoscale</b><span class="type-tag">consulting_firm · applied ML for mid-sized/growth-stage firms</span></div>
+        </div>
+      </div>
+      <div class="node-group">
+        <h3>Analysts / Research Firms / People</h3>
+        <div class="node-list">
+          <div class="node-chip"><b>Josh Bersin</b><span class="type-tag">person · global HR industry analyst</span></div>
+          <div class="node-chip"><b>The Josh Bersin Company</b><span class="type-tag">analyst_firm · successor to Bersin &amp; Associates, post-Deloitte</span></div>
+          <div class="node-chip"><b>George LaRocque</b><span class="type-tag">person · founder, WorkTech; HR Tech Conference speaker</span></div>
+          <div class="node-chip"><b>WorkTech</b><span class="type-tag">analyst_firm · market intelligence across HR/Talent/Work Tech</span></div>
+          <div class="node-chip"><b>Madeline Laurano</b><span class="type-tag">person · founder + chief analyst, Aptitude Research</span></div>
+          <div class="node-chip"><b>Aptitude Research</b><span class="type-tag">analyst_firm · TA + employee experience research</span></div>
+          <div class="node-chip"><b>William Tincup</b><span class="type-tag">person · 20+ yr HR/TA analyst and commentator</span></div>
+        </div>
+      </div>
+      <div class="node-group">
+        <h3>Events</h3>
+        <div class="node-list">
+          <div class="node-chip"><b>HR Tech Conference (Las Vegas)</b><span class="type-tag">event · annual, hosts vendor + investor + analyst tracks</span></div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-map" open>
+    <summary><h2>The Map: How the Buyer Actually Sees It</h2></summary>
+    <div class="sec-body">
+      <p>This is the part a client pays for: not the list above, but the shape of the market once you group it by what an HR leader is actually trying to decide.</p>
+      <p><b>Decision 1: "Do I buy a suite or point solutions?"</b> Workday, SAP, and Oracle are absorbing point solutions into their suites (Workday bought HiredScore, Evisort, Paradox, and Sana; ServiceNow bought Moveworks). That is the single biggest structural move in this market right now. The AI feature you'd have bought standalone eighteen months ago is now a line item inside a suite you already pay for. A mid-market buyer needs to know this before signing a new point-solution contract.</p>
+      <p><b>Decision 2: "Which point solutions still make sense standalone?"</b> Talent acquisition (Phenom, Greenhouse, Beamery) and people analytics (Visier, One Model, Eightfold) are the two categories where independents are still winning distinct deals, because the suite vendors' offerings in these categories are newer and less mature.</p>
+      <p><b>Decision 3: "Who do I trust to tell me the truth about all this?"</b> Three analyst voices actually cover this space in depth. Josh Bersin (broadest, most cited), George LaRocque and WorkTech (vendor and investor-facing, curates the HR Tech Conference investor report), and Madeline Laurano and Aptitude Research (narrower, TA and employee-experience focused, publishes usage-rate data like the finding that 74% of companies are now using AI in HR). A buyer who only reads vendor marketing never sees this layer.</p>
+      <p><b>Decision 4: "Do I need a platform, or do I need a translator?"</b> This is the gap boutique consultants (MidMarket AI, ThirdEye Data, Algoscale) exist to fill. None of them sell a platform. They sell the judgment layer between a confusing vendor landscape and a company that just wants AI to work. This is also, functionally, the exact positioning Catalyst Works already occupies, just not yet mapped against this specific vendor landscape.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-edges" open>
+    <summary><h2>Relationships (Edges)</h2></summary>
+    <div class="sec-body">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Edge type</th><th>From</th><th>To</th><th>Detail / Date</th></tr></thead>
+          <tbody>
+            <tr class="edge-row"><td>acquired_by</td><td>HiredScore</td><td>Workday</td><td>Talent intelligence product folded into Workday AI</td></tr>
+            <tr class="edge-row"><td>acquired_by</td><td>Evisort</td><td>Workday</td><td>Contract AI folded into Workday AI</td></tr>
+            <tr class="edge-row"><td>acquired_by</td><td>Paradox</td><td>Workday</td><td>Conversational recruiting folded into Workday AI</td></tr>
+            <tr class="edge-row"><td>acquired_by</td><td>Sana</td><td>Workday</td><td>Learning AI folded into Workday AI</td></tr>
+            <tr class="edge-row"><td>acquired_by</td><td>Moveworks</td><td>ServiceNow</td><td>Completed Dec 2025; launched ServiceNow EmployeeWorks ~2 months later</td></tr>
+            <tr class="edge-row"><td>acquired_by</td><td>Included AI</td><td>Phenom</td><td>Agentic people analytics; Jan 2026</td></tr>
+            <tr class="edge-row"><td>acquired_by</td><td>Be Applied</td><td>Phenom</td><td>Skills-first assessment; Feb 2026</td></tr>
+            <tr class="edge-row"><td>sold_to</td><td>Bersin &amp; Associates</td><td>Deloitte</td><td>2012 sale; Josh Bersin left in 2018, founded The Josh Bersin Company</td></tr>
+            <tr class="edge-row"><td>founded</td><td>Josh Bersin</td><td>The Josh Bersin Company</td><td>Post-Deloitte research and advisory practice</td></tr>
+            <tr class="edge-row"><td>founded</td><td>George LaRocque</td><td>WorkTech</td><td>Market intelligence across HR/Talent/Work Tech</td></tr>
+            <tr class="edge-row"><td>founded</td><td>Madeline Laurano</td><td>Aptitude Research</td><td>18+ yr focus on TA + employee experience</td></tr>
+            <tr class="edge-row"><td>covers</td><td>The Josh Bersin Company</td><td>AI-in-HR market (broad)</td><td>Broadest-cited coverage of AI shift in HR strategy</td></tr>
+            <tr class="edge-row"><td>covers</td><td>WorkTech</td><td>Vendor + investor landscape</td><td>Curates pre-conference investor report at HR Tech</td></tr>
+            <tr class="edge-row"><td>covers</td><td>Aptitude Research</td><td>TA + employee experience segment</td><td>Publishes AI-adoption usage-rate research (74% using AI in HR)</td></tr>
+            <tr class="edge-row"><td>speaks_at</td><td>George LaRocque</td><td>HR Tech Conference (Las Vegas)</td><td>2026 speaker; AI adoption + vendor acquisition sessions</td></tr>
+            <tr class="edge-row"><td>competes_with</td><td>Phenom</td><td>Greenhouse</td><td>Talent acquisition suite category</td></tr>
+            <tr class="edge-row"><td>competes_with</td><td>Phenom</td><td>Beamery</td><td>Talent acquisition suite category</td></tr>
+            <tr class="edge-row"><td>competes_with</td><td>Visier</td><td>One Model</td><td>Dedicated people analytics category</td></tr>
+            <tr class="edge-row"><td>competes_with</td><td>Eightfold</td><td>Gloat</td><td>Skills/talent intelligence + internal mobility overlap</td></tr>
+            <tr class="edge-row"><td>competes_with</td><td>Leena AI</td><td>Moveworks / ServiceNow EmployeeWorks</td><td>Agentic employee-experience assistant category</td></tr>
+            <tr class="edge-row"><td>competes_with</td><td>Lattice</td><td>Culture Amp</td><td>Performance + engagement category</td></tr>
+            <tr class="edge-row"><td>competes_with</td><td>HiBob</td><td>Culture Amp</td><td>Engagement/sentiment signal overlap</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-aliases" open>
+    <summary><h2>Dedup / Aliases (the discipline that keeps this re-runnable)</h2></summary>
+    <div class="sec-body">
+      <p>Public sources refer to the same organization under different names depending on the era or the angle a source is writing from. Each row below is one canonical node; every other string is an alias that gets mapped to it on re-run, so the map never double-counts the same entity.</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Canonical node</th><th>Aliases seen in sources</th><th>Why it needed merging</th></tr></thead>
+          <tbody>
+            <tr><td>The Josh Bersin Company</td><td>Bersin &amp; Associates; Bersin by Deloitte; The Josh Bersin Academy</td><td>Same person's research practice renamed across three ownership eras (independent -> Deloitte -> independent again)</td></tr>
+            <tr><td>ServiceNow EmployeeWorks</td><td>Moveworks; ServiceNow AI Agent for HR</td><td>Acquired product (Moveworks) was rebranded and merged into a new platform name post-acquisition</td></tr>
+            <tr><td>Workday AI</td><td>Workday HCM; Workday (parent, pre-acquisition mentions of HiredScore/Evisort/Paradox/Sana as standalone)</td><td>Four formerly independent vendors are now referenced as "Workday" features in current sources</td></tr>
+            <tr><td>WorkTech</td><td>George LaRocque's research; WorkTech Market Intelligence</td><td>Firm name used inconsistently vs. the founder's personal byline in press coverage</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>In a production engagement this table becomes a real <code>aliases.csv</code> file the pipeline reads on every re-run, so a client's retainer doesn't require re-doing this dedup work from scratch each quarter.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-proof" open>
+    <summary><h2>What This Proves + The Next Step</h2></summary>
+    <div class="sec-body">
+      <p><b>What this proves:</b> the multi-agent research and task-tracking infrastructure I already run in production can produce a real, sellable competitive-intelligence deliverable end to end. Schema, real web research, node/edge structure, dedup, and a client-ready page, without building anything new. Most people offering this kind of report have to build the coordination layer first. I already have it running.</p>
+      <p><b>The concrete next step to sell it:</b> two paths, not mutually exclusive.</p>
+      <ol>
+        <li><b>Lead magnet into Catalyst Works.</b> Offer HR/People Ops leaders "the AI vendor map nobody gave you" in exchange for a conversation. This sample already IS that asset for the AI-in-HR vertical, which is exactly where Catalyst Works already positions. Use it as the hook on the AI-for-HR page or in outreach to HR leaders confused about vendor selection.</li>
+        <li><b>Direct sale + retainer.</b> Any company entering or navigating a specific market can be the buyer. Sell the first report as a one-time diagnostic (name a real price band once one prospect is live), then the retainer is "we re-run your market map every quarter as the landscape moves." That's cheap for me to deliver because re-running is mostly re-touching the edges, not rebuilding the map. Best next move: bring this exact sample to a warm HR/People-ops contact already in the pipeline and ask directly whether their team would use something like this before a vendor selection.</li>
+      </ol>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Sample deliverable built to validate a sellable offer (decision D-20260909-305863). Entities and relationships researched live via web search, 2026-09-09. No fictional entities. Not a pitch for AI HR vendors named here.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
