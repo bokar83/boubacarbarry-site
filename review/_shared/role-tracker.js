@@ -188,7 +188,7 @@
     // closed. Reads from the same DOM the rows were just rendered from, so
     // it can never disagree with them.
     function renderStageSummary(readFailed) {
-      var mount = document.querySelector(cfg.stageSummaryMount || '');
+      var mount = cfg.stageSummaryMount ? document.querySelector(cfg.stageSummaryMount) : null;
       if (!mount) { return; }
       var host2 = mount.querySelector('.rt-stagebar');
       if (!host2) {
@@ -237,7 +237,9 @@
     // has its own entry in the nav bar. Falls back to appending at the end of
     // the host -- never to the top -- if a page has no mount.
     function renderUnbacked(byId, readFailed) {
-      var mount = document.querySelector(cfg.unbackedMount || '');
+      // querySelector('') THROWS a SyntaxError -- an unconfigured mount must be
+      // absent, never an exception that takes the whole render down with it.
+      var mount = cfg.unbackedMount ? document.querySelector(cfg.unbackedMount) : null;
       var section = mount ? mount.closest('details') : null;
       if (readFailed) {
         if (mount) {
