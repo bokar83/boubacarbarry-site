@@ -172,8 +172,14 @@
         var body = row.children[1] || row;
         var state = byId[key] || {};
         row.setAttribute('data-stage', readFailed ? '' : (state.interviewStage || ''));
-        row.setAttribute('data-stage-name', state.company ||
-          (row.getAttribute('data-role-label') || key.replace('role:', '')).split(' ')[0]);
+        // The chip carries the company, not the row's full title, and a
+        // parenthetical qualifier ("Energy4Life (via Waterstone Human Capital)")
+        // is the recruiter's name, not the employer's -- it pushed the chip past
+        // the edge of a 375px screen. Keep the employer.
+        row.setAttribute('data-stage-name',
+          String(state.company ||
+            (row.getAttribute('data-role-label') || key.replace('role:', '')).split(' ')[0])
+            .replace(/\s*\([^)]*\)\s*/g, ' ').trim());
         body.appendChild(buildControls(key, state, readFailed));
       });
       renderUnbacked(byId, readFailed);
