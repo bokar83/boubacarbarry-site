@@ -221,18 +221,44 @@
     // quietly disagree with the page and nobody would know which to believe.
     //
     // So: anything on the board with no matching [data-role] element is
-    // rendered into its own block at the top, from the row's own catalog
-    // fields. It is deliberately plain -- these have no write-up yet, and
-    // pretending otherwise would overstate what we know about them.
+    // rendered into its own block, from the row's own catalog fields. It is
+    // deliberately plain -- these have no write-up yet, and pretending
+    // otherwise would overstate what we know about them.
     // Silent when there is nothing new, which is the normal case.
+    //
+    // WHERE IT GOES -- corrected 2026-09-10, his words: "The items from the
+    // daily sweep need to be at the bottom (and have a navigation bar
+    // location)." This block used to insertBefore(host.firstChild), which put
+    // 299 sweep rows ABOVE the headline count, above the roles at interview,
+    // above everything, with no way to fold them. That single line was most of
+    // what made the page read backwards on a phone: the first screen was a
+    // rejected role nobody had written up. It now renders into an authored
+    // mount at the BOTTOM of the page, inside a section that ships shut and
+    // has its own entry in the nav bar. Falls back to appending at the end of
+    // the host -- never to the top -- if a page has no mount.
     function renderUnbacked(byId, readFailed) {
-      if (readFailed) { return; }
+      var mount = document.querySelector(cfg.unbackedMount || '');
+      var section = mount ? mount.closest('details') : null;
+      if (readFailed) {
+        if (mount) {
+          mount.innerHTML = '<p class="rt-dim">Could not read the board, so the roles the ' +
+            'mailbox sweep found are not listed here. This is a failed read, <em>not</em> an ' +
+            'empty sweep.</p>';
+        }
+        return;
+      }
       var known = {};
       rows.forEach(function (r) { known[r.getAttribute('data-role')] = true; });
       var extras = Object.keys(byId).filter(function (k) {
         return k.indexOf('role:') === 0 && !known[k];
       });
-      if (!extras.length) { return; }
+      if (!extras.length) {
+        // Nothing new. Hide the whole section rather than leave an empty shell
+        // and a nav link that scrolls to nothing.
+        if (section) { section.hidden = true; }
+        if (mount) { mount.innerHTML = ''; }
+        return;
+      }
 
       extras.sort(function (a, b) {
         var da = (byId[a] || {}).appliedDate || '';
@@ -240,13 +266,22 @@
         return db.localeCompare(da);
       });
 
-      var box = document.createElement('section');
+      var box = document.createElement('div');
       box.className = 'rt-unbacked';
       box.innerHTML =
-        '<h2>Added by the daily sweep (' + extras.length + ')</h2>' +
         '<p>These roles are on the board but have no write-up on this page yet. ' +
-        'They were found in the mailbox by the daily sweep. Status and notes below ' +
-        'save exactly like every other row.</p>';
+        'They were found in the mailbox by the daily sweep, newest first. Status, ' +
+        'notes and interview stage below save exactly like every other row.</p>';
+
+      // Put the real count on the section's own summary, so it is readable
+      // while the section is shut.
+      if (section) {
+        var sum = section.querySelector(':scope > summary > h2');
+        if (sum) {
+          sum.textContent = 'From the mailbox sweep — ' + extras.length +
+            ' roles with no write-up yet';
+        }
+      }
 
       extras.forEach(function (key) {
         var st = byId[key] || {};
@@ -264,7 +299,8 @@
         box.appendChild(card);
       });
 
-      host.insertBefore(box, host.firstChild);
+      if (mount) { mount.innerHTML = ''; mount.appendChild(box); }
+      else { host.appendChild(box); }
     }
 
     function buildControls(key, state, readFailed) {
