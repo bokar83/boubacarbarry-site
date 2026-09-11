@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cowrie playbook</title>
+
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+  .tablewrap{overflow-x:auto; margin:14px 0;}
+  table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:480px;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  blockquote.callout{margin:14px 0;}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-10-23:29:49 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Cowrie playbook</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">Top</a>
+      <a href="../cowrie/">&#8592; Cowrie hub</a>
+      <a href="#sec-1">Guiding principle</a>
+      <a href="#sec-2">Scope of the evidence behind this </a>
+      <a href="#sec-3">Operating constraints</a>
+      <a href="#sec-4">Category strategy</a>
+      <a href="#sec-5">First bid run</a>
+      <a href="#sec-6">Sourcing process</a>
+      <a href="#sec-7">The calculator's role</a>
+      <a href="#sec-8">Listing and selling process</a>
+      <a href="#sec-9">Sales channels and payment safety</a>
+      <a href="#sec-10">Red flags and hard no's</a>
+      <a href="#sec-11">30-day execution plan</a>
+      <a href="#sec-12">Descoped</a>
+      <a href="#sec-13">Future / not-now ideas</a>
+      <a href="#sec-14">BORING PORT</a>
+      <a href="#sec-15">Session log</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Cowrie playbook</h1>
+    <div class="meta">The full lane playbook. Hub: <a href="../cowrie/">/review/cowrie/</a> &middot; Updated 2026-09-10</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>This is the Cowrie playbook, rendered as a page.</strong> It is the same content that lives in the repo as the lane roadmap, published here so it is readable on a phone instead of being a file path.</p>
+      <p class="callout"><strong>The bidding rules, if that is all you came for:</strong> manifest or no bid. Halve the stated retail and verify the top line items against live Facebook Marketplace and KSL comps. Assume 10 to 30 percent dead units. Run the scorer and bid its <code>max_bid</code>, never <code>max_bid_ceiling</code>. Land at 20 percent of verified retail, 30 percent is the absolute wall. One proxy bid, then walk away.</p>
+      <p><strong>Codename:</strong> cowrie <strong>Status:</strong> active <strong>Entity:</strong> Cowrie (Boubacar's commerce / e-commerce umbrella &ndash; deliberately separate from Catalyst Works, Signal Works, Ghost Works, and the AI/HR public brand) <strong>Feeds Lighthouse:</strong> PATH B revenue &ndash; a second, independent revenue avenue that does not compete for the fractional AI/HR north-star hours. Runs inside a hard operator cap (see Operating constraints). <strong>Lifespan:</strong> open-ended <strong>Started:</strong> 2026-08-25 (name assigned by Boubacar); this playbook 2026-09-08 <strong>Owner:</strong> Boubacar Barry <strong>One-line:</strong> buy under-competed physical inventory at auction with verified math, resell it locally at a known price, and compound one category at a time instead of flipping whatever a pallet happens to contain.</p>
+      <blockquote class="callout"><strong>Lane separateness is the design, not a gap.</strong> Cowrie is evaluated against its own thesis (commerce revenue), never against the AI/HR thesis. Never propose killing it as "off-thesis." Standing correction, Boubacar 2026-08-25, recorded in <code>memory/project_cowrie_commerce_lane_name_2026_08_25.md</code>.</blockquote>
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1" open>
+    <summary><h2>Guiding principle</h2></summary>
+    <div class="sec-body">
+      <p>This lane runs inside the active 30-day sprint, and the sprint's locked operating philosophy governs it:</p>
+      <blockquote class="callout"><strong>Bias for action. Stop thinking and start doing.</strong> Decision <code>D-20260907-5291cc</code> (<code>docs/decisions/LEDGER.md</code>), Boubacar 2026-09-07: <em>"It's easy to win because most people don't take action... I'm all about the action: less say and more do."</em></blockquote>
+      <p>What that means concretely here, because this lane is unusually easy to research forever without buying anything:</p>
+      <ul><li><strong>The gate on a pallet is the math, not more reading.</strong> If the number clears the ceiling in this playbook, bid. If it does not, pass. There is no third state called "research it more."</li><li><strong>One real pallet beats ten more absorbed videos.</strong> Every recovery percentage in our calculator is currently a hand-picked prior with <code>n=0</code> real outcomes behind it. The only thing that converts theory into a number is buying, selling, and logging one lot.</li><li><strong>Losing an auction is the system working.</strong> Expect to lose 70-80% of bids. Winning most of them means the ceiling is set too high.</li></ul>
+    </div>
+  </details>
+  <details class="sec" id="sec-2" open>
+    <summary><h2>Scope of the evidence behind this playbook (closed-world statement, read this first)</h2></summary>
+    <div class="sec-body">
+      <p>This playbook is built from a <strong>supplied sample, not a population</strong>. Specifically: ~50 YouTube videos absorbed on 2026-09-07 (of which roughly 20 were genuinely on-topic), consolidated across 15 review docs at <code>docs/reviews/2026-09-07-cowrie-absorb-*.md</code>; two prior internal strategy docs; one memory reference; the pallet-scorer source code; and a single web research pass run 2026-09-08.</p>
+      <p>What that does <strong>not</strong> entitle us to claim:</p>
+      <ul><li>It is <strong>not exhaustive of the reselling literature</strong>, and absence of a tactic here means "not in this sample," never "does not exist."</li><li>Nearly the whole video corpus is <strong>one creator ecosystem</strong> (a paid mastermind and its guests) plus a handful of independent operators. Every dollar figure in it is <strong>self-reported and unaudited</strong>, and one operator noted ~30% of an annual profit came from a single lot &ndash; meaning the median outcome is very likely far below the quoted averages.</li><li>The web pass leaned heavily on <strong>SEO and affiliate content sites</strong>, which are supply-side sources selling pallets or courses. Reddit was unreachable to the search tool, so reseller-forum consensus is <strong>a named gap, not a confirmation</strong>.</li><li>Several category signals below are <strong>supply-side</strong> (how many listings exist, what a lot closed at). A count of competitors is a supply signal and cannot carry a demand verdict on its own. Where the evidence is supply-side, this doc says so.</li></ul>
+      <p>Treat every number as a planning prior to be replaced by our own measured outcomes as soon as we have them.</p>
+    </div>
+  </details>
+  <details class="sec" id="sec-3" open>
+    <summary><h2>Operating constraints (these bound every plan below)</h2></summary>
+    <div class="sec-body">
+      <div class="tablewrap"><table><thead><tr><th>Constraint</th><th>Value</th><th>Source</th></tr></thead><tbody><tr><td>Operator time</td><td><strong>~6 hours/week, hard cap</strong></td><td>prior Council pass, <code>docs/strategy/pallet-resale-gtm-and-premortem-2026-08-23.md</code></td></tr><tr><td>Vehicle</td><td>Car only. <strong>No truck, no trailer, no dock, no forklift</strong> as of 2026-09-08</td><td>assumed current &ndash; verify before any Tier 2 buy</td></tr><tr><td>Storage</td><td>Garage. No warehouse, no leased unit</td><td>same</td></tr><tr><td>Utah Sales Tax License</td><td><strong>11755515-003-STC</strong> (exists)</td><td><code>docs/strategy/pallet-resale-sourcing-bstock-2026-09-02.md</code></td></tr><tr><td>Payment</td><td>B-Stock is <strong>ACH/wire only, no cards</strong>, due within <strong>2 business days</strong> of winning. Bids are binding; cancellation risks account suspension. No inspection, no returns, final as-is</td><td>same</td></tr><tr><td>Public exposure</td><td>A public liquidation-seller persona under his own name carries reputational cost while he is in an HR leadership job search</td><td>prior Council pass</td></tr></tbody></table></div>
+    </div>
+  </details>
+  <details class="sec" id="sec-4" open>
+    <summary><h2>Category strategy: what we sell and what we do not</h2></summary>
+    <div class="sec-body">
+      <p>Boubacar's stated prior (2026-09-07, verbatim): <em>"To be honest I'll stay away from shoes. I'm not sure if I even want to do clothes unless it's baby clothes. I'd rather focus on machines, appliances, stuff like that, small and big, but you look at what people are saying."</em></p>
+      <p>He asked to be checked, not agreed with. Below, his prior is <strong>confirmed on machines and appliances, confirmed on shoes and clothes, and contradicted on baby clothes.</strong></p>
+      <h3>The single strongest piece of evidence is one we already own</h3>
+      <p>Our own calculator's category priors (<code>orchestrator/pallet_scorer/categories.py</code>, <code>recovery_pct</code> = share of MSRP realistically recovered on local resale) were set months before this question was asked, and they rank his instinct at the top and his doubts at the bottom:</p>
+      <div class="tablewrap"><table><thead><tr><th>Category key</th><th>recovery_pct</th><th>base_weeks to clear</th></tr></thead><tbody><tr><td><code>sporting_outdoor</code></td><td><strong>0.30</strong></td><td>3</td></tr><tr><td><code>tools_hardware</code></td><td><strong>0.30</strong></td><td>4</td></tr><tr><td><code>appliances_small</code></td><td><strong>0.28</strong></td><td>4</td></tr><tr><td><code>pool_water</code></td><td>0.26</td><td>5</td></tr><tr><td><code>toys_games</code></td><td>0.25</td><td>4</td></tr><tr><td><code>electronics</code></td><td>0.25</td><td>5</td></tr><tr><td><code>pet</code></td><td>0.24</td><td>5</td></tr><tr><td><code>mixed_general</code></td><td>0.18</td><td>8</td></tr><tr><td><code>seasonal</code></td><td>0.18</td><td>8</td></tr><tr><td><code>bedding_soft</code></td><td>0.15</td><td>8</td></tr><tr><td><code>furniture</code></td><td>0.15</td><td>10</td></tr><tr><td><strong><code>apparel</code></strong></td><td><strong>0.10</strong></td><td><strong>12</strong></td></tr><tr><td><code>data_cleared</code></td><td>0.0</td><td>excluded (hard veto, R2 cert required)</td></tr></tbody></table></div>
+      <p>Machines and tools sit at the top on both money recovered <strong>and</strong> speed. Apparel is dead last on both &ndash; the worst recovery in the table and three times the time-to-clear of tools. These are labeled "prior, not measured" in the source, so this is corroboration, not proof. But it is corroboration from a model that had no idea it was going to be asked this question.</p>
+      <h3>IN &ndash; Tier 1, start here (weeks 1-4, no new capital equipment)</h3>
+      <p><strong>Small machines and outdoor power equipment, plus small appliances.</strong> Pressure washers, generators, mowers, blowers, trimmers, air compressors, shop vacs, and the small-appliance band (kitchen and household).</p>
+      <p>Why this and not something else:</p>
+      <ul><li><strong>A documented single-operator proof exists at exactly our scale.</strong> Joe Earl (video <code>Nqz_W5zKN_Q</code>, the one Boubacar re-flagged) started with <strong>zero pressure-washer experience</strong>, bought a <strong>26-unit load for ~$1,050 landed (~$40/unit)</strong>, sold the first unit on <strong>day two for $275</strong>, cleared <strong>24-26 units in 12 days</strong>, and reached roughly <strong>480 units sold of 600 bought in ten months and ~$100,000 in Facebook Marketplace revenue</strong> &ndash; run out of a garage, with <strong>no truck</strong>, while holding a corporate job. That is the closest analogue to Boubacar's actual starting position anywhere in the corpus.</li><li><strong>Unit economics clear the "no cheap junk" bar.</strong> $40-60 landed per unit against $90-275 realized. The corpus rule is to avoid anything under ~$25/unit: <em>"it's just as easy to sell an item for $100 as for $10."</em></li><li><strong>It fits a car and a garage.</strong> No liftgate, no dock, no second person.</li><li><strong>The season is right now, and it is closing.</strong> September is when pressure washers, mowers and warm-season power equipment go into the off-season and bidder attention collapses. Buy off-season at 20-30% of retail; the same categories bid up to 50-58% in season. Joe bought his first load in mid-September for exactly this reason, and sold through the following January and February.</li><li><strong>Web research agrees on the resale side</strong> (supply-side sources, so weight accordingly): used power tools in working condition resell at <strong>40-70% of original retail</strong>, with DeWalt/Milwaukee/Makita holding <strong>50-75%</strong>, and Facebook Marketplace named the best channel for them because it is local, fee-free and needs no shipping.</li></ul>
+      <p><strong>Sub-category rule inside Tier 1, taken directly from Joe:</strong> prefer <strong>electric over gas</strong>. Electric units have materially fewer failures; gas means carburetors, fuel smell, small-engine labor and fuel that cannot sit for three months. Deliberately manage the electric-to-gas ratio in every load rather than accepting whatever the manifest holds.</p>
+      <h3>IN &ndash; Tier 2, scale into it (only after two Tier 1 loads have cleared and been logged)</h3>
+      <p><strong>Scratch-and-dent large appliances, SLC-origin where possible.</strong></p>
+      <ul><li><strong>Best evidenced closing prices in the entire corpus:</strong> a 57-unit Costco scratch-and-dent lot closed at <strong>$12,827 against $74,999 Costco price (17%)</strong>; a 47-unit lot closed at <strong>~16% of a $66,000 retail</strong>; 58 refrigerators at <strong>$34/unit landed</strong>; washer/dryer units bought around <strong>$250 and resold at $750-900</strong>.</li><li><strong>"Scratch and dent" is a genuinely different and better grade than "customer return."</strong> It is unsold, never-owned product with cosmetic damage only, and it frequently carries a <strong>pass-through 1-year manufacturer warranty that activates on the date of resale</strong> &ndash; a real trust lever to state in the listing, and something no thrift or private-party competitor can offer.</li><li><strong>The weight is the moat, not the obstacle.</strong> These lots clear at 16-17% of retail <em>because</em> most casual resellers cannot take a heavy residential delivery. The discount is payment for solving a logistics problem once.</li><li><strong>B-Stock lists Salt Lake City as a shipping origin</strong>, which if regularly available is the single biggest freight lever we have. <strong>Flagged, not confirmed:</strong> the B-Stock FAQ page names Monroe Township NJ as the primary location, a direct inconsistency with the About page's SLC listing. Verify inside the authenticated account before pricing a Tier 2 buy on it.</li></ul>
+      <p><strong>Tier 2 has three prerequisites and does not start before all three are true:</strong> (1) truck or trailer access plus a second pair of hands, (2) storage beyond the garage, (3) an <code>appliances_large</code> category prior added to <code>categories.py</code> &ndash; <strong>that key does not exist today</strong>, so a large-appliance lot currently gets scored under a category that was not written for it.</p>
+      <h3>OUT &ndash; and why</h3>
+      <div class="tablewrap"><table><thead><tr><th>Category</th><th>Verdict</th><th>Why</th></tr></thead><tbody><tr><td><strong>Shoes</strong></td><td><strong>OUT</strong></td><td>Boubacar's explicit call. The corpus contains <strong>no category verdict</strong> for shoes at all, only one operations note about scanning pairs quickly. So this is his preference standing unopposed rather than a research finding, and it is stated that way deliberately. Nothing found argues against him.</td></tr><tr><td><strong>Clothing / apparel (general)</strong></td><td><strong>OUT</strong></td><td>His call, and the evidence backs it hard. Apparel is the <strong>lowest recovery prior in our own calculator (0.10) and the slowest to clear (12 weeks)</strong>. Bulk branded apparel clears around 10% of stated retail; one private-label lot cleared at 2.2% of MSRP and only worked because the buyer was a print shop, not consumers. The one genuinely successful clothing operator in the corpus ($120k/mo) does not do this business at all &ndash; he buys unsorted bulk from donation centers at <strong>$0.30-0.65/lb</strong> and sells wholesale to other resellers. That is a different business with different assets, not a pallet flip.</td></tr><tr><td><strong>Baby clothes</strong></td><td><strong>OUT &ndash; this contradicts his open question</strong></td><td>He left this one open. The evidence closes it against him, from three independent directions. (1) The $120k/mo clothing specialist <strong>explicitly deprioritizes baby and kids clothing</strong> as a named category because it <em>"sells a lot slower"</em> &ndash; and he is the person in the corpus best positioned to know. (2) It sits inside the apparel band above: worst recovery, longest hold. (3) It violates the sub-$25/unit rule, so it is maximum sorting and listing labor per dollar recovered, against a 6h/week cap. Baby clothes is the <strong>weakest</strong> available version of the baby idea, not the safe one.</td></tr><tr><td><strong>Baby gear (strollers, car seats, cribs)</strong></td><td><strong>OUT, despite genuinely strong demand</strong></td><td>This one is worth stating carefully because the demand signal is real and better than baby clothes: <strong>32% of total baby-gear value now comes from secondhand or open-box</strong>, the secondhand segment is growing at a reported <strong>7.2% CAGR ($4.8B in 2025 toward $8.9B by 2034)</strong>, strollers lead at 22.4% share and car seats at 19.8%. We are declining it on <strong>liability, not demand</strong>. Per CPSC guidance, <strong>it is illegal to sell any recalled product and ignorance of the recall is not a defence</strong>, and the Children's Product Safety and Recall Effectiveness Act names <strong>secondhand dealers explicitly</strong>. Car seats add expiration dates and unknowable crash history. That is the wrong risk to carry with no LLC, on a lane whose entire point is a low-drama second revenue stream. <strong>Revisit only</strong> post-LLC, and then gear only, never car seats.</td></tr><tr><td><strong>Consumer electronics</strong></td><td><strong>OUT</strong></td><td>The single most repeated red flag in the corpus: thin margins, high hidden-defect rates, and liquidators do not functionally test returns. Sub-10% margin at the Apple tier. Only profitable as a dedicated single-model specialist, which is a different business.</td></tr><tr><td><strong>Anything R2-gated / <code>data_cleared</code></strong></td><td><strong>HARD VETO</strong></td><td>Legal gate. Already a hard veto in the calculator. Do not override.</td></tr><tr><td><strong>Furniture</strong></td><td><strong>NOT banned, but demoted &ndash; do not start here</strong></td><td>The corpus loves furniture and the anecdotes are strong (couches at $400-899 plus $99-150 delivery plus ~$125 haul-away; a Walker Edison flat-pack lot won at ~95% off). But our own priors put it at <strong>0.15 recovery and 10 weeks to clear</strong>, and every furniture success story in the corpus <strong>depends on a truck and delivery/haul-away upsells we cannot currently perform</strong>. It is a Tier 2 conversation at the earliest, alongside large appliances, and for the same reason.</td></tr></tbody></table></div>
+      <h3>One live, expiring signal that does not fit the thesis &ndash; flagged, not adopted</h3>
+      <p>Prior internal research identified <strong>ski and snowboard gear</strong> as having a hard dated Utah signal: the <strong>Snowbird ski swap, September 19, 2026</strong>, eleven days out at the time of writing. It sits in <code>sporting_outdoor</code> (0.30 recovery, 3 weeks to clear &ndash; the fastest band in the table). It is <strong>not</strong> the machines-and-appliances thesis Boubacar asked for, and no Wasatch Front sell-through data has actually been verified. Recording it here so it is not silently lost; taking it is his call, not an agent's.</p>
+    </div>
+  </details>
+  <details class="sec" id="sec-5" open>
+    <summary><h2>First bid run &ndash; the condensed sequence (added 2026-09-09, target 2026-09-10)</h2></summary>
+    <div class="sec-body">
+      <p>The nine steps below are the full process. This is the same process compressed to what a first bid actually costs on the day. It replaces nothing; it is the on-ramp.</p>
+      <p><strong>Where the last attempt actually stood.</strong> As of 2026-09-09 no bid had been placed, and that was the correct outcome, not a missed one: no qualifying Tier 1 lot existed to bid on. The Utah Pallet Auction event running through <code>treasuretrove.hibid.com</code> (Treasure Trove LLC, 3651 Wall Ave, Ogden, 385-370-0090) turned out to be <strong>single-item retail liquidation, not manifested bulk pallets</strong> &ndash; its 115-lot catalog carried zero pressure washers, generators, mowers, blowers or air compressors. There was nothing there that clears the Tier 1 gate. New auction events post <strong>Wednesdays around 7pm MST</strong>.</p>
+      <p><strong>The seven moves, in order.</strong></p>
+      <ol><li><strong>Check the new listing.</strong> Open <a href="https://treasuretrove.hibid.com/auctions">https://treasuretrove.hibid.com/auctions</a> after Wednesday ~7pm MST and filter for <strong>Lawn &amp; Garden - Outdoor Power Equipment</strong>. Tier 1 only: small machines, outdoor power equipment, small appliances, and prefer <strong>electric over gas</strong>. If nothing Tier 1 is listed, stop here &ndash; that is a pass, not a failure, and it costs nothing.</li><li><strong>Pull the manifest. Manifest or no bid, no exceptions.</strong> An unmanifested lot is gambling. If there is no itemized manifest, the lot is dead regardless of how good it looks.</li><li><strong>Halve the stated retail, then verify the top line items for real.</strong> Never trust the manifest's retail number. Take the top items by extended retail and check them against <strong>live local Facebook Marketplace and KSL comps</strong> &ndash; what things actually sell for here, not what a manifest claims they list for.</li><li><strong>Deduct the dead units.</strong> Assume <strong>10-30% dead, incomplete, or not-as-described</strong> even on a manifested good-condition lot, and price known-bad models at scrap rather than at working price.</li><li><strong>Run it through the scorer.</strong> <code>python -m orchestrator.pallet_scorer.server</code>, then open <strong><a href="http://127.0.0.1:8899">http://127.0.0.1:8899</a></strong>. Upload the manifest CSV or type the fields. Use <strong><code>max_bid</code></strong> &ndash; the conservative number computed off the low end of the revenue range. <strong>Do not bid <code>max_bid_ceiling</code></strong>; that one is computed off the midpoint and is the optimistic figure.</li><li><strong>Sanity-check against the ceiling.</strong> Land at <strong>20% of verified retail</strong> as the working number, <strong>30% as the absolute wall</strong>. If the scorer's <code>max_bid</code> sits above the wall, the wall wins.</li><li><strong>Enter ONE proxy bid at <code>max_bid</code> and walk away.</strong> No live bidding, no raising in the room, no second look. Losing is the system working &ndash; expect to lose 70-80% of bids.</li></ol>
+      <p><strong>After a win, and only after a win:</strong> run <code>skills/manifest-to-market</code> over the won manifest for draft listing copy. Pointing it at a lot that has not been won is a misuse.</p>
+      <p><strong>Tool status note.</strong> <code>orchestrator/pallet_scorer/hosted_server.py</code> is a <strong>feasibility build only &ndash; it is not deployed anywhere public</strong>, has no entry in <code>docker-compose.yml</code>, and there is no hosted URL to use. The local run command above is the only working path.</p>
+    </div>
+  </details>
+  <details class="sec" id="sec-6" open>
+    <summary><h2>Sourcing process</h2></summary>
+    <div class="sec-body">
+      <p>Run in order. A step skipped is the step that loses the money.</p>
+      <p><strong>1. Pick the lane before you look at lots.</strong> Search one category only, and search it <strong>every day</strong>. Joe's stated discipline: <em>"I literally look at every pressure washer load every day. No matter where they're at."</em> Daily watching is what produced his price benchmarks ($41/unit was his cheapest for months, until a $33/unit load appeared). You cannot recognise a good price in a category you look at occasionally.</p>
+      <p><strong>2. Manifest or no bid. No exceptions.</strong> The most repeated rule in the entire corpus. An unmanifested "mystery pallet" is gambling, not a business. Pull the itemized manifest before anything else.</p>
+      <p><strong>3. Verify retail. Never trust the manifest's number.</strong></p>
+      <ul><li>Default correction: <strong>halve the stated retail</strong>, then verify the <strong>highest-dollar line items individually</strong> against live listings.</li><li>Real misses from the corpus in both directions: an LED garage light listed at $15 that was really $80; a Target dresser listed at $1,339 that was really $304.</li><li><strong>Costco is the one trusted exception</strong> on manifest retail (no promo/coupon distortion) &ndash; still spot-verify the top items.</li><li>Verify against <strong>live local</strong> Facebook Marketplace and KSL comps, not national averages. Regional price variance is large and this is the step that AI lookups get wrong.</li></ul>
+      <p><strong>4. Read the condition grade, and read the terms of purchase.</strong></p>
+      <ul><li>Grade hierarchy, best to worst: <strong>new / like-new &gt; scratch-and-dent &gt; used-good &gt; used-fair &gt; mixed-condition</strong>.</li><li><strong>Mixed-condition and AB-grade are a hard pass.</strong> Liquidator terms admit these "can include products of any quality including salvage." One operator called AB grade <em>"100% gambling"</em> &ndash; a brand-new boxed unit can sit beside a five-year-old return with nothing in the manifest to separate them.</li><li><strong>Photo tells:</strong> items in original manufacturer boxes grade higher and ship better (a customer changed their mind, rather than something broke). Loose or floor-loaded items, or missing under-pallet cardboard, mean the goods rode a dirty forklift and will need cleaning. No photos at all: skip.</li><li><strong>Read the terms-of-purchase document, not just the manifest.</strong> Some retailers contractually bar domestic resale of liquidated goods (Dick's Sporting Goods named specifically), with severe penalties.</li></ul>
+      <p><strong>5. Deduct the dead units before computing anything.</strong> Assume <strong>10-30% dead, incomplete, or not-as-described</strong> even on a manifested good-condition lot. Then go further and price <strong>known-bad models at scrap</strong>: Joe counts a Husqvarna 2300 at <strong>$30</strong> rather than its $90-100 working price because he knows its failure rate, and he <strong>skips any load carrying ten or more of them</strong>. Model-level blacklists beat category-level ones.</p>
+      <p><strong>6. Compute landed cost, then set the ceiling.</strong></p>
+      <ul><li>Landed cost = hammer price + platform/buyer fees + freight + accessorials (<strong>liftgate ~$50, residential ~$50</strong>) + storage + disposal + your own hours.</li><li><strong>Freight is displayed before you bid on B-Stock.</strong> Every "shipping wrecked my pallet" story is a discipline failure, not an information failure.</li><li><strong>Geography is arithmetic, not feeling.</strong> Joe buys from New Jersey, Michigan and Georgia and paid $1,000 in shipping without blinking, because he evaluated the whole load. He avoids Florida because Florida lots have empirically been bad <em>for him</em>, which is a measured preference, not a rule. <strong>Plan for transit variance:</strong> one of his loads was bought 7/21 and arrived 8/13, twenty-three days.</li><li><strong>The ceiling: land at 20% of verified retail as the working number, 30% as the absolute wall.</strong> The corpus itself ranges from 10% to 30% depending on source and category, which is a 3x spread and not a consensus. 20/30 is our settled internal number and stays until our own ledger says otherwise.</li><li>Sanity check on the exit: expect to sell at <strong>50-70% of retail for A-grade</strong> and <strong>30-50% for B-grade</strong>.</li></ul>
+      <p><strong>7. For a high-value or obscure lot, find the buyer before you buy the inventory.</strong> Call a category-relevant B2B buyer, share the manifest, and ask <em>"what would you pay me for this"</em> &ndash; <strong>never revealing your own cost basis</strong> &ndash; before placing a bid. One operator pre-negotiated an $8-10k wholesale exit before bidding $3,000 on a furniture lot. Inventory is never the hard part; a committed buyer is.</p>
+      <p><strong>8. Bid once, then walk away.</strong></p>
+      <ul><li>Auctions use a <strong>soft close: a bid inside the last 5 minutes extends the clock by 3 minutes</strong>. Sniping does not work. Watching the clock only produces emotional re-bidding, which the corpus names as the single most common way margin is destroyed.</li><li>Enter your true maximum as <strong>one proxy bid, early</strong>, and leave. <strong>"Buy with math, sell with emotion."</strong></li><li><strong>Timing edges:</strong> weekend-closing lots reportedly clear lower on lighter attention (widely repeated, but flagged unverified for the Costco marketplace specifically &ndash; treat as plausible folklore, not mechanism). Newly onboarded sellers and categories get less attention. A "no bids, ending soon" filter surfaces underbid lots.</li><li><strong>Watch the bidder count where it is exposed</strong> (visible on Costco lots, closed off on Home Depot). Joe took a patio truckload at <strong>$173/item</strong> specifically because it had <strong>3 unique bidders</strong> while the comparable furniture lots had <strong>8</strong>. Fewer bidders is the whole edge.</li><li><strong>Expect to lose 70-80% of your bids.</strong> Winning most of them is the alarm.</li></ul>
+      <p><strong>9. Source diversity, from day one.</strong> Never depend on one platform. Named channels: B-Stock (Costco, Target, Amazon, Walmart marketplaces), <strong>the local Utah Pallet Auction in Ogden &ndash; which uniquely allows physical pre-bid inspection and offers Buy It Now</strong>, GovDeals, GSA, Municibid, liquidation.com, and direct-from-retailer on store closures. <strong>Pallet 1 should come from Utah Pallet Auction</strong> precisely because it closes the inspection gap B-Stock structurally cannot.</p>
+    </div>
+  </details>
+  <details class="sec" id="sec-7" open>
+    <summary><h2>The calculator's role</h2></summary>
+    <div class="sec-body">
+      <p>Two tools, deliberately separate, and using the wrong one at the wrong moment is the failure mode they were split to prevent.</p>
+      <h3><code>orchestrator/pallet_scorer</code> &ndash; BEFORE the bid, only</h3>
+      <p><strong>What it actually is</strong> (verified against the source, 2026-09-08, not assumed):</p>
+      <ul><li><strong>Input:</strong> a B-Stock manifest CSV (tolerant header matching &ndash; <code>ITEM DESCRIPTION</code>, <code>QTY</code>, <code>UNIT RETAIL</code>, <code>EXT. RETAIL</code>, <code>UPC</code>, <code>CATEGORY</code>, <code>CONDITION</code>, etc.), or every field typed by hand. The CSV is a convenience, not a requirement.</li><li><strong>What it computes, in a deliberate order:</strong> breakeven first as pure arithmetic with zero priors (<code>cash_cost / effective_msrp</code>, where <code>effective_msrp</code> already takes a <strong>5% unit-shortfall haircut</strong> for B-Stock's variance clause), then a <strong>low/mid/high recovery range</strong> (category priors x condition multiplier, ±35% band), then hard vetoes, then a verdict off the ends of the range. Condition multipliers: new 1.25, like-new 1.15, used-good 1.00, used-fair 0.75, mixed 0.85, salvage 0.45.</li><li><strong>The number to use:</strong> <code>max_bid</code>, inverted from a <strong>2.5x target ROI and 60% target margin</strong>, computed off the <strong>conservative</strong> end of the revenue range. It also prints <code>max_bid_ceiling</code> off the midpoint &ndash; that is the optimistic one; do not bid it.</li><li><strong>Freight model:</strong> calibrated on exactly <strong>one</strong> real quote (College Park GA to SLC, 4 spaces, 914 lbs, 1900 mi, $1,444.71), with uncertainty markups by distance tier (+15% local, up to +55% cross-country) applied <strong>only to estimates</strong>, never to a real or flat quote. An estimated freight figure can only ever <strong>downgrade</strong> a GREEN verdict to YELLOW, never upgrade one.</li><li><strong>Verdicts:</strong> GREEN / YELLOW / RED, with hard vetoes for an excluded (<code>data_cleared</code>) category, a truckload with no dock or liftgate, <code>roi_high &amp;lt; 1.0</code>, or breakeven above the high recovery estimate. <strong>There is deliberately no 0-100 score</strong> &ndash; that was rejected as decoration.</li><li><strong>Run it:</strong> <code>python -m orchestrator.pallet_scorer.server</code>, then <code>http://127.0.0.1:8899</code>.</li></ul>
+      <p><strong>What it does NOT do, so nobody plans against capability that is not there:</strong></p>
+      <ul><li><strong>No listing or pricing copy.</strong> That is the other tool.</li><li><strong>No live retail or comp lookup.</strong> Every recovery percentage is a static hand-picked prior explicitly labeled <em>"THEORY. No pallet has been bought or sold in this lane yet."</em></li><li><strong>No post-sale reconciliation.</strong> The ledger schema supports outcomes; nothing populates it automatically. It is typed in by hand, and today <strong>n=0</strong>.</li><li><strong>No auction API.</strong> The manifest CSV is downloaded and uploaded manually.</li><li><strong>No <code>appliances_large</code> category.</strong> A Tier 2 buy needs that prior added first.</li><li><strong>Not deployed anywhere public.</strong> <code>hosted_server.py</code> is a feasibility build with a recommendation to deploy behind a subdomain; there is no evidence it is live. The local <code>server.py</code>'s <code>/ledger</code> route is unauthenticated and writes to shared production Postgres by default &ndash; <strong>do not expose it as-is.</strong></li></ul>
+      <p><strong>Known-fixed bug, worth understanding because it is the shape of error to watch for:</strong> until commit <code>abbaea6ee</code> (2026-09-06), a real manifest <code>CONDITION</code> string that did not match the dropdown verbatim &ndash; "Customer Returns", "Shelf Pulls", "Open Box", "Damaged" &ndash; silently fell through to <strong>"New" (1.25x, 100% sell-through)</strong>, the most optimistic setting, with no warning. It inflated the recommended max bid on the most common real inputs. Unmatched conditions now fall to <strong>"Used Fair"</strong> with a named warning. The lesson generalises: <strong>a tool that fails silently toward optimism is worse than no tool.</strong></p>
+      <h3><code>skills/manifest-to-market</code> &ndash; AFTER the win, only</h3>
+      <p>Post-auction only. It takes the manifest of a pallet <strong>already paid for</strong> and produces ready-to-paste Facebook Marketplace and KSL ad copy for <strong>every</strong> line item, with no skip tier: solo ads, quantity-aware lot ads, and a named mixed-lot ad for tiny leftovers. Pointing it at a lot you have not won is a misuse, corrected on Boubacar's direct instruction 2026-09-06.</p>
+      <h3>The integration warning that matters most</h3>
+      <p><strong><code>manifest-to-market</code> output is a draft, never a paste-and-post.</strong> Joe Earl was <strong>shadow-banned by Facebook Marketplace in April</strong>, and traced it to reused photos, reused videos, and ChatGPT-written descriptions carrying emoji and em-dashes. He diagnosed it by having a friend search Marketplace and count how far he had to scroll to find his own listings. The fix was <strong>fresh photos and a fresh video for every single unit</strong>, and varied copy.</p>
+      <p>So: the skill writes the words, and then <strong>every unit gets its own photos and its own video</strong>, and the copy gets varied unit to unit. This is also the one place where the skill's efficient "one ad for sixteen identical units" model and platform reality pull in opposite directions &ndash; resolve it in favour of the platform.</p>
+      <h3>The loop that actually makes the calculator worth having</h3>
+      <p>Every scored lot goes in the ledger <strong>with a sealed prediction of your own</strong> (<code>own_predicted_recovery</code>) and your <strong>written cap</strong> entered <strong>before</strong> you see the tool's number. After the lot sells, the outcome is recorded by hand. <code>calibration()</code> then reports the mean bias of <strong>both</strong> the tool and the operator. With <code>n=0</code> today, the priors are guesses; after four or five logged lots they become measured, and the ceiling in this playbook gets rewritten from our own data instead of a mastermind's anecdotes. <strong>This is the highest-value habit in the whole lane and it costs about ten minutes per pallet.</strong></p>
+    </div>
+  </details>
+  <details class="sec" id="sec-8" open>
+    <summary><h2>Listing and selling process</h2></summary>
+    <div class="sec-body">
+      <p><strong>1. Video on every listing, no exceptions.</strong> The most consistently cited conversion lever in the corpus. Joe scraped Facebook Marketplace and found only <strong>~12% of competing pressure-washer listings within 50 miles used video</strong>. It doubles as evidence the unit worked when it left. Music optional, and he uses it to stop the scroll.</p>
+      <p><strong>2. Fill every photo slot</strong> the platform allows (12 on Facebook Marketplace, 16 on eBay). Time-lapse unboxing, assembly or cleaning converts well. Testimonial screenshots go <strong>between</strong> the product photos, not at the end.</p>
+      <p><strong>3. The three-part listing formula.</strong></p>
+      <ul><li>A one-to-two sentence <strong>credibility opener</strong> &ndash; why buy from you. Escalate it as the record grows ("sold 200" becomes "sold 500").</li><li><strong>Rewritten</strong> product detail, never copy-pasted (copyright takedowns, and duplicate text is a spam signal).</li><li>A one-to-two sentence <strong>closer</strong> on what the money is for.</li><li><strong>Titles are keyword-first:</strong> brand, model, condition, key spec. Buyers search brands, not adjectives.</li></ul>
+      <p><strong>4. Price at your number and hold it.</strong> Joe listed a $400 Costco machine at <strong>$270</strong>, declined two $250 offers with <em>"appreciate your offer, I'm firm at $270, if it's still available next week maybe I'll connect back"</em>, and sold it at full ask within the hour. Set the floor at intake, not during negotiation. Scarcity line that works: <em>"there's been some interest on this."</em></p>
+      <p><strong>5. Answer fast, and answer with a next step.</strong> Not <em>"yes, it's available"</em> but <em><strong>"Yes it is. When would you like to drop by?"</strong></em> Speed is conversion: someone drove two hours for an $80 unit because nobody closer replied. Use saved-reply templates.</p>
+      <p><strong>6. Batch the pickups.</strong> Offer two fixed windows (Joe uses roughly 7:30-9:30am and 5-7pm). Six buyers once arrived at the same time and it <strong>helped</strong> &ndash; they saw each other buying and talked each other into it, and all six cleared in fifteen minutes. Flake rate after commitment runs ~15%.</p>
+      <p><strong>7. Know who buys when.</strong> Weekday buyers are <strong>trades</strong> &ndash; painters, auto detailers, concrete and seal-coating crews. Saturday buyers are <strong>homeowners with a project</strong>. Weekday conversations often schedule a Saturday pickup, so weekday message volume is not weekday sales.</p>
+      <p><strong>8. Farm reviews deliberately.</strong> Joe has ~180, all but one or two positive. The mechanic: <strong>rate the buyer first</strong>, which pushes them a notification, then follow up asking for five stars and say plainly that it helps in the algorithm.</p>
+      <p><strong>9. Protect the margin after the sale.</strong> Hand out a <strong>printed tip sheet</strong> at pickup (Joe has one for electric and one for gas; the headline tip is never run an electric unit without water flowing). It converts false "it broke" returns into non-events. <strong>Talk buyers out of the wrong product</strong> &ndash; he actively steers non-trade buyers from gas to electric. Take the return, fix it, resell it.</p>
+      <p><strong>10. Segregate the ugly stock onto a separate account.</strong> Joe runs three Facebook accounts (his, his wife's, and a burner) and routes <strong>blemished and clunky units to the burner</strong>, because a buyer who sees two rough machines in a seller's list assumes all of them are rough.</p>
+      <p><strong>11. Sell the carcasses too.</strong> Strip usable parts for eBay, then list the dead shell <strong>free</strong> on the burner account. Someone hauls it away, and you have avoided a dump fee.</p>
+      <p><strong>12. Stack the upsells on anything bulky.</strong> The corpus pattern is consistent: <strong>$99-150 delivery</strong> and <strong>~$125 haul-away/removal</strong> on top of the sale price. This is Tier 2 revenue and needs a truck, but it is where the furniture and large-appliance margins actually live.</p>
+      <p><strong>13. Cross-post.</strong> KSL primary, Facebook Marketplace secondary. Never Facebook-only &ndash; higher flake rate and arbitrary bans, as Joe's shadow-ban demonstrates.</p>
+      <h3>Live selling: deliberately NOT adopted</h3>
+      <p>The absorbed videos are enthusiastic about Whatnot and TikTok live selling, with one operator citing ~$450k revenue in under a year. <strong>We are still not doing it</strong>, and this is a decision already taken, not an oversight: a prior Council pass rejected it for Cowrie on three grounds &ndash; <strong>8-12 operator hours per clearing event against a 6h/week cap</strong>, a <strong>permanent-ban risk</strong> (Whatnot bans do not expire), and the <strong>reputational cost of a public liquidation-seller persona under his own name during an HR leadership job search</strong>. Revisit only if the time cap changes or the job search closes.</p>
+    </div>
+  </details>
+  <details class="sec" id="sec-9" open>
+    <summary><h2>Sales channels and payment safety</h2></summary>
+    <div class="sec-body">
+      <p>Added 2026-09-08 in answer to Boubacar's direct question: where do we sell, which channel takes the least in fees, cash or an app, and how do we not get robbed. This section <strong>adds to</strong> the listing process above; it does not replace step 13.</p>
+      <h3>Closed-world scope of this section</h3>
+      <p>Fee schedules and scam patterns are <strong>live vendor state, not permanent facts</strong>. Everything below is <strong>as found on 2026-09-08</strong> through a single web research pass. Two figures were read from the vendor's own page (Venmo's fee and protection terms, KSL's pet-listing fee); the rest came from fee-calculator and reseller-blog sites, which are secondary and have an incentive to publish tidy round numbers. <strong>Verify the rate in the seller dashboard before it ever enters a pricing decision.</strong> Absence of a channel here means it was not searched, not that it does not exist.</p>
+      <h3>The fee comparison</h3>
+      <p>Modeled on a <strong>$200 Tier 1 unit</strong> (a used pressure washer or small appliance, the actual shape of our first pallet). "Net to Boubacar" ignores his own labor, which is the number that actually separates these channels.</p>
+      <div class="tablewrap"><table><thead><tr><th>Channel</th><th>Listing fee</th><th>Sale fee</th><th>Payment processing</th><th>Net on a $200 local sale</th><th>Shipping required</th></tr></thead><tbody><tr><td><strong>KSL Classifieds</strong></td><td>$0 (all categories except cats/dogs, $15)</td><td><strong>$0</strong></td><td>none (you take payment directly)</td><td><strong>$200</strong></td><td>No</td></tr><tr><td><strong>Facebook Marketplace, local pickup</strong></td><td>$0</td><td><strong>$0</strong></td><td>none</td><td><strong>$200</strong></td><td>No</td></tr><tr><td><strong>OfferUp, local pickup</strong></td><td>$0</td><td><strong>$0</strong></td><td>none</td><td><strong>$200</strong></td><td>No</td></tr><tr><td><strong>Craigslist</strong></td><td>$0 (most categories)</td><td><strong>$0</strong></td><td>none</td><td><strong>$200</strong></td><td>No</td></tr><tr><td>Facebook Marketplace, <strong>shipped</strong></td><td>$0</td><td>10% of item + shipping, $0.80 min</td><td>included</td><td>~$180 minus real shipping cost</td><td>Yes</td></tr><tr><td>OfferUp, <strong>shipped</strong></td><td>$0</td><td>12.9%</td><td>included</td><td>~$174 minus real shipping cost</td><td>Yes</td></tr><tr><td><strong>eBay</strong> (standard seller, most categories incl. Tools and Home &amp; Garden)</td><td>$0 under the free-listing allowance</td><td><strong>13.6%</strong> of the total, charged on item <strong>+ buyer-paid shipping + sales tax</strong>, up to $7,500</td><td>included in the 13.6%</td><td><strong>~$164 before you pay the carrier</strong>, and the fee is levied on the shipping too</td><td>Effectively yes</td></tr><tr><td><strong>Whatnot</strong> (live)</td><td>$0</td><td>8% commission (5% electronics, 4% coins)</td><td><strong>+2.9% + $0.30</strong></td><td>~$178</td><td>Yes</td></tr><tr><td><strong>TikTok Shop</strong></td><td>$0</td><td>6% referral historically; <strong>raised to 8% for most US non-food categories on 2026-08-04</strong> (single source, unverified against the seller dashboard)</td><td>included in the referral fee</td><td>~$184 <strong>before</strong> creator commissions (5-20%), fulfillment ($2.86-4.28/unit) and ads; one source puts the realistic all-in take near <strong>30%</strong></td><td>Yes</td></tr></tbody></table></div>
+      <p><strong>The comparison is not close, and the fee column is not the reason.</strong> The four free channels are free <em>because</em> they are local hand-offs with no platform in the middle. Every paid channel charges a percentage <strong>and</strong> hands you a shipping problem, and our Tier 1 inventory is 30-80 lb machines. On a $200 pressure washer, eBay's 13.6% is roughly $27 <strong>plus</strong> $40-80 of real freight <strong>plus</strong> packing labor <strong>plus</strong> transit-damage risk on a heavy item — a $200 local sale becomes a ~$110 net with an hour of work in it. That is not a worse channel by a few points. It is a different, worse business.</p>
+      <p><strong>Confirmed as of 2026-09-08:</strong> local pickup on Facebook Marketplace still carries <strong>no selling fee</strong>; the 10% applies only when the buyer checks out for shipping. KSL is free to list in every category we would ever touch.</p>
+      <h3>Recommendation</h3>
+      <p><strong>Primary: KSL Classifieds. Secondary: Facebook Marketplace. List every unit on both, from day one.</strong> They cost the same ($0), and they fail differently.</p>
+      <ul><li><strong>KSL is the trust anchor.</strong> It is the recognized Utah marketplace, the audience is regional and non-anonymous, and it has no history in our corpus of arbitrary seller bans.</li><li><strong>Facebook Marketplace is the volume engine.</strong> The one operator in the corpus at our exact scale did roughly <strong>$100,000 on Facebook Marketplace alone</strong>. It also shadow-banned him. Reach and fragility in the same channel is precisely why it is secondary and never sole.</li><li><strong>OfferUp is a free third listing</strong>, same $0 local terms, no reason not to. <strong>Craigslist</strong> is a free wide net with the weakest buyer quality — post it, expect little.</li><li><strong>eBay is a narrow specialist tool, not a channel.</strong> It earns its 13.6% only where value density is high and the box is small: <strong>stripped parts off dead units</strong> (already step 11 of the listing process), and any single item worth $150+ that ships under about 5 lb. Never a whole machine.</li></ul>
+      <p><strong>The tradeoff, stated plainly:</strong> free and local means the buyer pool is the Wasatch Front, not the country. Some units will sit longer than they would on eBay, and a genuinely rare item will realize less locally than it would nationally. We accept that, because the entire Tier 1 thesis is heavy, low-value-density goods where shipping eats the margin. The moment a unit is small, light and rare, eBay is the right answer for that one unit.</p>
+      <h3>Payment method</h3>
+      <p><strong>Primary: cash. Fallback: a Venmo business profile. Never Zelle from a stranger, never friends-and-family, never a check of any kind.</strong></p>
+      <p>The non-obvious reason, and the one that decides this: <strong>the "buyer protection" on every app rail is a risk to us, not a benefit.</strong> Venmo's and PayPal's Purchase Protection reimburse the <em>buyer</em>; the matching <em>seller</em> protection is built around <strong>proof of shipment and delivery to a verified address</strong>, which a hand-off in a driveway can never produce. So a chargeback-capable rail means a buyer can take the machine, dispute the payment, and we have no tracking number to defend with. Cash is the only rail with no reversal path at all. It is simultaneously the cheapest (0%) and the safest for our specific sale shape.</p>
+      <div class="tablewrap"><table><thead><tr><th>Rail</th><th>Seller cost</th><th>Reversible after the buyer leaves?</th><th>Verdict</th></tr></thead><tbody><tr><td><strong>Cash</strong></td><td>0%</td><td><strong>No</strong></td><td><strong>Default. Say "cash on pickup" in every listing.</strong></td></tr><tr><td><strong>Venmo business profile</strong></td><td><strong>2.99%</strong> of the sale (vendor's own page, 2026-09-08; third-party sites quote 1.9% + $0.10, which we could not confirm at source)</td><td>Yes — buyer can claim non-receipt, and we cannot show delivery proof</td><td>Fallback only, when a buyer genuinely has no cash</td></tr><tr><td><strong>PayPal Goods &amp; Services</strong></td><td>3.49% + $0.49</td><td>Yes, same exposure</td><td>Second fallback. Only if the buyer insists on PayPal</td></tr><tr><td><strong>PayPal / Venmo friends-and-family</strong></td><td>$0</td><td>Yes, and there is <strong>no dispute pathway at all</strong></td><td><strong>Never.</strong> It strips protection in both directions and violates the terms of service, which risks the account</td></tr><tr><td><strong>Zelle</strong></td><td>$0</td><td>Zelle states it has <strong>no protection program for goods or services</strong>, and a payment funded fraudulently can still be clawed back by the bank</td><td><strong>Never from a stranger.</strong> Zelle is the single most-impersonated rail in Marketplace scams</td></tr><tr><td><strong>Cash App</strong></td><td>varies</td><td>Generally no goods-and-services protection</td><td><strong>No</strong></td></tr><tr><td><strong>Cashier's check, money order, personal check</strong></td><td>$0</td><td>Yes, weeks later</td><td><strong>Never. This is the overpayment scam's only delivery vehicle</strong></td></tr></tbody></table></div>
+      <h3>The payment procedure, run every single time</h3>
+      <p>Not theory. This is the checklist at the garage door.</p>
+      <ol><li><strong>Every listing says cash on pickup, local only.</strong> Setting the expectation in the ad removes 90% of the conversation.</li><li><strong>Payment clears before the item moves.</strong> The unit stays in your hands, physically, until step 4 or 5 passes. Not "as he's loading it." Before.</li><li><strong>Cash: count it in front of the buyer.</strong> Keep a counterfeit-detection pen at the intake station and use it on every $50 and $100 bill. For anything over ~$500, meet at your bank's lobby during business hours and deposit it before he drives off.</li><li><strong>App payment: you open your own app, on your own phone, on cellular data.</strong> Not his hotspot, not his phone, not a link he sends. Refresh the balance yourself.</li><li><strong>A screenshot is not a payment. An email is not a payment. A text is not a payment.</strong> The most common Marketplace scam in the 2026 reporting is a forged payment confirmation — there are apps built specifically to generate them. If it is not visible in <em>your</em> app, you have not been paid.</li><li><strong>"Pending" is not paid.</strong> Wait for completed and available. If it is pending when he wants to leave, the item does not leave.</li><li><strong>No shipping to a first-time buyer. Ever, in Tier 1.</strong> Local pickup only. This single rule deletes the entire category of shipping-based fraud and costs us nothing, because the model was never going to ship a pressure washer anyway.</li><li><strong>Never share a verification code sent to your phone,</strong> no matter what the buyer says it is for. A "just verify you're a real person" code is the Google Voice number-theft scam, and it takes your phone number.</li><li><strong>Hard-refuse these openers, without negotiating:</strong> an offer to pay <em>more</em> than asking; any cashier's check or money order; "I'm out of the country / my nephew will pick it up"; a deposit to hold it sight-unseen; a request for your bank details or account number; a buyer who will not talk on the platform.</li><li><strong>Meetups.</strong> Daytime only. For our bulky Tier 1 units, driveway or garage-front is normal and fine — but <strong>never invite a stranger into the house</strong>, have someone home, and screenshot the buyer's platform profile before the meet. For anything you agree to hand over off-site, or any sale over ~$500, use a <strong>police-station Safe Exchange Zone</strong> (lit, camera-covered lots that most Wasatch Front departments provide).</li><li><strong>Log the payment rail in the ledger row</strong> alongside the sale. If a rail starts producing disputes, we want the count, not the impression.</li><li><strong>KSL has a report flag</strong> on every listing (the blue flag icon). Use it on the fraud attempts rather than just blocking. It is free and it thins the pool.</li></ol>
+      <h3>Whatnot: rejection UNCHANGED</h3>
+      <p><strong>The standing Council rejection of live selling stands, and this research did not reverse it.</strong> It was never a fee decision, so the fee data is not a reason to reopen it. The three original grounds were 8-12 operator hours per event against a 6h/week cap, permanent-ban risk, and an unwanted public liquidation persona during an active HR leadership job search.</p>
+      <p>New evidence found on 2026-09-08 <strong>strengthens</strong> two of the three:</p>
+      <ul><li><strong>Ban risk confirmed at source.</strong> Whatnot's own help center states that permanent penalties, including bans and loss of selling access, <strong>do not expire</strong>, that a banned seller permanently loses the ability to sell or host shows, and that creating a new account to get around it is itself a further violation. The original concern was correct and is now vendor-documented rather than inferred.</li><li><strong>Fees are middling, not disqualifying:</strong> 8% commission plus 2.9% + $0.30 processing, roughly <strong>11.2% on a $200 sale</strong>. Cheaper than eBay. Irrelevant, because the constraint is hours and exposure, not percent.</li></ul>
+      <p>No change proposed. If Boubacar wants to reopen it, the trigger conditions are the ones already written: the time cap changes, or the job search closes.</p>
+      <h3>TikTok: OPEN QUESTION for Boubacar, with a recommendation of NO for now</h3>
+      <p>He raised this himself and said plainly he is not familiar with it. It was <strong>not</strong> part of the original locked decision, so it is genuinely open — this is input, not a verdict, and it is his call.</p>
+      <p><strong>The recommendation is no, for Tier 1, on three grounds that have nothing to do with the headline fee:</strong></p>
+      <ol><li><strong>TikTok Shop is a shipped-commerce channel.</strong> It has no local-pickup mode. Selling a 60 lb pressure washer through it means boxing and freighting it, which is the exact cost the entire channel strategy above exists to avoid. The fee is the small problem; the freight is the big one.</li><li><strong>The real take is not 6-8%.</strong> The referral fee sits at 6% historically, reportedly raised to <strong>8% for most US non-food categories on 2026-08-04</strong> (single unverified source — check the seller dashboard before trusting it). But that is the floor. Stack creator commissions (typically 5-20%), fulfillment at $2.86-4.28 per unit, and ad spend, and one source puts the realistic all-in platform-plus-channel take near <strong>30% of the selling price</strong>. A channel that only performs with paid creators and ads is a marketing operation, not a sales channel.</li><li><strong>It carries the same persona exposure that killed live selling</strong>, for the same reason: TikTok Shop is content-first and rewards volume of face-forward video. That is the identical reputational concern already logged against a public liquidation persona during an HR leadership job search. Deciding yes on TikTok without deciding yes on that exposure would be inconsistent.</li></ol>
+      <p><strong>The one narrow version that might be worth something later, if he wants it:</strong> TikTok as <strong>organic top-of-funnel only</strong> — short clips of units being cleaned and tested, driving traffic to the free KSL and Facebook listings, with <strong>no TikTok Shop account and no shipping</strong>. That keeps 100% of the money and adds zero fee. It still costs filming and editing hours against the 6h/week cap, and it still carries the persona question. That is a content-lane decision, not a sales-channel one, and it should be decided as such.</p>
+      <p><strong>Decision needed from him:</strong> (a) no TikTok, matching the recommendation; (b) organic TikTok only, no Shop, accepting the hours and the persona exposure; or (c) full TikTok Shop, which would require reversing the shipping constraint and should not be done inside Tier 1.</p>
+    </div>
+  </details>
+  <details class="sec" id="sec-10" open>
+    <summary><h2>Red flags and hard no's</h2></summary>
+    <div class="sec-body">
+      <p>Consolidated. Any one of these kills a bid on its own.</p>
+      <p><strong>Bid-side</strong></p>
+      <ol><li><strong>No manifest, no bid.</strong> Mystery pallets are gambling.</li><li><strong>Mixed-condition or AB-grade lots.</strong> Can legally include salvage.</li><li><strong>Manifest retail taken at face value.</strong> Halve it and verify the top line items.</li><li><strong>Consumer electronics as a generalist.</strong> Thin margin, untestable defects.</li><li><strong><code>data_cleared</code> / R2-gated goods.</strong> Legal gate, hard veto in the tool.</li><li><strong>Export-restricted lots.</strong> Read the terms of purchase, not just the manifest.</li><li><strong>Regulated or recert-dependent items.</strong> The compliance cliff is usually <em>why</em> the lot was cheap.</li><li><strong>Recalled or recall-prone children's products.</strong> Strict liability; ignorance is not a defence.</li><li><strong>Structural damage</strong> &ndash; frame damage, large rips, cracked housings &ndash; unless you personally do that repair.</li><li><strong>A lot whose margin rests on one or two high-value units.</strong> One damaged item wipes the load.</li><li><strong>A truckload with no dock, liftgate or forklift.</strong> Automatic veto.</li><li><strong>Saturated hype items</strong> (Stanley tumblers and similar). Already picked over.</li><li><strong>Sub-$25 units</strong> without exceptional volume.</li><li><strong>Bidding while watching the clock.</strong> Proxy bid once, walk away.</li><li><strong>Shoes and clothing, including baby clothes.</strong> Per the category table above.</li><li><strong>A model you know fails.</strong> Blacklist by model, not just by category.</li></ol>
+      <p><strong>Sell-side and operations</strong></p>
+      <ol><li><strong>Reused photos, reused video, or AI-tell copy</strong> (emoji, em-dashes). Real shadow-ban risk, confirmed by an operator it happened to.</li><li><strong>A single supplier or a single sales channel.</strong> Both are single points of failure.</li><li><strong>Fixed overhead before the model is proven.</strong> No leased warehouse, no second storage unit, on speculation.</li><li><strong>The death pile.</strong> Unsorted, unpriced inventory is not paper profit, it is trapped cash.</li><li><strong>Shipping direct from the liquidator to your downstream buyer.</strong> The pallet label exposes your source and they cut you out next time.</li><li><strong>Storage-unit lease fine print.</strong> Reselling out of a unit violates many leases.</li><li><strong>Exposing <code>server.py</code>'s <code>/ledger</code> route.</strong> Unauthenticated, writes to production Postgres.</li></ol>
+    </div>
+  </details>
+  <details class="sec" id="sec-11" open>
+    <summary><h2>30-day execution plan</h2></summary>
+    <div class="sec-body">
+      <p>Tied to the Tier 1 decision above and to the September timing, inside the 6h/week cap. Dates assume a 2026-09-08 start.</p>
+      <h3>Week 1 (Sept 8-14) &ndash; buy one pallet. Not a plan to buy one.</h3>
+      <ol><li><strong>Confirm the account state before anything else</strong> (~30 min). B-Stock buyer account active, ACH funding path live, resale permit on file against license <strong>11755515-003-STC</strong>. These are operational facts: read them from the vendor account, not from a prior handoff.</li><li><strong>Add the missing calculator prior</strong> (~30 min). No <code>appliances_large</code> key exists in <code>categories.py</code>. Tier 1 does not need it, but add it now with an honest starting prior so Tier 2 is not blocked later.</li><li><strong>Start the daily watch</strong> (~15 min/day, non-negotiable and continues for all four weeks). One category: small machines and outdoor power equipment. Every lot, every day, regardless of origin. Log every close price. <strong>Four weeks of this is what produces a price benchmark, and there is no shortcut.</strong></li><li><strong>Buy pallet 1 from Utah Pallet Auction in Ogden</strong> (~2h). Local, physically inspectable before bidding, Buy It Now available. This is the lowest-variance possible first purchase and it removes B-Stock's inspection gap from the very first lot. Score it in the tool first, enter your <strong>written cap and sealed own-prediction before looking at the tool's number</strong>, and log the row.</li></ol>
+      <h3>Week 2 (Sept 15-21) &ndash; intake, list, and sell the first unit</h3>
+      <ol><li><strong>One 3-hour batch intake session</strong> for the whole pallet: unbox, test, grade, photograph and video every unit in a single pass. Per-item processing across the week is the throughput killer.</li><li><strong>Run <code>manifest-to-market</code></strong> over the won manifest for draft copy, then <strong>shoot unique photos and a unique video per unit</strong> and vary the text. Do not paste identical listings.</li><li><strong>List on KSL primary, Facebook Marketplace secondary.</strong> Set up a second selling account now, before you need it, and route blemished units to it.</li><li><strong>Sell the strongest unit first</strong>, deliberately, for the early win. Joe cleared his best unit on day two at $275.</li><li><strong>Recruit a repair partner using Joe's exact structure</strong> (~1h). Post an ad on Marketplace: <em>they</em> pick up, <em>they</em> diagnose and fix without adding parts unless they call, and <em>they</em> are paid only after the item sells &ndash; <strong>50% of anything above a threshold</strong>. Expect ~20 people to say it is crazy and 2-3 to say yes. Convert the one who works out to a flat per-unit fee once trust is established. This protects cash and is the difference between a hobby and a system.</li><li><strong>Ski-swap decision point (Sept 19).</strong> Boubacar's call, not an agent's. Take it or let it go, but decide.</li></ol>
+      <h3>Week 3 (Sept 22-28) &ndash; prove the ceiling on a shipped lot</h3>
+      <ol><li><strong>Buy pallet 2 from B-Stock</strong>, off-season, using the price benchmark two weeks of daily watching has now produced. <strong>Verify whether SLC-origin lots are genuinely available</strong> in the authenticated account, and settle the About-page vs FAQ-page inconsistency while you are in there.</li><li><strong>Confirm every unit the repair partner returns starts up in front of you before paying.</strong> Warranty it back for a couple of weeks.</li><li><strong>Log the first outcome row</strong> on pallet 1: actual gross, actual hours, units sold and unsold, days to clear. <strong>This is the point where the tool stops guessing.</strong></li><li><strong>First calibration read.</strong> How far off were the priors, and how far off were <em>you</em>? Both numbers matter.</li></ol>
+      <h3>Week 4 (Sept 29 - Oct 5) &ndash; decide with data, not with feeling</h3>
+      <ol><li><strong>Clear the remainder of pallet 1.</strong> Drop the price ladder on anything past its base weeks. Strip and free-list the dead units.</li><li><strong>Compute the only number that matters:</strong> cash collected divided by <strong>full pallet cost</strong>, not per-item margin. Prioritise getting the money back fast; treat everything after recovery as profit.</li><li><strong>Write the go/no-go</strong>, using measured numbers from two real pallets rather than any figure in this document. Three outcomes, all legitimate: <strong>scale Tier 1</strong> (buy heavier through the off-season and stockpile, as Joe does), <strong>open the Tier 2 gate</strong> (only if truck, storage and helper are genuinely solved), or <strong>stop</strong> &ndash; and a stop still leaves <code>manifest-to-market</code> and <code>pallet_scorer</code> behind as productizable assets and the operation itself as a documented case study.</li><li><strong>Rewrite this playbook's ceiling</strong> from our own ledger. The 20/30 number is inherited from strangers' anecdotes. After two logged pallets it should be ours.</li></ol>
+    </div>
+  </details>
+  <details class="sec" id="sec-12" open>
+    <summary><h2>Descoped &ndash; explicit no-builds, so these are not relitigated</h2></summary>
+    <div class="sec-body">
+      <ul><li><strong>Live selling (Whatnot / TikTok Shop).</strong> Rejected with reasons above. Not a gap.</li><li><strong>Any hosted/public deployment of the pallet scorer.</strong> <code>hosted_server.py</code> is a feasibility build. Deploying it needs auth, rate limiting and a decision about the unauthenticated ledger route.</li><li><strong>Auction-site API integration.</strong> Manual CSV download is fine at this volume.</li><li><strong>A second tracker page or spreadsheet.</strong> The ledger and the reports table already exist. Do not invent a third store.</li><li><strong>Renaming existing <code>pallet-*</code> Money Map item_ids to <code>cowrie-*</code>.</strong> Live Supabase item_ids feed the Money Map page's <code>data-item</code> mappings. Ask Boubacar before any rename pass.</li></ul>
+    </div>
+  </details>
+  <details class="sec" id="sec-13" open>
+    <summary><h2>Future / not-now ideas &ndash; captured, deliberately not built or researched</h2></summary>
+    <div class="sec-body">
+      <ul><li><strong>Amazon FBA as an additional sales channel.</strong> Boubacar, 2026-09-07: "Something to consider later on to add on to the Cowrie avenue is Amazon FBA but not for now." Parked, not evaluated. Obvious tension flagged, not resolved: FBA fits new/sealed inventory with UPC/ASIN matching best and is a poor fit for used/liquidation/damaged-box goods, which is most of what Cowrie sources &ndash; real evaluation needed before adoption, not an assumption it fits. Decision: <code>D-20260907-90dea4</code>.</li><li><strong>Retail arbitrage (buying retail clearance to resell, almost always into Amazon FBA).</strong> Boubacar asked for real research and a concrete WHEN, 2026-09-07: "A lot of people are talking about this being the retail arbitrage... I wanted to do the research on it and see how we can embed that into what we do with Cowrie. Tell me when we should add that as an element of Cowrie." Researched, then <strong>parked BEHIND the Amazon FBA decision rather than beside it</strong>: retail arbitrage is not a sourcing method that bolts onto Cowrie, it is a sourcing method for a <em>different sales channel</em>, and retail arbitrage without Amazon is not a business. Return 2027-01-15, four conditions plus an auto-kill. Decision: <code>D-20260907-f3e97d</code>. Analysis: <code>docs/reviews/2026-09-08-cowrie-retail-arbitrage-analysis.md</code>.</li></ul>
+    </div>
+  </details>
+  <details class="sec" id="sec-14" open>
+    <summary><h2>BORING PORT</h2></summary>
+    <div class="sec-body">
+      <p>Per the standing boring-business mandate, the mechanisms surfaced during consolidation that port to a $500-$1k repeatable trade business outside AI/HR:</p>
+      <ul><li><strong>Cowrie is itself the archetype</strong> and needs no porting &ndash; buy distressed physical goods regionally, resell locally, in a named trade.</li><li><strong>Repair-partner revenue-share</strong> (pick up, fix, paid only on sale) ports directly to appliance repair, small-engine, and mobile-mechanic businesses as a way to acquire inventory with zero cash outlay.</li><li><strong>Referral-engine acquisition</strong> ported from a stump-grinding operator: build standing relationships with 5-10 adjacent trades so the phone rings without ad spend. Applies here via move-out, estate-sale and storage-auction referral partners.</li><li><strong>Haul-away as a paid upsell</strong> (~$125) on delivery is a standalone junk-removal micro-business hiding inside the delivery run.</li><li><strong>Pallet reclamation</strong> &ndash; collect discarded shipping pallets free, repair, resell at $5-12 each.</li><li><strong>The tooling as the product.</strong> The sharpest structural point in the corpus: the long-term asset may not be the merchandise margin but the manifest-to-listing pipeline as a productized tool plus the documented operation as a proof asset. A week-4 stop still leaves both standing.</li></ul>
+    </div>
+  </details>
+  <details class="sec" id="sec-15" open>
+    <summary><h2>Session log</h2></summary>
+    <div class="sec-body">
+      <h3>2026-09-08 &ndash; lane created; ~50-video corpus consolidated; category decision taken</h3>
+      <ul><li>Created this file as the canonical Cowrie roadmap. <strong>Confirmed <code>cowrie</code> does not nest under <code>harvest</code></strong> &ndash; <code>harvest</code> is Catalyst Works consulting only since the 2026-08-29 split, and <code>memory/project_cowrie_commerce_lane_name_2026_08_25.md</code> establishes Cowrie as a deliberately separate commerce umbrella. Registered <code>cowrie</code> in the <code>docs/roadmap/README.md</code> codename table, recording a name Boubacar assigned himself on 2026-08-25 rather than claiming a new one.</li><li>Consolidated 15 absorb docs (~50 videos, ~20 genuinely on-topic) plus two strategy docs and one memory reference into the sourcing, listing, ops and red-flag sections above.</li><li><strong>Deep second pass on <code>Nqz_W5zKN_Q</code></strong> at Boubacar's explicit re-flag ("learn from this!"). It is not a general pallet-flipping video &ndash; it is a <strong>single-SKU specialization case study</strong> and it is the closest analogue in the corpus to his actual starting position. It supplied the daily-watch discipline, the model-level defect blacklist, the repair-partner revenue-share structure, the multi-account and shadow-ban diagnosis, the video-differentiation data point, and the bidder-count edge.</li><li><strong>Category decision recorded</strong> (see <code>docs/decisions/LEDGER.md</code>): Tier 1 small machines / outdoor power equipment / small appliances; Tier 2 scratch-and-dent large appliances gated on truck, storage and a missing calculator prior; shoes, clothing, baby clothes, baby gear and consumer electronics out. <strong>His prior was contradicted on baby clothes</strong> and furniture was demoted despite corpus enthusiasm.</li><li>Read <code>orchestrator/pallet_scorer</code> source directly rather than assuming capability. Named three real gaps: no <code>appliances_large</code> category key, <code>n=0</code> calibration outcomes, and an unauthenticated <code>/ledger</code> route writing to production Postgres.</li><li><strong>Next:</strong> Week 1, step 1 &ndash; confirm B-Stock account, ACH path and resale permit state <strong>from the vendor account</strong>, then start the daily category watch and buy pallet 1 from Utah Pallet Auction.</li></ul>
+      <h3>2026-09-08 &ndash; sales-channel and payment-safety analysis added</h3>
+      <ul><li>Added the <strong>Sales channels and payment safety</strong> section in answer to Boubacar's direct question (where to sell, lowest fees, cash vs an app, how not to get scammed). Research pass run 2026-09-08; every fee is scoped as live vendor state to be re-verified in the seller dashboard, not a permanent fact.</li><li><strong>Channel verdict: KSL primary, Facebook Marketplace secondary, both listed from day one, OfferUp and Craigslist as free extras.</strong> All four are <strong>$0 on local pickup</strong>, confirmed current. eBay is demoted to a narrow specialist tool for stripped parts and small high-value-density items only &ndash; its <strong>13.6% + $0.40</strong> is charged on item <strong>plus</strong> buyer-paid shipping plus tax, which on a heavy Tier 1 unit is a worse business, not a worse channel. This confirms rather than changes listing-process step 13.</li><li><strong>Payment verdict: cash primary, Venmo business profile (2.99%, read from Venmo's own page) as the only real fallback.</strong> The load-bearing finding: app "buyer protection" is a <em>seller risk</em> at a hand-off, because the matching seller protection is built on proof of shipment and delivery, which an in-person sale cannot produce. Cash is both cheapest and the only non-reversible rail. Zelle, friends-and-family, and any check are hard no's. A twelve-step at-the-door procedure is now written down.</li><li><strong>Whatnot rejection preserved, not reversed.</strong> Fee data (~11.2% all-in) was never the reason. New evidence <em>strengthens</em> the original grounds: Whatnot's own help center confirms permanent bans do not expire and that ban-evasion accounts draw further action.</li><li><strong>TikTok logged as an OPEN QUESTION for Boubacar</strong>, with a recommended NO for Tier 1 &ndash; it is a shipped-commerce channel with no local mode, the realistic all-in take is nearer 30% than the 6-8% headline once creator commissions, fulfillment and ads are counted, and it carries the same persona exposure that already killed live selling. Three options are laid out for his decision, including an organic-only version with no Shop account.</li></ul>
+    </div>
+  </details>
+
+
+  <footer class="foot">
+    Rendered from the Cowrie lane roadmap. Everything Cowrie lives at <a href="../cowrie/">/review/cowrie/</a>.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
