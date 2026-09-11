@@ -1,0 +1,1605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cowrie - everything for the pallet lane</title>
+<!--
+  Built from the boubacarbarry-site review-page-template pattern (nav bar, TL;DR-first
+  collapsible details, dark/light theme via prefers-color-scheme, mobile hamburger nav).
+  FINAL v3 - supersedes v2 (commit 5b6b187) in place, same URL. Rewritten as the final plan:
+  smaller Pallet 1, a real downside case in every scenario, a numeric go/no-go gate before
+  Pallet 2, confidence-labeled assumptions, a bid-target reframe (not a guaranteed cost),
+  a concrete category filter for appliances/furniture, plus swap-meet tail-clearance and a
+  storage-facility referral channel folded in as zero-cost fixes. Standalone revenue lane,
+  not part of Catalyst Works or Signal Works.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.6rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.1rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  h3{font-size:1rem; margin:18px 0 8px;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  a{color:var(--accent);}
+  a:hover{text-decoration:none;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.87rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .callout{border-left:3px solid var(--warn); background:#1a1712; padding:12px 16px;
+    border-radius:0 8px 8px 0; margin:0 0 14px;}
+  .callout.bad{border-left-color:var(--bad); background:#1d1315;}
+  .callout.good{border-left-color:var(--good); background:#121d18;}
+  .big{font-size:1.05rem; font-weight:650;}
+  .dim{color:var(--text-dim);}
+  .verdict-pill{display:inline-block; font-size:.78rem; font-weight:800; letter-spacing:.04em;
+    text-transform:uppercase; border-radius:999px; padding:5px 14px; background:var(--warn);
+    color:#241c07;}
+  .verdict-pill.go{background:var(--good); color:#06251a;}
+  .tag{display:inline-block; font-size:.72rem; letter-spacing:.03em; text-transform:uppercase;
+    border:1px solid var(--border); border-radius:999px; padding:2px 9px; color:var(--text-dim);
+    background:var(--bg2); white-space:nowrap;}
+  .tag.no{color:var(--bad); border-color:#4a2a2f;}
+  .tag.yes{color:var(--good); border-color:#25473a;}
+  .tag.part{color:var(--warn); border-color:#4a3d20;}
+  .stack-note{font-size:.82rem; color:var(--text-dim); margin:-6px 0 14px;}
+  .keystone{
+    border:2px solid var(--accent2); border-left-width:6px;
+    background:linear-gradient(180deg, rgba(127,224,184,0.10), rgba(127,224,184,0.02));
+    border-radius:0 12px 12px 0; padding:16px 20px; margin:18px 0 20px;
+  }
+  .keystone .keystone-label{
+    display:inline-block; font-size:.72rem; font-weight:800; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--accent2); margin-bottom:8px;
+  }
+  .keystone h3{margin-top:0;}
+  .keystone > :last-child{margin-bottom:0;}
+  .v3note{border:1px solid var(--accent2); border-radius:10px; padding:10px 16px;
+    margin:0 0 18px; font-size:.86rem; background:rgba(127,224,184,0.06);}
+  .v3note strong{color:var(--accent2);}
+  @media (max-width:860px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.3rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f5f6f8; --bg2:#ffffff; --card:#ffffff; --border:#e3e0da;
+      --text:#1a1d24; --text-dim:#5b6272; --accent:#8f5a1f; --accent2:#0e8f63;
+      --warn:#a9700a; --bad:#c23a3a; --good:#0e8f63;
+    }
+    .nav-bar{background:rgba(245,246,248,0.93);}
+    code{background:#eef0f5;}
+    .callout{background:#fbf3e0;}
+    .callout.bad{background:#fbecec;}
+    .callout.good{background:#e9f8f0;}
+    .verdict-pill{color:#241c07;}
+    .v3note{background:rgba(14,143,99,0.06);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+  /* --- hub deck: the first screen -------------------------------------------- */
+  .deck{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin:14px 0 4px;}
+  .tile{display:block; text-decoration:none; color:inherit; background:var(--bg2);
+        border:1px solid var(--border); border-radius:12px; padding:14px 16px;}
+  a.tile:hover{border-color:var(--accent);}
+  .tile .lbl{display:block; font-weight:700; font-size:1rem; margin-bottom:4px; color:var(--accent);}
+  .tile .sub{display:block; font-size:.85rem; color:var(--text-dim); line-height:1.45;}
+  .tile code{font-size:.8rem; word-break:break-all;}
+  .chip{display:inline-block; font-size:.7rem; letter-spacing:.04em; text-transform:uppercase;
+        border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:middle;
+        border:1px solid var(--border); color:var(--text-dim);}
+  .chip.live{color:var(--good); border-color:var(--good);}
+  .chip.soon{color:var(--warn); border-color:var(--warn);}
+  .rules{margin:0; padding-left:1.2em;}
+  .rules li{margin:7px 0;}
+  @media (max-width:560px){ .deck{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-10-23:30:16 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+
+
+
+
+
+
+
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Cowrie</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">Start here</a>
+      <a href="#sec-tools">Tools</a>
+      <a href="#sec-rules">Bidding rules</a>
+      <a href="#sec-links">Everything Cowrie</a>
+      <a href="#sec-open">Open calls</a>
+      <a href="#sec-now">This week + 30 days</a>
+      <a href="#sec-1">Executive verdict</a>
+      <a href="#sec-2">Recommended path</a>
+      <a href="#sec-3">Week 1 action list</a>
+      <a href="#sec-3b">Utah registration</a>
+      <a href="#sec-3c">Buying safely</a>
+      <a href="#sec-4">Scenario math</a>
+      <a href="#sec-5">Sourcing + grading</a>
+      <a href="#sec-6">Category guidance</a>
+      <a href="#sec-7">GTM + exit channels</a>
+      <a href="#sec-8">Assumption ledger</a>
+      <a href="#sec-9">Tools already built</a>
+      <a href="#sec-10">Community resource</a>
+      <a href="#sec-11">Productize-later</a>
+      <a href="#sec-12">Open question</a>
+      <a href="#sec-sources">Sources</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Cowrie</h1>
+    <div class="meta">The go-to page for everything Cowrie: the tools, the bidding rules, the playbook, and the business plan underneath it. Bookmark <strong>boubacarbarry.com/review/cowrie/</strong> &middot; the older dated address still works and serves this same page.</div>
+  </header>
+
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>Start here</h2></summary>
+
+    <div class="sec-body">
+      <p class="callout good" style="margin-top:0;"><strong>Cowrie is funded.</strong> The ACH
+        link is in place as of Sept 10, so the money is not the blocker any more. The gate on a
+        pallet is the math, not more reading. If the number clears, bid. If it does not, pass.
+        There is no third state called research it more.</p>
+
+      <p style="margin-bottom:2px;"><strong>What you do right now, in order:</strong></p>
+      <ol class="rules">
+        <li>Open the auction listing and filter for Tier 1 &mdash; small machines, outdoor power
+          equipment, small appliances, electric over gas. Nothing Tier 1 listed means stop, and
+          that is a pass, not a failure.</li>
+        <li>Pull the manifest. No manifest, no bid.</li>
+        <li>Run it through the scorer and bid its <code>max_bid</code>.</li>
+      </ol>
+      <p class="sub" style="color:var(--text-dim); font-size:.88rem;">The full seven moves are in
+        <a href="#sec-rules">Bidding rules</a>. Everything we have ever built or written for this
+        lane is in <a href="#sec-links">Everything Cowrie</a>.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-tools" open>
+    <summary><h2>Tools &mdash; open these</h2></summary>
+    <div class="sec-body">
+      <div class="deck">
+
+        <div class="tile">
+          <span class="lbl">Pallet pre-bid scorer<span class="chip soon">local only tonight</span></span>
+          <span class="sub">Upload the manifest CSV, get landed cost, breakeven, a GREEN/YELLOW/RED
+          verdict and a walk-away bid number. Run it on the laptop:<br>
+          <code>python -m orchestrator.pallet_scorer.server</code><br>
+          then open <code>http://127.0.0.1:8899</code><br><br>
+          A hosted version that works from your phone is built and waiting on your Telegram
+          approval of the branch <code>feat/pallet-scorer-hosted-route-2026-09-10</code>. Until you
+          tap approve it is not deployed, so there is no phone link to give you yet. When it lands
+          it opens from the tokenised link you will be sent, not from a link typed here.</span>
+        </div>
+
+        <a class="tile" href="../20260910-pallet-scorer-tool/">
+          <span class="lbl">Scorer reference &mdash; what it is and how it works</span>
+          <span class="sub">The companion to the tool above. The tool is the thing you run; this
+          is what every field means, what the verdicts mean, and the one bug worth understanding:
+          a condition string that did not match the dropdown used to fall through to the most
+          optimistic setting, silently, inflating the recommended bid. Fixed. Read this once
+          before you trust a number.<br><br>
+          <code>boubacarbarry.com/review/20260910-pallet-scorer-tool/</code></span>
+        </a>
+
+        <a class="tile" href="https://agentshq.boubacarbarry.com/api/orc/cowrie/">
+          <span class="lbl">Cowrie Ledger<span class="chip live">live</span></span>
+          <span class="sub">Every pallet and every item once you own it: what it cost, what it
+          sold for, and what happened to the ones that never sold. Database backed, works on the
+          phone. This is where the real numbers come from that eventually replace the borrowed
+          ones in the plan below.</span>
+        </a>
+
+        <a class="tile" href="https://treasuretrove.hibid.com/auctions">
+          <span class="lbl">The auction listing<span class="chip">check Wed ~7pm MT</span></span>
+          <span class="sub">Treasure Trove, Ogden. New events post Wednesdays around 7pm MT.
+          Filter for Lawn &amp; Garden, Outdoor Power Equipment.<br><br>
+          <strong>Read this before you count on it:</strong> the event running this week was
+          single-item retail liquidation, not manifested bulk pallets. Its 115 lot catalog had
+          zero pressure washers, generators, mowers, blowers or compressors. Whether this is the
+          right sourcing channel at all is an open question, logged, not yet answered.</span>
+        </a>
+
+        <a class="tile" href="../cowrie-playbook/">
+          <span class="lbl">The Cowrie playbook</span>
+          <span class="sub">The whole lane in one page: what we buy and what we refuse to, the
+          sourcing process, the calculator's exact role, listing and selling, payment safety, the
+          red flags, and the 30 day plan. This is the long reference. The page you are on is the
+          short one.</span>
+        </a>
+
+        <a class="tile" href="../money-map-y0/">
+          <span class="lbl">Money Map</span>
+          <span class="sub">Where Cowrie sits against every other revenue line, and where the
+          budget decision lives: 500 to 1,000 dollars all in for the first pallet, up to 2,000 to
+          3,000 for the right product.</span>
+        </a>
+
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-rules" open>
+    <summary><h2>Bidding rules &mdash; the seven moves</h2></summary>
+    <div class="sec-body">
+      <p style="margin-top:0;">These used to be buried in a tracker row. They live here now, where
+        you can read them standing in front of an auction.</p>
+      <ol class="rules">
+        <li><strong>Check the new listing.</strong> Tier 1 only: small machines, outdoor power
+          equipment, small appliances. Prefer electric over gas. Nothing Tier 1 means stop, and
+          stopping costs nothing.</li>
+        <li><strong>Manifest or no bid. No exceptions.</strong> An unmanifested lot is gambling,
+          however good it looks.</li>
+        <li><strong>Halve the stated retail, then verify the top line items for real.</strong>
+          Never trust the manifest's retail number. Check the biggest items against live local
+          Facebook Marketplace and KSL comps, what things actually sell for here.</li>
+        <li><strong>Deduct the dead units.</strong> Assume 10 to 30 percent dead, incomplete or
+          not as described even on a manifested good condition lot. Price known bad models at
+          scrap, not at working price.</li>
+        <li><strong>Run it through the scorer.</strong> Use <code>max_bid</code>, the conservative
+          number computed off the low end of the revenue range. <strong>Do not bid
+          <code>max_bid_ceiling</code></strong>, which is computed off the midpoint and is the
+          optimistic figure.</li>
+        <li><strong>Sanity check against the ceiling.</strong> Land at 20 percent of verified
+          retail as the working number, 30 percent as the absolute wall. If the scorer's
+          <code>max_bid</code> sits above the wall, the wall wins.</li>
+        <li><strong>One proxy bid at <code>max_bid</code>, then walk away.</strong> No live
+          bidding, no raising in the room, no second look. Expect to lose 70 to 80 percent of
+          bids. Losing is the system working.</li>
+      </ol>
+      <p class="callout"><strong>After a win, and only after a win:</strong> the manifest goes
+        through the listing copy generator for draft Facebook Marketplace and KSL ads. Pointing it
+        at a lot you have not won is a misuse of it.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-links" open>
+    <summary><h2>Everything Cowrie</h2></summary>
+    <div class="sec-body">
+      <p style="margin-top:0;">Every Cowrie asset, so nothing has to be hunted for again.</p>
+      <h3>Open in a browser</h3>
+      <ul>
+        <li><a href="../cowrie-playbook/">The Cowrie playbook</a> &mdash; the full lane reference.</li>
+        <li><a href="../20260910-pallet-scorer-tool/">Pallet pre-bid scorer reference</a> &mdash;
+          what the tool does and how to read its output.</li>
+        <li><a href="https://agentshq.boubacarbarry.com/api/orc/cowrie/">Cowrie Ledger</a> &mdash;
+          pallets and items once owned.</li>
+        <li><a href="../money-map-y0/">Money Map</a> &mdash; Cowrie against every other revenue line.</li>
+        <li><a href="https://treasuretrove.hibid.com/auctions">Treasure Trove auction listing</a>
+          &mdash; the current sourcing channel, under review.</li>
+        <li><a href="#sec-now">This week and the 30 day arc</a>, and the whole business plan,
+          further down this same page.</li>
+      </ul>
+      <h3>Built and running</h3>
+      <ul>
+        <li><strong>The pre-bid scorer</strong> &mdash; runs locally today, hosted version waiting
+          on your approval.</li>
+        <li><strong>The listing copy generator</strong> &mdash; turns a won manifest into draft
+          Facebook Marketplace and KSL ads. Built, committed, unused until a first win.</li>
+        <li><strong>The Cowrie Ledger</strong> &mdash; the item level tracker. Every item gets an
+          outcome recorded, sold, donated, binned or kept. Nothing is allowed to quietly vanish
+          from the count.</li>
+        <li><strong>A no-API tool connector</strong> &mdash; proof that deal scanning and cross
+          posting can be automated later without waiting on a platform's permission.</li>
+      </ul>
+      <h3>Written up, in the repo</h3>
+      <p class="sub" style="color:var(--text-dim); font-size:.88rem;">Reference the agents work
+        from. Named here so you know it exists, not so you have to open it: the lane roadmap
+        (rendered as the playbook above), the pallet scorer v2 comp lookup spec, the v2
+        feasibility spike, the B-Stock and Costco sourcing analysis, the resale go-to-market and
+        premortem, the live auction selling playbook, the retail arbitrage analysis, the two
+        Karpathy and Council audits on the tracker and the comp lookup, and fifteen consolidated
+        research write ups from the September 7 video corpus.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-open" open>
+    <summary><h2>Open calls &mdash; yours, not the model's</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><strong>Is Treasure Trove the right channel?</strong> This week's event was single
+          item retail liquidation, not bulk manifested pallets. Logged Sept 10, undecided.
+          Confirm or replace the sourcing channel before the next bid attempt.</li>
+        <li><strong>The hosted scorer needs your Telegram tap.</strong> The branch
+          <code>feat/pallet-scorer-hosted-route-2026-09-10</code> is held until you approve it.
+          Nothing deploys until then.</li>
+        <li><strong>The paid or tracked version of the scorer.</strong> A stateless public demo is
+          a GO. Whether it becomes something people pay for is your call, still open.</li>
+        <li><strong>TikTok Shop as a sales channel.</strong> Open question with a recommendation of
+          no for now. Whatnot is a no, unchanged.</li>
+        <li><strong>Amazon FBA</strong> as an additional channel, parked to Dec 1. <strong>Retail
+          arbitrage</strong> as a Cowrie element, parked behind it to Jan 15.</li>
+        <li><strong>Dollars per hour, or categories you can stand to work in?</strong> The old
+          question at the bottom of this page. The plan assumes the first answer. If the real
+          answer is the second, nothing gets rebuilt, it just gets resequenced.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-plan-tldr">
+    <summary><h2>The original plan summary</h2></summary>
+  <div class="v3note">
+    <strong>v3 &mdash; updated.</strong> This replaces DRAFT v2's conditional-go framing with
+    a final, buildable plan. What changed concretely: Pallet 1 sized down from $1,500-2,000 to
+    $1,100-1,300; a genuine loss-possible downside case added to every scenario, not just a
+    lower-profit case; a numeric go/no-go gate added before Pallet 2 gets funded; every
+    assumption now labeled by confidence (established fact vs. modeled/unvalidated); the
+    $225/unit figure reframed as a bid target on a live auction, never a guaranteed cost; a
+    concrete five-point filter added that makes appliances/furniture safe to include; and a
+    swap-meet tail-clearance channel plus a storage-facility referral channel folded in as
+    real, zero-cost fixes to the model's weakest points.
+  </div>
+    <div class="sec-body">
+      <p class="callout good" style="margin-top:0;"><strong>Read the NOW section first.</strong>
+        Everything below is the August plan and its reasoning, which still holds. The dated
+        this-week plan, the 30-day arc, the dollar number and the buying strategy live in
+        <a href="#sec-now">NOW &mdash; the 7-day plan and the 30-day arc</a>, updated Sept 6.</p>
+      <p class="big"><span class="verdict-pill go">GO (small)</span> &mdash; change the on-ramp,
+        then go. Ready to build on, not ready to fund past Pallet 1 without real data.</p>
+      <p>The sourcing side is real: Costco runs its liquidation channel through B-Stock at
+        institutional scale, a paid $5/month community (Shannon Jean, shannonjean.com/mastermind)
+        exists and gets paid monthly to teach this exact model, and independent Reddit accounts
+        confirm an active community actually transacting on this channel. Nothing about the
+        sourcing mechanism is speculative. What is not yet real: any number describing how fast a
+        stranger in Salt Lake City will actually pay for a used appliance out of a garage. Every
+        dollar figure in this plan is a model until the first pallet sells through.</p>
+      <ul>
+        <li><strong>The core finding, and it survives every stress test.</strong> The category
+          Boubacar is least comfortable with (cautious mixed home-goods/small-appliance)
+          outperforms the category he's most comfortable with (appliances/furniture) by roughly
+          2x on effective hourly return, because appliances/furniture carries lower sell-through
+          and mandatory handling/repair overhead. The relative gap holds even if the absolute
+          dollar figures move, because both categories share the same optimistic input bias in
+          the same direction.</li>
+        <li><strong>Pallet 1 &mdash; SUPERSEDED 2026-09-06, see the NOW section at the top:</strong>
+          the figure below ($1,100-1,300, 5-6 units, cautious mixed home-goods/small-appliance) is
+          replaced by <strong>$400 all-in, single category, sporting and outdoor gear</strong>, bought
+          in person where it can be physically inspected. The reasoning for the smaller first buy is
+          that a day-30 exit should cost a Saturday, not a quarter.</li>
+        <li><strong>A real go/no-go gate now exists before Pallet 2:</strong> proceed only if,
+          within 30 days, net profit &ge;$400 AND sell-through &ge;70% AND average landed cost
+          &le;$250/unit. Miss any one, halt and diagnose before spending another dollar.</li>
+        <li><strong>Week 1 costs nothing</strong> and can start tomorrow: a free self-listing
+          timing test, a B-Stock account, confirming the SLC home-occupation license exemption,
+          locked pickup windows, and real local comps &mdash; all in parallel, none gated on each
+          other.</li>
+      </ul>
+      <p class="callout good"><strong>The reconciliation on category choice:</strong> not "avoid
+        his comfort zone," it's "filter it before running it." Section 6's five-point filter
+        makes appliances/furniture safe to include as Pallet 2, once Pallet 1 has proven the
+        process on the faster-moving category first.</p>
+      <p class="callout"><strong>Correction (2026-09-02):</strong> this plan originally treated
+        the $100 SLC home-occupation license as a flat requirement. Boubacar checked SLC's own
+        guidance: home-based businesses are exempt from a city business license unless the
+        business causes a residential/neighborhood impact (customer traffic, on-site employees,
+        signage, noise). This resale business runs entirely through B-Stock/Costco marketplace
+        with no customer visits, no employees, no signage, and deliveries that look like normal
+        packages, so it almost certainly qualifies for the exemption. Every reference to the
+        license below should be read as "confirm the exemption with zoning@slc.gov first, file
+        only if not confirmed exempt," not as a required $100 filing.</p>
+    </div>
+  
+  </details>
+
+  <details class="sec" id="sec-now" open>
+    <summary><h2>NOW &mdash; the 7-day plan and the 30-day arc (updated Sept 6, 2026)</h2></summary>
+    <div class="sec-body">
+
+      <p class="big"><span class="verdict-pill go">GO &mdash; this week</span>
+        Live does not mean a pallet arrived. <strong>Live means a stranger paid you money.</strong>
+        Under that definition this lane can be live today, for zero dollars, using what is already
+        in the garage. The pallet follows on day 8, once one week of real numbers exists.</p>
+
+      <p class="callout good"><strong>Your framing, held throughout:</strong> bold and aggressive,
+        but not dumb. This plan is deliberately aggressive on speed &mdash; listings up today, a
+        warehouse floor walked on Wednesday, a pallet cleared to buy on day 8 with only one week of
+        data. It holds the line, without exception, on the buy side: a written ceiling that is never
+        raised mid-auction, landed cost rather than hammer price, and six hours a week in named
+        calendar blocks. Both halves are listed explicitly further down so neither blurs into the
+        other.</p>
+
+      <h3>Five things changed since the last version of this page</h3>
+      <ul>
+        <li><strong>Your Utah sales tax license already exists</strong> &mdash; 11755515-003-STC,
+          entered as the reseller tax ID at B-Stock signup. That closes the licensing question
+          completely. Nothing further to file, nothing further to check.</li>
+        <li><strong>Salt Lake City origin on B-Stock is now verified, not assumed.</strong> A live
+          listing reads "Est. 1 Pallet of Health &amp; Beauty &amp; More, 317 Units, Used - Good
+          Condition, Ext. Retail $7468, Salt Lake City." It is on the Amazon marketplace rather than
+          Costco, which matters for where you look.</li>
+        <li><strong>ACH is no longer the blocker it looked like.</strong> Wire transfer is accepted
+          at roughly $30 and clears inside B-Stock's two-business-day payment window, and the source
+          recommended below is paid in cash on pickup. Still link the bank &mdash; just stop waiting
+          on it.</li>
+        <li><strong>There is a place 40 minutes away where you can physically look at a pallet
+          before you buy it.</strong> Utah Pallet Auction, Ogden. That is the single strongest
+          defence against a junk first pallet, and B-Stock cannot offer it by design.</li>
+        <li><strong>Utah hands you a dated tail-clearing calendar.</strong> Twelve confirmed ski and
+          snowboard swaps between Oct 3 and Dec 6. That answers the "where does the leftover 60% go"
+          question that fills garages.</li>
+      </ul>
+
+      <h3>1. What you are doing this week &mdash; Sept 6 to 13</h3>
+      <p>Six hours total. That is the whole weekly cap, spent on purpose. A cap with no calendar
+        blocks against it is not a cap, so the blocks are named.</p>
+      <table>
+        <thead><tr><th>Day</th><th>Time</th><th>What happens</th><th>Done when</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sat 6</strong></td><td>15 min</td>
+            <td><strong>Start the ACH link yourself.</strong> B-Stock &rarr; account settings &rarr;
+              Payment Methods, routing and account number in hand. Then call your bank and get the
+              same-day wire cutoff time. No agent will ever touch this &mdash; banking credentials
+              are yours alone, always.</td>
+            <td>Micro-deposits pending, and you know your wire cutoff hour.</td></tr>
+          <tr><td><strong>Sat 6</strong></td><td>3 hrs</td>
+            <td><strong>The batch session. This is the week.</strong> 15 to 20 items from the garage,
+              closet, basement. One bedsheet on the floor, garage door open for light. Photograph
+              everything in one pass, grade A/B/C, set the walk-away price at intake. Run the
+              listing-copy tool over all of them, post the first 10 to KSL, and time yourself
+              honestly.</td>
+            <td>10 listings live and a minutes-per-listing number written down.</td></tr>
+          <tr><td><strong>Sun 7</strong></td><td>30 min</td>
+            <td>Post the rest. Answer the inbox. <strong>Publish your two fixed pickup windows in
+              every listing</strong> &mdash; Tue 6-8pm and Sat 9am-12pm &mdash; and put both in the
+              actual calendar as recurring events.</td>
+            <td>Everything live, both windows on the calendar.</td></tr>
+          <tr><td><strong>Mon 8</strong></td><td>20 min</td>
+            <td><strong>Browse. Do not bid.</strong> Log into B-Stock, filter Regions to Utah, read
+              three listings end to end including the freight number and the checkout screen. Settle
+              whether Costco charges the 10% buyer's premium, which nobody can answer from outside.
+              Same sitting, open buyer approvals on Lowe's and Home Depot: free, non-binding, ten
+              minutes.</td>
+            <td>Premium question answered off a real screen.</td></tr>
+          <tr><td><strong>Tue 9</strong></td><td>6-8pm</td>
+            <td><strong>Pickup window 1.</strong> Meet buyers, take cash. Log item, price, minutes.
+              Record every no-show.</td>
+            <td><strong>First cash from a stranger. The lane is live.</strong></td></tr>
+          <tr><td><strong>Wed 10</strong></td><td>45 min</td>
+            <td><strong>Drive to Ogden.</strong> Utah Pallet Auction, 1000 Newgate Mall, open
+              Wed-Fri 9:30-5:30. Walk the floor, look through the shrink wrap at real lots, ask what
+              a single pallet actually goes for. Buy only if a Buy It Now lot is under $400 all-in
+              and passes the 20-second test.</td>
+            <td>You have stood in front of real inventory and know the real local price.</td></tr>
+          <tr><td><strong>Thu 11</strong></td><td>30 min</td>
+            <td>Relist anything with zero replies. <strong>Fix presentation before you cut
+              price.</strong> Write down the week's four numbers.</td>
+            <td>Four numbers on paper.</td></tr>
+          <tr><td><strong>Fri 12</strong></td><td>20 min</td>
+            <td>Write the pallet-1 ceiling down and commit to it. Name the specific target lot.</td>
+            <td>A written ceiling and a named lot.</td></tr>
+          <tr><td><strong>Sat 13</strong></td><td>9-12</td>
+            <td><strong>Pickup window 2, then the day-7 gate below.</strong></td>
+            <td>Gate answered honestly.</td></tr>
+        </tbody>
+      </table>
+
+      <p class="callout"><strong>The day-7 gate, Saturday the 13th.</strong> Buy a pallet in week 2
+        only if all four are true: <strong>15+ items listed</strong>, <strong>5+ serious
+        replies</strong>, <strong>3+ completed sales</strong>, and a <strong>minutes-per-listing
+        number that exists on paper</strong>. Any one fails, do not buy &mdash; spend week 2 fixing
+        that one thing. Being allowed to buy on day 8 with a single week of data is the aggressive
+        half. Not being allowed to buy without it is the line.</p>
+
+      <h3>2. How to go live on B-Stock specifically</h3>
+      <p>All four items that were open on this page are now closed or moved off the critical path.</p>
+      <table>
+        <thead><tr><th>Was open</th><th>Now</th></tr></thead>
+        <tbody>
+          <tr><td>Do SLC-origin auctions really exist?</td>
+            <td><strong>Yes, verified.</strong> A live Amazon-marketplace listing ships from Salt
+              Lake City, and Costco's own About page names SLC as a ship-from location. When you are
+              logged in: left-hand Filters panel &rarr; Regions &rarr; United States &rarr; Utah.
+              There is no city-level filter, so read the Location field on each listing.</td></tr>
+          <tr><td>The 5-mile no-resale-near-a-Costco restriction</td>
+            <td><strong>Does not apply to pallet 1</strong>, because pallet 1 is not Costco-sourced
+              under the recommendation below. It binds the moment you buy a Costco lot, and the
+              check is then simple: measure your pickup spot and any booth venue against the nearest
+              Costco store before listing.</td></tr>
+          <tr><td>The budget</td>
+            <td><strong>One number recommended below. Still your call.</strong></td></tr>
+          <tr><td>ACH not linked</td>
+            <td><strong>Still yours to do, but no longer a blocker.</strong> Wire is accepted at
+              ~$30 and clears inside the two-day window, and the recommended first source takes cash
+              on pickup. Link it this week so it is done, not because anything waits on it.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3. Which source to buy from first</h3>
+      <p class="callout good"><strong>Recommendation: pallet 1 from Utah Pallet Auction in Ogden,
+        in person. Not B-Stock. B-Stock and Costco is pallet 2.</strong><br>
+        1000 Newgate Mall, Ogden UT 84405 &middot; (385) 370-0090 &middot; utahpalletauction.com
+        &middot; pickup Wed-Fri 9:30am-5:30pm. They source from Amazon, Lowe's, Home Depot, Walmart,
+        Target and Best Buy, and some lots carry a Buy It Now.</p>
+      <ul>
+        <li><strong>You can look before you buy.</strong> Their pallets are wrapped in clear film
+          specifically so buyers can inspect them. Physical inspection is the strongest single
+          defence against a junk pallet, and B-Stock forbids it by design. This is the whole
+          argument.</li>
+        <li><strong>No freight.</strong> A single pallet shipped through B-Stock runs $150 to $400,
+          plus about $50 for a liftgate and $50 for residential delivery because you have a driveway
+          and not a loading dock. On a $400 budget that is most of the money spent on a truck. Local
+          pickup turns all of it into inventory.</li>
+        <li><strong>Buy It Now removes the bidding war</strong> on the one purchase where you have
+          the least practice resisting one.</li>
+        <li><strong>You can do it this week.</strong> Forty minutes up I-15, cash, no funding clock,
+          no binding bid on an unfunded account.</li>
+      </ul>
+      <p><strong>Why B-Stock is still right for pallet 2, and Costco specifically over Amazon,
+        Walmart or Target on it:</strong> your account and license are already in place so that cost
+        is sunk, and Costco is the only retailer marketplace reported to combine accurate manifest
+        retail with a condition guarantee, where a discrepancy over 5% in quality or value gets a
+        credit or refund. Every other marketplace sells the same returns with neither protection.
+        Verify both from the buyer agreement in-account before relying on them. Amazon is the
+        fallback if no Costco lot ships from Utah in your window, since the verified SLC listing is
+        there. <strong>The safest possible B-Stock first buy is a boxed sub-pallet lot with free
+        shipping on Costco</strong> &mdash; it removes freight entirely, which is the single biggest
+        cause of first-purchase blowups.</p>
+
+      <h3>4. What to buy &mdash; the September Wasatch Front answer</h3>
+      <p class="callout good"><strong>Sporting and outdoor, snow gear first. Tools and hardware as
+        the fallback if no outdoor lot is available at the right price.</strong></p>
+      <p><strong>The obvious seasonal answer is wrong here.</strong> Utah schools started Aug 12 to
+        19, so by September back-to-school is residual, not peak. That window closed a month ago.</p>
+      <p><strong>The finding with a hard date on it is ski and snowboard gear, and the season starts
+        far earlier than anyone assumes.</strong> The Snowbird Sports Education Foundation swap is
+        confirmed for <strong>Saturday Sept 19, 2026, 8:00am to 2:30pm, Churchill Jr High, 3450 E
+        Oakview Dr, Millcreek</strong>. It is the only ski swap in September. Everything else runs
+        October through December: Lone Pine Oct 3-12, Utah SkiMo Oct 11, The Gear Room Oct 17-26,
+        Salt Lake Valley Oct 17-18, Black Diamond Oct 19, Weber State Oct 24, Snowbasin Oct 24-25,
+        Cache Valley Oct 31 to Nov 1, Ogden Nov 7-8, Park City Nov 7-9, Utah Valley Nov 21-22, St
+        George Dec 5-6.</p>
+      <p><strong>That calendar is worth more than the single September date.</strong> It is your tail
+        exit. Twelve dated, venue-confirmed events in exactly the window pallet 1's leftovers will
+        need one, and the buyers arrive pre-qualified for one category instead of wandering a swap
+        meet.</p>
+      <p><strong>Why this category and not another:</strong> ski and snow gear passes all four of
+        Shannon Jean's buying filters at once for this market. It is valuable, well above her $100
+        per unit floor. It holds value, the opposite of the consumer electronics she refuses to
+        touch. It is small enough to handle in a garage. And in September it is exactly the thing
+        other resellers ignore, because they are still thinking about summer while the first swap is
+        thirteen days away. Her stated edge is buying what others overlook, and Utah in September is
+        a textbook case of it. Utah also has the largest average household in the country at 3.08
+        people and the highest birth rate at 14.9 per thousand, so large families re-gear multiple
+        children every season. That is structural turnover, not a seasonal blip.</p>
+      <p class="callout"><strong>The honest limit, stated rather than buried:</strong> this rests on
+        one hard datapoint plus verified demographic base rates. No actual September sell-through
+        data for the Wasatch Front exists anywhere reachable. Pallet 1's real job is to replace this
+        reasoning with a measurement. If your free listing test this week shows outdoor gear pulling
+        fewer replies than something else in your own garage, that measurement wins and the category
+        changes. That is what the free week is for.</p>
+
+      <h3>5. The dollar number &mdash; one figure, still your decision</h3>
+      <p class="callout good"><strong>Recommended: $400 all-in, hard cap. Target spend $250 to
+        $350.</strong> All-in means everything: hammer price, any buyer's premium, freight or fuel,
+        and accessorials. Not the hammer price with the rest discovered afterwards. If the screen
+        number plus the freight number exceeds $400, you do not bid.</p>
+      <ul>
+        <li>It sits <strong>inside the existing $300 to $600 first-pallet band</strong>, so it is not
+          a deviation and needs no separate sign-off.</li>
+        <li><strong>$2,000 recommended for the quarter</strong>, against the $2,000 to $3,000
+          <em>ceiling</em>. A ceiling is not a starting position, and planning to the wall removes
+          the headroom that makes a cheap exit possible.</li>
+        <li><strong>$400 rather than $600 because the recommended source carries no freight</strong>,
+          so $400 buys materially more goods there than $400 does on B-Stock, where $150 to $400 of
+          it would be a truck.</li>
+      </ul>
+      <p class="callout"><strong>A conflict on this page, named rather than quietly overwritten.</strong>
+        Section 4 below sizes Pallet 1 at $1,100 to $1,300 for 5 to 6 appliance units. The strategy
+        premortem, same date, says $300 to $600 single-category. <strong>The premortem wins and the
+        $1,100 to $1,300 figure is superseded.</strong> It is the reviewed adversarial verdict, the
+        later buy-side rules were built on top of it, and its whole argument is that the first buy
+        has to be small enough that walking away on day 30 costs a Saturday rather than a quarter.
+        Read Section 4's scenarios as shape and reasoning, not as the number.</p>
+      <p><strong>This decision is still yours.</strong> It is logged as a recommendation, not
+        applied. And the honest half of it: will you actually stop at day 30 on the numbers, having
+        already spent the money? If the answer is no, the kill number is decorative and the buy
+        should not happen.</p>
+
+      <h3>6. How to actually win a bid on B-Stock</h3>
+      <p>None of this was documented before. It changes the strategy materially.</p>
+      <table>
+        <thead><tr><th>Mechanic</th><th>The fact</th><th>What you do about it</th></tr></thead>
+        <tbody>
+          <tr><td>Format</td><td>Ascending auction, current high bid is visible. Not sealed.</td>
+            <td>You can see what you are fighting.</td></tr>
+          <tr><td>Bidding</td><td>Proxy bidding. You set a maximum, the system steps up for you and
+            never goes past it.</td><td>The ceiling goes in once, in advance. This is what makes a
+            written cap actually stick.</td></tr>
+          <tr><td><strong>The close</strong></td><td><strong>"Popcorn bidding."</strong> A bid in the
+            last <strong>5 minutes</strong> extends the auction by <strong>3 minutes</strong>, again
+            and again until bidding stops.</td>
+            <td><strong>Sniping does not work here.</strong> The eBay reflex of waiting for the last
+              second is not just useless, it is the mechanism that creates bidding wars, because
+              every late bid buys the other person three more minutes to get emotional.</td></tr>
+          <tr><td>Increments</td><td>$25 under $10,000.</td><td>On a $400 lot that is a 6% step. Set
+            your ceiling on an increment boundary so the proxy does not overshoot.</td></tr>
+          <tr><td><strong>Freight</strong></td><td><strong>The flat shipping cost is shown on the
+            listing before you bid.</strong> Single pallet typically $150 to $400.</td>
+            <td>Every "shipping ruined my first pallet" story is a discipline failure, not an
+              information failure. The number was on the screen. Compute landed cost first,
+              always.</td></tr>
+          <tr><td>Buyer's premium</td><td>10% confirmed on B-Stock Supply. Unverified on the Costco
+            marketplace.</td><td>Assume 10% until a checkout screen proves otherwise. Assuming it
+            away is the classic first-timer error.</td></tr>
+          <tr><td>Payment</td><td>ACH or wire only, due within 2 business days. Every bid is a
+            binding contract; asking to cancel risks suspension.</td>
+            <td>Be funded before you bid, never after you win. There is no float.</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>Shannon Jean is real and worth reading.</strong> B-Stock profiled her on its own
+        blog, which is a stronger signal than the usual course funnel. Her four rules, in her own
+        words: <em>"Something small (easy and inexpensive to ship). Something valuable ($100+).
+        Something that does not lose value quickly (No CE products). Something other resellers
+        ignore."</em> Her reasoning on the second one is the whole game: <em>"the same energy you
+        spend to sell a $10 item is required to sell a $500 item."</em> And her hard rule:
+        <em>"never buy auction items without a manifest. You will have no recourse if things go
+        wrong."</em> Her summary discipline is <em>buy with math, sell with emotion</em>.</p>
+      <p class="callout"><strong>Use her rules, not her numbers.</strong> She monetises heavily in
+        this exact niche, so her profit multiples are marketing claims rather than audited
+        financials, and no public verification exists. No criticism of her turned up either, but
+        neither did any real Reddit discussion, which is a gap rather than a clean bill of
+        health.</p>
+
+      <p class="callout good"><strong>The bid rule, four lines:</strong><br>
+        1. Compute landed cost before the first bid: hammer, plus 10% assumed premium, plus the
+        displayed freight, plus about $50 liftgate and $50 residential. That total is what the
+        ceiling applies to, not the hammer price.<br>
+        2. Write the ceiling down before the auction opens, then enter it once as a proxy bid. Bid
+        early, bid once. Testing bids only advertise your ceiling.<br>
+        3. Never raise the ceiling while the auction is live. The soft close exists to give you time
+        to talk yourself into a bigger number.<br>
+        4. Back the ceiling out of resale, not retail. The working zone is <strong>20% of manifest
+        retail</strong>, with 30% as the absolute wall, after assuming <strong>10% to 30% of units
+        arrive dead or not as described</strong> even on manifested good-condition lots. Manifested
+        lots only, for now.</p>
+
+      <h3>7. Do these first &mdash; today and this week</h3>
+      <ol>
+        <li><strong>Today, 15 minutes, only you can do this:</strong> link the bank account in
+          B-Stock settings under Payment Methods, then call your bank and get the same-day wire
+          cutoff. No agent will ever touch banking credentials, on this or anything else.</li>
+        <li><strong>Today, 3 hours:</strong> the batch session. Fifteen to twenty items you already
+          own, photographed and graded in one pass, ten of them listed by the end of it. This is the
+          single action that decides whether the week produced anything.</li>
+        <li><strong>Make the budget call</strong> so Friday's written ceiling has a number in it.
+          The recommendation is $400 all-in.</li>
+        <li><strong>Wednesday, drive to Ogden</strong> and look at real pallets with your own
+          eyes.</li>
+        <li><strong>Put Saturday Sept 19 in the calendar</strong> for the Snowbird swap, as
+          reconnaissance rather than as a seller. Two hours, free, and you will see exactly what Utah
+          pays for used outdoor gear thirteen days before you have to price any of it.</li>
+      </ol>
+
+      <h3>8. The 30-day arc</h3>
+      <table>
+        <thead><tr><th>Phase</th><th>Days</th><th>What it looks like</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Get wet</strong></td><td>1-7, Sept 6-13</td>
+            <td>Zero dollars. Owned inventory, first cash, first four numbers, one warehouse visit,
+              one written ceiling. Ends on the day-7 gate.</td></tr>
+          <tr><td><strong>Find the rhythm</strong></td><td>8-21, Sept 14-27</td>
+            <td>Buy pallet 1 at $400. One 3-hour intake session for the whole pallet, never
+              item-by-item. List the top 20, underprice the first five deliberately by about 20%.
+              Attend the Snowbird swap on the 19th as reconnaissance. Add Facebook Marketplace as
+              channel 2 around day 18. Book an October swap for the tail now.
+              <strong>Tripwire: fewer than 20 items listed by day 10 after the pallet arrives means
+              you do not buy another one.</strong> No catching up on the weekend.</td></tr>
+          <tr><td><strong>Cruise</strong></td><td>22-30, Sept 28 - Oct 6</td>
+            <td>The week repeats without redesign, inside 6 hours: one weekend intake block (2h),
+              5 to 10 listings a day spread across the week (1.5h), the two pickup windows (2h),
+              Friday numbers and relists (0.5h). Clear the tail into a booked October swap, donate
+              what is left with a receipt.</td></tr>
+        </tbody>
+      </table>
+      <p class="callout"><strong>The day-30 decision, written now so it is not negotiated later.</strong>
+        Profit per operator hour <strong>above $30</strong> and pallet 1 is 80% cleared at 1.3x cash
+        recovered: buy pallet 2. <strong>$15 to $30</strong>: one more pallet the same size to
+        separate signal from learning curve, no scaling. <strong>Under $15</strong>, or the clearance
+        gate misses: stop, or restructure so someone else does the labour. Deciding this on Oct 6
+        costs $400 and four Saturdays. Deciding it in March costs $3,000 and a garage.</p>
+
+      <h3>9. Where this is bold, and where it holds the line</h3>
+      <table>
+        <thead><tr><th>Deliberately bold</th><th>The line, no exceptions</th></tr></thead>
+        <tbody>
+          <tr><td>Live in one day, not one month. Listings up today.</td>
+            <td>The written ceiling is never raised during a live auction.</td></tr>
+          <tr><td>Cleared to buy a pallet on day 8 with one week of data.</td>
+            <td>Landed cost, never hammer price.</td></tr>
+          <tr><td>Drive to Ogden in week one, and buy on the spot if a lot clears the cap.</td>
+            <td>$400 all-in on pallet 1. Not $401.</td></tr>
+          <tr><td>Open marketplace approvals broadly and now, because they are free and
+            reversible.</td><td>Manifested lots only until you know your category's prices cold.</td></tr>
+          <tr><td>Make the category call now on one hard datapoint rather than waiting for data that
+            does not exist.</td><td>Six hours a week in named calendar blocks. Two skipped pickup
+            windows in a row means wind it down deliberately.</td></tr>
+          <tr><td>&nbsp;</td><td>No pallet 2 until pallet 1 is 80% cleared and 1.3x recovered.</td></tr>
+          <tr><td>&nbsp;</td><td>No agent ever touches a banking or payment credential.</td></tr>
+        </tbody>
+      </table>
+
+      <p class="callout"><strong>Still parked, so nobody reopens it:</strong> live-auction selling on
+        Whatnot or TikTok Shop stays parked until Dec 5, decided Sept 6. One show costs 8 to 12
+        operator hours against a 6-hour weekly budget for the entire lane, and sellers who make it
+        work stream 12 to 16 hours a week. Nothing found this week changes that.</p>
+
+      <p style="opacity:.75;font-size:.92em;margin-top:18px;">Full working, the five-voice Council
+        pass behind these calls, and the sourcing detail:
+        <code>docs/strategy/pallet-resale-gtm-and-premortem-2026-08-23.md</code> and
+        <code>docs/strategy/pallet-resale-sourcing-bstock-2026-09-02.md</code>, addenda dated
+        2026-09-06. Budget recommendation logged as D-20260906-27b732 into the still-pending
+        D-20260903-54e6d2.</p>
+
+    </div>
+  </details>
+
+  <div class="v3note" id="status-20260902" style="margin-top:14px;">
+    <strong>Status update, 2026-09-02.</strong> The B-Stock buyer account is created (business
+    name Catalyst Works, email boubacar@catalystworks.consulting, Utah Sales Tax License
+    11755515-003-STC entered as the reseller tax ID, freight forwarder: No), and Costco's Terms
+    of Purchase were accepted in that same signup flow. That is general registration plus the
+    Costco-marketplace terms step &mdash; it is <strong>not</strong> the same thing as Costco
+    marketplace access clearing. B-Stock runs Costco marketplace approval as its own backend
+    review after terms acceptance, roughly 2 business days (see Section 3B). Next check-in:
+    2026-09-05 &mdash; if no approval email or status change on the account by then, follow up
+    with B-Stock directly.
+    <br><br>
+    <strong>Real next action right now: link a bank account for ACH.</strong> This is the actual
+    blocker before any live auction bid can clear, independent of whether Costco access has
+    cleared yet &mdash; go to B-Stock account settings &rarr; Payment Methods and add a bank
+    account by ACH. Have your bank <strong>routing number</strong> and <strong>account
+    number</strong> in hand before starting; nothing else to draft or approve, it is a one-time
+    entry.
+  </div>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. Executive verdict</h2></summary>
+    <div class="sec-body">
+      <p>The sourcing side of this is real: Costco runs its liquidation channel through B-Stock
+        at institutional scale, a paid $5/month community (Shannon Jean, shannonjean.com/mastermind)
+        exists and gets paid monthly to teach exactly this model, and independent Reddit accounts
+        confirm an active community of people actually transacting on this channel. Nothing about
+        the sourcing mechanism is speculative.</p>
+      <p>What's not yet real: any number describing how fast a stranger in Salt Lake City will
+        actually pay for a used appliance out of a garage. Every dollar figure in this plan, no
+        matter how many decimal points it carries, is a model until the first pallet sells
+        through. This version of the plan is built around that fact instead of around it.</p>
+      <p class="callout good"><strong>The core finding, and it survives every stress test run on
+        it:</strong> the category Boubacar is least comfortable with (cautious mixed
+        home-goods/small-appliance) outperforms the category he's most comfortable with
+        (appliances/furniture) by roughly 2x on effective hourly return, because
+        appliances/furniture carries lower sell-through and mandatory handling/repair overhead
+        that home-goods doesn't. That comparison is trustworthy even though the absolute dollar
+        figures underneath it are not, because both categories share the same optimistic input
+        bias in the same direction, the relative gap holds even if the absolute numbers move.</p>
+      <h3>What changed from v2, concretely</h3>
+      <ul>
+        <li>Pallet 1 sized down from $1,500-2,000 to <strong>$1,100-1,300</strong> (5-6 units)
+          &mdash; the full-size pallet was a premature scale-up a prior premortem had already
+          warned against.</li>
+        <li>A genuine downside case added to every scenario (not just "$0 for unsold units," an
+          actual loss case).</li>
+        <li>A numeric go/no-go gate added before Pallet 2 gets funded.</li>
+        <li>Every assumption now labeled by confidence: established fact vs. modeled/unvalidated.</li>
+        <li>$225/unit reframed as a bid target, not a guaranteed cost &mdash; B-Stock is a live
+          auction, not a price list.</li>
+        <li>A concrete category filter added that makes appliances/furniture safe to include,
+          instead of a vague "comfort zone."</li>
+        <li>Swap-meet tail-clearance and a storage-facility referral channel folded in as real,
+          zero-cost fixes to the model's weakest points.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. The recommended path</h2></summary>
+    <div class="sec-body">
+      <p>Week 1 (parallel, $0 spent): free-listing timing test + B-Stock account + SLC business
+        license + pickup windows locked + real KSL/Facebook comps pulled, all at once, none
+        gating the others.</p>
+      <p>Then Pallet 1 ($1,100-1,300, cautious mixed, home-goods/small-appliance).</p>
+      <p>Then the go/no-go gate (30 days): net profit &ge;$400 AND sell-through &ge;70% AND
+        average landed cost &le;$250/unit.</p>
+      <ul>
+        <li><strong>Gate passes &rarr;</strong> Pallet 2, step into appliances/furniture,
+          comfort-zone, filtered per Section 6. Then Pallet 3, rebalance to the faster-moving
+          category, full $3-5k deployed.</li>
+        <li><strong>Gate fails &rarr;</strong> halt. Diagnose pricing/category/comps before
+          spending another dollar. Re-run a Pallet 1 variant instead of scaling up blind.</li>
+      </ul>
+      <p class="callout"><strong>This is not the fastest path to spending the full budget.</strong>
+        It is the fastest path to knowing whether the budget is worth spending at all.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. Week 1 action list &mdash; startable tomorrow, zero dollars required</h2></summary>
+    <div class="sec-body">
+      <p class="dim">None of these are gated on each other. Run them in parallel this week.</p>
+      <ol>
+        <li><strong>Run a $0 self-listing test.</strong> Pick 3-5 items Boubacar already owns
+          and would normally sell or give away. List them on KSL exactly as a pallet-sourced item
+          would be listed (photos, condition grading, price). This measures his <em>actual</em>
+          minutes-per-listing and <em>actual</em> local response time &mdash; the two numbers this
+          entire plan's time math depends on, and the one thing no video or Reddit account can
+          tell him.</li>
+        <li><strong>Pull 15-20 real "sold"/active comps</strong> on KSL and Facebook Marketplace
+          for the specific item types Pallet 1 will target (small appliances, home goods) in the
+          Salt Lake City metro. This replaces the video-derived 2.0-3.0x multiple with a
+          locally-sourced range before a dollar is committed.</li>
+        <li><strong>Create and verify the B-Stock account</strong> and Costco-channel access.
+          <span class="callout good" style="display:inline;padding:2px 8px;">Done 2026-09-02:
+          buyer account created, Costco Terms of Purchase accepted.</span> Costco marketplace
+          approval is a separate backend review, check-in 2026-09-05 (see status update above).
+          Next: link a bank account for ACH (Section 3B item 5).</li>
+        <li><strong>Confirm the SLC home-occupation license exemption</strong> (email
+          zoning@slc.gov; Title 21A.33 zoning, likely exempt per SLC's own guidance since there
+          is no customer traffic, no employees, and no signage &mdash; see the correction above).
+          File the ~$100 one-time license only if the city does not confirm the exemption.
+          Timeline unknown, same logic, start now.</li>
+        <li><strong>Lock the two fixed weekly pickup windows</strong> and publish them everywhere.
+          Pick specific days/hours this week &mdash; a five-minute decision that bounds the entire
+          operation's calendar exposure and currently isn't specified anywhere.</li>
+      </ol>
+      <p>Only after these five are done does watching a live B-Stock auction and bidding up to
+        target become a real Monday-morning action instead of a bet stacked on unstarted
+        paperwork.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3b" open>
+    <summary><h2>3B. Utah business registration steps &mdash; confirmed live, free</h2></summary>
+    <div class="sec-body">
+      <p class="callout good"><strong>This whole process is free</strong> except an optional $22
+        DBA filing. Start it this week regardless of which pallet category is chosen first, it
+        gates Costco access on B-Stock.</p>
+      <ol>
+        <li><strong>Optional, only if wanting a business name other than his own.</strong> Register
+          a DBA at <code>commerce.utah.gov/corporations</code>, $22, run a name availability
+          search first. Not required for the sales tax license itself.</li>
+        <li>Go to <code>tap.utah.gov</code> and create a TAP login.</li>
+        <li>Complete Form TC-69, "Utah State Business and Tax Registration," online through
+          TAP-BR (<code>tap.tax.utah.gov/TaxExpress/_/?Link=TapBr</code>). Free. Needs SSN,
+          business name, address. No LLC required, a sole proprietorship works.</li>
+        <li>Receive a Sales Tax License Number. Processing timeline is not published online, call
+          the Utah Tax Commission directly at <strong>801-297-2200</strong> to confirm current
+          turnaround before planning around a specific date.</li>
+        <li>This Sales Tax License Number is what goes into B-Stock's "reseller tax ID" field for
+          buyer registration approval. Confirmed: B-Stock requires this for general registration,
+          and Costco specifically re-checks it as a separate marketplace approval step (roughly 2
+          business days once submitted). <span class="callout good" style="display:inline;padding:2px 8px;">Done 2026-09-02:
+          license number 11755515-003-STC entered, buyer account created, Costco Terms of Purchase
+          accepted &mdash; Costco marketplace approval itself is a separate backend review, check
+          back 2026-09-05.</span></li>
+        <li><strong>Next real step: link a bank account for ACH payment.</strong> B-Stock account
+          settings &rarr; Payment Methods. Have the bank routing number and account number ready.
+          This is what actually gates being able to clear a winning bid, independent of the Costco
+          approval timeline above &mdash; do it in parallel, don't wait on the approval email.</li>
+        <li>Optionally fill out Form TC-721, "Exemption Certificate," with that license number for
+          records or other suppliers. This is not filed with the state, he keeps it himself.</li>
+        <li><strong>Payment readiness &mdash; confirmed 2026-09-02 from B-Stock's own FAQ, read
+          this before bidding on anything.</strong> B-Stock accepts <strong>ACH or wire ONLY</strong>
+          &mdash; no credit cards, personal checks, or Western Union. Payment is due within
+          <strong>2 business days</strong> of winning an auction, and every bid is a binding
+          contract (cancellable only via the immediate confirmation popup for a literal fat-finger
+          error &mdash; a cancellation request otherwise risks account suspension). A wire transfer
+          costs roughly <strong>$30</strong> from most banks; multiple orders won within 2 days of
+          each other can be combined into one wire by putting all order numbers in the memo, which
+          saves repeat wire fees. Practical takeaway: have ACH linked (item 6 above) or wire
+          instructions ready <em>before</em> placing a first bid, not after winning one &mdash;
+          there is no float time to figure out funding once an auction closes.</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3c" open>
+    <summary><h2>3C. Buying safely &mdash; scam &amp; pitfall checklist</h2></summary>
+    <div class="sec-body">
+      <p class="dim">Sourced from real r/Flipping threads plus B-Stock's own published policy
+        pages.</p>
+      <p><strong>Cherry-picked or repacked pallets.</strong> A real, well-documented pattern
+        (r/Flipping calls it "cherry picking"): local or Facebook Marketplace secondary
+        liquidators buy a truckload, pull the high-value items to sell individually, then resell
+        the picked-over remainder labeled as "raw" or "unsorted." This risk concentrates almost
+        entirely in local or FB Marketplace secondary sellers, not in B-Stock's official
+        Costco-branded auctions directly, that volume is too high for hand-picking to be
+        profitable there. Rule: treat "raw," "unsorted," or "untouched" claims from any
+        non-B-Stock-direct seller as a red flag, not a selling point. Source exclusively from
+        B-Stock's official channel for primary supply.</p>
+      <p class="callout bad"><strong>Critical: bids are final, no buyer cancellation ever.</strong>
+        Confirmed directly from B-Stock's own Buyer FAQ (Disputes page). Once a bid wins, there is
+        no backing out for any reason, including "the manifest looks wrong now that I see it."
+        All due diligence (manifest review, condition grade check) has to happen before bidding,
+        not after winning. The only recourse is a narrow 5-business-day dispute window after
+        delivery, evidence-based only (photos, signed Bill of Lading), and it hard-closes 6 weeks
+        after payment regardless of shipping delays. Salvage-grade lots get zero condition-dispute
+        protection by design, never bid salvage expecting any safety net.</p>
+      <p><strong>Manifest reality.</strong> Manifests generally exist on B-Stock and should be
+        reviewed before bidding, but some large-batch lots (certain Amazon shipments, for
+        example) structurally have no per-pallet manifest. That is a known limitation on B-Stock
+        specifically, not automatically a scam signal. It IS a red flag if a local or secondary
+        seller who should have a manifest refuses to produce one.</p>
+      <p><strong>Fake liquidation "broker" scams exist.</strong> One documented case: a scammer
+        impersonated a real liquidation company via Instagram DM, and gave a victim the real
+        company's actual address to build false credibility. Not a risk from B-Stock-direct
+        sourcing, but relevant if ever approached by DM or text with an off-platform "Costco
+        pallet deal." Verify independently before ever sending money, never wire funds
+        pre-inspection.</p>
+      <p><strong>Freight and shipping.</strong> Prefer local pickup over LTL freight where
+        possible, it is both cheaper and lets him inspect before the deal is final. If freight is
+        required, confirm who arranged the carrier (seller vs. B-Stock) before paying.</p>
+      <p><strong>Structural condition gap, not fraud.</strong> Even fully honest "customer
+        returns" grade lots will contain a real minority of worn or incomplete items, because
+        original retailers' generous return policies accept items back without deep inspection.
+        Budget a shrinkage buffer into every profit estimate, assume some percentage of any lot is
+        unsellable. That is normal, not a sign something went wrong.</p>
+      <h3>Eyes-wide-open checklist before first purchase</h3>
+      <ul>
+        <li>Source exclusively from B-Stock's official Costco-branded auctions for primary
+          supply.</li>
+        <li>Pull and review the manifest before bidding, every time.</li>
+        <li>Never bid salvage-grade expecting condition protection.</li>
+        <li>Start with one small, cheap test lot before committing real capital.</li>
+        <li>Prefer local pickup over LTL freight.</li>
+        <li>Understand: winning a bid is final, all due diligence happens pre-bid.</li>
+        <li>Set a same-day reminder to inspect and photograph everything the moment a lot
+          arrives, the dispute clock is only 5 business days.</li>
+        <li>Treat "raw" or "unsorted" claims from non-B-Stock sellers as a red flag to verify.</li>
+        <li>Never wire money to an unverified off-platform broker.</li>
+        <li>Budget a shrinkage buffer into every profit model.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. Scenario math &mdash; with the downside case</h2></summary>
+    <div class="sec-body">
+      <p class="callout"><strong>Superseded on the dollar figures, 2026-09-06.</strong> The $1,100 to $1,300 Pallet 1 sizing below is superseded by the strategy premortem's $300 to $600 single-category figure, and by the $400 all-in recommendation in the NOW section at the top of this page. Read the scenarios below for their shape and reasoning, which still hold, not for their numbers.</p>
+      <p class="dim">All scenarios assume local pickup only, cash/Venmo, no delivery, no
+        marketplace fees, and use the assumption ledger in Section 8. Confidence labels are
+        load-bearing, read them.</p>
+
+      <h3>Scenario 1: Cautious mixed (home-goods/small-appliance) &mdash; recommended first move</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th></th><th>Base case</th><th>Downside case</th></tr>
+        <tr><td>Pallet size</td>
+          <td>$1,125 &rarr; 5 units @ $225 landed (target, not guaranteed)</td>
+          <td>Auction runs hot: $275/unit landed &rarr; 4 units for ~$1,100</td></tr>
+        <tr><td>Sell-through</td>
+          <td>80% &rarr; 4 of 5 sell</td>
+          <td>60% &rarr; 2 of 4 sell</td></tr>
+        <tr><td>Revenue</td>
+          <td>4 &times; $450-675 = <strong>$1,800-$2,700</strong></td>
+          <td>2 &times; $450-675 = <strong>$900-$1,350</strong></td></tr>
+        <tr><td>Costs</td>
+          <td>$1,125 pallet + $50 supplies + $100 license = $1,275</td>
+          <td>$1,100 pallet + $50 supplies + $100 license = $1,250</td></tr>
+        <tr><td><strong>Net profit</strong></td>
+          <td><strong>$525-$1,425</strong></td>
+          <td><strong>-$350 to +$100 (real loss possible)</strong></td></tr>
+        <tr><td><strong>Recovery multiple</strong></td>
+          <td><strong>1.4x-2.1x</strong></td>
+          <td><strong>0.7x-1.1x</strong></td></tr>
+        <tr><td>Time</td>
+          <td>5 units &times; 20 min handling+listing (1.7 hrs) + 3 hrs coordination = ~4.7 hrs</td>
+          <td>4 units (1.3 hrs) + 3 hrs coordination = ~4.3 hrs, plus unsold units occupying
+            garage space blocking Pallet 2</td></tr>
+        <tr><td><strong>$/hour</strong></td>
+          <td><strong>$112-$303</strong></td>
+          <td><strong>-$81 to +$23</strong></td></tr>
+      </table>
+      </div>
+      <p class="keystone">
+        <span class="keystone-label">Go/no-go gate for Pallet 2</span>
+        <p>Proceed only if, within 30 days, Pallet 1 clears <strong>net profit &ge;$400 AND
+          sell-through &ge;70% AND average landed cost &le;$250/unit</strong>. Miss any one,
+          halt and diagnose (repricing, swap-meet tail clearance, re-check comps) before
+          deploying Pallet 2 capital. This is the falsifiable check the prior version of this
+          plan didn't have.</p>
+      </p>
+
+      <h3>Scenario 2: Comfort zone (appliances + furniture) &mdash; filtered, step into this only
+        after Pallet 1 validates</h3>
+      <p class="dim">See Section 6 for the five-point filter that makes this category safe to
+        include.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th></th><th>Base case</th><th>Downside case</th></tr>
+        <tr><td>Pallet size</td>
+          <td>$2,000 &rarr; 9 units @ $225 landed (target)</td>
+          <td>$275/unit landed &rarr; 7 units for ~$1,925</td></tr>
+        <tr><td>Sell-through</td>
+          <td>70% &rarr; 6 of 9 sell</td>
+          <td>50% &rarr; 3-4 of 7 sell</td></tr>
+        <tr><td>Revenue</td>
+          <td>6 &times; $450-675 = <strong>$2,700-$4,050</strong></td>
+          <td>3-4 &times; $450-675 = <strong>$1,350-$2,700</strong></td></tr>
+        <tr><td>Repair sub-math</td>
+          <td>3 candidates, 2 clear $25/hr threshold, 1.5 hrs spent</td>
+          <td>3 candidates screened, 0-1 clear threshold, diagnostic time on rejected units
+            still counted (not free)</td></tr>
+        <tr><td>Costs</td>
+          <td>$2,000 pallet + $75 supplies = $2,075</td>
+          <td>$1,925 pallet + $75 supplies = $2,000</td></tr>
+        <tr><td><strong>Net profit</strong></td>
+          <td><strong>$625-$1,975</strong></td>
+          <td><strong>-$650 to +$700</strong></td></tr>
+        <tr><td><strong>Recovery multiple</strong></td>
+          <td><strong>1.3x-2.0x</strong></td>
+          <td><strong>0.7x-1.4x</strong></td></tr>
+        <tr><td>Time</td>
+          <td>3 hrs handling + 1.8 hrs listing + 1.5 hrs repair + 5 hrs coordination = <strong>11.3
+            hrs</strong></td>
+          <td>Similar time spent, worse outcome, diagnostic time on rejected repairs plus 3-4
+            unsold bulky units now occupying garage space</td></tr>
+        <tr><td><strong>$/hour</strong></td>
+          <td><strong>$55-$175</strong></td>
+          <td><strong>-$58 to +$62</strong></td></tr>
+      </table>
+      </div>
+      <p>The comfort-zone category is a legitimate choice, but the numbers say it should be
+        earned into after Pallet 1 proves the process, not the starting bet, because it costs
+        roughly double the time for roughly half the return at best, and its downside case is
+        worse (bulkier dead stock, more garage-space collision risk with Pallet 2/3 timing).</p>
+
+      <h3>Scenario 3: Full $3-5k sequenced plan (base case, all three pallets)</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Pallet</th><th>Cost</th><th>Category</th><th>Base net</th><th>Time</th></tr>
+        <tr><td>1</td><td>$1,100-1,300</td><td>Cautious mixed</td>
+          <td>$525-$1,425</td><td>4.7 hrs</td></tr>
+        <tr><td>2</td><td>$2,000</td><td>Appliances/furniture (filtered)</td>
+          <td>$625-$1,975</td><td>11.3 hrs</td></tr>
+        <tr><td>3</td><td>$1,500</td><td>Cautious mixed (rebalance)</td>
+          <td>$600-$1,650</td><td>5 hrs</td></tr>
+      </table>
+      </div>
+      <p><strong>Totals (base case):</strong> ~$4,600-4,800 spent, $1,750-$5,050 net profit,
+        ~21 hours, <strong>$83-$240/hour</strong> blended. This is the full plan's honest range,
+        down from v2's figures because Pallet 1 was resized smaller, and it should be read as a
+        range that only gets more accurate after Pallet 1's real numbers replace the video-derived
+        multiple.</p>
+      <p class="callout bad"><strong>The liquidity risk nobody flagged until cross-review:</strong>
+        Pallet 2 funded by Pallet 1's proceeds assumes Pallet 1 actually sells through before
+        Pallet 2 needs capital. At realistic payment timing (buyers trickling in over 2-3 weeks,
+        not landing all at once), the reinvestment step can stall a month or more. Budget for
+        that, don't assume Pallet 2 is immediately fundable the day Pallet 1's units are all
+        listed.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. Sourcing &amp; grading discipline</h2></summary>
+    <div class="sec-body">
+      <p><strong>Platform:</strong> B-Stock (bstock.com), Costco's official liquidation auction
+        channel.</p>
+      <h3>Grading tiers, in order of trust</h3>
+      <ul>
+        <li><strong>New / Like New</strong> &mdash; safest, lowest defect risk, typically highest
+          price competition.</li>
+        <li><strong>Used Good</strong> &mdash; the sweet spot. Usually customer returns, usually
+          functional.</li>
+        <li><strong>Used Fair</strong> &mdash; avoid.</li>
+        <li><strong>Mixed/Salvage</strong> &mdash; avoid.</li>
+      </ul>
+      <p class="callout"><strong>Manifest-screening discipline</strong> (do this before bidding,
+        not after winning): the grading label alone is not reliable at scale. Two real
+        cautionary accounts already surfaced prove this: a truckload disclosed as "used/fair to
+        salvage" arrived floor-loaded (not palletized), 20,000 lbs, no guaranteed liftgate,
+        non-cancelable, including non-working haul-away units; a power-tools lot returned a
+        majority of burned-out motors. Read the actual manifest line items, not just the tier
+        label, and apply pattern-recognition the same way you'd screen for a recurring complaint
+        pattern in any other domain, the skill transfers directly.</p>
+      <h3>Return-reason risk by category (from B-Stock's own guidance + real Reddit accounts)</h3>
+      <ul>
+        <li><strong>Apparel/shoes</strong> &mdash; largely "bracketing" (size-driven), lower real
+          defect risk than the grading label suggests.</li>
+        <li><strong>Home/garden, general home goods</strong> &mdash; usually "didn't fit the
+          space," not broken. Lower risk.</li>
+        <li><strong>Large appliances/furniture</strong> &mdash; real risk at scale (see
+          manifest-screening filter above). Not banned, filtered.</li>
+        <li><strong>Power tools</strong> &mdash; avoid unless repair-capable; one real account of
+          majority burned-out motors.</li>
+      </ul>
+      <p class="callout bad"><strong>$225/unit landed is a bid ceiling, not a guaranteed cost.</strong>
+        B-Stock is a competitive auction, three other people watching the same video means the
+        actual clearing price can run above target. Every scenario in Section 4 models what
+        happens when it does.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>6. Category guidance &mdash; reconciled</h2></summary>
+    <div class="sec-body">
+      <p><strong>What Boubacar said he's comfortable with:</strong> appliances, lawn/patio
+        furniture, furniture in general, and repairs "if worth the time and good enough margins."
+        Uncertain on clothes specifically due to margin concerns.</p>
+      <p><strong>What the risk data actually says:</strong> the comfort-zone category
+        (appliances/furniture) has lower sell-through, mandatory handling/repair overhead, and a
+        real (documented) tail-risk of bulk-lot logistics disasters, while the category with the
+        best $/hour (cautious mixed home-goods/small-appliance) is the one he's less familiar
+        with.</p>
+      <p class="callout good"><strong>The reconciliation is not "avoid his comfort zone," it's
+        "filter it before running it."</strong> Section 5's manifest-screening discipline plus
+        this section's five-point filter is the concrete answer that makes appliances/furniture
+        safe to include as Pallet 2, once Pallet 1 has proven the process on the faster-moving
+        category first.</p>
+      <h3>The five-point filter that makes appliances/furniture safe to include</h3>
+      <ul>
+        <li><strong>Used-Good grade only.</strong> Never bid on Used-Fair, Salvage, or Mixed lots
+          regardless of price.</li>
+        <li><strong>One-person-liftable only.</strong> No floor-loaded truckloads, no lots
+          requiring a liftgate or two-person lift as standard handling.</li>
+        <li><strong>Manifest-screened before bidding</strong>, not just grading-label-trusted
+          (Section 5).</li>
+        <li><strong>Repair-if-profitable, with a real time cap:</strong> repair only if diagnosis
+          (capped at 20 minutes) shows it clears $25/hour effective margin. If diagnosis alone
+          eats more than 20 minutes without a clear answer, treat the unit as sell-as-is or
+          discount, not a repair candidate.</li>
+        <li><strong>Never bid on a lot disclosing non-cancelable floor-load terms</strong> &mdash;
+          the exact structure the Reddit truckload account describes (20,000 lbs, no guaranteed
+          liftgate, non-cancelable, condition disclosed as unreliable).</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>7. GTM &amp; exit channels</h2></summary>
+    <div class="sec-body">
+      <p><strong>Two-channel exit, not one</strong> (missing from earlier scenario math):</p>
+      <ol>
+        <li><strong>Head of the pallet (20-40% of items)</strong> &mdash; individually worth a
+          KSL/Facebook Marketplace listing, sold at full modeled margin.</li>
+        <li><strong>Tail of the pallet (60-80% of items)</strong> &mdash; the portion that's
+          individually unsellable at good margin or slow to move. Instead of letting it become
+          garage dead stock (the "$0 unsold" worst case baked into every scenario above), book
+          <strong>one swap-meet table synced to each pallet's 2-3 week sell window</strong> and
+          clear the tail in bulk, for cash, in hours instead of weeks. This directly converts the
+          model's conservative $0 floor into real partial recovery and removes the garage-space
+          bottleneck that otherwise limits how fast Pallet 2 can start.</li>
+      </ol>
+      <p><strong>Primary channel: KSL Classifieds.</strong> Structural pair is a swap-meet booth,
+        not Facebook Marketplace, KSL is where the head-of-pallet items move.</p>
+      <p><strong>Secondary channel (week 3+): Facebook Marketplace.</strong> Real ban risk exists
+        and is unappealable, treat as channel #2, not primary.</p>
+      <p class="callout"><strong>The single most important operational decision:</strong> two
+        fixed weekly pickup windows, published on every listing. This bounds an otherwise
+        unbounded interruption stream and must be locked in Week 1 (Section 3).</p>
+      <p class="callout good"><strong>Zero-cost referral channel found in this plan's own prior
+        research and not yet used:</strong> Public Storage, Extra Space, and CubeSmart facilities
+        in SLC see movers and downsizers daily who need cheap appliances/furniture fast. These
+        same three operators were already researched for this plan (to confirm storage units
+        can't be workshops), a flyer or simple relationship with facility staff costs nothing and
+        directly targets the exact buyer profile this plan needs, patching the one real evidence
+        gap in the whole plan (fresh local demand data).</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>8. Assumption ledger &mdash; labeled by confidence</h2></summary>
+    <div class="sec-body">
+      <p class="dim">Not all inputs are equally solid. Treat these differently.</p>
+      <h3>Established (directly sourced from background facts)</h3>
+      <ul>
+        <li><strong>A1:</strong> $225/unit landed target &mdash; video's two disclosed real
+          purchases (LG appliances, patio/gazebo lot)</li>
+        <li><strong>A5:</strong> 12 min/item listing time &mdash; prior research's established
+          minutes-per-listing finding</li>
+        <li><strong>A9:</strong> $100 one-time SLC business license &mdash; Title 21A.33 zoning;
+          <b>corrected 2026-09-02:</b> likely exempt as a no-traffic/no-employee/no-signage
+          home business per SLC's own guidance, pending confirmation from zoning@slc.gov (see the
+          correction callout in Section 0), not a confirmed requirement</li>
+        <li><strong>A8, A11:</strong> no marketplace fees, sales tax pass-through &mdash; direct
+          from Boubacar's stated local-pickup/cash channel choice</li>
+      </ul>
+      <h3>Modeled, unvalidated &mdash; Pallet 1's real job is to replace these with measured
+        numbers, not to be trusted at face value</h3>
+      <ul>
+        <li><strong>A2:</strong> 2.0x-3.0x recovery multiple &mdash; derived from only TWO
+          curated video examples (both wins, both featured in a video selling a paid community);
+          this is the single highest-leverage unvalidated number in the entire plan and every
+          dollar figure compounds through it</li>
+        <li><strong>A3:</strong> 80%/70% sell-through by category &mdash; no local sell-through
+          data exists yet; nobody has posted a single KSL listing in this channel</li>
+        <li><strong>A6, A7, A12:</strong> handling/repair/coordination time estimates &mdash;
+          reasoned analogies, not measurements; Boubacar's own diagnostic speed on a specific
+          repair (e.g., a used dishwasher motor) is unknown until tested</li>
+        <li><strong>A4:</strong> unsold units = $0 &mdash; conservative on revenue but doesn't
+          price the real cost of garage space and sunk handling time on dead stock (Section 7's
+          tail-channel fix partially addresses this)</li>
+      </ul>
+      <p class="callout good"><strong>The honest read:</strong> the relative finding (Scenario 1
+        beats Scenario 2 on $/hour) survives even if A2's absolute multiple is wrong, because both
+        scenarios share the same bias in the same direction. The absolute dollar figures in every
+        table above are a starting model, not a forecast, Pallet 1's actual sell-through and
+        actual multiple are what turn this from a model into a fact.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-9" open>
+    <summary><h2>9. Tools already built (real, working, in the repo)</h2></summary>
+    <div class="sec-body">
+      <p class="callout" style="margin-top:0;">The current, linkable versions of all of these are in <a href="#sec-tools">Tools</a> at the top.</p>
+      <ul>
+        <li><strong>A listing-copy generator</strong> &mdash; produces real KSL/Facebook
+          Marketplace-ready copy from item details using an AI backend. Already built, already
+          committed, ready to use on Pallet 1's very first listing.</li>
+        <li><strong>A pre-bid scorer</strong> &mdash; decides whether a specific pallet auction is
+          worth bidding on <em>before</em> a bid is placed: upload the manifest CSV, it computes
+          landed cost, breakeven, and a strict GREEN/YELLOW/RED verdict plus a walk-away bid
+          number. This is the tool that turns Section 6's "compute landed cost before the first
+          bid" rule into something you actually run, instead of doing the arithmetic by hand
+          during a live auction. Runs locally today (not hosted publicly) &mdash; full reference:
+          <a href="../20260910-pallet-scorer-tool/">Pallet Auction Pre-Bid Scorer</a>.</li>
+        <li><strong>A working custom no-API tool connector</strong> &mdash; proof-of-concept that
+          custom connectors can be built without relying on a vendor's official API, opening the
+          door to future automation (deal-scanning, cross-posting) without waiting on platform
+          permission.</li>
+        <li><strong>Related in-progress work</strong> (not yet confirmed complete, do not assume
+          done): a deal-scanning connector for the liquidation auction platform, and a
+          professional-network connector, both being built elsewhere.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-10" open>
+    <summary><h2>10. Community resource</h2></summary>
+    <div class="sec-body">
+      <p><strong>Shannon Jean's paid reseller community</strong> (shannonjean.com/mastermind,
+        $5/month) is the top resource recommendation for this plan, real, cheap, directly
+        relevant, and run by the same practitioner whose real framework and real purchase
+        examples anchor this whole plan's math. Not required. Worth the five dollars given how
+        directly it maps to exactly what Pallet 1 needs to learn.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-11" open>
+    <summary><h2>11. Productize-later note</h2></summary>
+    <div class="sec-body">
+      <p>This is proof-of-concept phase for the resale business itself, not yet time to build or
+        sell tooling to other resellers. But log everything from day one as if it will be reused:
+        real minutes-per-listing, real sell-through by category, real repair-diagnosis time, real
+        swap-meet recovery rates. The listing-copy generator already exists and its natural
+        future audience (Shannon Jean's paid community) is already identified. Using it on Pallet
+        1 generates the real proof, actual minutes saved per listing, that would make selling it
+        credible later. That's not wasted motion even if it's never sold, it's the same data this
+        plan needs anyway.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-12" open>
+    <summary><h2>12. Open question &mdash; Boubacar's call, not the model's</h2></summary>
+    <div class="sec-body">
+      <p>The comfort-zone category (appliances/furniture) clears roughly half the hourly return
+        of the category he's less familiar with (cautious mixed home-goods). Is this business
+        being optimized for dollars-per-hour, or for staying inside categories he finds
+        personally tolerable to work in even at a lower return? Both are legitimate answers.</p>
+      <p class="callout">The sequencing recommendation in this plan (Scenario 1 first, Scenario 2
+        second) assumes the first answer. If the real answer is the second, Pallet 1 can start
+        directly in the appliance/furniture category with the Section 6 filter applied, the plan
+        doesn't have to be rebuilt, just resequenced.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-sources" open>
+    <summary><h2>Sources</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li>YouTube kEV86fy-Rvc, full transcript, source for the operating flow and the two
+          cited transaction examples (LG appliances lot, patio/gazebo lot). Single-operator
+          self-report, treat all dollar figures sourced here as directional pending Pallet 1's
+          real numbers (Section 8).</li>
+        <li>B-Stock (bstock.com), Costco's official liquidation auction channel.</li>
+        <li>Shannon Jean's paid reseller community, shannonjean.com/mastermind, $5/month.</li>
+        <li>Independent Reddit accounts corroborating active B-Stock resale activity, including
+          the truckload floor-load/non-cancelable cautionary account and the power-tools
+          burned-out-motor account referenced in Section 5.</li>
+        <li>Public Storage, Extra Space, and CubeSmart Salt Lake City facility research (from
+          this plan's own prior pass, confirming storage units can't be workshops; repurposed
+          here as the Section 7 referral-channel finding).</li>
+        <li>SLC Title 21A.33 zoning requirement for a home-based business license.</li>
+        <li>bstock.com/buy/seller/costco &mdash; About and FAQ tabs, fetched 2026-09-02 via
+          Boubacar's own authenticated browser session. Verbatim source saved in the agentsHQ repo
+          at <code>docs/strategy/bstock-costco-liquidations-source-2026-09-02.md</code>; strategic
+          analysis (SLC shipping-origin fit, 5-mile no-resale-near-Costco restriction, 18-pallet
+          consolidated-shipping credit, R2-certified-electronics exclusion) at
+          <code>docs/strategy/pallet-resale-sourcing-bstock-2026-09-02.md</code>.</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer class="foot">
+    FINAL v3, supersedes DRAFT v2 in place. Same source video plus B-Stock, Shannon Jean
+    community, and Reddit corroboration. Standalone revenue lane, not part of Catalyst Works or
+    Signal Works. All figures sourced or flagged as modeled/unvalidated per Section 8, nothing
+    invented.
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var toggle = document.getElementById('navToggle');
+    var bar = document.getElementById('navBar');
+    if(!toggle || !bar) return;
+    toggle.addEventListener('click', function(){
+      var open = bar.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    var links = bar.querySelectorAll('.nav-links a');
+    links.forEach(function(a){
+      a.addEventListener('click', function(){
+        bar.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  })();
+</script>
+
+
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
