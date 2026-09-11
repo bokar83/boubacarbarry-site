@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinkedIn Positioning: Sniper, Not Shotgun</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-11-11:31:40 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">LinkedIn Positioning</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-0">Findings</a>
+      <a href="#sec-1">The decision</a>
+      <a href="#sec-2">The copy</a>
+      <a href="#sec-3">Cadence</a>
+      <a href="#sec-4">Open to work</a>
+      <a href="#sec-5">Council</a>
+      <a href="#sec-6">The plan</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>LinkedIn Positioning: Sniper, Not Shotgun</h1>
+    <div class="meta">The message on your page and the message you decided on are two different messages &middot; 2026-09-11</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      
+<p><strong>The niche is not an open question.</strong> You answered it yourself on 2026-08-28:
+<em>&ldquo;the go-to person for the merging of AI and HR.&rdquo;</em> The live profile still carries July copy
+written against a different strategy. So this is a propagation failure, not a strategy choice.</p>
+
+<p><strong>Recommendation: sniper, aimed at AI for HR and recruiting</strong>, with recruiting and
+time-to-fill as the beachhead. One profile. No second brand and no second website until there is a
+paying recruiting client.</p>
+
+<p><strong>Do this first, before any copy:</strong> turn the public Open-to-Work badge off. A blind
+reader saw it today, which means it is set to all members, not recruiters only. Under five minutes.</p>
+
+<p><strong>The thing you told Jordan you were missing, you already have.</strong> You said the blocker is
+being able to say honestly &ldquo;I&rsquo;ve done this.&rdquo; You can. You were part of a project that took a
+hiring cycle from roughly two months to under one. It has been invisible because generic operations
+positioning gave it nowhere to sit.</p>
+
+<p><strong>One question only you can answer, and the whole plan hangs on it:</strong> is the HR and AI role
+a job you would actually take, or a client you are pitching?</p>
+
+    </div>
+  </details>
+
+  <details class="sec" id="sec-0" open>
+    <summary><h2>What was found</h2></summary>
+    <div class="sec-body">
+<p>Two separate prior plans exist. They are about different surfaces, and conflating them is what has
+made the state of this hard to read.</p>
+
+<h3>The July plan was the COPY plan, and it DID ship</h3>
+<p>The headline a blind cold-reader saw on your profile today is the July plan&rsquo;s proposed headline,
+verbatim, character for character. The About preview it quoted is the July plan&rsquo;s About. The paste
+session happened. A correction already settled this independently on 2026-09-03 after a live browser
+read, and the gap it recorded is the same one the cold read found eight days later:
+<strong>the headline and About never say HR.</strong></p>
+<p>What did <em>not</em> ship from July was the behavioural half. Its Priority 0 never happened.
+Open-to-Work is still on, publicly. The recommendation sprint, the storefront fix and the Featured
+re-order have no evidence of shipping.</p>
+
+<h3>The August plan was the BANNER plan, and it did NOT ship</h3>
+<p>This is the August work you remember. Its own finding was that the headline should not change and
+that the open item is the banner. It proposed a banner line, scored it, and then five banner
+directions were designed, pushed to a branch, tagged work-in-progress, and never merged. Verified
+today: still not merged. They were never put in front of you as a mockup and never uploaded. The
+tracking row was re-dated twice and then archived for being too long. The live banner has never changed.</p>
+
+<p><strong>So your memory is right and the record is right, and they were describing different halves.</strong>
+The copy shipped in July. The banner stalled in August and is still sitting on an unmerged branch.</p>
+
+<h3>Three things from the August work that change what gets written now</h3>
+<ol>
+<li><strong>You already rejected the line that is currently live in your headline.</strong> The record has
+&ldquo;You run the business, I run the systems&rdquo; marked rejected, in your words, as pretentious. It is
+still the closing clause of the live headline. The rewrite below drops it. That is applying a
+decision you already made, not a style preference.</li>
+<li><strong>The banner geometry is a measured hard constraint.</strong> Canvas 1584x396, upload at 3168x792,
+and your avatar is a 152px circle that covers the left half of the banner on a 390px phone. Banner
+copy has to live in the right portion or it sits behind your own face on mobile.</li>
+<li><strong>Your standing rule for it:</strong> <em>&ldquo;It must be scroll stopping and do my selling for me...
+Everything on the banner must EARN it&rsquo;s place.&rdquo;</em></li>
+</ol>
+
+<h3>What neither plan could have known</h3>
+<p>July positioned you as a general bottleneck consultant, with AI deliberately demoted and HR
+deliberately absent. August explicitly left the headline alone. Both were considered calls at the time.
+Then on 2026-08-28 you set a different niche in your own words. Nothing propagated it to the live
+profile. <strong>That gap, not the wording, is the thing to fix, and it recurs in November unless this
+plan closes it.</strong></p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>The decision: sniper or shotgun</h2></summary>
+    <div class="sec-body">
+<h3>Where you are today</h3>
+<p>Four target groups, named by you on the call: general AI, recruiters and recruiting organisations,
+fintech people for ghostwriting, and HR gurus.</p>
+<p>The cold read is the evidence on what that costs. A reader with no biographical priming, looking
+straight at your live profile, concluded: <em>&ldquo;an AI-adjacent operations consultant / fractional ops
+person,&rdquo;</em> <em>&ldquo;reads corporate-coach, not personal,&rdquo;</em> and <em>&ldquo;feels like two different
+accounts: consultant-for-hire vs. content-creator building a personal brand.&rdquo;</em></p>
+<p><strong>Notice what is missing from that entire verdict.</strong> HR is not in it. Recruiting is not in it.
+Your single scarcest asset, a career inside HR paired with systems you built and run yourself, was
+invisible to a reader looking straight at the page.</p>
+
+<h3>The three options</h3>
+
+<p><strong>Option A. Stay broad.</strong> Keep all four groups, keep the current copy.<br>
+<em>Gets you:</em> nothing is foreclosed, and the ghostwriting revenue line keeps its aim.<br>
+<em>Costs you:</em> the cold read is what this option already produces. Jordan&rsquo;s read of it is the
+accurate one, and it is about capacity, not marketing: <em>&ldquo;I&rsquo;m building a stadium. I&rsquo;m building
+a railroad... Each one of them has three bricks... but I don&rsquo;t have any building, and I got no
+tenants, and I got no rent.&rdquo;</em></p>
+
+<p><strong>Option B. Sniper on AI for HR and recruiting. Recruiting and time-to-fill as the beachhead.
+One profile, one message. RECOMMENDED.</strong><br>
+Every surface says AI for HR and recruiting. The content, comments and DMs aim specifically at
+recruiting firms and the time it takes them to fill a role. The other three groups are not killed,
+they are re-classed:</p>
+<ul>
+<li><strong>Fintech ghostwriting</strong> stays a live revenue line. It is paid work and does not need the
+profile pointed at it. Stop aiming, keep earning.</li>
+<li><strong>HR gurus</strong> become a distribution channel, not a target segment. Commenting on the former
+boss who tags you back is reach, not a market.</li>
+<li><strong>General AI</strong> becomes the topic you have opinions on, not the identity you sell. Which is
+what your own niche statement already says.</li>
+</ul>
+
+<p><strong>Option C. Jordan&rsquo;s literal proposal.</strong> A separate brand, site and social presence for
+AI-for-recruiting now, with the personal site as the umbrella.<br>
+<em>Gets you:</em> the sharpest possible targeting, and a page you can send a recruiting executive to
+that is about nothing else.<br>
+<em>Costs you:</em> a sixth building with three bricks in it. His own metaphor argues against his own
+tactic here, and he was reasoning without knowing how many surfaces already exist. A second brand
+needs its own content, its own proof and its own maintenance, and there is no recruiting client yet
+to put on it.</p>
+
+<h3>Recommendation: Option B</h3>
+<ol>
+<li><strong>It is not a new decision, it is the one you already made.</strong> Choosing a niche is the hard,
+frightening part, and you did it on 2026-08-28. Treating this as open re-opens a settled question
+and invites a fifth option.</li>
+<li><strong>You already own the proof you told Jordan you were missing.</strong> You were part of a project
+that took a hiring cycle from roughly two months to under one. That is the exact claim a recruiting
+firm buys, it is true, and it is documented. Narrowing to hiring is what makes your strongest
+existing proof point usable.</li>
+<li><strong>Recruiting is the sharpest pain inside the niche, not a different niche.</strong> Jordan&rsquo;s
+instinct was right and his framing was one level off. AI-for-recruiting is not a fifth thing
+competing with AI-and-HR. It is the doorway into it.</li>
+<li><strong>It protects the north star.</strong> Fractional AI engagements inside HR are the goal. A
+recruiting-only brand would have to be rebuilt the moment the first HR-leader conversation happens.</li>
+</ol>
+
+<h3>The split the Council would not average away</h3>
+<p>Two voices disagreed on the width, and the disagreement is real. Argued cold, with no insider
+context: <em>&ldquo;AI for HR and recruiting is still two things, and HR is the bigger word. I would hear
+HR guy, and I have already met eleven of those.&rdquo;</em> Argued from the market: the buyer with budget in
+2026 is the HR leader told to do something about AI with nobody on staff who can, and recruiting
+alone leaves that buyer unaddressed.</p>
+<p><strong>The call: profile broad by one notch, content narrow.</strong> The profile says AI for HR and
+recruiting. Every post, comment and DM for the next six months aims at recruiting firms and
+time-to-fill. That is what a sniper is. One scope, one target, standing on ground wide enough to move.</p>
+
+<h3>Six months, and what ends it</h3>
+<p>Commit through March, then re-evaluate. It is not forever, and saying so out loud is what makes it
+possible to start. What would reverse it: a paying fractional AI-and-HR engagement arriving from
+outside recruiting, or a full six months of aimed recruiting effort producing no conversation with
+anyone who can sign.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>The copy: before and after</h2></summary>
+    <div class="sec-body">
+<p>Every block is voice-gated. Constraints applied: no em-dashes, first person, no specific counts
+where a generic word works, no employer named, no claim of current clients, no leadership verb you
+have not used yourself, no credential as the opening bid, and the &ldquo;I run the systems with you&rdquo;
+line dropped per your own August rejection.</p>
+
+<h3>Banner</h3>
+<p><strong>Before, live today:</strong></p>
+<pre>Every leader around you is talking about AI. You need someone to help you use it.</pre>
+<p>Nineteen words, two sentences, no named audience, and it describes a feeling rather than a job.</p>
+<p><strong>After, paste this:</strong></p>
+<pre>AI for HR and recruiting. Fewer days to fill a role.</pre>
+<p>Ten words, inside Jordan&rsquo;s eight-to-fifteen band. Names the audience in the first four. States
+the outcome in the last seven. Readable at the size a banner actually renders on a phone.</p>
+<p><em>Alternate, if you want the pain named rather than the outcome:</em></p>
+<pre>AI for HR and recruiting. Start where hiring hurts.</pre>
+<p><strong>Layout constraint, measured:</strong> on a 390px phone your avatar is a 152px circle covering the
+left half. Set this copy in the right portion of the 1584x396 canvas and export at 3168x792. The five
+design directions sitting on the unmerged banner branch are the fastest path to a comp, but their
+copy is superseded by the line above.</p>
+<p><strong>Voice gate: 93/100.</strong></p>
+
+<h3>Headline</h3>
+<p><strong>Before, live today, and it is the July plan&rsquo;s own proposed line:</strong></p>
+<pre>I find what's slowing your business down and fix what matters most first. Right tools,
+AI only when it fits. You run the business. I run the systems with you.</pre>
+<p>The first sixty characters, which is all a search result or a comment thread ever shows, read
+<em>&ldquo;I find what&rsquo;s slowing your business down and fix what matt&rdquo;</em>. A stranger learns nothing.
+Jordan saw exactly this and said so. The closing clause is also the line you rejected as pretentious
+in August.</p>
+<p><strong>After, paste this:</strong></p>
+<pre>AI for HR and recruiting | I help hiring teams fill roles faster, with less of the job
+done by hand | I spent my career in HR before I built AI systems for it</pre>
+<p>The first twenty-four characters do the whole job. Everything after them is earned reading, not
+required reading. The credential at the end is deliberately vague on tenure and employer and specific
+on the bridge, which is the part nobody else can claim.</p>
+<p><strong>Voice gate: 93/100.</strong></p>
+
+<h3>About, opening</h3>
+<p>Jordan&rsquo;s specific instruction: the first forty to eighty characters carry the single most
+important thing, in an &ldquo;AI for X&rdquo; shape.</p>
+<p><strong>Before, live today, first line:</strong></p>
+<pre>If your business is working harder than it's growing, something is slowing it down.</pre>
+<p>Eighty-two characters that never name a category. The cold read&rsquo;s objection to what follows was
+precise and correct: <em>&ldquo;three distinct claims stacked in two sentences (finder / fixer / stayer)
+before any proof is shown.&rdquo;</em></p>
+<p><strong>After, paste this:</strong></p>
+<pre>AI for HR and recruiting. That is the whole job.
+
+Hiring is where a company feels the drag first. Roles sit open. The same application gets
+screened again because nobody knew the first pass had already happened. A hiring manager
+waits a week for a summary a machine could have drafted in a minute. Nobody is doing
+anything wrong. The work is just built out of steps that were designed before any of this
+existed.
+
+I know that work from the inside. Ten years in global HR leadership for a Fortune 100
+company, most recently four years based in Dubai. I was part of a project to speed up a
+hiring process, and I saw what it costs a business to leave that alone.
+
+Then I built my own AI systems and ran my business on them. Not a demo. The thing I use
+every day, that broke on me in ways I would not wish on anyone, that I fixed. I taught
+myself enough code to understand the machine, not to become an engineer, so I can bend it
+to what a team actually needs.
+
+That is the part that is rare. Most people in this conversation sit on one side of a line.
+They decide, or they build. I do both, and it means I can tell you which step in your
+hiring AI should touch and which one it should never go near.
+
+Here is where it starts. Message me the one step in your hiring that everybody complains
+about. I will tell you straight whether AI fixes it or whether the step itself is the
+problem.</pre>
+<p>Forty-seven characters carry the category. The proof arrives before the second claim, which is the
+cold read&rsquo;s exact objection answered. The ask is one hop and costs the reader nothing.</p>
+<p><strong>Voice gate: 94/100. CTQ composite: 93/100.</strong></p>
+
+<p><strong>One flag for your call, and it is a real tension, not a formatting note.</strong> The standing rule
+for a pitch is to omit the resume entirely. The standing rule for a LinkedIn About, where the
+credential is the subject, is to use the locked construction, which is what appears above. Both rules
+are live and they point opposite ways here. The draft uses the locked construction once, placed after
+the hook rather than as the opening bid. If you want it gone, that paragraph deletes cleanly and the
+rest stands.</p>
+<p><strong>Changed by the Council pass:</strong> the word &ldquo;Kaizen&rdquo; was cut from public copy. Nobody outside a
+manufacturing org knows it, and the smaller-role phrasing survives intact in plain language.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>Post cadence and the Trade Test</h2></summary>
+    <div class="sec-body">
+<h3>Cadence</h3>
+<p>Drop to <strong>one post a day</strong>, with a written queue and a batch-writing session rather than daily
+drafting. The rate measured in July was 9.6 posts a week. Volume is not the constraint. Aim is.</p>
+<p>Two standing quotas ride on top of the daily post, both aimed at the beachhead:</p>
+<ul>
+<li>At least four of every five posts in a week aim at recruiting firms and the time it takes to fill
+a role.</li>
+<li>Comments move from a flat daily count to depth in recruiting-firm feeds specifically. The
+September 1 engagement diagnosis already found the mechanism: reciprocal engagement is what
+distributes your posts, and a reaction is invisible inside a target&rsquo;s audience where a comment
+is not.</li>
+</ul>
+
+<h3>The pre-publish checklist</h3>
+<p><strong>This extends an existing gate. It does not replace one.</strong> There is already a documented
+pre-publish chain: the Hook Quality Gate (four rules), then the voice gate, then the two-pass Council
+review, then the bookmarkability rubric, then the 90-composite bar. All of that stands unchanged.</p>
+<p>What was missing is Jordan&rsquo;s test, and the gap is real. Every existing gate measures how a post
+is <em>written</em>. None asks who it is for and whether the reader comes out ahead. A post can score 94,
+clear every ban, and still be aimed at nobody.</p>
+
+<p><strong>The Trade Test. Four questions, added as the FIRST gate, before the Hook Quality Gate.</strong>
+A draft that cannot answer all four does not enter the board.</p>
+<ol>
+<li><strong>Who is the one person reading this?</strong> Not &ldquo;recruiters.&rdquo; One named role in one named
+situation. An agency owner whose last three searches each ran past six weeks is a person.
+&ldquo;Leaders&rdquo; is not.</li>
+<li><strong>What do they hope for and what keeps them up?</strong> One line each, in their words, not yours. If
+you cannot write the fear, you do not know the reader well enough to write the post yet, and the
+honest move is to go ask one of them.</li>
+<li><strong>Does line one stop the doom-scroll?</strong> Read line one alone, with nothing under it. If a reader
+would not stop, the post does not go out, no matter how good paragraph three is.</li>
+<li><strong>What is the trade?</strong> You are asking for their attention. Name precisely what they get for it,
+and confirm that what they get is worth more to them than what you are asking. If your side of the
+trade is bigger, the post is a withdrawal, not a deposit.</li>
+</ol>
+<p>Jordan&rsquo;s framing, kept because the mechanism is in it: <em>&ldquo;If the thing that they&rsquo;re getting in
+their eyes is more valuable than the thing that I&rsquo;m getting, they will take the next step and the
+next step and the next step all the way to revenue. If they don&rsquo;t, if the funnel breaks... I have
+to reexamine either I&rsquo;m not giving them enough, or I don&rsquo;t understand them well enough.&rdquo;</em></p>
+<p><strong>Where it applies beyond posts.</strong> The trade is a funnel rule, not a content rule. Run it at every
+step where you ask for something: the profile itself, the DM, the workshop registration, the email
+capture, the call. Any step where your side of the trade is bigger than theirs is where the funnel is
+leaking.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>The Open-to-Work conflict</h2></summary>
+    <div class="sec-body">
+<p><strong>What the cold read found:</strong> <em>&ldquo;&lsquo;Open to work, Recruiters only&rsquo; banner sits directly
+under a page that&rsquo;s clearly pitching him as a consultant/business owner. Those two signals visibly
+conflict on the same screen.&rdquo;</em></p>
+
+<p><strong>The critical fact: a blind reader saw it.</strong> That means the badge is set to all LinkedIn
+members, not recruiters only, whatever the label says. It is public. Everyone you are selling to can
+see it.</p>
+
+<p><strong>Why this is not small.</strong> The July audit scored this dimension 2 out of 10 and made it Priority
+0, ahead of every word of copy. Its finding was that the platform&rsquo;s own classifier has you flagged
+as interested in a new job, which means the algorithm distributing your consultant content believes
+you are a candidate. You pay for that flag twice: once in distribution, once in the impression on
+every buyer who lands on the page. Argued cold, it reads worse than a mixed signal. It reads as a man
+who would rather have your job than your business.</p>
+
+<p><strong>The complication, and it is genuine.</strong> You are mid-process on an HR and AI role, and your own
+intent is to convert it into a retainer rather than take a full-time seat. You are also genuinely open
+to the right role. Killing the recruiter signal entirely is not free.</p>
+
+<p><strong>Recommendation: switch the badge to recruiters-only, today, and never public.</strong></p>
+<ul>
+<li>The public green frame comes off. That is the entire fix and it takes under five minutes.</li>
+<li>The private recruiters-only setting stays on. Recruiters still find you. Buyers do not see it.</li>
+<li><strong>You lose nothing on the live opportunity.</strong> That process came from you applying, not from a
+recruiter finding a badge. The badge has no role in it.</li>
+<li>Stop submitting applications from this account. The classifier reads application history, and per
+the July audit that history is still aging out from July 2025.</li>
+<li>Any backstop job search runs off-platform or through recruiters-only. This was already decided in
+the July plan&rsquo;s red-team pass and it was right.</li>
+</ul>
+
+<p><strong>The one question only you can answer, and everything above depends on it:</strong> is the HR and AI
+role a job you would actually take, or a client you are pitching? If it is a client, the badge is pure
+cost and comes off today with nothing lost. If you would genuinely take the job, that is a different
+plan than this one, and it should be said out loud rather than hedged by leaving a badge on.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>Council verdict</h2></summary>
+    <div class="sec-body">
+<p>Five-voice adversarial pass, convergence approximately 92 percent.
+Verdict: <strong>CHANGE, with the scope tightened.</strong></p>
+
+<p><strong>Convergence, all five voices:</strong></p>
+<ol>
+<li>The niche was decided in August. Frame this as propagation, not as a new strategy.</li>
+<li>The Open-to-Work badge is the highest-value, lowest-cost fix and it outranks every copy change.</li>
+<li>A second website or brand is premature and goes to PARK.</li>
+<li>The missing asset is PROOF, not clarity. The free-client offer is the named mechanism for
+producing it.</li>
+<li>The July plan failed on execution, not on analysis, so this plan has to be small enough to
+actually run.</li>
+</ol>
+
+<p><strong>Divergence, named rather than smoothed:</strong> the width of the profile line, recruiting-only
+versus AI-and-HR. Resolved as profile broad by one notch, content narrow, and recorded rather than
+resolved away.</p>
+
+<p><strong>Six things the Council changed in this plan:</strong></p>
+<ol>
+<li>Section A was rewritten from &ldquo;choose a niche&rdquo; to &ldquo;propagate a decision already made.&rdquo; The
+original framing would have re-opened a settled question.</li>
+<li>The order of operations was inverted. Settings first, copy second. A plan whose first step is
+&ldquo;paste this&rdquo; has already been run once and did not take.</li>
+<li>The second brand and site moved from &ldquo;later&rdquo; to an explicit PARK with a named trigger.</li>
+<li>The free-client livestream offer was added as a first-class step, because proof is the real gap
+and clarity is not.</li>
+<li>&ldquo;Kaizen&rdquo; was cut from the public About copy. Insider vocabulary, invisible to the buyer.</li>
+<li>A propagation fix was added, because the underlying failure is that positioning decisions do not
+reach live surfaces.</li>
+</ol>
+
+<p><strong>The Contrarian&rsquo;s finding, kept unresolved on purpose:</strong> narrowing makes the missing proof
+more conspicuous, not less. A generalist is forgiven for having no case study in your vertical. A
+specialist is not. That is an argument for moving fast on the free-client offer, not an argument
+against narrowing.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>The plan, in order</h2></summary>
+    <div class="sec-body">
+<p><strong>Ordered by what cannot be deferred, not by what is most interesting.</strong></p>
+<div class="table-scroll">
+<table>
+<tr><th>#</th><th>Step</th><th>Effort</th><th>When</th></tr>
+<tr><td>1</td><td>Public Open-to-Work badge OFF. Switch to recruiters-only. Stop applying from this
+account.</td><td>Under five minutes</td><td>Today</td></tr>
+<tr><td>2</td><td>Paste the headline and About. Verify from a logged-out phone that the headline crop
+reads correctly.</td><td>One sitting</td><td>Today</td></tr>
+<tr><td>3</td><td>Post the free-client offer. One business, one build, done publicly, application
+form, decision inside a week.</td><td>One post</td><td>This week</td></tr>
+<tr><td>4</td><td>Banner: one comp in front of you carrying the new line, built inside the measured
+geometry. Merge or supersede the work-in-progress branch rather than leaving it stranded a third
+time.</td><td>One review</td><td>This week</td></tr>
+<tr><td>5</td><td>Drop to one post a day. Install the Trade Test as the first pre-publish gate. Four
+of five posts aimed at recruiting and time-to-fill.</td><td>Ongoing</td><td>This week</td></tr>
+<tr><td>6</td><td>Comment depth in recruiting-firm feeds, not reaction volume.</td><td>Daily, inside
+the existing block</td><td>Ongoing</td></tr>
+<tr><td>7</td><td>Recommendation sprint, carried forward unchanged from July. Still the one gap no
+copywriting can close, still not done.</td><td>Ten asks</td><td>Within ten days</td></tr>
+<tr><td>8</td><td>Separate recruiting brand and site. <strong>PARK.</strong> Trigger: the first paying
+recruiting client.</td><td>n/a</td><td>Not now</td></tr>
+</table>
+</div>
+
+<p><strong>The tripwire:</strong> if the public badge is still on in forty-eight hours, nothing else in this
+plan matters, and the plan should be re-examined rather than re-executed.</p>
+
+<h3>The propagation fix</h3>
+<p>The reason this document had to be written is that a positioning decision made on 2026-08-28 never
+reached the live profile, and a banner decided on 2026-08-20 never left an unmerged branch. Closing
+that:</p>
+<ul>
+<li>The sniper decision is logged in the decision ledger as <code>D-20260911-80d958</code>, with its goal,
+outcome, date and what would reverse it.</li>
+<li>The live profile copy is a volatile decided fact. When it changes, the change is recorded in the
+same turn, so the next agent reads what is actually on the page rather than what a seven-week-old plan
+proposed.</li>
+<li>The banner branch gets merged or explicitly superseded. A third re-dating is the failure mode that
+row already has a history of.</li>
+</ul>
+</div>
+  </details>
+
+  <footer class="foot">
+    Internal review deliverable &middot; decision <code>D-20260911-80d958</code> &middot; source plan <code>docs/plans/2026-09-11-linkedin-positioning-sniper-plan.md</code> &middot; copy voice-gated, Council-reviewed, pending Boubacar&rsquo;s read.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
