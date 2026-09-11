@@ -123,6 +123,35 @@
     'offer': 'Offer stage'
   };
 
+  /* ---- THANK-YOU STATE (2026-09-10) -------------------------------------
+     One more optional key on the row's existing JSON value -- `thankYouState`
+     plus an optional `thankYouUrl` -- read the same way `interviewStage` and
+     `preferenceRank` are. Not a column of markup, not a second store.
+
+     ABSENT MEANS ABSENT. A role with no thank-you renders an EMPTY cell, never
+     the word "none" styled as a state and never a to-do. The standing rule on
+     this page is that a miss past the point of being useful is closed quietly,
+     so a drafted note on a role that has gone silent reads as history, not as
+     something he owes.
+
+     `waiting` is the one state that is genuinely live, and it is live because
+     of his own ruling on 2026-09-10: a thank-you cannot be written before he
+     debriefs. It says the ball is with him, not that an agent is behind.  */
+  var TY_LABEL = {
+    'sent': 'Sent',
+    'drafted': 'Drafted, not sent',
+    'waiting': 'Waiting on your notes'
+  };
+
+  function thankYouCell(st) {
+    var state = st.thankYouState || '';
+    if (!TY_LABEL[state]) { return ''; }
+    var text = TY_LABEL[state];
+    var url = st.thankYouUrl || '';
+    var chip = '<span class="mt-chip mt-ty mt-ty-' + esc(state) + '">' + esc(text) + '</span>';
+    return url ? '<a href="' + esc(url) + '">' + chip + '</a>' : chip;
+  }
+
   // Sort weight. Lower sorts first. This is the "what matters now" order:
   // live conversations, then live applications, then the ones we cannot read,
   // then the ones that have gone quiet, then the ones that are over. Nothing is
@@ -312,6 +341,7 @@
         '<th scope="col">Role</th>' +
         '<th scope="col">Status</th>' +
         '<th scope="col">Stage</th>' +
+        '<th scope="col">Thank-you</th>' +
         '<th scope="col">Date</th>' +
         '<th scope="col"><span class="mt-sr">Detail</span></th>' +
       '</tr></thead><tbody></tbody></table></div>' +
@@ -329,6 +359,7 @@
       var rank = parseInt(st.preferenceRank, 10);
       var label = STATUS_LABEL[s] || (s ? s : 'No decision recorded');
       var stage = st.interviewStage || '';
+
 
       var tr = document.createElement('tr');
       tr.className = 'mt-row';
@@ -349,6 +380,7 @@
             'never saved.">Stale &middot; ' + stale + 'd</span>' : '') +
         '</td>' +
         '<td data-label="Stage">' + (stage ? esc(STAGE_LABEL[stage] || stage) : '') + '</td>' +
+        '<td data-label="Thank-you">' + thankYouCell(st) + '</td>' +
         '<td data-label="Date">' + esc(d) + '</td>' +
         '<td class="mt-c-more"><button type="button" class="mt-more" aria-expanded="false">' +
           'Open<span class="mt-sr"> detail for ' + esc(companyOf(st, r.key)) + '</span></button></td>';
@@ -365,7 +397,7 @@
       dtr.className = 'mt-detailrow';
       dtr.hidden = true;
       var td = document.createElement('td');
-      td.setAttribute('colspan', '7');
+      td.setAttribute('colspan', '8');
       var host = document.createElement('div');
       host.className = 'rank mt-detail';
       host.setAttribute('data-role', r.key);
