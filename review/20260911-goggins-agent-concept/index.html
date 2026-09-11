@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The get-it-done agent</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  .status{
+    border:1px solid var(--warn); border-left-width:4px; border-radius:10px;
+    background:rgba(242,184,75,0.08); padding:12px 16px; margin:0 0 16px;
+  }
+  .status strong{color:var(--warn);}
+  .xchg{
+    border:1px solid var(--border); border-left:3px solid var(--accent2);
+    border-radius:10px; background:#11141b; padding:14px 16px; margin:0 0 16px;
+  }
+  .xchg .who{color:var(--text-dim); font-size:.78rem; text-transform:uppercase;
+    letter-spacing:.06em; margin:0 0 4px;}
+  .xchg .said{margin:0 0 14px;}
+  .xchg .said:last-child{margin-bottom:0;}
+  .xchg .agent{color:var(--accent2);}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-11-11:26:32 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Get-it-done agent</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">The idea</a>
+      <a href="#sec-2">What it says</a>
+      <a href="#sec-3">Why a voice</a>
+      <a href="#sec-4">What it will not do</a>
+      <a href="#sec-5">Build it yourself</a>
+      <a href="#sec-6">Status</a>
+      <a href="#sec-7">The name</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>The get-it-done agent</h1>
+    <div class="meta">A design I owe Jordan after our 1:1 &middot; 2026-09-11</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <div class="status">
+        <strong>Status: proposed design. Nothing is built.</strong> This is the spec, written up
+        so Jordan can read it, tear it apart, or copy it. It still has to pass my own build
+        reviews before a line of it exists.
+      </div>
+      <p>
+        Jordan and I landed on the same idea from opposite directions in our last 1:1. A blunt
+        accountability agent. It does not brainstorm with me. It asks what I finished, what I
+        committed to that is still open, and whether the shiny new thing I just brought it is
+        the fastest path to money or a way to avoid the thing I already promised.
+      </p>
+      <p>
+        The one design call worth arguing about: it is a <strong>voice on top of the priority
+        list I already keep</strong>, not a new lock on my calendar. I have tried the lock. It
+        sat at zero percent for weeks and cost me the work it was supposed to protect. Details
+        in the third section, and that section is the whole point of this page.
+      </p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>The idea</h2></summary>
+    <div class="sec-body">
+      <p>
+        Every assistant I have ever used is agreeable. Ask it for a plan and it gives you a plan.
+        Ask it for a better plan and it gives you a better plan. It will happily help you plan
+        forever, because planning is a thing it can always do well and finishing is a thing only
+        I can do.
+      </p>
+      <p>
+        So the design here is an agent with the opposite instinct. Its job is to end the
+        conversation, not extend it. It has four moving parts and that is all:
+      </p>
+      <ul>
+        <li><strong>It reads the list I already keep.</strong> Every commitment I make gets
+          tagged must, should, or could, and there is already an assistant that ranks what to
+          work on next off that list. This agent does not keep its own list. It reads that one.</li>
+        <li><strong>It speaks up at one specific moment.</strong> When a new build or a new idea
+          is about to reach me while something I tagged must is still open, it goes first.</li>
+        <li><strong>It asks, it does not lecture.</strong> Five questions, always the same five,
+          and it wants short answers.</li>
+        <li><strong>It logs what I say.</strong> The answer to "what is actually blocking this"
+          goes into the record with a date on it. Say the same blocker three weeks running and
+          the pattern is on paper instead of in my head.</li>
+      </ul>
+      <p>The five questions, in order:</p>
+      <ol>
+        <li>What did you finish since the last time we talked?</li>
+        <li>What is the committed thing that is still open?</li>
+        <li>What is blocking it. One sentence.</li>
+        <li>From where you are standing right now, what is the fastest path to money?</li>
+        <li>Is this new idea that path, or is it a way to not do the open thing?</li>
+      </ol>
+      <p>
+        Question five is the one that earns the whole build. The other four I can ask myself on a
+        good day. Five is the one I will not ask myself, because I already know I am not going to
+        like the answer.
+      </p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>What it actually sounds like</h2></summary>
+    <div class="sec-body">
+      <p>
+        These are illustrative, written to show the register rather than transcribed from a
+        working system, because there is no working system yet. This is the tone I am aiming at.
+      </p>
+
+      <p><strong>Case one. I bring it a new build while a commitment is open.</strong></p>
+      <div class="xchg">
+        <p class="who">Me</p>
+        <p class="said">I want to build a tool that scores inbound leads automatically.</p>
+        <p class="who agent">The agent</p>
+        <p class="said">
+          Stop. You have an offer you said you would send to two people who already raised their
+          hands. That was four days ago. It is still sitting there. What is blocking it. One
+          sentence.
+        </p>
+        <p class="who">Me</p>
+        <p class="said">I have not decided on the price.</p>
+        <p class="who agent">The agent</p>
+        <p class="said">
+          Then the work is picking a number, not building a scorer. Pick it now and I will park
+          the scoring tool with a date on it so it does not get lost. Or tell me to go ahead with
+          the scorer and I will note that you chose it over the offer. Your call.
+        </p>
+      </div>
+
+      <p><strong>Case two. I answer a hard question with a soft answer.</strong></p>
+      <div class="xchg">
+        <p class="who agent">The agent</p>
+        <p class="said">What is the fastest path to money from where you are right now?</p>
+        <p class="who">Me</p>
+        <p class="said">Probably building out the pipeline so the leads come in more consistently.</p>
+        <p class="who agent">The agent</p>
+        <p class="said">
+          That is a path to leads. I asked for the path to money. Two people already asked you
+          for something and have not been given a number. That is closer. Do you disagree, and if
+          so, why?
+        </p>
+      </div>
+
+      <p><strong>Case three. I actually did the thing.</strong></p>
+      <div class="xchg">
+        <p class="who agent">The agent</p>
+        <p class="said">What did you finish since we last talked?</p>
+        <p class="who">Me</p>
+        <p class="said">Both offers went out. One came back with a date.</p>
+        <p class="who agent">The agent</p>
+        <p class="said">
+          Good. That is closed. The open must now is the profile rewrite, and it has been open
+          nine days. Same question.
+        </p>
+      </div>
+
+      <p>
+        Notice what is missing. No praise sandwich. No paragraph about how hard this must be. No
+        bringing up something I dropped six weeks ago that nobody can do anything about now. It
+        moves.
+      </p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>Why it is a voice and not a new gate</h2></summary>
+    <div class="sec-body">
+      <p>
+        This is the part I would want argued with, so here is the reasoning in full rather than
+        buried as a design note.
+      </p>
+      <p>
+        The obvious version of this agent is a gate. New idea comes in, the gate checks whether
+        the committed work is done, and if it is not, the idea is refused until the work closes.
+        Clean. Enforceable. It reads like discipline on a diagram.
+      </p>
+      <p>
+        I already ran that experiment on myself and I have the result. I set a hard rule: five
+        direct asks a day, and the rest of the work sits behind it. It produced zero asks. Not a
+        few, zero, for weeks. And because I had locked the building behind the asks, I lost the
+        building too. I killed that rule in August.
+      </p>
+      <p>
+        A rule running at zero percent compliance is not a discipline problem, it is a broken
+        rule. The mistake was not that the bar was too high. The mistake was putting a lock
+        between me and my own work and assuming the lock would produce the behavior. A gate on
+        new ideas is the same mechanism wearing a louder voice, and I have no reason to believe
+        it fails differently.
+      </p>
+      <p>
+        And when I look at what was actually missing on the days that went sideways, it was never
+        a lock. Nobody needed to physically stop me. What was missing was somebody asking, out
+        loud, what I had actually done. That is a delivery problem, not an enforcement problem.
+        The ranking already exists. The list already exists. The thing that does not exist is a
+        voice willing to read them back to me without softening.
+      </p>
+      <p>
+        So this agent can never say no. It names the open commitment, asks the five questions,
+        logs my answer, and then gets out of the way. I can override it every single time. The
+        refusal to block is not a compromise I settled for. It is the design, because the version
+        that blocks is the version I have already watched fail, and this time I would lose the
+        building again on the way down.
+      </p>
+      <p>
+        There is a second reason, less personal and more structural. A gate needs its own state:
+        what counts as done, what counts as committed, when the lock lifts. That state will drift
+        away from the list I actually maintain, and then I have two sources of truth telling me
+        different things about my own week. A voice owns no state. It reads. When the underlying
+        list is wrong, I fix the list, and the voice is correct again for free.
+      </p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>What it will not do</h2></summary>
+    <div class="sec-body">
+      <p>
+        The failure mode of a blunt agent is that blunt turns into demoralizing, and a
+        demoralizing tool is one I stop opening. Then it is worth nothing. So the boundaries are
+        as much of the spec as the questions are.
+      </p>
+      <ul>
+        <li><strong>It never kills an idea silently.</strong> Anything it deflects goes into the
+          record as parked, with a return date and the condition that would bring it back. Parked
+          is a real state, not a polite way of saying no.</li>
+        <li><strong>It never moralizes.</strong> It names the avoidance and asks a question. It
+          does not tell me what kind of person avoids things.</li>
+        <li><strong>It never resurfaces a dead miss.</strong> If something is late past the point
+          where acting on it still helps anyone, it stays closed. It gets recorded internally so
+          the pattern is learnable, and it never comes back to me as a task. There is no value in
+          handing me a list of things I can no longer fix.</li>
+        <li><strong>It does not rank.</strong> Ranking is somebody else's job. This agent reads
+          the ranking and speaks. Giving it opinions about priority would make it a second,
+          competing planner, which is the exact thing it exists to interrupt.</li>
+        <li><strong>It does not block.</strong> Covered above, and it is the load-bearing
+          constraint.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>If Jordan wants to build his own</h2></summary>
+    <div class="sec-body">
+      <p>
+        You said you might build a version of this. Here is the whole thing in plain terms, with
+        no dependency on anything I have running.
+      </p>
+      <ul>
+        <li><strong>You need one list, not a new one.</strong> Whatever you already use to track
+          commitments is the source. Tag each item must, should, or could. If you do not already
+          keep that list, build the list first and the agent second. The agent is worthless
+          without it.</li>
+        <li><strong>You need one trigger.</strong> Mine is the moment a new idea is about to
+          reach me while a must is open. On demand also works, and is where I would start.</li>
+        <li><strong>You need the five questions, written down and unchanging.</strong> The value
+          is in asking the same five every time so the answers can be compared week to week.
+          Rotating the questions makes it a conversation, and a conversation is what I am trying
+          to escape.</li>
+        <li><strong>You need it to write the answers down.</strong> Especially the blocker. The
+          repeat blocker is the finding.</li>
+        <li><strong>Give it no authority.</strong> Resist this one. The instinct is to let it
+          enforce. Read the third section on this page before you do.</li>
+      </ul>
+      <p>
+        Once mine is running, I will tell you what it got wrong in practice, which is the part
+        neither of us can predict from here.
+      </p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>Status and what happens before it exists</h2></summary>
+    <div class="sec-body">
+      <div class="status">
+        <strong>Design only. Nothing has been built, installed, or turned on.</strong>
+      </div>
+      <p>Three things stand between this page and a working agent:</p>
+      <ol>
+        <li><strong>My sign-off on the design as written,</strong> specifically the decision that
+          it can never block.</li>
+        <li><strong>Two standing review passes I run on anything that touches the tools I depend
+          on daily.</strong> One is a ten-principle engineering audit that hunts for unnecessary
+          complexity and unexamined assumptions. The other is a five-angle adversarial review
+          whose only job is to attack the design. Both have to clear before anything gets
+          installed. A design that fails its own review gets revised or dropped, not shipped
+          anyway.</li>
+        <li><strong>A first version small enough to delete.</strong> On demand only, five
+          questions, answers written to the record, no automatic trigger at all. The automatic
+          trigger is version two, and only if version one earns it.</li>
+      </ol>
+      <p>
+        Jordan, if you think the no-blocking call is wrong, that is the thing to push on. It is
+        the decision everything else hangs from.
+      </p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>One note on the name</h2></summary>
+    <div class="sec-body">
+      <p>
+        We both said Goggins in the meeting, and it was the fastest way to communicate the
+        register, so I am not going to pretend otherwise on a page written for you.
+      </p>
+      <p>
+        But I have a standing rule for my own system that none of these things carry a person's
+        name. They get named for the work they do. A name borrowed from a living person imports
+        a whole personality I did not design and cannot control, and six months from now I would
+        be arguing with myself about whether the agent is being faithful to somebody else's
+        brand instead of whether it is doing its job. So the shipped version gets a name that
+        describes the work.
+      </p>
+      <p>
+        The tone stays exactly what we described. Only the label changes.
+      </p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Written for Jordan after our 1:1 on 2026-09-11. Proposed design, not a built product.
+    Nothing on this page is running yet.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
