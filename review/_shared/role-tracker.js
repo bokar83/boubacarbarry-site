@@ -207,13 +207,25 @@
         return;
       }
       var scope = mount.parentNode || document;
+      // ONLY roles that actually have a stage. This used to chip every
+      // [data-role] in scope, which was fine while the scope held the ten
+      // hand-authored interview blocks. The 2026-09-10 master-table merge put
+      // all 308 roles inside this same section, so the summary exploded into a
+      // 308-chip wall of "stage not recorded" -- the fold this bar exists to
+      // survive became unreadable the moment it was shut.
+      //
+      // A stage only exists on a role that reached an interview, so filtering
+      // to rows that have one restores exactly the five chips this was built
+      // for, and it degrades correctly: no stages recorded means no bar at all
+      // rather than a row of shrugs. The count of roles is already on the page
+      // in the table's own filter chips, so nothing is lost by dropping them.
       var chips = Array.prototype.slice.call(scope.querySelectorAll('[data-role^="role:"]'))
+        .filter(function (r) { return !!r.getAttribute('data-stage'); })
         .map(function (r) {
           var name = r.getAttribute('data-stage-name') || '';
           var st = r.getAttribute('data-stage') || '';
           return '<span class="rt-chip" data-stage="' + esc(st) + '">' +
-            '<b>' + esc(name) + '</b>' +
-            (st ? esc(stageLabel(st) || st) : 'stage not recorded') + '</span>';
+            '<b>' + esc(name) + '</b>' + esc(stageLabel(st) || st) + '</span>';
         });
       host2.innerHTML = chips.join('');
     }
