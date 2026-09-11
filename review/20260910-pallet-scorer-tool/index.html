@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pallet Auction Pre-Bid Scorer &mdash; tool reference</title>
+<!--
+  Built from the boubacarbarry-site review-page-template pattern (nav bar, TL;DR-first
+  collapsible details, dark/light theme via prefers-color-scheme, mobile hamburger nav).
+  Reference page for orchestrator/pallet_scorer/ in the agentsHQ repo -- describes what the
+  tool does and how to run it. It is NOT a build log and NOT a feasibility spike; those live
+  in docs/reviews/2026-09-08-pallet-scorer-v2-feasibility-spike.md and
+  docs/prds/pallet-scorer-v2-comp-lookup-prd-2026-09-08.md in the agentsHQ repo, and are a
+  separate, still-open decision about public hosting.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.6rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.1rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  h3{font-size:1rem; margin:18px 0 8px;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  a{color:var(--accent);}
+  a:hover{text-decoration:none;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.87rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .callout{border-left:3px solid var(--warn); background:#1a1712; padding:12px 16px;
+    border-radius:0 8px 8px 0; margin:0 0 14px;}
+  .callout.bad{border-left-color:var(--bad); background:#1d1315;}
+  .callout.good{border-left-color:var(--good); background:#121d18;}
+  .big{font-size:1.05rem; font-weight:650;}
+  .dim{color:var(--text-dim);}
+  .verdict-pill{display:inline-block; font-size:.78rem; font-weight:800; letter-spacing:.04em;
+    text-transform:uppercase; border-radius:999px; padding:5px 14px; background:var(--warn);
+    color:#241c07;}
+  .verdict-pill.go{background:var(--good); color:#06251a;}
+  .tag{display:inline-block; font-size:.72rem; letter-spacing:.03em; text-transform:uppercase;
+    border:1px solid var(--border); border-radius:999px; padding:2px 9px; color:var(--text-dim);
+    background:var(--bg2); white-space:nowrap;}
+  .tag.no{color:var(--bad); border-color:#4a2a2f;}
+  .tag.yes{color:var(--good); border-color:#25473a;}
+  .tag.part{color:var(--warn); border-color:#4a3d20;}
+  @media (max-width:860px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.3rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f5f6f8; --bg2:#ffffff; --card:#ffffff; --border:#e3e0da;
+      --text:#1a1d24; --text-dim:#5b6272; --accent:#8f5a1f; --accent2:#0e8f63;
+      --warn:#a9700a; --bad:#c23a3a; --good:#0e8f63;
+    }
+    .nav-bar{background:rgba(245,246,248,0.93);}
+    code{background:#eef0f5;}
+    .callout{background:#fbf3e0;}
+    .callout.bad{background:#fbecec;}
+    .callout.good{background:#e9f8f0;}
+    .verdict-pill{color:#241c07;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-10-22:40:49 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Pallet Auction Pre-Bid Scorer</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">1. What it does</a>
+      <a href="#sec-2">2. How to run it</a>
+      <a href="#sec-3">3. How to use it on a real lot</a>
+      <a href="#sec-4">4. What the colours mean</a>
+      <a href="#sec-5">5. The ledger</a>
+      <a href="#sec-6">6. Where it fits in the workflow</a>
+      <a href="#sec-7">7. What is NOT built yet</a>
+      <a href="#sec-sources">Sources</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Pallet Auction Pre-Bid Scorer</h1>
+    <div class="meta">Reference page for a tool already built in the agentsHQ repo
+      &middot; <code>orchestrator/pallet_scorer/</code> &middot; Sept 10, 2026 &middot;
+      part of the <a href="../20260823-pallet-liquidation-lane/">Pallet liquidation resale
+      lane</a></div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p class="big">A tool that decides whether a liquidation pallet auction is worth
+        bidding on, <strong>before any money moves</strong>. Upload the manifest CSV (or
+        type the numbers by hand), answer a few questions, and it hands back a
+        GREEN/YELLOW/RED verdict plus two bid numbers: the conservative one you should
+        actually use, and the optimistic ceiling you should not aim for.</p>
+      <p><strong>Runs locally on Boubacar's own computer today, not hosted at a public
+        URL.</strong> Start it with <code>python -m orchestrator.pallet_scorer.server</code>
+        from the agentsHQ repo root, then open
+        <code>http://127.0.0.1:8899</code> in a browser. Full setup steps are in the
+        tool's own README: <code>orchestrator/pallet_scorer/README.md</code>.</p>
+      <p>Distinct from <code>manifest-to-market</code>, which runs <em>after</em> a lot
+        has already been won &mdash; this tool's whole job is the decision that happens
+        <em>before</em> the bid, when a wrong call costs real, non-refundable money.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. What it does</h2></summary>
+    <div class="sec-body">
+      <p>Liquidation pallet auctions (B-Stock and similar) are binding: once a bid wins,
+        there is no backing out. The scorer exists to move all of the arithmetic &mdash;
+        landed cost, breakeven, freight, margin &mdash; in front of the bid, so a decision
+        that currently happens on a gut feeling in the last minute of an auction instead
+        happens on paper, calmly, before the auction ever opens.</p>
+      <ul>
+        <li><strong>Reads a manifest CSV</strong> straight off a marketplace listing's
+          "Download CSV" button &mdash; retail value, unit count, condition mix, and
+          category breakdown fill in automatically. No manifest for the lot? Every one of
+          those fields can be typed in by hand instead; the tool works identically either
+          way.</li>
+        <li><strong>Prices freight by origin, not by guesswork.</strong> Freight scales
+          with distance and weight, not with what is on the pallet, so where a lot ships
+          from is treated as a buying criterion. Lanes are tiered on road miles to the
+          Salt Lake valley (local / west / mid / cross-country), and an estimated freight
+          figure gets marked up by tier because the estimator is one straight line through
+          a single real quote and its error grows with distance.</li>
+        <li><strong>Asks for your own predicted recovery BEFORE showing the result.</strong>
+          That ordering is deliberate &mdash; it is how you find out whether you
+          personally tend to run optimistic, rather than anchoring on the tool's own
+          number first.</li>
+        <li><strong>Outputs a strict, deliberately rare GREEN verdict.</strong> The bar is
+          set high on purpose so STRONG VALUE means something; see Section 4.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. How to run it (local, today)</h2></summary>
+    <div class="sec-body">
+      <p class="callout"><strong>Honesty check:</strong> this tool is not hosted at a
+        public URL right now. It runs on Boubacar's own computer, on his own network
+        &mdash; nobody else can reach it, and it works without an internet connection once
+        installed. A separate, still-open effort is assessing whether a stateless public
+        demo makes sense (Section 7) &mdash; that is a different, undecided piece of work,
+        not what is described here.</p>
+      <ol>
+        <li>Open a terminal in the agentsHQ repo root (<code>C:\Ai_Sandbox\agentsHQ</code>
+          or the equivalent checkout).</li>
+        <li>One-time only: <code>pip install -r orchestrator/pallet_scorer/requirements.txt</code>
+          &mdash; installs four small libraries, nothing that phones home or needs an
+          account.</li>
+        <li>Run it: <code>python -m orchestrator.pallet_scorer.server</code></li>
+        <li>Open <code>http://127.0.0.1:8899</code> in a browser. That's it.</li>
+      </ol>
+      <p>Full walkthrough, troubleshooting (wrong Python version, port already in use, a
+        manifest CSV that won't parse) and every field explained: the tool's own README at
+        <code>orchestrator/pallet_scorer/README.md</code> in the agentsHQ repo. It is
+        written for zero prior Python experience.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. How to use it on a real B-Stock lot</h2></summary>
+    <div class="sec-body">
+      <ol>
+        <li>Open the listing <strong>detail</strong> page (not the browse tile) with your
+          ship-to address set &mdash; the browse tile's "% of MSRP" excludes shipping and
+          understated true landed cost by ~6.7x on the one lot measured.</li>
+        <li>Click <strong>Download CSV</strong> on the manifest and upload it. Retail,
+          units, condition and category mix fill in automatically.</li>
+        <li>Copy the real <strong>Shipping &amp; Other Charges</strong> figure into
+          "Shipping, real quote," and set the shipping terms. A blank figure falls back to
+          an estimator, and an estimated lot cannot reach STRONG VALUE. Free or flat-rate
+          shipping is not an estimate &mdash; it carries no freight risk, so it can reach
+          STRONG VALUE from any origin, but a flat-rate box needs the real amount typed
+          in.</li>
+        <li>Answer the judgement questions <strong>before</strong> looking at the result
+          &mdash; your own predicted recovery is recorded first, on purpose.</li>
+        <li>Read the breakeven percentage first. It is arithmetic. Everything below it is
+          a guess.</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. What the colours mean</h2></summary>
+    <div class="sec-body">
+      <p>This is a VALUE ranking &mdash; it tells you which lots are worth chasing, not
+        which ones are "safe." Nothing about a binding, uninspected, non-refundable bid is
+        safe.</p>
+      <ul>
+        <li><strong>GREEN &mdash; STRONG VALUE.</strong> The math clearly works: strong
+          margin, strong return. Go after it, and stop at the maximum bid.</li>
+        <li><strong>YELLOW &mdash; MARGINAL.</strong> Only pays at the optimistic end of a
+          range built on guesses. Worth a second look, never worth chasing.</li>
+        <li><strong>RED &mdash; PASS.</strong> Bad math. Avoid entirely.</li>
+      </ul>
+      <p>The bar is deliberately strict, so STRONG VALUE is meant to be rare. Lower your
+        targets if thinner margins are acceptable &mdash; never lower them to make a
+        particular lot pass.</p>
+      <p class="callout good"><strong>The two bid numbers, and the one that leads is the
+        conservative one:</strong> "Bid up to this and you are still happy" (the walk-away
+        number, hits your targets even at the LOW end of the resale band &mdash; this is
+        the number to use) versus "Above this it stops paying at all" (the mid-case
+        ceiling, assumes every guess lands exactly where expected &mdash; do not aim for
+        it). B-Stock bids by proxy, so whatever ceiling you type is spent automatically;
+        enter the lower of the two, and never revise it upward mid-auction.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. The ledger &mdash; tracking what actually happened</h2></summary>
+    <div class="sec-body">
+      <p>Every score is stored automatically. Open
+        <code>http://127.0.0.1:8899/ledger</code> at any time to see every lot scored:
+        the tool's prediction, your own sealed prediction, and (once resold) the real
+        outcome.</p>
+      <p>Every recovery percentage the tool shows is a stated prior with n=0 &mdash; a
+        starting guess, not a track record. The ledger is how that guess gets replaced
+        with real numbers over time. Log what each lot actually sold for, or the priors
+        stay guesses forever.</p>
+      <p class="dim">Storage today: a local SQLite file (<code>ledger.py</code>) plus, on
+        an opt-in checkbox at scoring time, a Postgres-backed running record on
+        <code>orc-postgres</code> (<code>reports.py</code>, table
+        <code>pallet_scorer_reports</code>). Both are real, live write paths from the same
+        form as of the most recent build. The ledger view itself is read-only today; an
+        editable ledger is a planned follow-up, not built yet.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>6. Where it fits in the Cowrie / pallet-liquidation workflow</h2></summary>
+    <div class="sec-body">
+      <p>This tool answers exactly one question: <strong>is this specific lot, at this
+        specific price, worth bidding on?</strong> That is the pre-bid step of the
+        <a href="../20260823-pallet-liquidation-lane/">pallet liquidation resale lane</a>
+        &mdash; specifically the moment described there as "compute landed cost before the
+        first bid" and "write the ceiling down before the auction opens." The scorer is
+        what actually runs that arithmetic instead of doing it by hand under time
+        pressure during a live auction.</p>
+      <p>It is deliberately upstream of, and separate from, <code>manifest-to-market</code>,
+        which starts once a lot has already been won and turns the manifest into actual
+        resale listings. Pre-bid scoring decides whether to spend the money at all;
+        manifest-to-market handles what happens after the money is already spent.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>7. What is NOT built yet (say this plainly)</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><strong>No public hosted version exists today.</strong> It runs locally only,
+          per Section 2.</li>
+        <li>A separate, in-flight assessment (not this page's job, and not finished)
+          looked at whether a free, stateless, no-account public demo is safe to expose
+          &mdash; the verdict there was narrowly GO for a demo-only build
+          (<code>hosted_server.py</code>), and explicitly NOT for exposing the real
+          <code>server.py</code> (which has an unauthenticated read of Boubacar's own
+          scoring history at its <code>/ledger</code> route). That assessment did not
+          decide whether or when to actually deploy anything public, and no payment or
+          access-control layer exists for a paid version. Details, if this ever needs
+          picking back up: <code>docs/reviews/2026-09-08-pallet-scorer-v2-feasibility-spike.md</code>
+          and <code>docs/prds/pallet-scorer-v2-comp-lookup-prd-2026-09-08.md</code> in the
+          agentsHQ repo.</li>
+        <li>An editable ledger and a live resale-percentage return calculator are named as
+          open gaps in the tool's own README, not solved here.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-sources" open>
+    <summary><h2>Sources</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><code>orchestrator/pallet_scorer/README.md</code> (agentsHQ repo) &mdash;
+          full setup, usage, and troubleshooting; this page summarizes it, the README is
+          the primary source.</li>
+        <li><code>orchestrator/pallet_scorer/server.py</code>,
+          <code>hosted_server.py</code>, <code>comps.py</code>, <code>engine.py</code>,
+          <code>freight.py</code>, <code>ledger.py</code>, <code>reports.py</code>
+          (agentsHQ repo) &mdash; the tool's actual code, read-only reference for this
+          page.</li>
+        <li><code>docs/reviews/2026-09-08-pallet-scorer-v2-feasibility-spike.md</code> and
+          <code>docs/prds/pallet-scorer-v2-comp-lookup-prd-2026-09-08.md</code> (agentsHQ
+          repo) &mdash; the separate, still-open hosted-deploy feasibility work referenced
+          in Section 7.</li>
+        <li><a href="../20260823-pallet-liquidation-lane/">Pallet liquidation resale:
+          standalone revenue lane business plan</a> &mdash; the parent workflow this tool
+          serves.</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Reference page for a working local tool. Not hosted publicly today &mdash; see Section
+    2 for the honest current state and Section 7 for what a public version would still
+    need.
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var toggle = document.getElementById('navToggle');
+    var bar = document.getElementById('navBar');
+    if(!toggle || !bar) return;
+    toggle.addEventListener('click', function(){
+      var open = bar.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    var links = bar.querySelectorAll('.nav-links a');
+    links.forEach(function(a){
+      a.addEventListener('click', function(){
+        bar.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  })();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
