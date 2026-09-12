@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shared memory: why agents still ask Boubacar, and the plan to end it</title>
+<!--
+  CANONICAL REVIEW-PAGE TEMPLATE for boubacarbarry.com/review/<slug>/
+
+  Start every review page from this file. It is compliant with the layout hard standard out
+  of the box, and scripts/validate-review-page.ps1 (which publish-review.ps1 runs on every
+  publish and REFUSES to ship past) is written against exactly this structure.
+
+  THE FIVE RULES, Boubacar verbatim 2026-08-11:
+    1. TL;DR at the very top, sections underneath it.
+    2. The TL;DR itself is collapsible.
+    3. Every section collapsible with a toggle.
+    4. A back-to-top button on every page.
+    5. Hamburger nav on mobile, normal nav on desktop, floating if practical.
+
+  THE REASON, which matters more than the list:
+    "I don't want to have to read 30 pages of a TL;DR to get to the content every single
+     time. I need to be able to just quickly jump into this after future reviews."
+    => Design for the SECOND visit. Rules 4 and the fold-state memory that makes the second
+       visit fast are AUTO-INJECTED at publish time by scripts/inject-review-furniture.ps1,
+       so do not hand-roll a back-to-top button here -- you would get two.
+
+  WHAT YOU EDIT: the {{PLACEHOLDERS}}, the nav links, and the <section> blocks. Keep the
+  <details><summary><h2>...</h2></summary> shape on every section; that shape IS the check.
+
+  STANDS ALONE ON PURPOSE: no external CSS, no external JS, no fonts, no CDN. He opens these
+  on a phone on bad wifi, and a shared include that fails to load would take the furniture
+  down with the page. Duplicated bytes are the cheaper trade.
+-->
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-12-10:25:39 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Memory RCA 2026-09-12</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">1 Ask</a>
+      <a href="#sec-2">2 Read</a>
+      <a href="#sec-3">3 Findings</a>
+      <a href="#sec-4">4 Skills</a>
+      <a href="#sec-5">5 File vs DB</a>
+      <a href="#sec-6">6 Subagent gap</a>
+      <a href="#sec-7">7 Plan</a>
+      <a href="#sec-8">8 Needs his tap</a>
+      <a href="#sec-9">9 Karpathy</a>
+      <a href="#sec-10">10 Council</a>
+      <a href="#sec-11">11 Superpower</a>
+      <a href="#sec-12">12 Open Qs</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Shared memory: why agents still ask Boubacar, and the plan to end it</h1>
+    <div class="meta">Decision document, plan not build. Approve or reject. &middot; 2026-09-12</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>Root cause, in one line:</strong> the retrieval layer exists and works, but (a) it cannot see the four places where "does X exist / was X decided" answers actually live (<code>docs/prds/</code>, <code>docs/decisions/log/</code>, <code>docs/testing/</code>, <code>docs/roadmap/</code>), (b) nothing makes an agent query it before asking him, and (c) the channel that delivers 268 HARD rules to a main session does not reach spawned subagents at all. The Sahara VM question hit all three at once.
+- <strong>Recommendation 1 (file vs DB):</strong> ENHANCE the file-based system. Do not replace it. The DB index he is imagining already exists (Postgres <code>memory</code> table, 5,800+ rows, hybrid text+vector, fed nightly from Notion and on-demand from the files). What is missing is scope, a schedule, and a caller, not a store.
+- <strong>Recommendation 2 (subagent gap):</strong> STRUCTURAL fix, sequenced. A SubagentStart delivery channel is the only mechanism proven to reach subagents; extend the existing byte-budget router (SYS-660) to render a small subagent boot file for it. The 75KB overflow must not ship per dispatch. Interim pre-ask gate rides the SubagentStart hook that already exists.
+- <strong>Blast radius for his tap:</strong> one gate-held branch (5 small edits under <code>scripts/</code> + <code>orchestrator/</code> + one cron file) plus one separate future PRD. Everything else auto-merges.
+- <strong>All 5 HARD GATEs were actually run</strong> (sources read, karpathy, council, lateral-leverage, skill-catalog survey). Results in sections 9 to 11. Council changed the plan in three places; Karpathy reclassified one item from env-only to a code change.</p><p><strong>Date:</strong> 2026-09-12 · <strong>Lane:</strong> ms02-init (dispatched to a review subagent) · <strong>Status:</strong> PLAN, awaiting Boubacar's approve/reject · <strong>Trigger:</strong> agent_comms message 1245 (research -&gt; ms02-init)
+<strong>Rendered copy for Boubacar:</strong> <code>https://boubacarbarry.com/review/20260912-memory-second-brain-rca/</code> (this file is the durable source record; he reads the page)</p>
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. Verbatim restatement of Boubacar&#x27;s ask and constraints</h2></summary>
+    <div class="sec-body">
+      <p><strong>His words (agent_comms 1245, fetched in full from <code>agent_messages</code> on orc-postgres, 2026-09-12 14:38 UTC):</strong></p>
+<blockquote>
+<p>"You guys need to have a shared memory. You should be able to look in and see that this exists. If you keep on having to ask me for things, that means you guys are not looking in the memory and the stuff that we are talking about is not in the memory where it needs to be. That is a big problem that has to be fixed."</p>
+</blockquote>
+<p>Concrete example he gave: agents asked whether the Sahara Proving Grounds VM exists when the answer is already in <code>docs/prds/sahara-proving-grounds/PRD.md</code>, <code>docs/testing/sahara-proving-grounds.md</code> and <code>scripts/sahara-proving-grounds/</code>.</p>
+<p><strong>His scope (decided, not re-asked):</strong> BOTH (1) audit and fix the existing pipeline (memory/*.md, MEMORY.md, hooks, decision_log, task_board) AND (2) design a unified retrieval layer covering whatever else agents need (Notion, Drive, docs/). "You are doing both."</p>
+<p><strong>Delegated judgment calls (one answer each, not a menu):</strong> file-based-enhance vs DB-backed-replace; workaround vs structural fix for the SessionStart-hooks-don't-reach-subagents gap.</p>
+<p><strong>Method gates (all HARD):</strong> read the 2026-08-20 verdict doc and message 1245 in full plus every file the analysis needs; invoke karpathy, council and lateral-leverage as real skills; survey the skill catalog and name keep/extend/replace for decision_log, task_board, memory-curator, second-brain-query, continuity-v2, atlas-memory; stop and report if any gate cannot run.</p>
+<p><strong>Scope ceiling:</strong> no edits to <code>orchestrator/</code>, <code>scripts/</code>, or hooks (self-modification gate, his Telegram approval only); no schema or migration change; no change to a shared production mechanism. Name everything that falls under that gate in its own section (section 8).</p>
+<p><strong>This run produces a plan, not a build.</strong></p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. What was read and verified (file paths)</h2></summary>
+    <div class="sec-body">
+      <p>Every item below was opened and read in this run, not taken from a summary.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What it settled</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>agent_comms row 1245 (<code>SELECT body FROM agent_messages WHERE id=1245</code>)</td>
+<td>His verbatim words and the Sahara example, above</td>
+</tr>
+<tr>
+<td><code>docs/governance/second-brain-retrieval-verdict-2026-08-20.md</code></td>
+<td>The prior verdict: corpus scope wrong, zero default callers, ingest unscheduled</td>
+</tr>
+<tr>
+<td><code>docs/governance/second-brain-standard-sys531.md</code></td>
+<td>The READ standard (section 5), the D1-D6 deliverable order, the "feed before wiring" trap (section 2b), the honest map of which surfaces are gate-held (section 7-8)</td>
+</tr>
+<tr>
+<td><code>docs/governance/asset-inventory-and-retrieval-scope-sys670.md</code></td>
+<td>The four open fixes filed 2026-08-20, two of which have since landed</td>
+</tr>
+<tr>
+<td><code>docs/ROUTING.md</code></td>
+<td>Where this document goes (<code>docs/plans/</code>), where decisions go, where finished things go (<code>/review/</code>)</td>
+</tr>
+<tr>
+<td><code>docs/prds/sys700-cross-agent-memory-pointer-fix.md</code></td>
+<td>The non-Claude-Code runtime gap (Codex, Gemini) is already PRD'd; not duplicated here</td>
+</tr>
+<tr>
+<td><code>docs/AGENT_SOP.md</code> lines 84-100, 135-140</td>
+<td>Session Start step 5 ("load second brain context") and the "Capability check before asking" rule, which covers credentials/capabilities only</td>
+</tr>
+<tr>
+<td><code>scripts/ingest_flatfile_memory.py</code> (header + <code>_ROOTS</code>)</td>
+<td>Corpus was widened 2026-08-30 (commit <code>4ca12a411</code>) to <code>memory/</code>, <code>docs/LIVE_STATE.md</code>, <code>docs/governance/**</code>, <code>docs/reference/**</code>, <code>docs/handoff/**</code>. NOT <code>docs/prds</code>, <code>docs/decisions</code>, <code>docs/testing</code>, <code>docs/roadmap</code>, <code>docs/plans</code></td>
+</tr>
+<tr>
+<td><code>scripts/build_memory_index.py</code> (cap + overflow routing)</td>
+<td><code>LOADER_BYTE_CAP = 24400</code>; overflow router (SYS-660)</td>
+</tr>
+<tr>
+<td><code>scripts/claude-hooks/memory-overflow-inject.js</code></td>
+<td>SessionStart hook that delivers the overflow; self-reporting header</td>
+</tr>
+<tr>
+<td><code>~/.claude/hooks/copy-battery-inject.js</code></td>
+<td>The SubagentStart hook that DOES reach subagents; already carries 9 rule blocks</td>
+</tr>
+<tr>
+<td><code>~/.claude/settings.json</code> + <code>.claude/settings.json</code></td>
+<td>Full hook registry: SessionStart (8 hooks across both files), SubagentStart (2), UserPromptSubmit (6), PreToolUse (18), Stop/SubagentStop</td>
+</tr>
+<tr>
+<td><code>skills/second-brain-query/SKILL.md</code>, <code>ask.sh</code></td>
+<td>The query path, its documented limits, its callers</td>
+</tr>
+<tr>
+<td><code>skills/memory-curator/SKILL.md</code></td>
+<td>Single-writer pruner; SYS-660 changed its trigger</td>
+</tr>
+<tr>
+<td><code>skills/atlas-memory/SKILL.md</code></td>
+<td>The continuity stack orientation; continuity-v2 MCP is the cross-session recall layer</td>
+</tr>
+<tr>
+<td><code>skills/decision_log/SKILL.md</code>, <code>skills/task_board/SKILL.md</code></td>
+<td>The ledger and the DB board, their scope</td>
+</tr>
+<tr>
+<td><code>memory/feedback_search_memory_before_claiming_a_capability_does_not_exist_2026_08_06.md</code></td>
+<td>The rule that names this exact failure class; <strong>its frontmatter is <code>tier: archive</code></strong></td>
+</tr>
+<tr>
+<td><code>orchestrator/notion_sync_crew.py</code> (VPS copy), <code>/etc/cron.d/notion-sync</code></td>
+<td>A Notion reader ALREADY exists and runs nightly at 04:00 UTC, syncing the Ideas DB and the Task DB into the same <code>memory</code> table</td>
+</tr>
+<tr>
+<td>Postgres <code>memory</code> table, grouped by source</td>
+<td>Live counts and freshness (table below)</td>
+</tr>
+<tr>
+<td>continuity-v2 MCP (<code>index_stats</code>, <code>search_sessions</code>)</td>
+<td>3,455 sessions, 365,719 turns, latest 2026-09-11; found the Sahara VM creation in 5 hits</td>
+</tr>
+<tr>
+<td><code>docs/prds/README.md</code> row 52, <code>docs/decisions/log/2026-09.md</code> D-20260903-3b4474</td>
+<td>The Sahara answer exists in two more registries the corpus cannot see</td>
+</tr>
+<tr>
+<td><code>C:\Ai_Sandbox\boubacarbarry-site\scripts\publish-review.ps1</code> + template</td>
+<td>The publish path and the SYS-507 layout gate this page must pass</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Live checks run in this session (not quoted from prior audits):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bash skills/second-brain-query/ask.sh "does the Sahara Proving Grounds VM exist" 5</code></td>
+<td><strong>Zero Sahara hits.</strong> Top 5 at relevance 0.016 are handoff boilerplate and <code>LIVE_STATE.md</code>. legs: tsvector=8, vector=10, qmd=0. The PRD, testing doc, ledger entry and PRD-index row are all in roots the ingest does not read</td>
+</tr>
+<tr>
+<td><code>mcp__continuity-v2__search_sessions("sahara" AND "proving")</code></td>
+<td><strong>5 hits in under a second</strong>, including the Hyper-V <code>New-VM</code> output that created the VM on 2026-09-04 and the branch that committed the scripts</td>
+</tr>
+<tr>
+<td><code>memory</code> table by source (<code>max(updated_at)</code>)</td>
+<td>flatfile_memory 2,722 rows (2026-09-12 11:40); docs_reference 1,286 (09-12); docs_handoff 849 (09-12); notion 443 (09-12 04:00 via cron); docs_governance 72 (09-12); live_state 1 (09-12)</td>
+</tr>
+<tr>
+<td>Who ran today's 11:40 ingest</td>
+<td>No cron, no scheduler entry, no log line found. It was a hand-run <code>--refresh</code> by a lane this morning. <strong>Still unscheduled</strong> (SYS-568 filed 08-11, recurred 08-20, still true 09-12)</td>
+</tr>
+<tr>
+<td><code>ask.sh --freshness</code></td>
+<td>Reports <code>max(created_at)</code>, so <code>live_state</code> shows 2026-08-30 although it was re-ingested today. The freshness signal under-reports freshness</td>
+</tr>
+<tr>
+<td>Own context of this subagent (Agent-tool spawn)</td>
+<td>Has both CLAUDE.md files and <code>memory/MEMORY.md</code> (delivered via SubagentStart). <strong>Does NOT have the <code>ALWAYS-LOAD RULES DELIVERED OUTSIDE memory/MEMORY.md</code> banner</strong> that <code>memory-overflow-inject.js</code> prints. Second confirmation of evidence item 2</td>
+</tr>
+<tr>
+<td><code>grep -ril sahara memory/</code></td>
+<td>7 files, all handoffs and the canonical profile; none is a findable "the VM exists" fact. <code>MEMORY_LOADER_OVERFLOW.md</code>: zero hits</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Evidence items handed in by the dispatcher, re-verified:</strong>
+1. <em>"Corpus is only memory/</em>.md + CLAUDE.md + one absorb log"<em> — </em><em>STALE since 2026-08-30.</em><em> The 08-20 verdict was correct on its date; commit <code>4ca12a411</code> widened the roots. The finding that survives is narrower and more precise: the corpus still excludes the four registries where existence/decision answers live.
+2. </em>"SessionStart content does not reach Agent-tool subagents; SubagentStart does"<em> — </em><em>CONFIRMED a second time</em><em> by this subagent's own context (above). Confidence: two independent observations, same day, same machine. Not yet tested on the Huawei or with <code>Explore</code>/<code>Plan</code> agents, which CLAUDE.md states skip CLAUDE.md and the memory index entirely.
+3. </em>"continuity-v2 is healthy"<em> — </em><em>CONFIRMED.</em>* <code>index_stats</code> returned a 310 MB DB, 3,455 sessions, latest 2026-09-11T04:38Z. Embeddings and edges not built. Index is ~1 day behind. MS-02-local SQLite; not reachable from the VPS or the Huawei.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. Findings: what is actually broken</h2></summary>
+    <div class="sec-body">
+      <p><strong>F1. The corpus still cannot see the registries where "does X exist" is answered.</strong> <code>_ROOTS</code> in <code>scripts/ingest_flatfile_memory.py</code> covers memory, LIVE_STATE, governance, reference, handoff. It does not cover <code>docs/prds/</code> (the PRD index, 50+ rows), <code>docs/decisions/log/</code> (the ledger, which ROUTING.md calls the one home for every decision), <code>docs/testing/</code>, <code>docs/roadmap/</code>, <code>docs/plans/</code>. The Sahara VM has a PRD, a PRD-index row, a testing doc and a ledger entry, and the live query returned none of them. Every other "did we decide / did we build" question has the same shape.</p>
+<p><strong>F2. Nothing fires the query before an agent asks him.</strong> The instruction exists in at least five text surfaces (the 08-06 memory rule, AGENT_SOP "capability check before asking", SYS-531 section 5, the second-brain-query skill description, the "read the ledger cold" block in ROUTING.md) and in zero mechanical ones. Eight skills invoke <code>ask.sh</code> by hand (prd, crucible, rca, absorb, feynman, memory-curator, systematic-debugging, second-brain-query). No hook, no CLAUDE.md line, no Stop-check. The AGENT_SOP rule is scoped to credentials and capabilities, not to existence or decision questions, and points only at <code>memory/</code>, which is exactly the store that does NOT hold the Sahara answer.</p>
+<p><strong>F3. The one memory file that names this failure class is archived.</strong> <code>feedback_search_memory_before_claiming_a_capability_does_not_exist_2026_08_06.md</code> carries <code>tier: archive</code>, so it renders into <code>MEMORY_ARCHIVE.md</code>, never into the always-load index or the overflow. The rule written for this exact problem does not load.</p>
+<p><strong>F4. The overflow channel does not reach subagents.</strong> 268 always-load rows (238 HARD-tagged, 75,374 bytes) are routed to <code>MEMORY_LOADER_OVERFLOW.md</code> and delivered by a SessionStart hook. Two observations today show Agent-tool subagents receive CLAUDE.md and MEMORY.md (SubagentStart path) but not that banner. Subagents are the population that writes most <code>.md</code> pointers, most absence claims and most questions relayed to him. <code>Explore</code> and <code>Plan</code> agents receive neither file by design. Non-Claude-Code runtimes receive none of it either (already PRD'd as SYS-700).</p>
+<p><strong>F5. The ingest is still on no schedule.</strong> Third confirmation (08-11: 9 days stale; 08-20: 4 days; 09-12: hand-run this morning, no cron). The Notion half IS scheduled (<code>/etc/cron.d/notion-sync</code>, 04:00 UTC daily, <code>cron_wrap.sh</code> + <code>autonomy_gate.sh</code>), which is the pattern to copy.</p>
+<p><strong>F6. Three documents still describe the system as smaller than it is.</strong> The second-brain-query SKILL.md says "tsvector only" (the vector leg is live: 10 hits in today's run), "no Notion reader anywhere" (<code>notion_sync_crew.py</code> runs nightly), and "corpus is memory/*.md + CLAUDE.md + absorb log" (widened 08-30). SYS-670 fix 4 calls a Notion reader "the only real build here"; it is an extension of an existing one. An agent that reads those docs under-uses what exists.</p>
+<p><strong>F7. The freshness signal lies in the safe direction.</strong> <code>ask.sh --freshness</code> reports <code>created_at</code>, so a re-ingested root looks weeks old. Harmless today, but it is the signal the scheduled ingest (F5) would be verified against.</p>
+<p><strong>Not broken, and named so nobody re-solves it:</strong> the query engine (<code>hybrid_retrieval.py</code>) ranks and returns; the Postgres index is fed and current as of this morning; the decision ledger has the Sahara PARK entry with its reason; the task board rows are DB-backed; the SYS-660 split loader keeps MEMORY.md under the cap by construction. The Sahara facts were filed correctly by the lane that built it. Filing was not the failure. Reach and reflex were.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. Skill-catalog survey: keep as-is, extend, or replace</h2></summary>
+    <div class="sec-body">
+      <table>
+<thead>
+<tr>
+<th>Skill / mechanism</th>
+<th>Verdict</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>second-brain-query</code> (+ <code>hybrid_retrieval.py</code>, <code>memory</code> table)</td>
+<td><strong>EXTEND</strong></td>
+<td>The read path. Works. Needs 4 more roots, a schedule, a corrected freshness column, and a corrected SKILL.md. Never replace: it is the DB index the "replace" option would rebuild</td>
+</tr>
+<tr>
+<td><code>scripts/ingest_flatfile_memory.py</code></td>
+<td><strong>EXTEND</strong> (4 lines in <code>_ROOTS</code>)</td>
+<td>Declarative root list already exists; adding roots is the designed extension point</td>
+</tr>
+<tr>
+<td><code>orchestrator/notion_sync_crew.py</code> + <code>/etc/cron.d/notion-sync</code></td>
+<td><strong>EXTEND</strong> (one <code>sync_*</code> function per added DB)</td>
+<td>The Notion reader everyone says does not exist. Add the Knowledge Base (<code>339bcf1a302981919f81fec7a0bb875d</code>, schema Topic/Source/Category) and the Subscription &amp; Payment Tracker (<code>253bcf1a-3029-80f3-a699-000b6f076f9b</code>). Karpathy P1 reclassified this from env-only to a code change: each DB has its own property schema</td>
+</tr>
+<tr>
+<td><code>continuity-v2</code> MCP (<code>skills/atlas-memory/tools/continuity-v2-mcp</code>)</td>
+<td><strong>REPURPOSE, keep as-is</strong></td>
+<td>Indexes what actually HAPPENED in every session regardless of whether anyone filed it. It answered the Sahara question in one call. Make it the second leg of the pre-ask gate on MS-02. Limit named: local to this machine; embeddings not built; ~1 day lag</td>
+</tr>
+<tr>
+<td><code>memory-overflow-inject.js</code> + <code>build_memory_index.py</code> router (SYS-660)</td>
+<td><strong>EXTEND</strong> (Phase 2b)</td>
+<td>The router already renders two targets by byte budget. A third, small target for subagents is the structural fix for F4. Do not deliver the full overflow per dispatch</td>
+</tr>
+<tr>
+<td><code>copy-battery-inject.js</code> (SubagentStart)</td>
+<td><strong>EXTEND</strong> (one ~500-byte block)</td>
+<td>The only rule-delivery channel proven to reach subagents. Already carries 9 folded blocks; the pre-ask gate is the 10th, folded the same way</td>
+</tr>
+<tr>
+<td><code>brevity-contract.js</code> (UserPromptSubmit)</td>
+<td><strong>EXTEND</strong> (4th rule)</td>
+<td>Main-thread mirror of the same gate, per SYS-531 section 7 option A</td>
+</tr>
+<tr>
+<td><code>stop-format-check.js</code> / <code>SubagentStop</code></td>
+<td><strong>EXTEND</strong> (advisory check)</td>
+<td>Turns the soft rule into a mechanical receipt: a final text that asks him an existence/decision question with no "Searched:" line gets flagged. Advisory, never blocking (Karpathy P10, false-positive risk)</td>
+</tr>
+<tr>
+<td><code>memory-curator</code></td>
+<td><strong>KEEP AS-IS</strong>, invoke once</td>
+<td>Its job is token cost and accuracy. Ask it to run one pass on the 268-row overflow before Phase 2b sizes the subagent boot file. Not a retrieval tool</td>
+</tr>
+<tr>
+<td><code>decision_log</code></td>
+<td><strong>KEEP AS-IS</strong></td>
+<td>Correct home, correct schema, already held the Sahara PARK. Its only defect is reach (F1), fixed by indexing its <code>log/</code> dir</td>
+</tr>
+<tr>
+<td><code>task_board</code> (SYS-405)</td>
+<td><strong>KEEP AS-IS</strong></td>
+<td>DB-backed, queryable, out of scope for this failure class</td>
+</tr>
+<tr>
+<td><code>atlas-memory</code></td>
+<td><strong>KEEP AS-IS</strong>, update one table row</td>
+<td>Reference skill. Its continuity-stack table should name continuity-v2 and the pre-ask gate</td>
+</tr>
+<tr>
+<td><code>feedback_search_memory_before_claiming...</code> memory file</td>
+<td><strong>EXTEND</strong> (tier flip + scope widen)</td>
+<td>Flip <code>tier: archive</code> to <code>always-load</code>; widen from "capability" to "existence, decision, build"</td>
+</tr>
+<tr>
+<td><code>docs/AGENT_SOP.md</code> rule "Capability check before asking"</td>
+<td><strong>EXTEND</strong></td>
+<td>Widen scope; name <code>ask.sh</code>, <code>docs/prds</code>, <code>docs/decisions/log</code>, continuity-v2; drop the memory-only path</td>
+</tr>
+<tr>
+<td>SYS-700 PRD (non-Claude-Code runtimes)</td>
+<td><strong>KEEP AS-IS</strong>, cross-link</td>
+<td>Already owns the Codex/Gemini pointer gap; this plan adds nothing there</td>
+</tr>
+<tr>
+<td><strong>NOT proposed:</strong> a new DB-backed retrieval service; a new Notion reader; a MemPalace/agentmemory-style second store</td>
+<td><strong>REJECTED</strong></td>
+<td>Each duplicates something above. <code>atlas-memory</code>'s own rule: one source of truth per fact, never a second store that can drift</td>
+</tr>
+</tbody>
+</table>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. Recommendation: file-based-enhance vs DB-backed-replace</h2></summary>
+    <div class="sec-body">
+      <p><strong>ENHANCE the file-based system. Do not replace it. One answer.</strong></p>
+<p>Reasoning, in the order that decided it:</p>
+<ol>
+<li><strong>The DB-backed retrieval layer already exists.</strong> Postgres <code>memory</code> table, 5,800+ rows across 11 sources, tsvector plus vector legs, edge graph, a working query wrapper, nightly Notion sync. "Replace with a DB-backed service every agent queries at session start" describes the thing we have, minus the four missing roots and a schedule. Building it again is the Kitchen Sink.</li>
+<li><strong>The files are the write path every agent already uses correctly.</strong> The Sahara lane filed a PRD, a ledger entry, a testing doc and a PRD-index row without being told. A replacement store would need every writer re-trained; the enhancement needs zero writer changes.</li>
+<li><strong>A second store that can drift is the failure the system already survived once.</strong> <code>atlas-memory</code> records the SYS-14 consolidation principle for exactly this reason, and <code>docs/ROUTING.md</code> bans a new top-level store outright ("a tenth store is the disease").</li>
+<li><strong>Gate cost.</strong> Enhance = 5 small edits under gate in one branch, one tap. Replace = weeks of <code>orchestrator/</code> work behind the same gate, during a revenue-first window that bans new builds not tied to revenue.</li>
+<li><strong>What "replace" would actually buy</strong> is semantic recall and Notion/Drive reach. The vector leg is already live; Notion reach is an extension of a running cron; Drive is out of scope until someone names a Drive fact an agent asked him for (none in this incident).</li>
+</ol>
+<p>What "enhance" must include to be honest: the four roots, the schedule, the corrected freshness signal, the Notion DB extension, and the pre-ask reflex. Without the reflex (F2), a wider corpus is a better-stocked shelf nobody walks to.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>6. Recommendation: workaround vs structural fix for the SessionStart/subagent gap</h2></summary>
+    <div class="sec-body">
+      <p><strong>STRUCTURAL fix, sequenced in two steps. One answer.</strong></p>
+<p>The gap is real (two confirmations today) and it is architectural: Claude Code fires SessionStart for the main session and SubagentStart for spawns, and only the latter's <code>additionalContext</code> lands in a subagent. No prompt discipline closes that. The spawner-prompt workaround has already been tried for the copy battery, the TL;DR rule and the [WIP] rule, and each one ended up as a hook precisely because the workaround failed.</p>
+<p><strong>Step A (Phase 2a, same gate branch): the pre-ask gate rides <code>copy-battery-inject.js</code>.</strong> ~500 bytes, folded as the 10th block in the hook that already reaches every subagent. This closes THIS complaint for subagents immediately after his tap, at a cost of roughly 150 tokens per dispatch.</p>
+<p><strong>Step B (Phase 2b, its own PRD): a third render target in <code>build_memory_index.py</code>.</strong> Frontmatter <code>reach: subagent</code> on a memory file routes its <code>index_line</code> into <code>memory/SUBAGENT_BOOT.md</code>, rendered under its own byte budget (proposed 8 KB), delivered by a sibling SubagentStart hook. Same mechanism SYS-660 built, pointed at a second event. Curated by <code>memory-curator</code> under the same single-writer rule.</p>
+<p><strong>Why not ship the whole overflow to subagents now:</strong> 75,374 bytes is roughly 19k tokens, and CLAUDE.md's own measurement is 401 dispatches per week. That is ~7.5M tokens a week to deliver rules of which perhaps twenty apply to any given subagent. The structural answer is a budgeted subset, and choosing the subset is a curation job that has not been done. Step B exists so that it gets done once, in a PRD, with a number attached, instead of being improvised in a hook.</p>
+<p><strong>Named limits of the recommendation:</strong> <code>Explore</code> and <code>Plan</code> agents receive no CLAUDE.md or memory at all by design (that is the 61% token saving), so the pre-ask gate reaches them only through the dispatcher-side auto-retrieval in Phase 2b. Non-Claude-Code runtimes are SYS-700's problem and stay there.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>7. Concrete plan of action</h2></summary>
+    <div class="sec-body">
+      <p>Ordering constraint from Council (and SYS-531 section 2b): <strong>the corpus widens and the schedule lands BEFORE the pre-ask rule reaches agents.</strong> A rule that sends agents to a tool that still returns "No results" for the Sahara question burns the rule's credibility across every lane at once.</p>
+<h3>Phase 1: auto-merge, no tap, can land this week</h3>
+<ol>
+<li><strong><code>memory/feedback_search_memory_before_claiming_a_capability_does_not_exist_2026_08_06.md</code></strong> - flip <code>tier: archive</code> to <code>tier: always-load</code>; widen the rule text and <code>index_line</code> from "capability" to "capability, existence, decision, or build"; name the three legs (ask.sh, the four docs roots, continuity-v2). Run <code>python scripts/build_memory_index.py --all</code>. Done when the line appears in MEMORY.md or the overflow file.</li>
+<li><strong><code>docs/AGENT_SOP.md</code></strong> "Capability check before asking" - widen to existence/decision/build questions; replace the memory-only grep with the three legs; require the "Searched:" line in any question relayed to him. Done when the paragraph names <code>ask.sh</code> and <code>docs/decisions/log/</code>.</li>
+<li><strong><code>skills/second-brain-query/SKILL.md</code></strong> - correct three stale claims (corpus scope since 08-30; vector leg live; Notion reader exists at <code>notion_sync_crew.py</code>, scope Ideas + Tasks). Add the "PRE-ASK GATE" section with the exact three commands. Done when a fresh reader cannot conclude "no Notion reader exists".</li>
+<li><strong><code>skills/atlas-memory/SKILL.md</code></strong> - add continuity-v2 <code>search_sessions</code> as the "did this ever happen" leg in the continuity-stack table. One row.</li>
+<li><strong><code>docs/governance/memory-corrections-log.md</code></strong> - one row: SYS-670 fix 4 and the 08-20 verdict's "no Notion reader" claim, corrected with the cron file and script path as evidence.</li>
+<li><strong>Decision ledger</strong> - <code>python -m skills.decision_log add</code> for this plan: <code>status: PENDING</code> until his verdict, <code>category: infrastructure</code>, <code>lane: ms02-init</code>, origin = message 1245.</li>
+<li><strong>Reproducing test, written before any hook changes (Karpathy P6):</strong> a documented blind-dispatch script under <code>docs/testing/</code> that spawns a general-purpose subagent with the prompt "Does the Sahara Proving Grounds VM exist? Answer and say what you searched" and records whether it asks vs answers and whether the overflow banner is present. Run once now as the baseline; run again after Phase 2a lands. This is the machine-checkable done condition for F2 and F4.</li>
+</ol>
+<h3>Phase 2a: ONE gate-held branch, ONE Telegram tap (his approval, section 8)</h3>
+<ol>
+<li><strong><code>scripts/ingest_flatfile_memory.py</code></strong> - add four <code>Root(...)</code> entries: <code>docs/prds/**</code> (boost 1.2), <code>docs/decisions/log/**</code> (boost 1.5, it is the decision home), <code>docs/testing/**</code> (1.0), <code>docs/roadmap/**</code> (1.0). <code>docs/plans/**</code> at 0.8. Done when <code>ask.sh "Sahara Proving Grounds VM"</code> returns <code>docs_prds__sahara-proving-grounds__PRD</code> in the top 3.</li>
+<li><strong><code>/etc/cron.d/memory-ingest</code></strong> on the VPS - cloned from <code>notion-sync</code>: 04:30 UTC daily, <code>autonomy_gate.sh</code> + <code>cron_wrap.sh</code>, runs <code>python scripts/ingest_flatfile_memory.py</code> inside <code>orc-crewai</code>, logs to <code>/var/log/memory_ingest.log</code>. Installed only from a committed file in <code>scripts/cron/</code>, never hand-edited on the VPS. Done when <code>ask.sh --freshness</code> shows every root under 48 h for 7 consecutive days.</li>
+<li><strong><code>skills/second-brain-query/ask.sh</code></strong> <code>--freshness</code> - report <code>max(updated_at)</code>. (Under <code>skills/</code>, so technically auto-merge; bundled here because it is the verification signal for item 9.)</li>
+<li><strong><code>orchestrator/notion_sync_crew.py</code></strong> - add <code>sync_knowledge_base()</code> (Topic/Source/Category, category=asset) and <code>sync_subscription_tracker()</code> (registry rows, category=asset, boost 2.0), env-gated like <code>IDEAS_DB_ID</code>. Done when <code>ask.sh "which registrar holds catalystworks.consulting"</code> returns a Notion-sourced row.</li>
+<li><strong><code>~/.claude/hooks/copy-battery-inject.js</code></strong> (+ repo mirror <code>scripts/claude-hooks/</code>) - 10th folded block, PRE-ASK GATE: before asking Boubacar whether anything exists / was decided / was built, or asserting absence: (1) <code>bash skills/second-brain-query/ask.sh "&lt;question&gt;" 5</code>; (2) grep <code>docs/prds docs/decisions/log docs/testing docs/roadmap memory</code>; (3) continuity-v2 <code>search_sessions</code> where available; then include one line <code>Searched: ...</code> in the question. If the brain is unreachable (VPS down), say so in that line and ask anyway: fail loud, never fail silent (Karpathy P10 Optimistic Path).</li>
+<li><strong><code>~/.claude/hooks/brevity-contract.js</code></strong> - the same gate as a 4th standing rule for the main thread.</li>
+<li><strong><code>~/.claude/hooks/stop-format-check.js</code></strong> (Stop + SubagentStop) - advisory flag when the final text contains a question to him matching existence/decision phrasing and no <code>Searched:</code> line. Prints a warning; does not block. Register in <code>~/.claude/settings.json</code> only if a new file is needed; prefer extending the existing one.</li>
+<li><strong>Post-merge verification (Karpathy P4/P6):</strong> re-run item 7's blind dispatch; paste the real output into the PR. A green test is not this; the pasted subagent transcript is.</li>
+</ol>
+<h3>Phase 2b: separate PRD, separate tap, not started by this plan</h3>
+<ol>
+<li><strong><code>scripts/build_memory_index.py</code></strong> third render target <code>memory/SUBAGENT_BOOT.md</code> under an 8 KB budget, selected by <code>reach: subagent</code> frontmatter; <strong>new SubagentStart hook</strong> that injects it. Preceded by one <code>memory-curator</code> pass over the 268 overflow rows to pick the subset. Karpathy P2 vetoed bundling this into Phase 2a.</li>
+<li><strong>Dispatcher-side auto-retrieval:</strong> a PreToolUse sibling of <code>explore-routing-inject.js</code> on the <code>Agent</code> tool that runs <code>ask.sh</code> on the dispatch prompt and prepends the top-3 hits. This is the only path that reaches <code>Explore</code>/<code>Plan</code> agents and the Expansionist's 10x: the search is done for the agent instead of remembered by it. Needs a latency budget (ask.sh is an SSH round-trip) and a cache.</li>
+</ol>
+<h3>Measurement (so "fixed" is a number, per the Outsider)</h3>
+<ol>
+<li>Weekly count, via continuity-v2, of assistant turns that ask Boubacar an existence/decision question ("does X exist", "did we decide", "is there already") with no <code>Searched:</code> line. Baseline this week; target zero relayed questions of that shape whose answer was in the corpus. Reported in the Monday digest. No new dashboard.</li>
+</ol>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>8. Everything that requires Boubacar&#x27;s Telegram approval before execution</h2></summary>
+    <div class="sec-body">
+      <p>The self-modification gate (<code>orchestrator/</code>, <code>scripts/</code> non-.md, hooks, <code>.claude/settings.json</code>, shared production mechanisms) covers the following. Nothing here is executed by this document. Bundled into ONE branch so it is ONE tap.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Path</th>
+<th>Change</th>
+<th>Why gated</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8</td>
+<td><code>scripts/ingest_flatfile_memory.py</code></td>
+<td>+5 <code>Root(...)</code> lines</td>
+<td><code>scripts/</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>scripts/cron/memory-ingest</code> + install to <code>/etc/cron.d/</code> on the VPS</td>
+<td>new cron file, new scheduled job</td>
+<td><code>scripts/</code> + shared production infra + "any new scheduled job" (the Karpathy-and-Council-before-install rule; both passes are recorded in sections 9-10 of this document)</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>orchestrator/notion_sync_crew.py</code></td>
+<td>two new <code>sync_*</code> functions, env-gated</td>
+<td><code>orchestrator/</code></td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>scripts/claude-hooks/copy-battery-inject.js</code> + live copy <code>~/.claude/hooks/</code></td>
+<td>+1 folded block</td>
+<td>hooks change every future subagent's context</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>scripts/claude-hooks/brevity-contract.js</code> + live copy</td>
+<td>+1 rule</td>
+<td>hooks</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>~/.claude/hooks/stop-format-check.js</code> (+ repo mirror)</td>
+<td>advisory check</td>
+<td>hooks</td>
+</tr>
+<tr>
+<td>16-17</td>
+<td><code>scripts/build_memory_index.py</code>, new SubagentStart hook, new PreToolUse hook on <code>Agent</code></td>
+<td>Phase 2b</td>
+<td>separate PRD, separate tap</td>
+</tr>
+</tbody>
+</table>
+<p>Also named, so the blast radius is complete: <strong>no schema or migration change is proposed</strong> (the <code>memory</code> table's <code>(source, external_id)</code> key absorbs new roots as new <code>source</code> values); <strong>no <code>data/gate_approvals/</code> write</strong> under any circumstance; the corpus grows by roughly 200-400 rows (docs/prds, roadmap, testing, decisions, plans are small; the 1,286-row <code>docs/reference</code> growth of 08-30 is the precedent and the ranking survived it). <strong>Embedding schedule for new rows: UNKNOWN.</strong> I did not find <code>embed_memory_corpus.py</code> in cron or the scheduler and did not investigate further; if the vector leg lags ingestion, the tsvector leg still returns the new rows. Named as a Phase 2a check, not assumed.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-9" open>
+    <summary><h2>9. Karpathy audit result (skill invoked, ten principles, on the plan in section 7)</h2></summary>
+    <div class="sec-body">
+      <pre><code>KARPATHY AUDIT (plan-level; no code exists yet)
+Principle 1  - Think Before Coding:      WARN  Clarify gate caught one embedded assumption: &quot;extend Notion sync via env only&quot;.
+                                                notion_sync_crew.py has one sync_* function per DB with per-schema
+                                                extraction; the Knowledge Base (Topic/Source/Category) needs its own.
+                                                Action: reclassified as an orchestrator/ code change (item 11). Done.
+Principle 2  - Simplicity First:         WARN  Phase 2b adds two new mechanisms (a third render target + a dispatcher
+                                                hook). Action: split out of Phase 2a into its own PRD. Done.
+                                                Stop-hook check (item 14) is heuristic; kept advisory, never blocking.
+Principle 3  - Surgical Changes:         PASS  Every Phase 1/2a item is a bounded edit to an existing file at its
+                                                designed extension point (_ROOTS tuple, folded hook block, env-gated fn).
+Principle 4  - Goal-Driven Execution:    PASS  Machine-checkable done per item: Sahara PRD in top-3; freshness &lt; 48h x 7d;
+                                                blind dispatch answers with a Searched: line; weekly count trends to 0.
+                                                Bottleneck named: the reflex (F2), not index quality; corpus widen is on
+                                                the critical path only because the reflex fails without content.
+Principle 5  - Complexity Hotspots:      WARN  Corpus growth is bounded (~hundreds of rows); one-row-per-file keeps the
+                                                unique index intact. Embedding cost of large ledger files: UNKNOWN,
+                                                named in section 8, not assumed.
+Principle 6  - Verification:             WARN  The subagent-gap evidence is two observations, no automated test.
+                                                Action: item 7 writes the reproducing blind dispatch BEFORE any hook
+                                                changes, and item 15 re-runs it after. Done in plan.
+Principle 7  - Debugging Protocol:       PASS  The Sahara miss was reproduced live (ask.sh, zero hits), one variable
+                                                isolated (root scope), and the alternative store (continuity-v2) was run
+                                                on the same question for contrast.
+Principle 8  - Dependencies:             PASS  No new package. Cron reuses cron_wrap.sh + autonomy_gate.sh. No qmd install.
+Principle 9  - Communication:            PASS  Three UNKNOWNs stated as such: embedding schedule; Explore/Plan reach;
+                                                Huawei behaviour. No &quot;should work&quot; anywhere in the plan.
+Principle 10 - Common Failure Modes:     WARN  Kitchen Sink risk in Phase 2b (bounded by the PRD split).
+                                                Optimistic Path caught: ask.sh needs an SSH round-trip from every
+                                                subagent; item 12 now says fail-loud-and-proceed when the VPS is down.
+FINAL CALL: SHIP as a plan (P1-4, 6-10 at PASS or WARN). HOLD items, all applied above:
+  (1) reclassify item 11 as a code change; (2) split Phase 2b; (3) add the reproducing test before hooks;
+  (4) add fail-loud wording for brain-unreachable; (5) keep the Stop check advisory.
+</code></pre>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-10" open>
+    <summary><h2>10. Council review result (skill invoked, five voices + cross-review + synthesis)</h2></summary>
+    <div class="sec-body">
+      <p><strong>THE CONTRARIAN.</strong> The fatal flaw: the plan's core mechanism is a text rule, and this exact rule has already been written in five places and ignored in all of them. Adding a sixth surface is the move that already failed. Second flaw: the ordering trap. If the pre-ask rule lands before the corpus widens (and the corpus widen is gate-held), the first thing every agent sees is <code>ask.sh</code> returning nothing for the Sahara question, and the rule dies in a week (SYS-531 section 2b said this in August). Third: <code>ask.sh</code> is an SSH round-trip; a subagent with no VPS access will silently skip it.</p>
+<p><strong>THE FIRST PRINCIPLES THINKER.</strong> The question as asked is "how do agents find things". The actual problem is that asking Boubacar is free for an agent and searching is expensive, so the cheap path wins every time. Reframe: make the ask itself malformed without a search receipt. A question to him without a <code>Searched:</code> line is an incomplete deliverable, the same way a decision without a reason is a fossil in ROUTING.md. That converts a soft instruction into a checkable shape, which a Stop hook can see. The corpus widen is necessary but it is not the lever; the receipt is.</p>
+<p><strong>THE EXPANSIONIST.</strong> The plan under-sells continuity-v2. It indexes what actually happened in every session, which is the only store that does not depend on anyone filing anything. The 10x play is not "remind the agent to search" but "search for the agent": the dispatcher already runs a PreToolUse hook on <code>Agent</code> (<code>explore-routing-inject.js</code>); a sibling that prepends the top-3 hits for the dispatch prompt makes every subagent start with the answer in hand. It also reaches <code>Explore</code>/<code>Plan</code>, which nothing else does. And the <code>reach:</code> frontmatter idea generalises to <code>reach: codex</code>, which is SYS-700's Phase 2.</p>
+<p><strong>THE OUTSIDER.</strong> From outside: 5,800 rows, 268 hard rules, a 24 KB cap, two settings files, 18 PreToolUse hooks, and nobody can say whether the problem is getting better or worse because there is no number. The obvious thing a customer would ask: how many times a week does an agent ask the human something the system already knew? Nobody measures it. Until that number exists, every fix is a feeling.</p>
+<p><strong>THE EXECUTOR.</strong> Monday morning: three things ship with no tap (tier flip, AGENT_SOP widen, SKILL.md correction). Everything that actually changes behaviour needs his tap: five edits. If they go as five branches that is five cards he may not see (a Tier-C hold is an open work item, not a notification). One branch, one tap. Phase 2b is a real build (script change + new hook + a curation pass) and is not a 7-day item; it should not be allowed to hold Phase 2a hostage.</p>
+<p><strong>Cross-review.</strong> Strongest argument on the table: the Contrarian's ordering trap (all five agree). Biggest blind spot: nobody in the first pass had a metric (the Outsider supplied it). What all five missed: the Explore/Plan population is unreachable by any hook that delivers context, so only dispatcher-side retrieval covers it.</p>
+<p><strong>CHAIRMAN SYNTHESIS.</strong> Convergence (act on it): enhance, never replace (5/5); corpus widen + schedule land before the rule (5/5); a text rule alone is insufficient, add the receipt check and the dispatcher-side retrieval (4/5, Executor abstains on scope); one gate branch, one tap (5/5); measure weekly (5/5). Divergence, named not averaged: the Expansionist wants dispatcher-side retrieval in Phase 2a; the Executor wants it in 2b because it needs a latency budget and a cache. Resolution: 2b, with the metric from the Outsider deciding whether 2a alone moved the number. <strong>Recommendation: CHANGE the plan as above and proceed.</strong> Convergence after one revision: ~92%.</p>
+<p><strong>MONDAY MORNING.</strong> Land Phase 1 items 1-7 and open the single Phase 2a branch for his tap. The one open question only he can answer is in section 12.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-11" open>
+    <summary><h2>11. Lateral-leverage (superpower) result (skill invoked before any build was recommended)</h2></summary>
+    <div class="sec-body">
+      <p><strong>Outcome:</strong> an agent about to ask him "does X exist / was X decided" finds the answer in the system first. <strong>Things to beat:</strong> a DB-backed retrieval service every agent queries at session start; a new Notion reader; a new SubagentStart delivery channel for the overflow rules.</p>
+<p><strong>Inventory in play:</strong> <code>second-brain-query</code> + <code>memory</code> table; <code>ingest_flatfile_memory.py</code> <code>_ROOTS</code>; <code>notion_sync_crew.py</code> + its cron; continuity-v2 MCP; <code>copy-battery-inject.js</code>; <code>build_memory_index.py</code> router; <code>decision_log</code>; AGENT_SOP rule; the archived 08-06 memory file.</p>
+<p><strong>Survivors (ranked by outcome per unit of new stuff):</strong>
+1. <strong>Re-point what already ingests.</strong> Connection: the ingest has a declarative root list, the Notion sync has a per-DB function list, and the cron file for one already exists to clone for the other. First action: the five <code>Root(...)</code> lines and the cron clone (Phase 2a items 8-9). Beats: a "DB-backed retrieval service" (it IS this, already built) and a "Notion reader" (it runs nightly; extend it).
+2. <strong>Repurpose continuity-v2 as the "did this ever happen" oracle.</strong> Connection: a session-transcript index built for resume-after-compaction is the one store that sees every action ever taken, filed or not. First action: name it as leg 3 of the pre-ask gate and in AGENT_SOP (Phase 1). Beats: any new event log. Zero new stuff.
+3. <strong>Fold the pre-ask gate into the hook that already reaches subagents.</strong> Connection: <code>copy-battery-inject.js</code> was built for one rule and now carries nine; a tenth block is the established pattern. First action: item 12. Beats: a new SubagentStart channel for this rule.</p>
+<p><strong>Cut list:</strong> DB-backed replacement service (reuse delivers it, already exists); new Notion reader (extension of a running cron); shipping the full 75 KB overflow per dispatch (killed on token cost, ~7.5M tok/week; the budgeted SUBAGENT_BOOT in Phase 2b is the surviving form, and it carries its written why-reuse-cannot: no existing render target is sized for subagents).</p>
+<p><strong>Daily-question note:</strong> this is infrastructure, judged by its own measure (a named blocker gone: his time spent re-answering settled questions). Door 1 on the founder-weight screen: it takes work off his plate and adds none.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-12" open>
+    <summary><h2>12. Open questions genuinely requiring his input</h2></summary>
+    <div class="sec-body">
+      <ol>
+<li><strong>Does Phase 2a get one tap as a bundle, or does he want the hook edits (items 12-14) held separately from the corpus/cron/Notion edits (items 8-11)?</strong> Recommendation: one bundle. Reason: the hook edits are inert without the corpus widen, and five separate cards are five chances for a held branch to go unseen.</li>
+<li><strong>Is Drive in scope for the unified retrieval layer now?</strong> No question in this incident needed a Drive fact, so this plan leaves Drive out and names it as a future root. If he has a specific Drive-held fact agents keep asking for, that changes the priority of a Drive reader.</li>
+</ol>
+<p>Everything else delegated was answered above with a stated position.</p>
+<hr />
+<p><strong>Gates run in this session, stated for the record:</strong> sources read in full (section 2, including message 1245 fetched from the database and the 08-20 verdict doc); <code>karpathy</code> invoked via the Skill tool (section 9); <code>council</code> invoked via the Skill tool, <code>council.md</code> read in full (section 10); <code>lateral-leverage</code> invoked via the Skill tool (section 11); skill catalog surveyed with keep/extend/replace stated per mechanism (section 4).</p>
+<p>This is a plan, not a build. No code has been written or executed as part of this document.</p>
+    </div>
+  </details>
+
+
+  <footer class="foot">
+    Source of record: <code>docs/plans/memory-second-brain-rca-2026-09-12.md</code> in agentsHQ. This is a plan, not a build. No code has been written or executed as part of this document.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
