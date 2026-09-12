@@ -112,7 +112,13 @@
     rejected: 'Rejected',
     interviewed: 'Interviewed',
     unclear: 'Status unclear',
-    skipped: 'Skipped'
+    skipped: 'Skipped',
+    // Added 2026-09-11 for the Workday oCHRO row: a resume/cover letter can be
+    // fully built and ready to send before Boubacar actually submits it
+    // himself. Without this the row still renders (falls through to the raw
+    // status string) but shows the literal lowercase "drafted" instead of a
+    // real label. Additive only -- no existing status label changes meaning.
+    drafted: 'Drafted, not yet sent'
   };
 
   var STAGE_LABEL = {
