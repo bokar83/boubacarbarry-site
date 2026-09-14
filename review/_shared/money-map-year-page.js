@@ -1899,9 +1899,31 @@
       // comment ("daily-recurring items don't need a [BY marker]") --
       // confirmed live 2026-09-08 that the category was written down once and
       // never wired into anything that reads it, on either side of the wire.
+      // ARCHIVE-EXCLUDE (2026-09-14). The recurring split above pulls every
+      // isStandingRecurring() row out of the normal tier/archive pipeline
+      // unconditionally -- it never checked archiveOf(k), so a row that was
+      // genuinely archived (a deliberate "stop this" action, its own JSON
+      // marker per the archive-<key> convention) still rendered in the
+      // always-shown Recurring section forever, because archived rows never
+      // reach closedEarlier()/sinkRank() to be routed out. Confirmed live
+      // 2026-09-14: archive-kpi-next-action-inbox-replies-daily (archived
+      // 2026-09-09) with kpi-next-action-inbox-replies-daily still carrying
+      // CADENCE: DAILY in its title -- isStandingRecurring() matched on the
+      // title regex, the row was pushed into `recurring` with no archive
+      // check, and it rendered under Recurring 5 days after being archived.
+      // The isStandingRecurring() doc comment above already states the
+      // intended behavior ("archive carries its own JSON marker and is a
+      // genuine, rarer, deliberate 'stop this' action... an actual archive
+      // still closes a recurring row") -- this closes the gap between that
+      // documented intent and what the split actually did. An archived
+      // recurring row now stays in `mine`, where the existing
+      // closedEarlier()/sinkRank() machinery already correctly excludes
+      // archived rows from every active list (MUST/SHOULD/COULD), per the
+      // PRD's quiet-close asymmetry: archived/closed items never surface in
+      // an active list, only a count.
       var recurring = [];
       mine = mine.filter(function (i) {
-        if (isStandingRecurring(i)) { recurring.push(i); return false; }
+        if (isStandingRecurring(i) && !archiveOf(String(i.key))) { recurring.push(i); return false; }
         return true;
       });
 
