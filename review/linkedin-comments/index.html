@@ -323,7 +323,8 @@
 <script src="/review/shared/review-save-client.js"></script>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-09-14-10:58:40 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v4 · 2026-09-14-11:20:19 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -2269,6 +2270,7 @@ We went through this before with Excel. Most of us never became power users, no 
   var UI = {};        // item_id -> editor elements
   var skipped = {};   // item_id -> true if decision === 'reject' (this page's "Skip" state)
   var UI_SKIP = {};   // item_id -> skip-row elements
+  var hasNote = {};   // item_id -> true if a note is already logged in the DB for this item
 
   function isEdited(id) {
     var e = edits[id];
@@ -2386,7 +2388,9 @@ We went through this before with Excel. Most of us never became power users, no 
       var st = items && items[id];
       edits[id] = (st && typeof st.edited_text === 'string') ? st.edited_text : '';
       renderItem(id);
-      renderNotesForBlock(block, (notesByItem && notesByItem[id]) || []);
+      var itemNotes = (notesByItem && notesByItem[id]) || [];
+      renderNotesForBlock(block, itemNotes);
+      hasNote[id] = itemNotes.length > 0;
       setSkip(id, !!(st && st.decision === 'reject'));
 
       var d = readDraft(id);
@@ -2490,41 +2494,62 @@ We went through this before with Excel. Most of us never became power users, no 
     skipBtn.addEventListener('click', function () {
       if (skipped[id]) { return; }  // already applied -- button is disabled, this is a belt-and-braces no-op
       var noteText = (noteInput.value || '').trim();
-      if (!noteText) {
+      // A note "exists" either as unsaved text still sitting in the box,
+      // OR as an already-logged note for this item (e.g. saved earlier via
+      // the "Add note" button, which clears the box on success -- that
+      // used to make Skip think no note existed even though one was
+      // already on record. Skip accepts either, never forces retyping.
+      if (!noteText && !hasNote[id]) {
         err.classList.add('on');
         noteInput.focus();
         return;
       }
       err.classList.remove('on');
       skipBtn.disabled = true;
-      // Log the reason first, using the same note store/endpoint every
-      // note on this page already writes to. Only if that lands does the
-      // decision flip -- a skip never applies unexplained.
-      ReviewSaveClient.fetchWithRetry(API + '/note', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, note_text: noteText })
-      }, showRetrying)
-        .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
-        .then(function (r) {
-          if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
-          noteInput.value = '';
-          return ReviewSaveClient.fetchWithRetry(API + '/decision', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, decision: 'reject' })
-          }, showRetrying);
-        })
-        .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
-        .then(function (r) {
-          if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
-          hideWriteError();
-          setSkip(id, true);
-          loadState();
-        })
-        .catch(function (err2) {
-          showWriteError('Skip for ' + id + ' did NOT save to the database (' + err2.message +
-            '). It is NOT marked skipped. Your note may have saved even if the skip itself failed -- check the notes log below, then try Skip again.');
-        })
-        .finally(function () { skipBtn.disabled = !!skipped[id]; });
+
+      var applyDecision = function () {
+        return ReviewSaveClient.fetchWithRetry(API + '/decision', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, decision: 'reject' })
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            hideWriteError();
+            setSkip(id, true);
+            loadState();
+          });
+      };
+
+      if (noteText) {
+        // New text in the box -- log it first (same store/endpoint every
+        // note on this page already writes to), then flip the decision.
+        // Only if the note lands does the decision flip -- a skip never
+        // applies unexplained.
+        ReviewSaveClient.fetchWithRetry(API + '/note', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, note_text: noteText })
+        }, showRetrying)
+          .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+            noteInput.value = '';
+            return applyDecision();
+          })
+          .catch(function (err2) {
+            showWriteError('Skip for ' + id + ' did NOT save to the database (' + err2.message +
+              '). It is NOT marked skipped. Your note may have saved even if the skip itself failed -- check the notes log below, then try Skip again.');
+          })
+          .finally(function () { skipBtn.disabled = !!skipped[id]; });
+      } else {
+        // Box is empty but a note is already on record for this item --
+        // do not force a duplicate note, just apply the decision.
+        applyDecision()
+          .catch(function (err2) {
+            showWriteError('Skip for ' + id + ' did NOT save to the database (' + err2.message + '). It is NOT marked skipped. Try Skip again.');
+          })
+          .finally(function () { skipBtn.disabled = !!skipped[id]; });
+      }
     });
   }
 
@@ -2762,6 +2787,7 @@ We went through this before with Excel. Most of us never became power users, no 
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
 
 
 
