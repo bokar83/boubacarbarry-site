@@ -377,8 +377,35 @@
     // control today), so an actual archive still closes a recurring row.
     // Only the bare, un-dated `done-<key>` flag is exempted -- that is the
     // one with no way to ever clear itself.
+    //
+    // KEY-PREFIX FALLBACK (2026-09-14). The title regex above only fires when
+    // the row's own text literally carries STATUS: STANDING / CADENCE: DAILY
+    // / RECURRING DAILY. `register:commitments` rows (orchestrator
+    // `cos_office/commitment_registers.py`) never do -- their title is a
+    // freshly-written DO: line every day, e.g. "DO: Block 1, 10:00-11:15: 8
+    // LinkedIn comments...". What DOES carry the recurring identity, on every
+    // one of these rows, every day, is the KEY ITSELF: the server always
+    // builds it as `f"recurring:{c.id}"` (commitment_registers.py lines 557,
+    // 577), a stable id reused across days with no per-day suffix -- the same
+    // convention the server's own write-back already keys off
+    // (`item.key.startswith("recurring:")`, line 1239). Confirmed live
+    // 2026-09-14: `recurring:linkedin-comments-daily` carried a `done-`
+    // marker set 2026-09-02 (12 days stale, from that day's instance), its
+    // title had no STATUS:/CADENCE: text, so this function returned false,
+    // `closedEarlier()` read it as "closed on an earlier day" (not today),
+    // and it fell into `priorOut[MUST]` -- a bucket that is counted in the
+    // tier's meta line but renders NOWHERE: not in MUST/SHOULD/COULD, not in
+    // the Recurring section, not in the Do-next hero, not even in "Already
+    // done" (that list is TODAY-only). Rank #1 on the published worklist,
+    // invisible on the page. Checking the key prefix alongside the title
+    // regex closes that gap for every `register:commitments` row, not just
+    // this one -- the fix is checking the SAME identity the server already
+    // uses, not inventing a new one.
     var _RE_STANDING = /STATUS:\s*STANDING|CADENCE:\s*DAILY|RECURRING\s+DAILY/i;
-    function isStandingRecurring(item) { return _RE_STANDING.test(String(item.title || '')); }
+    function isStandingRecurring(item) {
+      return _RE_STANDING.test(String(item.title || '')) ||
+        String(item.key || '').indexOf('recurring:') === 0;
+    }
     function closedEarlier(item) {
       var k = String(item.key);
       if (!isDone(k) && !archiveOf(k)) return null;
