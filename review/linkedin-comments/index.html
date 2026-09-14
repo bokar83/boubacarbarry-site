@@ -150,6 +150,32 @@
   .tick-row.done .tick-label{color:var(--good);}
   .tick-when{margin-left:auto; color:var(--text-dim); font-size:.8rem; white-space:nowrap;}
 
+  /* ---- SKIP -- already handled outside this tool (2026-09-14) --------
+     His workaround before this shipped: add a note explaining why, but
+     leave the Posted tick alone -- which reads as "not done yet", not
+     "intentionally handled elsewhere", and he had to explain the
+     difference by hand every time. Skip is a third, explicit state, and
+     it REQUIRES a note before it can be applied, same posture as a reject
+     with no note being disallowed on review/content-candidates/. Modeled
+     as decision='reject' on the EXISTING content_review_decisions
+     mechanism (page_slug='linkedin-comments', already live on this page
+     for edits/notes) -- no schema change, no new endpoint, no second
+     review system. See the wireSkip()/setSkip() JS below. */
+  .skip-row{display:flex; align-items:center; gap:10px; margin:0 0 8px;}
+  .skip-btn{font-weight:700; font-size:.8rem; padding:9px 16px; border-radius:999px;
+    cursor:pointer; background:var(--bg2); border:1px solid var(--text-dim);
+    color:var(--text-dim); min-height:40px;}
+  .skip-btn:hover{border-color:var(--bad); color:#ffb3b3;}
+  .skip-btn.active{background:rgba(255,122,122,.14); border-color:var(--bad); color:#ffb3b3;}
+  .skip-btn:disabled{opacity:.55; cursor:default;}
+  .tick-row.skipped{border-color:var(--bad); opacity:.85;}
+  .tick-row.skipped .tick-label{color:#ffb3b3; text-decoration:line-through;}
+  .skip-when{color:#ffb3b3; font-size:.8rem; white-space:nowrap;}
+  .skip-error{display:none; margin:0 0 10px; padding:9px 11px; border-radius:7px;
+    font-size:.8rem; font-weight:700; background:#2a1414; border:1px solid var(--bad);
+    color:#ffb3b3;}
+  .skip-error.on{display:block;}
+
   #tickProgress{
     background:var(--bg2); border:1px solid var(--accent);
     border-radius:10px; padding:12px 15px; margin:0 0 14px;
@@ -297,7 +323,8 @@
 <script src="/review/shared/review-save-client.js"></script>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-09-10:06:19 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-09-14-10:58:40 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -2152,13 +2179,20 @@ We went through this before with Excel. Most of us never became power users, no 
   // exist and are already live under review/content-candidates/, whose JS
   // pattern this is lifted from almost verbatim.
   //
-  // Deliberately NO approve/reject/park decision buttons on this page: this
-  // surface's only status mechanism is the separate "posted" tick above (a
-  // different store, y0_money_map_state), and adding a second, unused
-  // decision workflow here would be scope creep the task never asked for.
-  // "Approved with edits" as a derived state has no meaning without an
-  // approve action to derive from -- edited/not-edited is the only real
-  // state this page has, and it is what renders below.
+  // UPDATED 2026-09-14: this page originally shipped with NO approve/
+  // reject/park decision buttons, on the grounds that a second, unused
+  // decision workflow next to the "posted" tick (a different store,
+  // y0_money_map_state) would be scope creep. That held until Boubacar
+  // reported an actual gap it left open: when he comments on something
+  // himself, outside this tool, there was no way to mark it "skipped,
+  // handled elsewhere" -- his workaround was leaving a note but NOT
+  // ticking Posted, which reads as unfinished, not intentionally handled.
+  // Skip (below) is that missing state. It reuses this same decision
+  // column (decision='reject', page_slug='linkedin-comments') rather than
+  // adding a new one, and it is mutually exclusive with Posted in the UI:
+  // one item, one real status. "Approved with edits" is still unused here
+  // and still has no meaning without an approve action -- that part of the
+  // original reasoning stands.
   //
   // Item ids are the SAME dated ids the tick mechanism already uses
   // (licomment-YYYY-MM-DD-name), so an edit or a note is tied to "this
@@ -2233,6 +2267,8 @@ We went through this before with Excel. Most of us never became power users, no 
   var edits = {};     // item_id -> saved edited text ('' = no edit)
   var ORIGINAL = {};  // item_id -> the drafted comment, snapshotted from the DOM
   var UI = {};        // item_id -> editor elements
+  var skipped = {};   // item_id -> true if decision === 'reject' (this page's "Skip" state)
+  var UI_SKIP = {};   // item_id -> skip-row elements
 
   function isEdited(id) {
     var e = edits[id];
@@ -2351,6 +2387,7 @@ We went through this before with Excel. Most of us never became power users, no 
       edits[id] = (st && typeof st.edited_text === 'string') ? st.edited_text : '';
       renderItem(id);
       renderNotesForBlock(block, (notesByItem && notesByItem[id]) || []);
+      setSkip(id, !!(st && st.decision === 'reject'));
 
       var d = readDraft(id);
       var ui = UI[id];
@@ -2409,6 +2446,85 @@ We went through this before with Excel. Most of us never became power users, no 
     saveNoteBtn.addEventListener('click', submitNote);
     noteInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submitNote(); }
+    });
+  }
+
+  // ---- SKIP -- already handled outside this tool (2026-09-14) -----------
+  // Requires a note before it can be applied, same posture as a reject with
+  // no note being disallowed on review/content-candidates/. Built on the
+  // EXISTING note box + the EXISTING decision endpoint for this page
+  // (page_slug='linkedin-comments', decision='reject' means "skipped" in
+  // this context) -- no schema change, no new endpoint.
+  function setSkip(id, on) {
+    skipped[id] = !!on;
+    var s = UI_SKIP[id]; if (!s) { return; }
+    s.btn.textContent = on ? 'Skipped — see note above' : 'Skip — already handled';
+    s.btn.classList.toggle('active', !!on);
+    s.btn.disabled = !!on;
+    s.tickRow.classList.toggle('skipped', !!on);
+    s.when.textContent = on ? 'skipped, not posting this one' : '';
+    if (on) { s.err.classList.remove('on'); }
+  }
+
+  function wireSkip(block, id) {
+    var tickRow = document.querySelector('[data-tickrow="' + id + '"]');
+    var noteInput = block.querySelector('.reason-input');
+    if (!tickRow || !noteInput) { return; }
+
+    var row = document.createElement('div');
+    row.className = 'skip-row';
+    row.innerHTML =
+      '<button type="button" class="skip-btn">Skip — already handled</button>' +
+      '<span class="skip-when"></span>';
+    tickRow.parentNode.insertBefore(row, tickRow.nextSibling);
+
+    var err = document.createElement('div');
+    err.className = 'skip-error';
+    err.textContent = 'Skip needs a note saying why first — add one in the box below, then press Skip again.';
+    row.parentNode.insertBefore(err, row.nextSibling);
+
+    var skipBtn = row.querySelector('.skip-btn');
+    var whenEl = row.querySelector('.skip-when');
+    UI_SKIP[id] = { row: row, btn: skipBtn, when: whenEl, err: err, tickRow: tickRow };
+
+    skipBtn.addEventListener('click', function () {
+      if (skipped[id]) { return; }  // already applied -- button is disabled, this is a belt-and-braces no-op
+      var noteText = (noteInput.value || '').trim();
+      if (!noteText) {
+        err.classList.add('on');
+        noteInput.focus();
+        return;
+      }
+      err.classList.remove('on');
+      skipBtn.disabled = true;
+      // Log the reason first, using the same note store/endpoint every
+      // note on this page already writes to. Only if that lands does the
+      // decision flip -- a skip never applies unexplained.
+      ReviewSaveClient.fetchWithRetry(API + '/note', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, note_text: noteText })
+      }, showRetrying)
+        .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+        .then(function (r) {
+          if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+          noteInput.value = '';
+          return ReviewSaveClient.fetchWithRetry(API + '/decision', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_slug: PAGE_SLUG, item_id: id, decision: 'reject' })
+          }, showRetrying);
+        })
+        .then(function (res) { return res.json().then(function (body) { return { res: res, body: body }; }); })
+        .then(function (r) {
+          if (!r.res.ok || r.body.ok === false) { throw new Error(r.body.error || ('HTTP ' + r.res.status)); }
+          hideWriteError();
+          setSkip(id, true);
+          loadState();
+        })
+        .catch(function (err2) {
+          showWriteError('Skip for ' + id + ' did NOT save to the database (' + err2.message +
+            '). It is NOT marked skipped. Your note may have saved even if the skip itself failed -- check the notes log below, then try Skip again.');
+        })
+        .finally(function () { skipBtn.disabled = !!skipped[id]; });
     });
   }
 
@@ -2483,6 +2599,7 @@ We went through this before with Excel. Most of us never became power users, no 
     }
 
     wireNote(block, id);
+    wireSkip(block, id);
   });
 
   if (blocks.length) { registerPage(); }
@@ -2645,6 +2762,7 @@ We went through this before with Excel. Most of us never became power users, no 
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
 
 
 
