@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Homepage positioning review</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --surface: #12151d;
+    --border: #262b38;
+    --text: #e8eaf0;
+    --muted: #9aa2b1;
+    --terracotta: #FF6B35;
+    --brass: #C19A6B;
+    --verdigris: #6F9B6E;
+    --bronze: #B87333;
+    --amber: #f2b84b;
+    --danger: #e05c5c;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 0 16px 60px; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  a { color: var(--amber); }
+  a:visited { color: var(--brass); }
+  a:active { color: var(--terracotta); }
+  header.top { position: sticky; top: env(safe-area-inset-top, 0px); background: rgba(11,13,18,0.96); backdrop-filter: blur(6px); padding: 14px 0 10px; border-bottom: 1px solid var(--border); z-index: 5; }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin: 0; }
+  .counter { margin-top: 8px; font-size: 0.85rem; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .counter b { color: var(--text); }
+  main { max-width: 760px; margin: 0 auto; }
+  section.intro { padding: 16px 0; color: var(--muted); font-size: 0.9rem; }
+  section.intro strong { color: var(--text); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin: 16px 0; }
+  .card h2 { margin: 0 0 10px; font-size: 1.05rem; color: var(--text); }
+  .field-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 14px 0 6px; }
+  .current-block, .diff-block { background: #0e1117; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 0.92rem; white-space: pre-wrap; }
+  .diff-block del { color: var(--danger); text-decoration: line-through; opacity: 0.85; }
+  .diff-block ins { color: var(--verdigris); text-decoration: none; font-weight: 600; }
+  textarea.edit { width: 100%; min-height: 110px; background: #0e1117; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font: inherit; margin-top: 6px; resize: vertical; }
+  .toggle-orig { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; padding: 4px 10px; border-radius: 999px; cursor: pointer; margin-top: 6px; }
+  .toggle-orig:hover { border-color: var(--brass); color: var(--brass); }
+  .edited-marker { display: inline-block; background: var(--amber); color: #1a1200; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 8px; vertical-align: middle; }
+  .why { margin: 10px 0 0; color: var(--muted); font-size: 0.85rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  button.decision-btn { flex: 1 1 auto; min-width: 100px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: #171b25; color: var(--text); font-size: 0.9rem; cursor: pointer; font-weight: 600; }
+  button.decision-btn[data-decision="approve"] { border-color: var(--verdigris); }
+  button.decision-btn[data-decision="approve"]:hover, button.decision-btn[data-decision="approve"].active { background: var(--verdigris); color: #06170c; }
+  button.decision-btn[data-decision="reject"] { border-color: var(--danger); }
+  button.decision-btn[data-decision="reject"]:hover, button.decision-btn[data-decision="reject"].active { background: var(--danger); color: #1a0606; }
+  button.decision-btn[data-decision="park"] { border-color: var(--amber); }
+  button.decision-btn[data-decision="park"]:hover, button.decision-btn[data-decision="park"].active { background: var(--amber); color: #1a1200; }
+  .save-note { flex: 1 1 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: #171b25; color: var(--text); font-size: 0.85rem; cursor: pointer; }
+  .status-line { margin-top: 10px; font-size: 0.8rem; color: var(--muted); min-height: 1.1em; }
+  .status-line.saved { color: var(--verdigris); }
+  .status-line.failed { color: var(--danger); font-weight: 700; }
+  textarea.note { width: 100%; min-height: 60px; background: #0e1117; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font: inherit; margin-top: 10px; }
+  .notes-log { margin-top: 8px; font-size: 0.82rem; color: var(--muted); }
+  .notes-log div { border-top: 1px solid var(--border); padding: 6px 0; }
+  #write-error-banner { display: none; position: sticky; top: 60px; z-index: 6; background: var(--danger); color: #1a0606; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; margin: 10px 0; }
+  #write-error-banner.show { display: block; }
+  .btnrow-help { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+  footer.note { color: var(--muted); font-size: 0.8rem; margin: 30px 0 10px; }
+
+  /* ---- nav bar (hamburger below 768px, floating sticky above) ---- */
+  .nav-bar { position: sticky; top: 0; z-index: 50; background: rgba(11,13,18,0.95); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 10px 0; margin: 0 -16px 10px; }
+  .nav-inner { max-width: 760px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .nav-title { font-weight: 700; font-size: 0.85rem; color: var(--muted); margin-right: auto; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .nav-links a { color: var(--text); text-decoration: none; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; background: var(--surface); white-space: nowrap; }
+  .nav-links a:hover { border-color: var(--brass); color: var(--brass); }
+  .nav-toggle { display: none; appearance: none; cursor: pointer; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; font-size: 1rem; min-width: 44px; min-height: 40px; }
+  @media (max-width: 768px) {
+    .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+    .nav-links { display: none; flex-direction: column; align-items: stretch; gap: 6px; width: 100%; margin-top: 10px; }
+    .nav-bar.open .nav-links { display: flex; }
+    .nav-links a { text-align: left; }
+  }
+
+  /* ---- collapsible sections (TL;DR + every card) ---- */
+  details.tldr, details.sec { border: 0; margin: 0; }
+  details.tldr > summary, details.sec > summary { cursor: pointer; list-style: none; user-select: none; }
+  details.tldr > summary::-webkit-details-marker, details.sec > summary::-webkit-details-marker { display: none; }
+  details.tldr > summary::before, details.sec > summary::before { content: "\25B8"; color: var(--amber); font-size: 0.85rem; margin-right: 8px; display: inline-block; transition: transform .15s ease; }
+  details[open].tldr > summary::before, details[open].sec > summary::before { transform: rotate(90deg); }
+  details.tldr > summary h2, details.sec > summary h2 { display: inline; margin: 0; }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-15-08:16:46 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Positioning review</span>
+    <button type="button" class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">Eyebrow</a>
+      <a href="#sec-2">Hero subhead</a>
+      <a href="#sec-3">About para</a>
+      <a href="#sec-4">FAQ answer</a>
+    </div>
+  </div>
+</nav>
+
+<header class="top">
+  <h1>Homepage positioning: HR-as-front-door review</h1>
+  <p class="sub">4 copy items on boubacarbarry.com. Nothing here is live. Decide each row below.</p>
+  <div class="counter" id="counter">Loading state&hellip;</div>
+</header>
+<div id="write-error-banner"></div>
+<main>
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <section class="intro">
+      <p><strong>Why this exists:</strong> the site currently reads broad ("AI + Operations Strategist for Growing Businesses"). You corrected the framing: AI is the carrier, HR is the front door and the proof, then it expands to whoever in the business needs it. These 4 drafts keep the broad scope and add HR as the explicit entry point, with partner framing (you work WITH the team, they get the credit).</p>
+      <p><strong>Nothing here has been deployed.</strong> Approve = ships to the live site on the next push. Reject = discarded. Park = held for later. A note with no button click counts as Changes Requested.</p>
+    </section>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+  <summary><h2>1. Hero eyebrow line</h2></summary>
+  <div class="card sec-body" data-item="hero-eyebrow">
+    <div class="field-label">Current (live now)</div>
+    <div class="current-block">AI + Operations Strategist for Growing Businesses</div>
+    <div class="field-label">Proposed <span class="edited-marker" hidden>edited by you</span></div>
+    <div class="diff-block" data-role="diff"></div>
+    <textarea class="edit" data-role="edit-box">AI + Operations Strategist. HR is my front door.</textarea>
+    <button type="button" class="toggle-orig" data-role="toggle-orig">Show original text again</button>
+    <p class="why">Why: the old eyebrow reads pure ops/AI with no HR mention. This version keeps the broad claim and states HR as the entry point in one breath, without narrowing scope.</p>
+    <div class="actions">
+      <button class="decision-btn" data-decision="approve" type="button">A: Approve</button>
+      <button class="decision-btn" data-decision="reject" type="button">B: Reject</button>
+      <button class="decision-btn" data-decision="park" type="button">C: Park for later</button>
+      <button class="save-note" type="button" data-role="save-note">Save note</button>
+    </div>
+    <p class="btnrow-help">Click A to ship as edited, B to discard, C to hold. A note with no click = Changes Requested.</p>
+    <textarea class="note" placeholder="Notes -- things that need explaining, not fixing." data-role="note-box"></textarea>
+    <div class="notes-log" data-role="notes-log"></div>
+    <div class="status-line" data-role="status"></div>
+  </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+  <summary><h2>2. Hero subhead (under the headline)</h2></summary>
+  <div class="card sec-body" data-item="hero-subhead">
+    <div class="field-label">Current (live now)</div>
+    <div class="current-block">Most growing businesses aren't behind on AI. They're buried in it. New tools every week, no clear signal, and leadership frozen by decision overload. I help owner-operators and small leadership teams find what is actually holding their business back and remove it.</div>
+    <div class="field-label">Proposed <span class="edited-marker" hidden>edited by you</span></div>
+    <div class="diff-block" data-role="diff"></div>
+    <textarea class="edit" data-role="edit-box">Most growing businesses aren't behind on AI. They're buried in it. New tools every week, no clear signal, and leadership frozen by decision overload. I usually start in HR, because that's where the confusion shows up first. From there I work with whatever team actually needs it. I find the constraint, build the roadmap, then stay to build the tools. Your team gets the credit, not me.</textarea>
+    <button type="button" class="toggle-orig" data-role="toggle-orig">Show original text again</button>
+    <p class="why">Why: adds HR as the named entry point and closes on partner framing ("your team gets the credit, not me") instead of hero framing. Voice-gated 93, no em-dashes, no hype.</p>
+    <div class="actions">
+      <button class="decision-btn" data-decision="approve" type="button">A: Approve</button>
+      <button class="decision-btn" data-decision="reject" type="button">B: Reject</button>
+      <button class="decision-btn" data-decision="park" type="button">C: Park for later</button>
+      <button class="save-note" type="button" data-role="save-note">Save note</button>
+    </div>
+    <p class="btnrow-help">Click A to ship as edited, B to discard, C to hold. A note with no click = Changes Requested.</p>
+    <textarea class="note" placeholder="Notes -- things that need explaining, not fixing." data-role="note-box"></textarea>
+    <div class="notes-log" data-role="notes-log"></div>
+    <div class="status-line" data-role="status"></div>
+  </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+  <summary><h2>3. About section, "Today I work with..." paragraph</h2></summary>
+  <div class="card sec-body" data-item="about-para3">
+    <div class="field-label">Current (live now)</div>
+    <div class="current-block">Today I work with owner-operators and small leadership teams through Catalyst Works Consulting. My diagnostic approach is grounded in finding the real constraint -- whether that is a throughput bottleneck, an adoption failure, a decision overload problem, or something else entirely. I don't arrive with a methodology and fit your problem to it. I diagnose first and let the problem tell me what it actually is. The AMPLIFY Method is the framework I built to move from diagnosis to implementation, fast. AI expands output. Leadership sets direction. Systems make it sustainable. Culture isn't built in offsites. It's built on Daily Natural Acts (DNA) -- simple things done consistently until they become the fabric of how people work.</div>
+    <div class="field-label">Proposed <span class="edited-marker" hidden>edited by you</span></div>
+    <div class="diff-block" data-role="diff"></div>
+    <textarea class="edit" data-role="edit-box">Today I work with growing businesses through Catalyst Works Consulting. I usually start in HR because that is where AI's confusion shows up first, then work with whatever team in the business needs it next. My diagnostic approach is grounded in finding the real constraint: a throughput bottleneck, an adoption failure, a decision overload problem, or something else entirely. I don't arrive with a methodology and fit your problem to it. I diagnose first and let the problem tell me what it actually is. The AMPLIFY Method is the framework I built to move from diagnosis to implementation, fast. I stay to build the tools with the team, and the credit for what changes belongs to them, not me.</textarea>
+    <button type="button" data-role="toggle-orig" class="toggle-orig">Show original text again</button>
+    <p class="why">Why: same HR-front-door + partner-framing fix. Dropped the closing "AI expands output / Leadership sets direction" lines only because the new closer (team gets the credit) already lands the point -- flag if you want those three lines kept alongside.</p>
+    <div class="actions">
+      <button class="decision-btn" data-decision="approve" type="button">A: Approve</button>
+      <button class="decision-btn" data-decision="reject" type="button">B: Reject</button>
+      <button class="decision-btn" data-decision="park" type="button">C: Park for later</button>
+      <button class="save-note" type="button" data-role="save-note">Save note</button>
+    </div>
+    <p class="btnrow-help">Click A to ship as edited, B to discard, C to hold. A note with no click = Changes Requested.</p>
+    <textarea class="note" placeholder="Notes -- things that need explaining, not fixing." data-role="note-box"></textarea>
+    <div class="notes-log" data-role="notes-log"></div>
+    <div class="status-line" data-role="status"></div>
+  </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+  <summary><h2>4. FAQ answer, "Who do you typically work with?"</h2></summary>
+  <div class="card sec-body" data-item="faq-q1-answer">
+    <div class="field-label">Current (live now)</div>
+    <div class="current-block">Owner-operators and leadership teams at growing businesses, typically 50 to 500 employees, where AI adoption is stalling not from lack of awareness but from decision overload. I work across industries and geographies. My background is in org design, operations, and AI enablement, not just HR.</div>
+    <div class="field-label">Proposed <span class="edited-marker" hidden>edited by you</span></div>
+    <div class="diff-block" data-role="diff"></div>
+    <textarea class="edit" data-role="edit-box">Owner-operators and leadership teams at growing businesses, typically 50 to 500 employees, where AI adoption is stalling not from lack of awareness but from decision overload. I usually start with HR, since that's where the pressure shows up first, then work with whatever team needs it next. My background is in org design, operations, HR, and AI enablement.</textarea>
+    <button type="button" class="toggle-orig" data-role="toggle-orig">Show original text again</button>
+    <p class="why">Why: the old line "not just HR" reads as distancing from HR right when HR is the door you want open. Replaced with HR named as the actual starting point.</p>
+    <div class="actions">
+      <button class="decision-btn" data-decision="approve" type="button">A: Approve</button>
+      <button class="decision-btn" data-decision="reject" type="button">B: Reject</button>
+      <button class="decision-btn" data-decision="park" type="button">C: Park for later</button>
+      <button class="save-note" type="button" data-role="save-note">Save note</button>
+    </div>
+    <p class="btnrow-help">Click A to ship as edited, B to discard, C to hold. A note with no click = Changes Requested.</p>
+    <textarea class="note" placeholder="Notes -- things that need explaining, not fixing." data-role="note-box"></textarea>
+    <div class="notes-log" data-role="notes-log"></div>
+    <div class="status-line" data-role="status"></div>
+  </div>
+  </details>
+
+  <footer class="note">Backed by orc-postgres (content_review_decisions_items / _notes / _edit_history), page slug <code>20260915-homepage-positioning-review</code>. A failed save shows red above and nothing is lost -- your edit stays in the box.</footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+(function () {
+  var API = 'https://agentshq.boubacarbarry.com/api/orc/content-review-decisions';
+  var SLUG = '20260915-homepage-positioning-review';
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.card[data-item]'));
+  var originals = {};
+  cards.forEach(function (c) {
+    originals[c.dataset.item] = c.querySelector('.current-block').textContent.trim();
+  });
+
+  function banner() { return document.getElementById('write-error-banner'); }
+  function showWriteError(msg) {
+    var b = banner();
+    b.textContent = 'SAVE FAILED: ' + msg + ' -- your edit is still in the box, nothing is lost. Try again.';
+    b.className = 'show';
+  }
+  function hideWriteError() { banner().className = ''; }
+
+  function updateCounter() {
+    var approved = 0, rejected = 0, parked = 0, changesReq = 0, pending = 0;
+    cards.forEach(function (c) {
+      var d = c.dataset.decision;
+      var hasNote = (c.querySelector('[data-role="note-box"]').dataset.hasSaved === '1');
+      if (d === 'approve') approved++;
+      else if (d === 'reject') rejected++;
+      else if (d === 'park') parked++;
+      else if (hasNote) changesReq++;
+      else pending++;
+    });
+    document.getElementById('counter').innerHTML =
+      '<span><b>' + approved + '</b> approved</span>' +
+      '<span><b>' + rejected + '</b> rejected</span>' +
+      '<span><b>' + parked + '</b> parked</span>' +
+      '<span><b>' + changesReq + '</b> changes requested</span>' +
+      '<span><b>' + pending + '</b> pending</span>';
+  }
+
+  // Simple word-level diff (LCS-based), original -> proposed.
+  function wordDiff(a, b) {
+    var aw = a.split(/(\s+)/), bw = b.split(/(\s+)/);
+    var n = aw.length, m = bw.length;
+    var dp = new Array(n + 1);
+    for (var i = 0; i <= n; i++) { dp[i] = new Array(m + 1).fill(0); }
+    for (i = n - 1; i >= 0; i--) {
+      for (var j = m - 1; j >= 0; j--) {
+        dp[i][j] = aw[i] === bw[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    var out = [], ai = 0, bi = 0;
+    while (ai < n && bi < m) {
+      if (aw[ai] === bw[bi]) { out.push({ t: aw[ai], k: 'same' }); ai++; bi++; }
+      else if (dp[ai + 1][bi] >= dp[ai][bi + 1]) { out.push({ t: aw[ai], k: 'del' }); ai++; }
+      else { out.push({ t: bw[bi], k: 'ins' }); bi++; }
+    }
+    while (ai < n) { out.push({ t: aw[ai], k: 'del' }); ai++; }
+    while (bi < m) { out.push({ t: bw[bi], k: 'ins' }); bi++; }
+    return out;
+  }
+  function escHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function renderDiff(card) {
+    var itemId = card.dataset.item;
+    var proposed = card.querySelector('[data-role="edit-box"]').value;
+    var orig = originals[itemId];
+    var parts = wordDiff(orig, proposed);
+    var html = parts.map(function (p) {
+      if (p.k === 'same') return escHtml(p.t);
+      if (p.k === 'del') return '<del>' + escHtml(p.t) + '</del>';
+      return '<ins>' + escHtml(p.t) + '</ins>';
+    }).join('');
+    card.querySelector('[data-role="diff"]').innerHTML = html;
+    var changed = proposed.trim() !== orig.trim();
+    card.querySelector('.edited-marker').hidden = !changed;
+    card.dataset.editedText = changed ? proposed : '';
+  }
+
+  cards.forEach(function (card) {
+    var itemId = card.dataset.item;
+    var editBox = card.querySelector('[data-role="edit-box"]');
+    var toggleBtn = card.querySelector('[data-role="toggle-orig"]');
+    var statusEl = card.querySelector('[data-role="status"]');
+    var noteBox = card.querySelector('[data-role="note-box"]');
+
+    renderDiff(card);
+    var editTimer = null;
+    editBox.addEventListener('input', function () {
+      renderDiff(card);
+      clearTimeout(editTimer);
+      editTimer = setTimeout(function () { saveEditText(card); }, 900);
+    });
+
+    toggleBtn.addEventListener('click', function () {
+      var showingOrig = toggleBtn.dataset.showingOrig === '1';
+      if (!showingOrig) {
+        toggleBtn.dataset.savedProposed = editBox.value;
+        editBox.value = originals[itemId];
+        toggleBtn.textContent = 'Show your edited version';
+        toggleBtn.dataset.showingOrig = '1';
+      } else {
+        editBox.value = toggleBtn.dataset.savedProposed || editBox.value;
+        toggleBtn.textContent = 'Show original text again';
+        toggleBtn.dataset.showingOrig = '0';
+      }
+      renderDiff(card);
+    });
+
+    function setStatus(text, cls) {
+      statusEl.textContent = text;
+      statusEl.className = 'status-line' + (cls ? ' ' + cls : '');
+    }
+
+    function saveEditText(card) {
+      var text = editBox.value;
+      setStatus('saving edit...', '');
+      fetch(API + '/edit-text', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page_slug: SLUG, item_id: itemId, edited_text: text })
+      }).then(function (res) { return res.json().then(function (b) { return { res: res, body: b }; }); })
+        .then(function (r) {
+          if (!r.res.ok || r.body.ok === false) throw new Error((r.body && r.body.error) || ('HTTP ' + r.res.status));
+          hideWriteError();
+          setStatus('edit saved', 'saved');
+        })
+        .catch(function (err) { setStatus('EDIT NOT SAVED', 'failed'); showWriteError(String(err.message || err)); });
+    }
+
+    card.querySelectorAll('.decision-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var decision = btn.dataset.decision;
+        setStatus('saving decision...', '');
+        fetch(API + '/edit-text', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_slug: SLUG, item_id: itemId, edited_text: editBox.value })
+        }).then(function () {
+          return fetch(API + '/decision', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_slug: SLUG, item_id: itemId, decision: decision })
+          });
+        }).then(function (res) { return res.json().then(function (b) { return { res: res, body: b }; }); })
+          .then(function (r) {
+            if (!r.res.ok || r.body.ok === false) throw new Error((r.body && r.body.error) || ('HTTP ' + r.res.status));
+            hideWriteError();
+            card.dataset.decision = decision;
+            card.querySelectorAll('.decision-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+            setStatus(decision + ' saved', 'saved');
+            updateCounter();
+          })
+          .catch(function (err) { setStatus('DECISION NOT SAVED', 'failed'); showWriteError(String(err.message || err)); });
+      });
+    });
+
+    card.querySelector('[data-role="save-note"]').addEventListener('click', function () {
+      var text = (noteBox.value || '').trim();
+      if (!text) return;
+      setStatus('saving note...', '');
+      fetch(API + '/note', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page_slug: SLUG, item_id: itemId, note_text: text })
+      }).then(function (res) { return res.json().then(function (b) { return { res: res, body: b }; }); })
+        .then(function (r) {
+          if (!r.res.ok || r.body.ok === false) throw new Error((r.body && r.body.error) || ('HTTP ' + r.res.status));
+          hideWriteError();
+          noteBox.dataset.hasSaved = '1';
+          noteBox.value = '';
+          setStatus('note saved', 'saved');
+          loadState();
+        })
+        .catch(function (err) { setStatus('NOTE NOT SAVED', 'failed'); showWriteError(String(err.message || err)); });
+    });
+  });
+
+  function renderNotes(card, notes) {
+    var log = card.querySelector('[data-role="notes-log"]');
+    if (!notes || !notes.length) { log.innerHTML = ''; return; }
+    log.innerHTML = notes.slice().reverse().map(function (n) {
+      return '<div>' + escHtml(n.note_text) + ' <span style="opacity:.6">(' + new Date(n.created_at).toLocaleString() + ')</span></div>';
+    }).join('');
+  }
+
+  function loadState() {
+    fetch(API + '/state?page_slug=' + encodeURIComponent(SLUG))
+      .then(function (res) { return res.json().then(function (b) { return { res: res, body: b }; }); })
+      .then(function (r) {
+        if (!r.res.ok || r.body.ok === false) throw new Error('state load failed');
+        var items = r.body.items || [];
+        var notesByItem = {};
+        (r.body.notes || []).forEach(function (n) {
+          (notesByItem[n.item_id] = notesByItem[n.item_id] || []).push(n);
+        });
+        cards.forEach(function (card) {
+          var itemId = card.dataset.item;
+          var it = items.filter(function (i) { return i.item_id === itemId; })[0];
+          if (it) {
+            if (it.decision) {
+              card.dataset.decision = it.decision;
+              card.querySelectorAll('.decision-btn').forEach(function (b) {
+                b.classList.toggle('active', b.dataset.decision === it.decision);
+              });
+            }
+            if (it.edited_text) {
+              card.querySelector('[data-role="edit-box"]').value = it.edited_text;
+              renderDiff(card);
+            }
+          }
+          var notes = notesByItem[itemId] || [];
+          if (notes.length) card.querySelector('[data-role="note-box"]').dataset.hasSaved = '1';
+          renderNotes(card, notes);
+        });
+        updateCounter();
+      })
+      .catch(function () { updateCounter(); });
+  }
+
+  function registerPage() {
+    var items = cards.map(function (card) {
+      return { item_id: card.dataset.item, item_label: card.querySelector('h2').textContent.trim() };
+    });
+    fetch(API + '/run', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page_slug: SLUG, items: items })
+    }).then(function () { loadState(); }).catch(function () { loadState(); });
+  }
+
+  registerPage();
+})();
+</script>
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
