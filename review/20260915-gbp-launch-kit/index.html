@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Business Profile: the paste-ready kit</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  a{color:var(--accent); text-decoration:underline;}
+  a:visited{color:var(--accent-visited);}
+  a:hover{color:var(--accent2);}
+  a:active{color:var(--accent2);}
+
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  .nav-bar{
+    position:sticky; top:env(safe-area-inset-top, 0px); z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; font-size:1.1rem; padding:6px 12px;
+  }
+
+  details.tldr, details.sec{
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:12px; margin:14px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent);}
+  details > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  details > summary::-webkit-details-marker{display:none;}
+  details > summary::before{
+    content:"\25B6"; font-size:.72rem; color:var(--text-dim);
+    transition:transform .15s ease; flex:0 0 auto;
+  }
+  details[open] > summary::before{transform:rotate(90deg);}
+  details > summary h2{font-size:1.05rem; margin:0;}
+  details.tldr > summary h2{color:var(--accent);}
+  .sec-body{padding:0 18px 18px;}
+
+  .copybox{
+    position:relative; background:#0b0d11; border:1px solid var(--border);
+    border-radius:10px; padding:14px 16px; margin:10px 0;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.88rem; white-space:pre-wrap; word-break:break-word; color:#f2f4f8;
+  }
+  .lbl{display:block; font-size:.76rem; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--text-dim); margin:18px 0 2px; font-weight:700;}
+  .why{color:var(--text-dim); font-size:.9rem; margin:6px 0 0;}
+  .pill{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.04em;
+    border-radius:999px; padding:3px 10px; margin-right:6px;}
+  .pill.you{background:rgba(242,184,75,.16); color:var(--warn); border:1px solid var(--warn);}
+  .pill.ok{background:rgba(127,224,184,.14); color:var(--good); border:1px solid var(--good);}
+  .pill.stop{background:rgba(255,122,122,.14); color:var(--bad); border:1px solid var(--bad);}
+  .callout{border-left:3px solid var(--accent); background:rgba(255,143,94,.08);
+    padding:12px 16px; border-radius:0 10px 10px 0; margin:14px 0;}
+  .callout.bad{border-left-color:var(--bad); background:rgba(255,122,122,.08);}
+  .callout.good{border-left-color:var(--good); background:rgba(127,224,184,.08);}
+  ol.steps{padding-left:20px;} ol.steps > li{margin:14px 0;}
+  ul{padding-left:20px;} li{margin:6px 0;}
+  table{border-collapse:collapse; width:100%; font-size:.9rem; margin:10px 0;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+    .copybox{font-size:.82rem;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-15-17:33:36 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">GBP launch kit</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">What exists today</a>
+      <a href="#sec-2">Your 3 decisions</a>
+      <a href="#sec-3">The wizard</a>
+      <a href="#sec-4">After verifying</a>
+      <a href="#sec-5">Photos</a>
+      <a href="#sec-6">First 3 posts</a>
+      <a href="#sec-7">Verification</a>
+      <a href="#sec-8">Week one</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Google Business Profile: the paste-ready kit</h1>
+    <div class="meta">Catalyst Works &middot; every value below is ready to paste, in the order Google asks for it &middot; 2026-09-15</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>There is no Google Business Profile for Catalyst Works, and there is nothing sitting there to claim.</strong> I checked Google Maps in a real browser on three searches. You are creating this from scratch, which is the simpler case.</p>
+      <p><strong>Three things need you before anything else can happen.</strong> Which phone number goes public, whether the July workshop photos can go on the profile, and whether South Jordan goes on the service-area list. Everything else below is decided and ready to paste.</p>
+      <p><strong>Recommended: name "Catalyst Works", primary category "Business management consultant", service-area business with the address hidden.</strong> Verification in 2026 is a live video you record on your phone, reviewed within five business days.</p>
+      <p><strong>One correction to the old draft:</strong> the description that had been staged since August contains a line that breaks a standing rule of yours. It is rewritten below. Do not paste the old one.</p>
+      <p><strong>Set aside about 15 minutes for the wizard, plus 5 minutes to film the video.</strong> Start here: <a href="https://business.google.com/create">business.google.com/create</a></p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. What exists today</h2></summary>
+    <div class="sec-body">
+      <p>Checked live on Google Maps in a real browser, 2026-09-15. Screenshots taken and read, not guessed at.</p>
+
+      <div class="callout good">
+        <p style="margin:0"><strong>Nothing of yours exists.</strong> No profile, no duplicate, no auto-generated stub, nothing unclaimed. So this is a clean create, not a claim-and-fix. That is the good version of this answer.</p>
+      </div>
+
+      <p><strong>Search 1, "Catalyst Works Salt Lake City"</strong> returned five businesses, none of them yours:</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Name on Maps</th><th>Their category</th><th>Detail</th></tr>
+        <tr><td>The Catalyst Business Development Consulting LLC</td><td>Business development service</td><td>10 W Broadway #700, (801) 871-9111, 5.0 from 5 reviews</td></tr>
+        <tr><td>Catalyst Performance &amp; Rehab</td><td>Chiropractor</td><td>420 E S Temple, 5.0 from 59 reviews</td></tr>
+        <tr><td>Catalyst Consulting, SLC</td><td>Consultant</td><td>353 Milton Ave, (801) 856-3886, no reviews</td></tr>
+        <tr><td>Catalyst Coordination</td><td>Business management consultant</td><td>(385) 645-5613, 5.0 from 5 reviews</td></tr>
+        <tr><td>StreamWorks</td><td>Water jet cutting service</td><td>Name-adjacent only, unrelated</td></tr>
+      </table>
+      </div>
+
+      <p><strong>Search 2, "Catalyst Works" consulting Utah</strong> returned the same cluster plus two paid ads (Gravitate One, PwC) and three more: Clutch Works Consulting (Business to business service), Catalyst (Software company), and Dale Carnegie. Still nothing of yours.</p>
+
+      <p><strong>Search 3, "Boubacar Barry AI consultant"</strong> did not return a business for you at all. Google gave up on the name and jumped to an unrelated place page, Amari Consulting, a website designer in Utah. That is Maps saying it has no entity for you.</p>
+
+      <div class="callout">
+        <p style="margin:0 0 6px"><strong>Two things worth knowing from those results, because they shape the choices below.</strong></p>
+        <ul style="margin:0">
+          <li>The categories being recommended are not theoretical. Three of them are in active use by businesses ranking in Salt Lake City right now: <em>Business management consultant</em>, <em>Consultant</em>, and <em>Business development service</em>. That is a live confirmation that the exact category names exist.</li>
+          <li>Almost every one of them has reviews and you will have zero. Review count is the one lever on this whole page that cannot be pasted in, and it is the weakest part of the offer. More on that in section 8.</li>
+        </ul>
+      </div>
+
+      <p class="why">Prior attempts checked so we are not rebuilding one: a staged draft has existed since 2026-08-25 at <code>docs/personal/cw-gtm-visibility-drafts-2026-08-25.md</code> and was never acted on. The plan being followed here is Phase 7 of the AI visibility plan, not a new approach. The Money Map row is <code>kpi-cw-seo-gbp-2026-08-25</code> and is being updated, not duplicated.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. The three decisions only you can make</h2></summary>
+    <div class="sec-body">
+
+      <p><span class="pill you">YOURS</span> <strong>Decision 1: which phone number goes public.</strong></p>
+      <p>The number you enter is published on Maps and gets scraped. Within days of verifying, that number starts receiving cold calls from search-marketing sellers. That is the actual cost of using your cell, and it is the reason to think about it for a minute rather than defaulting.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Option</th><th>For</th><th>Against</th></tr>
+        <tr><td><strong>Your cell, 801-888-1963</strong></td><td>Zero setup. Already on file. No risk of Google refusing it.</td><td>Your personal number is public forever. Scraped within days. If you ever move it, every citation breaks.</td></tr>
+        <tr><td><strong>A new Google Voice number</strong></td><td>Free, about five minutes, forwards to your cell so you miss nothing. Keeps the personal number private. Portable if anything changes.</td><td>Some VOIP numbers have historically been refused on business profiles. I did not verify that against current Google documentation, so treat it as a real but unconfirmed risk.</td></tr>
+      </table>
+      </div>
+      <p><strong>My recommendation: get the Google Voice number first, use it, and keep the cell as the fallback if Google refuses it.</strong> Five minutes now against a permanently public personal number is a good trade, and the phone number has to match the website exactly once it is set, so changing it later is the expensive path. If you would rather not add a step tonight, use the cell and we accept the spam.</p>
+
+      <p><span class="pill you">YOURS</span> <strong>Decision 2: can the July 30 workshop photos go on the profile.</strong></p>
+      <p>This is a genuinely open question and I am not going to decide it for you. The settled record is that Kim and Bill's photos may be used in advertising for <em>free</em> sessions, and never for paid ones. A business profile is neither. It is a permanent storefront, not an ad for a specific session.</p>
+      <p><strong>My recommendation: do not use any frame containing an identifiable attendee.</strong> Not because the consent clearly forbids it, but because the consent clearly did not contemplate it, and a permanent public listing is the wrong place to test the edge. Section 5 gives a full photo set that needs no consent call at all, so nothing is lost by staying on the safe side.</p>
+
+      <p><span class="pill you">YOURS</span> <strong>Decision 3: does South Jordan go on the service-area list.</strong></p>
+      <p>Your standing rule is that your public city is Salt Lake City and never South Jordan. A served-area list is a different thing from a stated home city, so this is not automatically a violation, but it is close enough to the line that it is yours to call. Leaving it off costs a small amount of local relevance for the town you actually operate from. Putting it on publishes a town you have said you do not publish.</p>
+      <p><strong>My recommendation: leave it off.</strong> Sandy, Midvale, West Jordan and Draper all surround it and are on the list, so the coverage is there geographically without naming it.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. The wizard, field by field, in order</h2></summary>
+    <div class="sec-body">
+      <p>Open <a href="https://business.google.com/create">business.google.com/create</a> and sign in with the Google account you want to own this forever. That account is the only one that can manage the profile, and the verification video has to be filmed while signed into it.</p>
+
+      <ol class="steps">
+        <li>
+          <span class="lbl">Business name</span>
+          <div class="copybox">Catalyst Works</div>
+          <p class="why"><strong>Exactly that. Nothing after it.</strong> Not "Catalyst Works Consulting", not "Catalyst Works LLC" (there is no LLC, so that would be a false legal claim), and above all not "Catalyst Works AI Consulting". Google's naming policy bans taglines and service descriptors in the name and suspensions for it are common. The name also has to match how the business is represented everywhere else, and your website's own structured data already says "Catalyst Works", so this keeps the whole entity consistent.</p>
+          <p class="why">Your personal name was considered and rejected: it would split your citations across two entities and neither would build authority.</p>
+        </li>
+
+        <li>
+          <span class="lbl">Primary category</span>
+          <div class="copybox">Business management consultant</div>
+          <p class="why">Start typing it and pick it from Google's dropdown. <strong>Whatever the live dropdown shows is what governs</strong>, not this page.</p>
+          <p class="why"><strong>Why this one for your three target searches.</strong> There is no "AI consultant" category in Google's list at all, so no category can win that phrase directly. What the category does is decide which folder Google opens when someone searches "business consultant near me", and this is the folder. It is also in live use by a competitor ranking in Salt Lake City today, which is about as good a confirmation as you can get. "AI consultant Salt Lake City" gets won by the name, description, services, posts and reviews, not by the category.</p>
+          <p class="why"><em>Rejected: "Software company"</em>, because you do not sell software, and it would put you in a competitor set of product companies against buyers who want a product. <em>Rejected: "Consultant" as primary</em>, because it is the generic parent and a specific category outranks a vague one.</p>
+        </li>
+
+        <li>
+          <span class="lbl">Secondary categories (add after the primary)</span>
+          <div class="copybox">Consultant</div>
+          <div class="copybox">Business development service</div>
+          <p class="why">Both verified as real category names and both in live use in Salt Lake City. You can hold up to nine secondaries but adding weak ones dilutes rather than helps, so two is right to start.</p>
+          <div class="callout bad">
+            <p style="margin:0"><strong>Correction to the old plan.</strong> Earlier notes told you to add "Technology consultant" as a secondary. <strong>That category does not exist</strong> in Google's list. You would have hunted for it in the dropdown and not found it. If you want something in that direction, "Computer consultant" is the real one, but it pulls IT-support intent, so I left it off.</p>
+          </div>
+        </li>
+
+        <li>
+          <span class="lbl">"Do you want to add a location customers can visit?"</span>
+          <p><span class="pill stop">ANSWER NO</span></p>
+          <p class="why"><strong>This is the single click that keeps your home address off the internet.</strong> Answer No and Google moves you straight to service areas and never publishes a street address. If you answer Yes by reflex, your home address goes on Maps, and Google's own guidance is that a business serving customers at their locations must hide it. Google still holds an address privately for verification and distance maths. It is simply never shown.</p>
+          <p class="why">If you do somehow end up with an address showing later, the fix is: Edit profile, then Location, then Business location, then turn off "Show business address to customers", then Save.</p>
+        </li>
+
+        <li>
+          <span class="lbl">Service areas (add one at a time)</span>
+          <div class="copybox">Salt Lake City, UT
+Sandy, UT
+Murray, UT
+West Jordan, UT
+Midvale, UT
+Draper, UT
+Cottonwood Heights, UT
+Millcreek, UT
+Holladay, UT
+West Valley City, UT
+Taylorsville, UT
+Salt Lake County, UT
+Utah County, UT
+Provo, UT
+Park City, UT
+Ogden, UT</div>
+          <p class="why">Sixteen entries. Google caps you at twenty, so there is room but not unlimited room. The first twelve are the Salt Lake metro core where you can realistically be in a room the same day. Utah County, Provo, Park City and Ogden are the reach edges and are worth having because your three target phrases include "AI consultant Utah" and "AI agency Utah", which are statewide queries.</p>
+          <p class="why">South Jordan is deliberately absent pending your call in section 2. If you decide to add it, it goes between West Jordan and Midvale.</p>
+        </li>
+
+        <li>
+          <span class="lbl">Phone number</span>
+          <p>Paste whichever number you settled on in section 2. If it is the cell:</p>
+          <div class="copybox">(801) 888-1963</div>
+          <p class="why">Whatever you enter here has to be spelled identically on the website header and footer. Same formatting, same punctuation. That consistency is the whole of local search hygiene at this stage, and the companion Money Map row exists for exactly this.</p>
+        </li>
+
+        <li>
+          <span class="lbl">Website</span>
+          <div class="copybox">https://catalystworks.consulting</div>
+          <p class="why">No trailing slash, no tracking parameters. Google shows this as the "Website" button.</p>
+        </li>
+
+        <li>
+          <span class="lbl">Appointment link (a separate field from the website)</span>
+          <div class="copybox">https://calendly.com/boubacarbarry/free-ai-audit-owner-operators</div>
+          <p class="why">Read live from your Calendly account today, not from a note: "Free AI Audit (Owner-Operators)", 45 minutes, Zoom, active, with five qualifying questions already on it. This becomes a "Book" button directly on your profile, which is the shortest path that exists from a Maps search to a call on your calendar.</p>
+        </li>
+      </ol>
+
+      <p>Finish the wizard. Google then asks you to verify, which is section 7.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. After the wizard: description, hours, services</h2></summary>
+    <div class="sec-body">
+      <p>You can fill these in immediately. They go live once verification clears.</p>
+
+      <span class="lbl">Business description (Google's limit is 750 characters, this is 683)</span>
+      <div class="copybox">Catalyst Works helps small and mid-size businesses around Salt Lake City put AI to work without the confusion or the overwhelm. Most owners feel pressure to adopt AI right now. I help them take a breath and get clear on three things: whether they need it at all, where it actually fits, and how to make it work without breaking what already runs. That usually starts with one working session where we name the real constraint in the business and put it in writing. I run my own business on AI, on a system I built myself, so nothing I bring you is untested on mine. I work with owner-operators across the Wasatch Front who want a clear answer before they spend money on another tool.</div>
+
+      <div class="callout bad">
+        <p style="margin:0 0 6px"><strong>Why this is not the description that was staged in August.</strong> The old one ended with "No deck, no six-week discovery, no follow-on pitch." That is a commercial-intent disavowal, which is a hard-banned move in your copy, on the grounds you gave yourself: naming the thing plants it. A reader who sees "no follow-on pitch" thinks about the follow-on pitch. The line is cut, not softened, and nothing replaced it because the offer stands on its own without it.</p>
+      </div>
+      <p class="why">Only the first 250 characters show before Google truncates with "Read more", so the local hook and the three steps are all in front of that cut. The description carries the locked pitch verbatim in structure (whether you need it, where it fits, how to make it work), the local angle twice, and the one proof that is yours alone. No credentials, no numbers we cannot verify, no em-dashes.</p>
+      <p class="why"><strong>Copy gates run:</strong> voice pass 93/100, offer pass 7.75/10 on the value equation. The weak lever on the offer score is proof, and it is weak for one reason: zero reviews. No wording fixes that. Section 8 does.</p>
+
+      <span class="lbl">Opening date</span>
+      <div class="copybox">February 2025</div>
+      <p class="why">Google asks for month and year. Use the month the business actually started operating. <strong>Change this if that is wrong</strong> — I inferred it from your earliest account activity on file rather than from a stated founding date, so this is the one field on this page I am least sure of. A wrong opening date is harmless but it is yours to correct.</p>
+
+      <span class="lbl">Hours</span>
+      <div class="copybox">Monday      9:00 AM - 5:00 PM
+Tuesday     9:00 AM - 5:00 PM
+Wednesday   9:00 AM - 5:00 PM
+Thursday    9:00 AM - 5:00 PM
+Friday      9:00 AM - 5:00 PM
+Saturday    Closed
+Sunday      Closed</div>
+      <p class="why"><strong>These hours are not your calendar and should not try to be.</strong> Profile hours tell Google when the business is reachable, and they feed the "Open now" filter that local searches use. Your actual availability is controlled by Calendly, which already holds your real rules, so nothing here can cause someone to book you at a bad time.</p>
+      <p class="why">This respects your 8:30 floor with room to spare, and it does not publish anything that contradicts your daily 10:00 to 11:15 block, because that block is invisible to Google and handled by Calendly. If you would rather the profile said 10:00, say so and change it, it costs nothing either way.</p>
+
+      <span class="lbl">Services (add each as a service with its own description, 300-character limit each)</span>
+      <div class="copybox">AI readiness assessment</div>
+      <div class="copybox">We look at how your business actually runs and answer one question: do you need AI here at all. You get a written shortlist of where it would earn its keep and where it would just cost you money.</div>
+
+      <div class="copybox">AI implementation</div>
+      <div class="copybox">Once we know where AI fits, I help you put it in place without breaking what already works. We start with one process, get it running, and prove it before anything else moves.</div>
+
+      <div class="copybox">Fractional AI leadership</div>
+      <div class="copybox">Ongoing help for owners who need someone to own this rather than advise on it. I step in as the person accountable for AI in your business, for as many hours a month as the job needs.</div>
+
+      <div class="copybox">Business constraint diagnostic</div>
+      <div class="copybox">A 90-minute working session that names the single biggest thing slowing your business down, with a 30-day plan for it. You get the written recap within 24 hours.</div>
+
+      <div class="copybox">AI workshops for owner-operators</div>
+      <div class="copybox">A live session for Utah owners who want to start rather than read about starting. You leave having built something yourself, not having watched a demo.</div>
+      <p class="why">All five are between 151 and 195 characters, comfortably inside the 300 limit. Each one names an outcome rather than a format, and each reuses only facts already live on your site.</p>
+
+      <span class="lbl">Attributes to switch on (tick whichever Google actually offers you)</span>
+      <ul>
+        <li>Online appointments</li>
+        <li>Onsite services</li>
+        <li>Online estimates</li>
+        <li>Identity attributes such as Black-owned are self-identified and entirely optional. I have deliberately not assumed one for you. Your call, and no wrong answer.</li>
+      </ul>
+      <p class="why">The available list varies by category, so tick what is there rather than hunting for these exact words.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. Photos: exact files, already sized</h2></summary>
+    <div class="sec-body">
+      <p><strong>Google's specs:</strong> JPG or PNG, between 10 KB and 5 MB, minimum 250 by 250 pixels, 720 by 720 recommended. Every file below clears all of that with room to spare. The plan asks for at least ten photos.</p>
+
+      <span class="lbl">Logo (square)</span>
+      <div class="copybox">docs/brand-assets/catalyst-works/logos/cw-monogram.png</div>
+      <p class="why">1080 by 1080, 35 KB. Square is what the logo slot wants.</p>
+
+      <span class="lbl">Cover photo (landscape)</span>
+      <div class="copybox">docs/brand-assets/catalyst-works/headshots/startfest-2026-06/boubacar-headshot-startfest-2026-191x1-landscape.jpg</div>
+      <p class="why">2048 by 1072, 477 KB. For a consulting practice where the person is the product, your face is a better cover than a wordmark.</p>
+
+      <span class="lbl">Profile and team photos</span>
+      <div class="copybox">docs/brand-assets/catalyst-works/headshots/startfest-2026-06/boubacar-headshot-startfest-2026-1080-square-avatar.jpg
+docs/brand-assets/catalyst-works/headshots/startfest-2026-06/boubacar-headshot-startfest-2026-4x5-vertical.jpg
+docs/brand-assets/catalyst-works/logos/cw-lockup-horizontal-light.png
+docs/brand-assets/catalyst-works/logos/cw-lockup-horizontal-dark.png</div>
+      <p class="why">1080 square, 1638 by 2048, and two 1940 by 480 lockups. Note the 2048 square headshot is 3.3 MB, still under the 5 MB ceiling, but the smaller ones upload faster on a phone.</p>
+
+      <span class="lbl">At-work photos, cleared for use, no consent question attached</span>
+      <div class="copybox">docs/brand-assets/catalyst-works/social/cw-workshop-2026-07-30-photos/cw-workshop-2026-07-30-room-session-02.jpg
+docs/brand-assets/catalyst-works/social/cw-workshop-2026-07-30-photos/cw-workshop-2026-07-30-room-session-01.jpg
+docs/brand-assets/catalyst-works/social/cw-workshop-2026-07-30-photos/cw-workshop-2026-07-30-room-title-slide-01.jpg
+docs/brand-assets/catalyst-works/social/cw-workshop-2026-07-30-photos/cw-workshop-2026-07-30-welcome-table-01.jpg
+docs/brand-assets/catalyst-works/social/cw-workshop-2026-07-30-photos/cw-workshop-2026-07-30-slide-brain-file-01.jpg</div>
+      <p class="why">All 2048 by 1536 or 1536 by 2048, between 241 and 409 KB. <code>room-session-02</code> is the from-behind frame that is already on record as the safe choice for anything commercial. These show a real room and a real session without putting a recognisable attendee on a permanent public listing.</p>
+
+      <div class="callout">
+        <p style="margin:0"><strong>Held back pending your decision 2:</strong> the five files named <code>cw-workshop-2026-07-30-boubacar-with-attendee-01.jpg</code> through <code>-05.jpg</code>, and the nine <code>coaching-*.jpg</code> frames. Those are the ones the consent question governs. They are good photos and I would like to use them, which is exactly why the answer should come from you and not from me.</p>
+      </div>
+
+      <p class="why">All paths are relative to the repository root. If you would rather have them as a folder you can open on your phone, say so and I will stage them.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>6. The first three posts</h2></summary>
+    <div class="sec-body">
+      <p>Profile posts show inside your listing and feed local AI answers. Google's limit is 1,500 characters and all three are well under it. Publish the first one the day verification clears, then one a week on your existing Friday block.</p>
+
+      <span class="lbl">Post 1 &mdash; publish on day one</span>
+      <div class="copybox">Most owners I talk to around Salt Lake City are not behind on AI. They are just tired of being sold it.
+
+Every week there is a new tool, a new warning, and somebody telling them they are already too late. So the honest first question is not which tool. It is whether you need this at all, and where it would actually fit in the way your business already runs.
+
+That is the conversation I have with owners here. Sometimes the answer is that one process is worth automating this quarter and the rest can wait a year. That answer saves more money than a purchase would.
+
+I run my own business on AI, on a system I built myself, so nothing I suggest to you is untested on me first.
+
+If you want a straight answer about your own business, the first session is free and takes 45 minutes.</div>
+      <p class="why">CTA button: "Book" pointing at the Calendly link from section 3.</p>
+
+      <span class="lbl">Post 2 &mdash; week two</span>
+      <div class="copybox">A question worth asking before you buy any AI tool: what would have to be true for this to work here?
+
+Not whether the demo was impressive. Whether the thing it automates is actually a bottleneck in your business, whether the people around it will use it, and whether it breaks something that currently works.
+
+Most of the AI spending I see in Utah businesses fails on the second and third one, not the first. The tool works fine. It just got pointed at a part of the business that was never the problem.
+
+Finding the real constraint first is unglamorous and it is most of the value.
+
+Free 45-minute session if you want to find yours.</div>
+      <p class="why">CTA button: "Book", same link.</p>
+
+      <span class="lbl">Post 3 &mdash; week three</span>
+      <div class="copybox">In July I ran a session in Sandy for owner-operators who wanted to start rather than read about starting.
+
+Nobody watched a demo. Everyone built something themselves, in the room, on their own business. A few people showed up and we built the thing together.
+
+That is the part that changes how someone thinks about this. Not being told AI is important. Doing one small thing with it and seeing it work on their own problem.
+
+I run these for Utah owners and the next one is open now.</div>
+      <p class="why">CTA button: "Learn more" pointing at <a href="https://catalystworks.consulting/workshop/">catalystworks.consulting/workshop/</a>. Note the vague "a few people" and "In July" rather than an exact date or headcount, which is your own standing edit pattern for recycled anecdotes.</p>
+
+      <p class="why"><strong>Gates run on all three:</strong> no em-dashes, no commercial-intent disavowals, no credentials, no invented numbers, no codenames, first person, sentence case, and each one carries an anchor that is genuinely yours rather than something any AI consultant could have written.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>7. Verification: what Google will ask, and what to have ready</h2></summary>
+    <div class="sec-body">
+      <p><strong>Expect video verification.</strong> Since July 2026 this is the default for most small businesses, and it is effectively always the path for a service-area business working from home. Postcards are largely gone. You may be offered phone or email instead, and if you are, take it, it is faster.</p>
+
+      <p><strong>The rules, which are strict and worth reading before you press record:</strong></p>
+      <ul>
+        <li>Recorded <strong>live on your phone, in the Google interface</strong>, while signed into the account that manages the profile. A pre-recorded file will not upload.</li>
+        <li><strong>Unedited and continuous.</strong> One take, no cuts.</li>
+        <li><strong>At least 30 seconds.</strong> Aim for 60 to 90. Shorter videos upload more reliably than long ones.</li>
+        <li><strong>No people, no voices, no background conversation.</strong> Film when the house is quiet. This one catches people out.</li>
+        <li>No bank details, client documents, tax IDs, or anyone else's face in frame.</li>
+      </ul>
+
+      <p><strong>What to film, given there is no storefront and no signage.</strong> The goal is to show three things: that the business exists, that it operates, and that you are the one who runs it. In one continuous shot:</p>
+      <ol class="steps">
+        <li><strong>Your working setup.</strong> The desk, the screens, the actual place the work happens. Let the camera settle, do not sweep it around.</li>
+        <li><strong>Proof the business is real and is yours.</strong> Show something on screen with the business name on it: the website at catalystworks.consulting, an invoice, a piece of branded material. Keep it on screen for several seconds so the reviewer can read it.</li>
+        <li><strong>Proof you are the one managing it.</strong> Without cutting, show yourself signed into a business account, or something with your name and the business name together.</li>
+        <li><strong>Close on the outside of the building,</strong> if you can do it without stopping the recording. That gives Google the location signal it is looking for, without publishing anything.</li>
+      </ol>
+
+      <p><strong>Expected wait: up to five business days.</strong> Sometimes it clears within minutes when the automated pass is confident. Most go to human review.</p>
+
+      <div class="callout bad">
+        <p style="margin:0"><strong>If it is rejected, do not resubmit repeatedly.</strong> Reinstatement takes days to weeks and repeat submissions push you back in the queue rather than forward. Tell me and we work out what the video was missing before trying again.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>8. What happens after verification, and the one thing that actually decides this</h2></summary>
+    <div class="sec-body">
+      <p>Once verified, everything that remains is mine except one thing.</p>
+
+      <p><span class="pill ok">AGENT</span> Services and products sections filled in, photos uploaded, the weekly post published on your Friday block, matching business schema added to the website, and the phone number published in the site header and footer so it matches the profile character for character.</p>
+
+      <p><span class="pill you">YOURS, AND IT IS THE WHOLE GAME</span> <strong>Reviews.</strong></p>
+      <p>Every competitor in section 1 has them and you have none. On the offer scoring, proof is the one weak lever and it is the only one no wording can fix. The plan's target is 15 reviews by day 90, which is roughly one and a half a week, and it only happens if the ask is systematic rather than occasional.</p>
+      <p>The ask itself, to send within 24 hours of any real conversation:</p>
+      <div class="copybox">Really glad this was useful. If you have two minutes, a Google review would help other Utah business owners find me. Here is the direct link: [review link, available once verified]</div>
+      <p class="why">The direct review link only exists after verification. I will pull it and put it somewhere you can reach it in one tap.</p>
+
+      <p><strong>Realistic expectation on timing.</strong> A profile moves local results in days rather than the weeks everything else on the visibility list takes, which is exactly why this is step one of six. But "days" starts counting from verification, not from tonight. The five remaining steps in that sequence are the landing page, business schema, search console and Bing, Wikidata, and the sitemap fix, and every one of them is mine.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Built for Boubacar &middot; Catalyst Works &middot; 2026-09-15. State verified live on Google Maps in a real browser, screenshots read. Calendly link and event details read live from the Calendly API. Category names verified against current category lists and against businesses ranking in Salt Lake City today. Verification process checked against current Google documentation, not recalled. Opening date is the one inferred value on this page and needs your correction.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
