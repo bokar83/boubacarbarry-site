@@ -91,7 +91,8 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-15-08:16:46 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v3 · 2026-09-15-09:48:39 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 <nav class="nav-bar" id="navBar" aria-label="Section navigation">
@@ -453,14 +454,30 @@
       .catch(function () { updateCounter(); });
   }
 
+  function labelFor(card) {
+    // The <h2> lives in the sibling <summary>, not inside .card[data-item] --
+    // querying it via card.querySelector('h2') returns null and crashes here,
+    // which stops registerPage() before its fetch/loadState chain ever runs.
+    // Root cause of the 2026-09-15 "saved but never renders" bug.
+    var details = card.closest('details');
+    var h2 = details && details.querySelector(':scope > summary h2');
+    return h2 ? h2.textContent.trim() : card.dataset.item;
+  }
+
   function registerPage() {
-    var items = cards.map(function (card) {
-      return { item_id: card.dataset.item, item_label: card.querySelector('h2').textContent.trim() };
-    });
-    fetch(API + '/run', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ page_slug: SLUG, items: items })
-    }).then(function () { loadState(); }).catch(function () { loadState(); });
+    try {
+      var items = cards.map(function (card) {
+        return { item_id: card.dataset.item, item_label: labelFor(card) };
+      });
+      fetch(API + '/run', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page_slug: SLUG, items: items })
+      }).then(function () { loadState(); }).catch(function () { loadState(); });
+    } catch (e) {
+      // Registration must never be allowed to block the read-back -- a failed
+      // /run call should still let saved decisions/notes render on reload.
+      loadState();
+    }
   }
 
   registerPage();
@@ -617,6 +634,7 @@
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
 
 
 
