@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The recommendation sprint: run it Wednesday or Thursday</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; white-space:pre-wrap; word-wrap:break-word;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .tag{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.03em;
+    border-radius:999px; padding:2px 9px; white-space:nowrap;}
+  .t-ok{background:rgba(127,224,184,.14); color:var(--good); border:1px solid rgba(127,224,184,.4);}
+  .t-warn{background:rgba(242,184,75,.14); color:var(--warn); border:1px solid rgba(242,184,75,.4);}
+  .t-gate{background:rgba(255,122,122,.14); color:var(--bad); border:1px solid rgba(255,122,122,.4);}
+  .callout{border-left:3px solid var(--accent); background:var(--bg2);
+    padding:12px 16px; border-radius:0 8px 8px 0; margin:0 0 14px;}
+  .callout.good{border-left-color:var(--good);}
+  .callout.warn{border-left-color:var(--warn);}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-15-17:43:07 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Recommendation sprint</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">The message</a>
+      <a href="#sec-2">Who to ask</a>
+      <a href="#sec-3">Order</a>
+      <a href="#sec-4">Yes but stalls</a>
+      <a href="#sec-5">What changed</a>
+      <a href="#sec-6">Character limit</a>
+      <a href="#sec-7">Locked</a>
+      <a href="#sec-8">Still open</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>The recommendation sprint: run it Wednesday or Thursday</h1>
+    <div class="meta">Decision page &middot; refreshed 2026-09-15 for a Wed 9/16 or Thu 9/17 run &middot; nothing here has been sent</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>Wednesday after the 11:00 session, or Thursday: send three asks. Rachel Weiss, Nate Tanner, Trent Savage.</strong> The message below is already written and already approved. You write one line above it. That is the whole job, about ten minutes.</p>
+      <p>Your profile carries <strong>three recommendations, dated 2012, 2012 and 2015</strong>. Every other part of the profile was rebuilt this week. This is the one gap no rewriting can close, because it is the only section other people have to write for you.</p>
+      <div class="callout warn">
+        <p style="margin:0"><strong>Why this has stalled three times, said plainly.</strong> It was never a research problem. The plan from July named <em>categories</em> of people, not people. The fix from August named the people and wrote the message, then lived in a <code>.md</code> file, which is the one format you do not read. So the work was done twice and never reached you. That is what this page is for.</p>
+      </div>
+      <p><strong>The one thing I checked and got a surprising answer on:</strong> LinkedIn publishes no character limit for the recommendation request note. The 300-character figure everyone quotes is the <em>connection request</em> field, a different box. So your approved message ships as written, untrimmed.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>The message, and the line you write above it</h2></summary>
+    <div class="sec-body">
+      <p>This is your message from 2026-08-11, unchanged. It was corrected three times that day, twice by you, and it scored 93 on the voice gate. I am not rewriting it and nothing below asks you to.</p>
+      <p><strong>Paste this. Put the cursor above it. Type your one or two sentences. Send.</strong></p>
+      <pre>Asking you for something. Would you write me a LinkedIn recommendation? The ones on my profile are years out of date and I'm finally fixing that. I'm not going to hand you a script or tell you what to say. Whatever you'd say about me if I weren't in the room is the part worth having. If you get stuck, say so and I'll send over some ideas. No rush, and thank you.</pre>
+      <p style="color:var(--text-dim); font-size:.88rem">364 characters, 73 words, before your opener.</p>
+
+      <h3>Your opener: four rules, and that is the whole thing</h3>
+      <ol>
+        <li><strong>True, and about them.</strong> Their life right now, or a shared era.</li>
+        <li><strong>Do not call back the favor they did you.</strong> This is the one that is easy to break. Mention the thing they did and they will write the recommendation about that thing, which drags the script back in through the side door.</li>
+        <li><strong>No bridge into the ask.</strong> Do not write "which is why I'm reaching out." The body turns on its own with "Asking you for something."</li>
+        <li><strong>Never a rank claim.</strong> "We worked together at GE" is fine. Anything that says you led or ran something is not.</li>
+      </ol>
+      <p>Three examples of the shape. One sentence is enough; the first is six words.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Person</th><th>An opener in that shape</th><th>What it deliberately leaves out</th></tr>
+        <tr><td>Nate Tanner</td><td>"Nate, how's the book research coming along?"</td><td>The profile breakdown he acted on</td></tr>
+        <tr><td>Trent Savage</td><td>"Trent, it's been a minute. How's Mountain America treating you these days?"</td><td>The name he put forward for you</td></tr>
+        <tr><td>Rachel Weiss</td><td>"Rachel, this note is overdue and that's on me. HRLP feels like a lifetime ago."</td><td>Nothing, there was no favor. It names a shared era instead</td></tr>
+      </table>
+      </div>
+      <p>If nothing comes to mind in about fifteen seconds, send the body with a plain warm line and move on. A manufactured personal beat is worse than a plain one.</p>
+
+      <h3>Where the request actually lives</h3>
+      <p>Your <strong>own</strong> profile, not theirs. Scroll to the bottom to Recommendations, tap the plus, choose <strong>Ask for a recommendation</strong>.</p>
+
+      <h3>The short version, only if a field ever truncates</h3>
+      <p>No LinkedIn field is known to cut this off, so you should not need it. If one ever does, this is the trim, at 294 characters. It drops the explicit no-script sentence, which is a real loss, so it is a fallback and not the default.</p>
+      <pre>Asking you for something. Would you write me a LinkedIn recommendation? The ones on my profile are years out of date and I'm finally fixing that. Whatever you'd say about me if I weren't in the room is the part worth having. If you get stuck, say so and I'll send ideas. No rush, and thank you.</pre>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>Who to ask, and who I am not sure about</h2></summary>
+    <div class="sec-body">
+      <p>Split three ways on one test: <strong>does the record actually document that this person worked with you or watched you work?</strong> I did not invent a person and I did not invent a claim about what anyone saw you do. Where the record is thin, it says so.</p>
+
+      <h3><span class="tag t-ok">VERIFIED</span> Documented shared work. Send whenever you want.</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>#</th><th>Who</th><th>What the record documents</th></tr>
+        <tr><td>1</td><td><strong>Rachel Weiss</strong></td><td>HRLP cohort together at GE. The cleanest shared-work tie on the whole roster.</td></tr>
+        <tr><td>2</td><td><strong>Nate Tanner</strong></td><td>BYU MBA classmate, class of 2015. Acted on the profile breakdown you sent in May and said so in writing.</td></tr>
+        <tr><td>3</td><td><strong>Trent Savage</strong></td><td>BYU MBA peer. Put your name forward at Mountain America mid-2026.</td></tr>
+        <tr><td>4</td><td><strong>Jenny Williams</strong></td><td>GE Vernova ex-colleague. Live monthly catch-up on your calendar, the warmest active GE relationship on file.</td></tr>
+        <tr><td>5</td><td><strong>Aarif Aziz</strong></td><td>CHRO at Culligan, remembers you from GE. Reconnect sent 2026-07-02. His marker is "reconnect, no pitch", and a favor is not a pitch.</td></tr>
+        <tr><td>6</td><td><strong>Mark Nyman</strong> (RBL)</td><td>A real practice-era colleague, and the only practice-era name written down anywhere.</td></tr>
+        <tr><td>7</td><td><strong>Diane Beagle</strong></td><td>The Gas Power engineering org redesign, repeated across five files. <span class="tag t-warn">NO CONTACT RECORD</span> You need a way to reach her.</td></tr>
+      </table>
+      </div>
+
+      <h3><span class="tag t-gate">NEEDS YOUR YES</span> Real shared work, but a standing gate sits on the person</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Who</th><th>What they can speak to</th><th>The gate</th></tr>
+        <tr><td><strong>Eduardo Reyes</strong></td><td>The only July 30 attendee who volunteered written praise, unprompted, on 2026-08-06. Drove down from Ogden on a Thursday night.</td><td>You killed a sales message to him. A recommendation is a different ask, but I will not assume.</td></tr>
+        <tr><td><strong>Bill Lines</strong> and <strong>Kim Floor</strong></td><td>Both at July 30, both spoke up. Bill asked for a longer session afterwards.</td><td>Same as Eduardo. Also: do not bundle this with the separate invoicing ask.</td></tr>
+        <tr><td><strong>Joe Nabrotzky</strong></td><td>A sitting CHRO who took a real call with you on 2026-07-16. The highest-authority name available to you.</td><td>Flagged never-pitch. He also asked for email, not LinkedIn, so the workable version is a short email asking whether he would be willing, then the LinkedIn request after a yes.</td></tr>
+      </table>
+      </div>
+
+      <h3><span class="tag t-gate">YOURS TO SEND</span> No agent drafts these</h3>
+      <ul>
+        <li><strong>Luke Pierce.</strong> Your mentor. He watched you teach on July 30 and took the only photographs of that room, and he builds automation for a living, so his word carries with a technical reader. Anything to Luke comes from you personally.</li>
+        <li><strong>Brandon Orton.</strong> Your accountability partner. He has watched you work every week for months. Never a prospect, and a recommendation is not a sale, but this one is yours.</li>
+      </ul>
+
+      <h3><span class="tag t-warn">UNVERIFIED</span> Confirm before asking. I could not document shared work.</h3>
+      <p>These are real relationships. What is missing is evidence that they worked with you or watched you work, which is the only thing that makes a recommendation writable. You know; the files do not. Tell me which ones are real and they move up.</p>
+      <ul>
+        <li><strong>Zack Oates.</strong> Named in your own notes as the highest-leverage call in your MBA network. Shared work not recorded.</li>
+        <li><strong>Hugo Acosta.</strong> Named in the August re-sourcing as a forward-facing source. Nothing else on file.</li>
+        <li><strong>Patrick Ryan, Darsha Keehn</strong> (GE Vernova ex-colleagues), <strong>Mary Pat McKay</strong> (GE Healthcare), <strong>Chris Farnsworth</strong> (doTERRA, was a recruiter during your MBA), <strong>Sean Morrison</strong> (Bank of Utah), <strong>PJ Schwartz</strong>, <strong>Kari Gardner</strong>. Relationship documented, shared work not.</li>
+        <li><strong>Your three existing recommenders</strong>, the 2012, 2012 and 2015 ones, for a refresh. Their names are not in any file I can read and I am not going to guess them.</li>
+      </ul>
+
+      <div class="callout">
+        <p style="margin:0"><strong>The honest gap, unchanged since July.</strong> Most of these are people only you can confirm, and three of them are people only you can name. That is why no system has ever produced this list without you in the room for a few minutes. It was never a research task.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>The order to send</h2></summary>
+    <div class="sec-body">
+      <p>Ungated names first, deliberately. The point of day one is to start the streak, not to land the most impressive recommendation. A gate you have to think about is how this died the last two times.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>When</th><th>Who</th><th>Why these, in this order</th></tr>
+        <tr><td><strong>Wed 9/16, after the 11:00 session</strong></td><td>Rachel Weiss, Nate Tanner, Trent Savage</td><td>Three strongest documented ties, zero gates, three openers already drafted above. Nothing to decide.</td></tr>
+        <tr><td><strong>Thu 9/17</strong></td><td>Jenny Williams, Aarif Aziz, Mark Nyman</td><td>Still ungated. Jenny is the warmest active GE relationship; Mark is your only practice-era name.</td></tr>
+        <tr><td><strong>The same week, once you say yes</strong></td><td>Eduardo Reyes, Bill Lines, Kim Floor</td><td>The July 30 room is your most recent proof and the most current-era of any name here.</td></tr>
+        <tr><td><strong>Your own hand, any time</strong></td><td>Luke Pierce, Brandon Orton</td><td>No agent touches these.</td></tr>
+        <tr><td><strong>By email first</strong></td><td>Joe Nabrotzky</td><td>Ask if he is willing, then send the LinkedIn request after a yes.</td></tr>
+        <tr><td><strong>Last</strong></td><td>The three existing recommenders</td><td>A refresh. Last because a 2012 recommendation rewritten today is still worth less than a new one from someone who saw recent work.</td></tr>
+      </table>
+      </div>
+      <div class="callout good">
+        <p style="margin:0"><strong>Sourcing note that changes who you ask, and it is worth thirty seconds.</strong> Forty-seven per cent of your network was built between 2013 and 2017 and nineteen per cent share one former employer. Asking that group first would confirm exactly the impression the profile rebuild exists to break: a distinguished past rather than a current practice. That is why the July 30 room outranks the MBA cohort here. The counter-argument is real too, so it is stated rather than hidden: at three recommendations with the newest from 2015, an old recommendation still beats no recommendation. If the recent names have not produced by <strong>2026-09-30</strong>, go backward and ask the 2013-2017 network directly.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>When someone says yes and then stalls</h2></summary>
+    <div class="sec-body">
+      <p>This is the part the earlier plans never covered, and it is where most of the twelve will actually sit.</p>
+      <ul>
+        <li><strong>The request does not expire and does not nag.</strong> It sits in their LinkedIn messages. Nobody is being pressured by your silence, so you are not rescuing anything by following up early.</li>
+        <li><strong>One follow-up, about ten days after their yes, on the same thread.</strong> One line, warm, no new ask, no deadline. Something like: "No pressure on timing, just did not want it to get buried." Then stop.</li>
+        <li><strong>No second follow-up. Ever.</strong> A third message turns a favor into an obligation, and it costs you more relationship than the recommendation is worth.</li>
+        <li><strong>If they say they are stuck, send ideas, never a draft.</strong> Three bullets on what they actually saw you do. If you send them sentences, you get your own sentences back, and it reads exactly like what it is.</li>
+        <li><strong>After the follow-up, close it quietly.</strong> It does not go back on a list and it does not get counted as a failure. You asked, they meant to, life happened. Ask someone else.</li>
+      </ul>
+      <div class="callout">
+        <p style="margin:0"><strong>The tripwire, kept from the original plan because it was the right call.</strong> If the first three asks are not out by end of day <strong>Thursday 2026-09-17</strong>, that is the signal that something else is eating the slot, and the sprint outranks it. Send them before anything else on Friday.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>What changed since the plan was written, honestly</h2></summary>
+    <div class="sec-body">
+      <p>Two artifacts came before this page. Both still exist and neither is deleted.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>What</th><th>Where</th><th>Status now</th></tr>
+        <tr><td>The original sprint, Fix 03 of the profile audit</td><td><a href="https://boubacarbarry.com/review/archive/20260723-linkedin-profile-transformation/">/review/archive/20260723-linkedin-profile-transformation/</a>, 2026-07-23</td><td>Diagnosis still holds. The ask plan is superseded.</td></tr>
+        <tr><td>The rebuilt lane with the one message and the named list</td><td><code>docs/plans/2026-08-11-linkedin-recommendations-lane-PROPOSED.md</code></td><td>The message and the rules are current, and they are carried in full on this page.</td></tr>
+      </table>
+      </div>
+
+      <h3>Stale, and why</h3>
+      <ul>
+        <li><strong>The three pools.</strong> "Practice-era contacts, GE-era colleagues, refresh the three existing recommenders" are categories, not people. That phrasing is exactly what stalled the sprint twice. Replaced above with named people and a stated confidence level for each.</li>
+        <li><strong>"Ten asks by day 10."</strong> Day 10 was 2026-08-02 and it passed with nothing sent. A second date, 2026-09-10, has also now passed. Re-dated to this week rather than carried forward again, because a date that has already been missed twice is not a plan.</li>
+        <li><strong>"No ask template has ever been written."</strong> No longer true. It was written on 2026-08-11 and it is at the top of this page.</li>
+        <li><strong>The positioning behind the old asks.</strong> The July plan was written when the profile said "I find what's slowing your business down." The profile now says assess, then roadmap, then build, and HR is the door rather than the whole house. Nothing in the message needed changing for that, because the message makes no claim about what you do. That was the point of stripping it, and it is now paying off.</li>
+        <li><strong>The claim that was cut, kept visible so it does not come back.</strong> Earlier versions said you were doing AI work with companies. You caught it: "you're saying I'm working with companies and that's not true." It is gone and it does not return.</li>
+      </ul>
+
+      <h3>Still holds</h3>
+      <ul>
+        <li><strong>Social proof is the floor.</strong> It scored 1 out of 10 against every other dimension of the profile, and it is the only one no copywriting can move.</li>
+        <li><strong>One message, not bespoke ones.</strong> Three tailored messages covered three people and the fourth needed a whole drafting pass. One message plus your own line is what makes twelve possible.</li>
+        <li><strong>No angle, no brief, no placeholder, no merge field.</strong> Every one of those absences is a decision you made, and each is listed here so nobody adds one back "to help."</li>
+        <li><strong>Two a day, not twelve at once.</strong> A batch of twelve in one sitting is how it becomes a project instead of a habit.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>The character limit, checked rather than guessed</h2></summary>
+    <div class="sec-body">
+      <p>The August plan said plainly that it could not verify LinkedIn's limit for this field and refused to quote a number. I checked it properly.</p>
+      <p><strong>LinkedIn publishes no character limit for the recommendation request note.</strong> Its own help page on requesting a recommendation describes the message box and states no limit. Two independent limit compendia list every other field and neither carries this one.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Field</th><th>Published limit</th><th>Is it this field?</th></tr>
+        <tr><td>Recommendation request note</td><td><strong>None published</strong></td><td>Yes. This is the box you type in.</td></tr>
+        <tr><td>Connection request note</td><td>300</td><td>No. Different box. This is where the 300 figure comes from.</td></tr>
+        <tr><td>The recommendation itself</td><td>3,000</td><td>No. That is what <em>they</em> write, not what you send.</td></tr>
+        <tr><td>Message to a connection</td><td>8,000</td><td>No.</td></tr>
+      </table>
+      </div>
+      <p>So your 364-character message ships as written. Trimming approved copy to fit a limit that does not exist would have been the exact thing this page is supposed to stop.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>The LinkedIn decisions, now locked</h2></summary>
+    <div class="sec-body">
+      <p>Recorded 2026-09-15 in the decision ledger, in memory, in the live-state file, and in the profile-change log. The reason each is here is so no future session reopens it.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Element</th><th>Decision</th><th>Your reasoning</th></tr>
+        <tr><td><strong>Headline</strong></td><td><span class="tag t-ok">LOCKED</span> Option B, verbatim: "AI + HR | For teams buried in AI tools with no clear place to start | We get clear together, then build what fixes it, in HR and wherever else it's stuck"</td><td>"'AI + HR | For teams buried in AI tools...' is not a list of items. It tells them the areas i work in and what i do." Option A was recommended and <strong>you overruled it</strong>. Recorded as considered and declined so nobody reopens it.</td></tr>
+        <tr><td><strong>Banner</strong></td><td><span class="tag t-ok">LOCKED</span> r2a: "Your bottleneck has a name. Let's find it. boubacarbarry.com"</td><td>Drops HR from the banner so it speaks to any bottleneck, since the headline already carries the HR specificity. Plain word beats jargon.</td></tr>
+        <tr><td><strong>About</strong></td><td><span class="tag t-ok">LOCKED</span> The three-step version: assess, then roadmap, then build, always in that order</td><td>Names the order of operations, which is the thing nobody else says. HR is one door in, not the whole house.</td></tr>
+        <tr><td><strong>Top 5 skills</strong></td><td><span class="tag t-ok">LOCKED</span> AI Adoption &amp; Enablement, Change Management, HR Transformation, Organizational Development, Business Process Improvement</td><td>The five that match what the headline and About now claim, so the profile agrees with itself.</td></tr>
+      </table>
+      </div>
+      <div class="callout warn">
+        <p style="margin:0"><strong>One stale instruction corrected in the same pass.</strong> The live-state file still carried a 2026-08-20 row saying of the <em>old</em> headline "Do not change this", and that the banner was the thing that should change. Both are now reversed by the decisions above. Left uncorrected, that row was the single most likely cause of exactly the re-litigation this page exists to prevent.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>What stays open, so the lock is honest</h2></summary>
+    <div class="sec-body">
+      <p>Locking four things does not mean the profile is finished. Three items are genuinely undecided, and saying so is what makes the four above trustworthy.</p>
+      <ul>
+        <li><strong>The About opening lines.</strong> The first two lines are being reworked. The three-step body is locked; the opening is not.</li>
+        <li><strong>Services still lists Ghostwriting.</strong> That is your choice and it stands, but it sits slightly apart from the assess-roadmap-build story, so it is recorded as a live tension rather than quietly dropped.</li>
+        <li><strong>Featured says "5-Day Bottleneck Audit" while the About says "Assess."</strong> Two names for the same first step. A visitor reading both will not know they are the same thing. Worth one decision, not urgent.</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Nothing on this page has been sent. Every message is yours to send.
+    Sources: <code>/review/archive/20260723-linkedin-profile-transformation/</code> (2026-07-23),
+    <code>docs/plans/2026-08-11-linkedin-recommendations-lane-PROPOSED.md</code> (2026-08-11),
+    Money Map row <code>status-linkedin-rec-sprint</code> on board y1.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
