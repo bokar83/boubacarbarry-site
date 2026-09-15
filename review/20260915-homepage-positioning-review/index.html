@@ -110,7 +110,8 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v9 · 2026-09-15-14:12:41 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v10 · 2026-09-15-14:51:33 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -127,6 +128,7 @@
       <a href="#li-headline-sec">LinkedIn headline</a>
       <a href="#li-about-sec">LinkedIn About</a>
       <a href="#li-banner-sec">Banner (done)</a>
+      <a href="#li-changes-log">LinkedIn changes log</a>
       <a href="#sec-1">Eyebrow</a>
       <a href="#sec-2">Hero subhead</a>
       <a href="#sec-3">About para</a>
@@ -287,6 +289,51 @@ boubacarbarry.com</div>
     <p class="why">You picked r2a and uploaded it; your phone screenshot confirmed it live. Nothing to decide here. The headline options above were written so they do not repeat this line.</p>
   </div>
   </details>
+
+  <details class="sec" id="li-changes-log" open>
+  <summary><h2>LinkedIn changes log (read-only)</h2></summary>
+  <div class="card done-card">
+    <p class="why">Every change made to your LinkedIn profile, newest first, read live from the database. Nothing to decide here.</p>
+    <div id="li-log-status" class="field-label">Loading from the database...</div>
+    <div id="li-log-rows"></div>
+  </div>
+  </details>
+  <script>
+  (function () {
+    'use strict';
+    var URL_ = 'https://agentshq.boubacarbarry.com/api/orc/linkedin-profile-changes?limit=200';
+    var statusEl = document.getElementById('li-log-status');
+    var rowsEl = document.getElementById('li-log-rows');
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function fail(msg) {
+      statusEl.textContent = '';
+      rowsEl.innerHTML = '<div style="background:var(--danger);color:#1a0606;font-weight:700;padding:10px 14px;border-radius:8px;">' +
+        'Could not load the LinkedIn changes log from the database (' + esc(msg) + '). Nothing is lost; this page just could not read it.</div>';
+    }
+    fetch(URL_)
+      .then(function (res) { return res.json().then(function (b) { return { res: res, body: b }; }); })
+      .then(function (r) {
+        if (!r.res.ok || !r.body || r.body.ok !== true) throw new Error((r.body && r.body.error) || ('HTTP ' + r.res.status));
+        var rows = r.body.rows || [];
+        statusEl.textContent = rows.length + (rows.length === 1 ? ' change on record' : ' changes on record');
+        if (!rows.length) { rowsEl.innerHTML = '<p class="why">No changes logged yet.</p>'; return; }
+        rowsEl.innerHTML = rows.map(function (x) {
+          return '<div style="border-top:1px solid var(--border);padding:10px 0;">' +
+            '<div style="color:var(--brass);font-weight:700;">' + esc(x.changed_on) + ' &middot; ' + esc(x.field) + (x.corrects_id ? ' &middot; corrects #' + esc(x.corrects_id) : '') + '</div>' +
+            '<div class="current-block" style="white-space:pre-wrap;margin:6px 0;">' + esc(x.new_value) + '</div>' +
+            '<div style="color:var(--muted);font-size:0.85rem;">Was: ' + esc(x.old_value == null ? 'not recorded' : x.old_value) +
+            (x.source_decision_id ? ' &middot; Decision ' + esc(x.source_decision_id) : '') +
+            (x.evidence ? ' &middot; Evidence: ' + esc(x.evidence) : '') +
+            ' &middot; Logged by ' + esc(x.logged_by) + '</div></div>';
+        }).join('');
+      })
+      .catch(function (err) { fail(String((err && err.message) || err)); });
+  })();
+  </script>
 
   <p class="group-title">Homepage, round 2 (built from your notes)</p>
 
@@ -919,6 +966,7 @@ boubacarbarry.com</div>
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
 
 
 
