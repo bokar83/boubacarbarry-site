@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Anonymizer Program: One Page, All Four Passes</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  h3{font-size:1rem; margin:22px 0 8px; color:var(--accent2);}
+  blockquote{margin:0 0 14px; padding:10px 16px; border-left:3px solid var(--accent);
+    background:#11141b; border-radius:0 8px 8px 0; color:var(--text);}
+  .pill{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.03em;
+    border-radius:999px; padding:2px 9px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text-dim); white-space:nowrap;}
+  .pill.go{color:#0f1115; background:var(--good); border-color:var(--good);}
+  .pill.park{color:#0f1115; background:var(--warn); border-color:var(--warn);}
+  .pill.kill{color:#0f1115; background:var(--bad); border-color:var(--bad);}
+  .pill.now{color:#0f1115; background:var(--accent); border-color:var(--accent);}
+  .rec{border:1px solid var(--accent2); border-left:4px solid var(--accent2);
+    background:#141a19; border-radius:0 8px 8px 0; padding:10px 14px; margin:0 0 14px;}
+  .rec strong{color:var(--accent2);}
+  .warnbox{border:1px solid var(--warn); border-left:4px solid var(--warn);
+    background:#1b1810; border-radius:0 8px 8px 0; padding:10px 14px; margin:0 0 14px;}
+  .warnbox strong{color:var(--warn);}
+  .dec{border:1px solid var(--border); border-radius:10px; padding:14px 16px;
+    margin:0 0 16px; background:var(--bg2);}
+  .dec h3{margin:0 0 8px; color:var(--text); font-size:1.02rem;}
+  .dec .q{color:var(--text-dim); font-size:.9rem; margin:0 0 10px;}
+  .ladder{display:flex; flex-direction:column; gap:6px; margin:0 0 16px;}
+  .rung{display:flex; align-items:flex-start; gap:10px; background:#11141b;
+    border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:.88rem;}
+  .rung .n{flex:none; width:26px; height:26px; border-radius:6px; background:var(--bg2);
+    color:var(--accent); font-weight:700; font-size:.8rem; display:flex;
+    align-items:center; justify-content:center; border:1px solid var(--border);}
+  .muted{color:var(--text-dim);}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-16-14:19:08 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Anonymizer program</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">1. Headline</a>
+      <a href="#sec-2">2. Sequencing</a>
+      <a href="#sec-3">3. Your decisions</a>
+      <a href="#sec-4">4. Monday</a>
+      <a href="#sec-5">5. Portfolio map</a>
+      <a href="#sec-6">6. Collisions</a>
+      <a href="#sec-7">7. Sources</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>The Anonymizer Program: One Page, All Four Passes</h1>
+    <div class="meta">Synthesis of four independent strategy passes run the same evening &middot; research lane &middot; 2026-09-16</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p>Three agents who could not read each other's work all landed on the same reframe: <strong>the product is the receipt, not the anonymizer.</strong> A fourth pass then narrowed it. Today's receipt is a self-generated integrity digest, so it is a conversation opener and engagement evidence, not yet a procurement wedge. Anchoring it to an independent timestamp is the cheap fix that would change that.</p>
+      <p><strong>Do not pivot to enterprise.</strong> Services-attached stays primary. The enterprise track runs in parallel on four cheap artifacts and nothing more.</p>
+      <p><strong>Nine decisions</strong> are waiting on you in section 3, each with options and a recommendation already made. <strong>Nine Monday actions</strong> in section 4, in order, merged from all four documents. Three collision risks were flagged and all three resolve cleanly, plus <strong>one nobody flagged: two of the four documents are written against a build state that is out of date.</strong></p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. The headline finding</h2></summary>
+    <div class="sec-body">
+      <p>Three agents worked this program in parallel and none of them could read the others' output. The enterprise pass, the embedded portfolio pass, and the blind standalone-company pass each arrived, independently and by a different route, at the same inversion: <strong>the thing worth selling is not the tool that anonymizes the file, it is the record the tool emits proving what happened to that file.</strong> The blind pass put it as "stop selling privacy, sell proof." The embedded pass put it as "the receipt is the asset and the tool is its first consumer." The enterprise pass counted the approval functions inside a large organization and found four of five are served by the receipt and only one by the anonymization. Three routes, one place. That convergence is the strongest signal any of these four documents produced, and it should reset what the program is about.</p>
+
+      <div class="warnbox">
+        <p><strong>And then the fourth pass narrowed it, which matters as much as the convergence itself.</strong> The enterprise pass ran a Council specifically on this claim and cut it down. The receipt today is a SHA-256 integrity digest generated by the party being audited, on a machine that party controls. It is not a cryptographic signature and the code correctly never calls it one. An auditor's first question about any control is who produces the evidence and whether they can alter it, and the honest answer here is unflattering. So the receipt is <strong>a conversation opener with a privacy function, and evidence inside a services engagement</strong>. Those are real jobs worth real money. "The thing procurement buys" is not one of them, and presenting it that way would be found in the first serious meeting.</p>
+      </div>
+
+      <p><strong>The fix arrived from the one document that could not see the others.</strong> The blind pass's own cross-review spotted the same weakness and proposed the answer in one line: anchor each receipt to an independent trusted timestamp, an RFC-3161 timestamp authority or a public transparency log. It costs almost nothing, it requires becoming nobody's auditor, and it converts a log file you wrote yourself into evidence that provably existed at a moment you did not control. Read the two documents together and you get the full arc, which neither one has alone: <strong>the receipt is the product, today's receipt is too weak to carry that claim, and the thing that would make it strong is a small build nobody has scheduled.</strong></p>
+
+      <p>One more piece of the same arc, from the enterprise pass and independently strong: a receipt exported to a location the organization controls is no longer evidence the vendor holds about himself. It is evidence the organization holds, somewhere he cannot reach. That is arguably worth more than a signature, it costs a modest build, and it does not touch the offline promise.</p>
+
+      <div class="rec">
+        <p><strong>What this means in one sentence:</strong> the receipt earns the headline position the three agents gave it, but only after two small builds that nobody has put a date on, and until then every claim made for it holds at the lower setting the enterprise pass established.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. The sequencing recommendation</h2></summary>
+    <div class="sec-body">
+      <p>This is the enterprise pass's own conclusion, stated in its terms rather than re-argued here.</p>
+
+      <div class="rec">
+        <p><strong>Do not pivot to enterprise. Near-term revenue stays exactly where the existing go-to-market plan put it, on the services-attached path to solo and small HR consultants. The enterprise track starts now as a cultivation motion bounded by four named artifacts, and it is not permitted an hour that the primary track needs.</strong></p>
+      </div>
+
+      <p><strong>Why, in the pass's own reasoning:</strong> it went back through all six arguments the original plan used to rule out an enterprise-direct motion, and checked each one against today. All six still hold. Nobody in the enterprise privacy tier sells to a solo consultant, and no Fortune 100 buys a security tool from one, so the disqualifier cuts both ways. There is still no distribution. The proof score is still low because the Re-identification Trial still has not run. Enterprise cycles are still six to eighteen months against a revenue-this-month goal. Six for six, nothing expired.</p>
+
+      <p><strong>The finding that is genuinely new, and it runs against enterprise rather than for it.</strong> The market window is closing on that side, not opening. Microsoft's data-loss prevention for its own AI assistant reached general availability around mid-2026 and moves detection and blocking natively into the stack most large organizations already own. Anthropic shipped enterprise safeguards in early September 2026 that move customer data into infrastructure the customer controls. The asymmetry is the whole point: <strong>a large organization is precisely the buyer that can negotiate a zero-retention agreement, deploy the native controls, and make a vendor put data in its own infrastructure. The enterprises this would be sold to are the ones least likely to still need it by the time the sale closes.</strong> A solo consultant has none of those options and never will, which is exactly the buyer already chosen.</p>
+
+      <p><strong>What the enterprise track is permitted to produce before the Trial runs.</strong> The pass replaced an unenforceable "four hours a week" cap with a budget of named artifacts on named dates, on the grounds that a time cap has no owner and no way to notice when it is breached. That list, in full, is the entire enterprise track for now:</p>
+
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Artifact</th><th>By when</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td>The "signed receipt" wording correction, everywhere it appears</td><td>today</td><td>five minutes</td></tr>
+          <tr><td>One privacy-profession call-for-proposals submission</td><td>2026-02-15 deadline</td><td>one afternoon</td></tr>
+          <tr><td>One analyst vendor briefing requested (free, no client status needed)</td><td>anytime, better after the Trial</td><td>one hour</td></tr>
+          <tr><td>One decision-ledger PARK entry for the AI-processing-register idea</td><td>this week</td><td>minutes</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p class="muted">Anything beyond that list is the primary track's time being spent, and the pass says it should be refused on sight.</p>
+
+      <p><strong>Three plays are available today and two are not.</strong> Available: owning the content question aimed one level up at privacy officers and in-house counsel; the privacy and counsel speaking circuit through open call-for-proposals rather than a booth; and the free analyst briefing, used for market intelligence rather than for leads. Blocked behind the Trial: the implementation-partner channel, which is ranked the highest-value play of the five precisely because someone else's client relationship does the work of a sales cycle that cannot be afforded. One more, the free assessment to a company's internal AI governance group, is available but is real work, so the recommendation is to run exactly one as a test rather than as a program.</p>
+
+      <p><strong>One structural finding worth carrying, because it is the opposite of the instinct:</strong> there is no viable bottom-up path inside a large organization. Modern endpoint control blocks an unsigned executable before it loads and a local administrator cannot override it, the vault binds to one machine and one account by design, and a tool whose entire value is defensibility cannot be adopted the way a note-taking app is adopted, because shadow use of an unapproved tool on employee data creates a finding rather than removing one.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. Your decisions, all of them, one list</h2></summary>
+    <div class="sec-body">
+      <p>Nine items, pulled from all four documents and de-duplicated. Each one carries the options and the recommendation already reached. Nothing here is being re-litigated. Items 1 and 2 are the two that move every other answer on the page.</p>
+
+      <div class="dec">
+        <h3>1. Do you want to sell a PRODUCT to large organizations, or sell ENGAGEMENTS to them using the product as proof?</h3>
+        <p class="q">The enterprise pass calls this the one question only you can answer, and says every other answer in that document moves when it changes.</p>
+        <ul>
+          <li><strong>Engagements.</strong> The punch list stops after three cheap items. No formal security certification, no code signing, no packaging. The tool is a prop in a first meeting and a capability in delivery. It can start the day the Trial finishes.</li>
+          <li><strong>A product.</strong> The full eleven-item punch list becomes the roadmap. The security certification alone is roughly twenty-five to eighty thousand dollars and three to five months before an auditor can even conclude, and the first enterprise sale is a year out.</li>
+        </ul>
+        <div class="rec"><strong>Recommendation: engagements.</strong> Five Council voices converged on it independently. It uses the asset that is actually scarce, which is that you can walk into a Fortune 100 HR function and be read as a peer, it needs nothing that does not already exist, and it is the only one of the two that can produce a dollar inside the period you are measuring. Choosing "product" is not wrong, but it is a different company than the one you are running this quarter and it should be chosen deliberately rather than drifted into.</div>
+      </div>
+
+      <div class="dec">
+        <h3>2. Is this a company you want to run, or an asset you want to sell?</h3>
+        <p class="q">The blind standalone pass's closing question. It is not the same question as item 1 and the two answers point at different first moves.</p>
+        <ul>
+          <li><strong>The format play.</strong> Publish the receipt format openly, anchor it to an independent timestamp, monetize the tooling and the verification around it. A five-year company-building move that is worth very little in year one.</li>
+          <li><strong>The service play.</strong> Do the anonymization by hand as a done-for-you engagement for the first ten clients, hand each one the receipt, and find out whether anyone cares about the receipt before building a company on it. Cash in thirty days, nothing durable built.</li>
+        </ul>
+        <div class="rec"><strong>Recommendation: the service play first, and hold the format reframe without acting on it.</strong> This is where the embedded pass's Council landed on the same tension: the receipt-as-primitive reframe is cheap to hold and expensive to act on, so record it so the next builder builds it first, and do not start a format program. The service play also happens to be the cheapest test of the format play's own hinge assumption. <span class="muted">If the standalone company ever does become the answer, the naming work is already done and is a separate call: ASSAY took a direct hit in its own Council for being misread as "Essay," and HANDOFF is the honest alternative if zero-context clarity outranks metaphor.</span></div>
+      </div>
+
+      <div class="dec">
+        <h3>3. The shape of the free offer, and how many free offers there are</h3>
+        <p class="q">This is the most-collided item on the page. Three documents proposed a free hands-on offer to three different buyers, and one Council voice attacked the pattern itself.</p>
+        <ul>
+          <li><strong>(a)</strong> As originally approved: they send you a file, you anonymize it by hand.</li>
+          <li><strong>(b)</strong> A representative extract rather than the full production file.</li>
+          <li><strong>(c)</strong> A screen share where the file never leaves their building.</li>
+          <li><strong>(d)</strong> All three, offered in that order of preference.</li>
+        </ul>
+        <div class="rec"><strong>Recommendation: (d), leading with (c).</strong> The privacy counsel voice in Council put the objection better than any internal reasoning did: "you are asking me to send a real employee file to an outside individual to prove that sending files to outside individuals is risky. That is the thing I exist to stop." The screen-share version removes the strongest objection at zero cost to the demonstration, and the demonstration is the whole product. This changes what you approved, which is why it is flagged rather than substituted.</div>
+        <div class="warnbox"><strong>Two additions from the reconciliation, both yours to rule on in the same breath.</strong> First, there must be <strong>one</strong> free hands-on program with <strong>one</strong> capacity cap of five, not three parallel ones. The enterprise pass's free assessment to an internal AI governance group and this offer are the same founder hours spent on different buyers, and the enterprise pass already caps its own version at exactly one test run. Second, an outside voice in the enterprise Council read the whole plan cold and said this: "everything you are offering is free. A free tool, a free assessment, a free talk, a free briefing. Individually each is smart. Read together from outside, it says nobody has ever paid for any of this." The blind pass's Executor independently recommended the opposite instrument, a paid done-for-you engagement at five hundred to fifteen hundred dollars a time for the first ten clients. Both cannot be the default. <strong>Suggested split: the screen-share demonstration stays free and capped at five, and the hands-on done-for-you work is priced.</strong></div>
+      </div>
+
+      <div class="dec">
+        <h3>4. The brand hop</h3>
+        <p class="q">The embedded pass's one open question, inherited from the AI Use Policy Generator's own second open question. It blocks the ladder that document is built on.</p>
+        <p>The diagnostic that feeds the whole funnel sits on humanatwork.ai. The paid engagement at the far end sits on Catalyst Works. Nothing currently connects them, and no agent can decide which name the ladder carries. The reconciliation found four live surfaces already reaching this buyer before any of these four documents adds one, which makes this more urgent rather than less.</p>
+        <ul>
+          <li>Run the whole ladder end to end on humanatwork.ai.</li>
+          <li>Hand off to Catalyst Works, and name the rung where the handoff happens.</li>
+        </ul>
+        <div class="rec"><strong>No recommendation is offered here, deliberately.</strong> This is a brand-architecture call that belongs to you and the documents say so. What can be said is that an outside voice counted four brands, seven moves, two unbuilt products and one person and said the most credible version of all of it is one page, one clause, one number, one name.</div>
+      </div>
+
+      <div class="dec">
+        <h3>5. The browser demo's call to action</h3>
+        <p class="q">Book a call, or download the free tool.</p>
+        <div class="rec"><strong>Recommendation: book a call as the primary action, with the download visible and secondary, both ranked rather than one hidden.</strong> The reasoning is that the existing plan already ranks the licence as a byproduct of the services motion for two quarters, and a person who has just watched the proof moment is at the maximum of their belief, which is wasteful to spend on an install that starts a relationship with an executable and no human. The counter-argument is real and is why this is your call: a demo that does not feed the free tier starves the only zero-cost distribution channel in the plan.</div>
+      </div>
+
+      <div class="dec">
+        <h3>6. The white-label channel</h3>
+        <p class="q">Three of the four documents reached this move independently and all three parked it. You are confirming a park, not making a fresh call.</p>
+        <ul>
+          <li>Park with the reopen condition as written.</li>
+          <li>Park with no condition.</li>
+          <li>Pursue it now.</li>
+        </ul>
+        <div class="rec"><strong>Recommendation: park with the reopen condition.</strong> The condition is the load-bearing part and it should not be blurred later: the Trial has run and passed, one real client engagement has been delivered end to end, <strong>and</strong> an inbound approach has arrived from a firm that wants to offer it under their own name. Outbound-selling a white-label deal for an unproven engine with no track record is a different and much worse business than answering an inbound one. If it does reopen, the smallest first version is one partner, one engagement, co-delivered, your name still on it. Not a licence, not a software kit, not a brand removal.</div>
+      </div>
+
+      <div class="dec">
+        <h3>7. The certification mark</h3>
+        <p class="q">Scratched by the creative pass on prior art plus a direct conflict with the product's own honesty rule. Agents propose; a no-go on your own idea is yours.</p>
+        <p>The load-bearing objection is that a mark is worth exactly what its issuer's reputation is worth, and the same idea was already run through Council on 2026-07-26 and returned a vanity-credential verdict. Two additional objections are specific to this version: a mark whose first and only holder is the issuer's own tool is a logo rather than a trust artifact, and a verification seal is a status claim by construction, which the product is permanently banned from making by its own spec. The blind pass killed the identical idea independently and kept only the honest survivor, a public page that verifies a receipt the customer produced rather than a seal you grant.</p>
+        <div class="rec"><strong>Recommendation: convert the ambition rather than kill it.</strong> The achievable form of the same ambition is the published method: pre-registered pass-fail bars and a reproducible methodology anyone can run against any tool. A method others run becomes a standard from the bottom up; a mark others must accept has to be granted from the top down. <strong>If you want the mark itself kept alive, it should be PARKED with a return date rather than left as a rejected item</strong>, because a park is first-class and a silent kill is not.</div>
+      </div>
+
+      <div class="dec">
+        <h3>8. Two questions only you can answer, for the content work</h3>
+        <p class="q">Not a decision so much as the one input no agent can produce. Two content items stay undrafted until one of these is answered, and fabricating a lived moment is hard-banned.</p>
+        <blockquote>I want to write about the first time a client asked where their employee data was going. Do you have anything around this? A specific one, with when it was and who asked.</blockquote>
+        <blockquote>When you were in HR and holding the headcount file, was there a moment you thought about what was actually in it? Do you have anything around that?</blockquote>
+        <div class="rec"><strong>The second question is the more promising one</strong>, because it reaches into the HR years rather than the recent build, and because the strongest available structure is a piece that opens in those years and lands on a product decision only someone who held that file would have made. The personal source material file gets mined first, before either question is put to you, in case a real moment is already on file.</div>
+      </div>
+
+      <div class="dec">
+        <h3>9. Two one-word answers</h3>
+        <ul>
+          <li><strong>The retention window.</strong> Open since 2026-09-14. It is one decision rather than a build, and it is a question every enterprise intake form asks. Also unresolved underneath it: when a person leaves, their machine-bound vault dies with their account. That is arguably the correct behaviour and arguably a data-loss incident, and nobody has decided which.</li>
+          <li><strong>"Renova."</strong> Resolved to GE Vernova with high confidence, since GE completed its three-way split on 2026-04-02 and no company of that name exists in the relevant orbit. One word from you confirms it.</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. Monday morning, one merged list</h2></summary>
+    <div class="sec-body">
+      <p>Every document ended with its own Monday list. This is all of them, merged, de-duplicated and ordered. The order is the deliverable. Two of the nine are builds; the rest are a wording fix, a scheduling act, some calendar entries and three conversations.</p>
+
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>#</th><th>Action</th><th>Cost</th><th>Why here</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Correct "signed receipt" to "integrity-checked receipt" everywhere it appears.</strong> <span class="pill now">TODAY</span></td>
+            <td>five minutes</td>
+            <td>The only completely unblocked item across eleven punch-list rows. The gap between a digest and a signature is exactly the gap a privacy or audit reviewer is trained to find, and finding it costs more credibility than the feature earns. Note that one of tonight's own new documents repeats the error in two places, so the fix has to sweep them too.</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>Put a date on the Re-identification Trial.</strong></td>
+            <td>a dispatch</td>
+            <td>The single highest-leverage action on the whole board and it is not a creative one. It unblocks the enterprise track, the highest-value access play, the proof score, the right to touch a real client file, and five of the six creative directions. It is fully specified and nobody has scheduled it. <strong>The reconciliation closed its last blocker:</strong> the corpus already exists as a built synthetic organisation with deliberate defects, so the Trial needs no client and no consent.</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>Mine the personal source material for a real moment, then send both intake questions in one message.</strong></td>
+            <td>an hour</td>
+            <td>Two content items are waiting on an answer nobody has asked for. Mining comes first, because a moment already on file beats a new question.</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><strong>Two calendar entries.</strong> The privacy-profession call for proposals closing 2026-02-15, and the HR technology conference proposal cycle.</td>
+            <td>minutes</td>
+            <td>A deadline is not a task and does not remind anybody. These are the only items on the board that are lost forever rather than delayed if missed.</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><strong>Three decision-ledger entries.</strong> PARK the AI-processing-register idea with a return trigger of the first enterprise privacy conversation. PARK white-label with its three-part reopen condition. Record the certification-mark verdict with its reason.</td>
+            <td>minutes</td>
+            <td>The register idea may be larger than the tool itself and currently lives only inside one document, which means it dies with that document. The other two keep a park from decaying into a silent kill.</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td><strong>Answer the retention window, and confirm the GE Vernova reading.</strong></td>
+            <td>minutes</td>
+            <td>Both are one-line answers that unblock an intake form and a target list.</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td><strong>Draft the data-handling clause as a writing exercise, then run the twenty-minute test on it:</strong> could the nearest competitor satisfy this as written?</td>
+            <td>twenty minutes</td>
+            <td>If yes, the clause is a real requirement and it is the strongest idea in the embedded pass. If no, it is a product spec wearing a contract's clothes, the outside voice is right that everyone in the procurement room will notice, and it drops from headline to supporting. That test gates the entire play and nobody can call it without writing the paragraph. <strong>Do not publish it</strong> until there is a real receipt to point at.</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td><strong>Build the browser demo, beat four first, standalone.</strong></td>
+            <td>about a day</td>
+            <td>The one artifact that waits on nothing, because it demonstrates the mechanism and makes no accuracy claim. Beat four is the preservation proof, the only genuinely differentiated beat; if it does not land in isolation the other four are decoration. One self-contained page, no framework, no build step, and it never accepts a file.</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td><strong>The gatekeeper probe.</strong> Take the one-page receipt format to three people who could plausibly be the gatekeeper: a client's general counsel, a professional-liability broker, and an association or bar technology committee. Ask one question and nothing else: if a consultant handed you this with a deliverable, would it change anything for you?</td>
+            <td>one week, no build</td>
+            <td><strong>Two documents independently landed on a version of this and it is the cheapest test of the hinge assumption behind the entire receipt thesis.</strong> If no gatekeeper will accept a receipt as an answer, it is paperwork and the reframe in section 1 is wrong. Nobody has asked.</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="warnbox">
+        <p><strong>What is deliberately NOT on this list:</strong> a product launch, a pricing page, an email sequence for the licence, paid ads, and anything at all from the content cadence, the operating-system post, or the white-label channel. Three of the six creative directions do not start this week. The enterprise pass says the correct amount of enterprise work this week is two calendar entries and one wording fix, and that is the plan working rather than failing.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5">
+    <summary><h2>5. The portfolio map</h2></summary>
+    <div class="sec-body">
+      <p>Everything named across the four documents, in one place, so the shape is visible without reading them.</p>
+
+      <h3>The standalone-company product ladder, from the blind pass</h3>
+      <p class="muted">Written as if a new company were being founded with the engine as its only asset. Working name ASSAY, which is the independent test that proves what a material is made of so a trade can happen. The Council's own recommendation was to ship two of these six, not six.</p>
+      <div class="ladder">
+        <div class="rung"><span class="n">0</span><div><strong>Census</strong> &mdash; point it at a folder, it tells you what identity data you are holding, by category and count. Fully local, ninety seconds. <span class="pill">free lead magnet</span></div></div>
+        <div class="rung"><span class="n">0b</span><div><strong>Tripwire</strong> &mdash; browser extension that warns "this paste contains 47 identity fields" and offers to open the real tool. Detects, never rewrites. <span class="pill">free, and the honest survivor of a killed idea</span></div></div>
+        <div class="rung"><span class="n">1</span><div><strong>Passage</strong> &mdash; the core tool. Selective reversible anonymization, the reverse pass, the approval gate, the receipt. <span class="pill">revenue, ~$59/mo per seat</span></div></div>
+        <div class="rung"><span class="n">2</span><div><strong>Ledger</strong> &mdash; every receipt, searchable, exportable as a client-facing or insurer-facing evidence pack. Converts a tool purchase into a firm purchase. <span class="pill">~$150/mo at firm level</span></div></div>
+        <div class="rung"><span class="n">3</span><div><strong>Tally</strong> &mdash; proves every figure in an AI-written deliverable traces byte-for-byte to its source. Catches a failure that has nothing to do with privacy, which is exactly why it makes the privacy claims believable. <span class="pill">bundled, never sold alone</span></div></div>
+        <div class="rung"><span class="n">4</span><div><strong>Mark</strong> &mdash; a public page that verifies a receipt. Not a badge granted, a signature check anyone can run. <span class="pill">free, it is the loop</span></div></div>
+        <div class="rung"><span class="n">5</span><div><strong>Engine</strong> &mdash; the classifier and receipt emitter as an embeddable library for other vendors. <span class="pill">year two at the earliest</span></div></div>
+      </div>
+      <p class="muted">The stated moat is not the code, which is copyable in a quarter. It is the receipt format becoming the thing buyers ask for by name, because cloning that format is adopting it. One honest constraint travels with this whole ladder: the searchable ledger and the public verifier are backends, so "zero network calls" survives as a per-step claim about the anonymizer and never as a company-wide one.</p>
+
+      <h3>The six creative directions, with their verdicts</h3>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>#</th><th>Direction</th><th>Verdict</th><th>Blocker</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Zero-install browser demo of the approval screen</td><td><span class="pill go">GO, build now</span></td><td>None. The only item with no dependency on the Trial</td></tr>
+          <tr><td>2</td><td>Free-as-a-service, not free-as-download</td><td><span class="pill go">GO with changes</span></td><td>Capped at five, gated on four qualifying questions, reframed to an extract. Shape is decision 3</td></tr>
+          <tr><td>3</td><td>Quarterly state-of-the-question publication</td><td><span class="pill">GO on intake only</span></td><td>Needs one real moment from you. Aggregate data does not exist and its absence gets stated in the issue rather than papered over</td></tr>
+          <tr><td>4</td><td>The Trial published as a benchmark</td><td><span class="pill">PIVOT</span></td><td>Self-publish rather than chase a conference; the 2026 submission cycle closed. Eighty percent is writable now; only the results section is gated</td></tr>
+          <tr><td>5</td><td>The operating-system-as-proof post</td><td><span class="pill">GO on intake only</span></td><td>Needs a real moment about your own system, a harder ask than item 3</td></tr>
+          <tr><td>6</td><td>White-label channel, and the certification mark</td><td><span class="pill park">PARK</span> / <span class="pill kill">SCRATCH</span></td><td>Split deliberately. Decisions 6 and 7</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3>The five enterprise access plays, ranked</h3>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Play</th><th>Available today?</th><th>Cost</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Own the question, aimed one level up at privacy officers and counsel</td><td><strong>Yes</strong></td><td>near zero</td><td>Start now. Costs nothing the primary track needs</td></tr>
+          <tr><td>The privacy and in-house-counsel speaking circuit, through open proposals</td><td><strong>Yes</strong>, on deadline timing</td><td>low</td><td>Start now. It is a calendar item, not a project</td></tr>
+          <tr><td>Free analyst briefings, used for intelligence rather than leads</td><td><strong>Yes</strong></td><td>one hour</td><td>Start now. Free, no client status needed, cheapest outside read available</td></tr>
+          <tr><td>Implementation partners as a channel, never as a customer</td><td>No, needs the Trial</td><td>low</td><td><strong>The highest-value play.</strong> Queue behind the Trial. Note it is ranked on reasoning, not on observed evidence</td></tr>
+          <tr><td>A free assessment for a company's internal AI governance group</td><td>Yes, but it is real work</td><td>medium</td><td>Run one as a test, never as a program</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="muted"><strong>Three plays were considered and removed, and the reasons are worth keeping so they are not re-proposed.</strong> The major HR platform's partner and marketplace ecosystem: every channel there assumes a product with an integration surface to certify, and this tool reads exported files offline and never touches that API, so there is literally nothing to certify. The mismatch is architectural and the version that would fit is one the spec forbids. Open-sourcing part of the engine: the only part worth open-sourcing is the part whose value is that it is verified, and it would compete with a free Microsoft-backed library on that library's own ground. Buying a conference booth: out of reach financially and wrong strategically, since a booth competes on budget rather than on argument.</p>
+
+      <h3>The reuse bundle already built or specified, from the embedded pass</h3>
+      <p class="muted">Nineteen assets already in the building that this program can point at a new job. The argument of that document is that distribution does not have to be bought when three distribution surfaces and a proof factory are already paid for.</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>#</th><th>Asset</th><th>What it does for this program</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>The HR analytics engagement program</td><td>The engagement this tool unblocks. The bundled pitch writes itself</td><td>Approved, build in flight</td></tr>
+          <tr><td>2</td><td>The synthetic organisation with deliberate defects</td><td><strong>The Trial corpus.</strong> No client, no consent needed</td><td>Built, 376 tests</td></tr>
+          <tr><td>3</td><td>The one-page security passport format</td><td>Already answers the twelve questions a vendor-risk review asks. Repoint it</td><td>Format exists</td></tr>
+          <tr><td>4</td><td>The AI governance readiness diagnostic</td><td>Top of the funnel. It produces the exposure finding this tool remedies</td><td>Draft, blocked on two of your calls</td></tr>
+          <tr><td>5</td><td>The live magnet stack and its deploy rail</td><td>A page is a page, not a platform</td><td>Live</td></tr>
+          <tr><td>6</td><td>The video and pitch-reel pipeline</td><td>A ninety-second screen reel of the approval gate. See the collision note in section 6</td><td>Built</td></tr>
+          <tr><td>7</td><td>Contact discovery, cold sequences, offer construction</td><td>The boutique-shop outreach channel needs no new tooling</td><td>Built</td></tr>
+          <tr><td>8</td><td>The drafting, board and campaign stack</td><td>The content position on a pipeline that already publishes daily</td><td>Built</td></tr>
+          <tr><td>9</td><td>Intake, delivery and pricing skills</td><td>Makes the receipt a standard engagement artifact and prices the bundle without itemising the anonymization</td><td>Built</td></tr>
+          <tr><td>10</td><td>The shared normalisation helper</td><td>Four measured evasions already closed; reuse is mandatory</td><td>Built</td></tr>
+          <tr><td>11</td><td>The pressure-test and decision-record gates</td><td>Two of them grade a claim from its artifact rather than its assertion, which is the only honest way to write about a receipt</td><td>Built</td></tr>
+          <tr><td>12</td><td>The HR analytics dashboard</td><td>The tool that needs real client data. It refuses to emit a number when the data disagrees, which is itself a trust artifact</td><td>Built</td></tr>
+          <tr><td>13</td><td>The I-9 readiness audit product</td><td>The sibling product on the same primitive: a defensible artifact about employee files</td><td>Go-conditional, blocked on an attorney gate</td></tr>
+          <tr><td>14</td><td>The shipped commerce rail</td><td>A paid licence is a catalogue row, not a platform build</td><td>In production</td></tr>
+          <tr><td>15</td><td>The approval and decision-journal stack</td><td><strong>The receipt primitive is half-built already, for a different consumer</strong></td><td>Built</td></tr>
+          <tr><td>16</td><td>The four-role build pipeline</td><td>The capacity that would build the remaining pieces</td><td>Shipped v1, pilot merged</td></tr>
+          <tr><td>17</td><td>The clean-test VM, and a distributable-launch playbook already run once</td><td>The install rig any distributable needs before it reaches a client laptop</td><td>Active / built</td></tr>
+          <tr><td>18</td><td>Four live surfaces already reaching this buyer</td><td>Both the opportunity and the surface-area problem. See decision 4</td><td>Live</td></tr>
+          <tr><td>19</td><td>The buyer-language research skill</td><td>Unrun. Every hook in the plan is labelled unverified pending exactly this</td><td>Built, unrun</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="muted">The headline play of that document sits on top of all nineteen: write <strong>one paragraph</strong> of contract language a client pastes into their agreements with their <em>other</em> AI vendors, requiring a per-engagement record of what was transmitted and substituted, and a verification that analytical values came back unaltered. A specification distributes through legal departments, which forward documents to each other as routine. Software needs a funnel; a requirement needs one client. That play is gated on Monday action 7.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6">
+    <summary><h2>6. What collided, and how it resolves</h2></summary>
+    <div class="sec-body">
+      <p>The creative pass was written before the other three existed and flagged three specific collision risks. All three resolve. A fourth, which nobody flagged, matters more than any of them.</p>
+
+      <h3>Flagged risk 1: the browser demo versus the asset plays' public surfaces</h3>
+      <p><strong>Resolved, with one real correction.</strong> The two asset plays do not propose a competing demo surface. Their public artifacts are products (a free local scanner, a detect-only browser extension, a public receipt verifier), not marketing assets, and the free scanner touches real local data where the demo is explicitly forbidden from ever accepting a file. Those are different things and both can exist.</p>
+      <p><strong>The genuine collision is elsewhere and it is worth catching:</strong> the embedded pass proposes a ninety-second screen reel as "the only proof that exists before the Trial lands," and the creative pass independently argues the video pipeline is the wrong tool for exactly this job, because the entire argument of the demo is that a visitor can pause it, poke it, click a flagged row and read the source. <strong>Resolution: the interactive page is primary, the reel is rendered from it later for channels that need video.</strong> Not two proof artifacts competing for the same pre-Trial job.</p>
+      <p>One further correction: the embedded pass killed a standalone product site with its own funnel, and the outside voice counted four live buyer surfaces before any new one is added. <strong>The demo should land on an existing surface rather than minting a new one.</strong></p>
+
+      <h3>Flagged risk 2: free-as-a-service versus the enterprise entry offer</h3>
+      <p><strong>Confirmed as a real duplicate.</strong> The enterprise pass's free assessment for an internal AI governance group and the creative pass's free hands-on anonymization are the same founder hours spent on two different buyers, and a third document recommends the paid version of the same act. This is now folded into <a href="#sec-3">decision 3</a> as one question with one capacity cap rather than three parallel free programs. The outside voice's "everything you are offering is free" objection applies to the aggregate, which no single document could see.</p>
+
+      <h3>Flagged risk 3: the white-label channel versus the embedded asset play</h3>
+      <p><strong>Resolved, and it is convergence rather than conflict.</strong> The embedded pass's inverted-buyer idea (the enterprise deploys it and hands it to every vendor it engages) and the creative pass's white-label channel are the same structural move aimed at different buyers, and <em>both were independently parked</em>, as was the blind pass's embeddable engine, which it put at year two at the earliest. Three independent parks on one move is a strong signal. They merge into the single park in <a href="#sec-3">decision 6</a>.</p>
+      <p>One thing the merge adds that no document had alone: the creative pass's "smallest first version" of white-label, which is one partner, one engagement, co-delivered with your name still on it, <strong>is the same thing as the enterprise pass's highest-ranked access play</strong>, the implementation-partner channel. That is not a park at all. It is the top of the queue behind the Trial, and it should be carried as one item rather than as a parked idea and an active play that nobody noticed were the same move.</p>
+
+      <div class="warnbox">
+        <h3>Unflagged and more serious: two of the four documents are written against a build state that is out of date</h3>
+        <p>The embedded pass states the tool has <strong>zero lines of code</strong>, makes a build dispatch its first move, and sets a failure condition that fires if there is still no code by 2026-11-14. The blind pass treats the reverse pass as unproven and the engine as pre-build. The enterprise pass says the opposite, and <strong>it is the one that is right</strong>.</p>
+        <p><strong>Verified independently during this reconciliation, not relayed:</strong> the working tree exists, it carries 30 modules under the package, its own run log records 654 tests passing with one skipped, and the commit the enterprise pass cites is the current head. The full loop runs end to end on a real file, and the reverse pass is proven against a hand-authored document across sixteen grammatical and formatting contexts. Two reproduced critical defects were found by a security pass and fixed, including one where a real business value was silently rewritten into an employee's surname.</p>
+        <p><strong>What is genuinely not done</strong> is the fourth wave: the Trial corpus and the Trial run itself, plus the monitored network-silence run. The run log's own headline is unambiguous and governs everything: no real client document should go through this tool yet.</p>
+        <p><strong>Consequences, and they are practical:</strong> the embedded pass's move zero is already done and should be struck; its failure condition needs rewriting against a real gate rather than a code-count that is already false; the Trial's last remaining blocker was the corpus, and the same document supplies it; and anywhere a plan says "before the build starts," the honest phrasing is now "before the Trial runs," which is a much shorter distance.</p>
+      </div>
+
+      <h3>Two smaller collisions worth recording</h3>
+      <ul>
+        <li><strong>The wording error is in one of tonight's own new documents.</strong> The blind pass calls the receipt "signed" twice and builds its public verifier on the idea of a signature check. That is the exact error the enterprise pass ordered corrected. It is not a contradiction so much as the same document independently proposing the fix that would make the word true, which is the timestamp anchoring in section 1.</li>
+        <li><strong>The certification mark was killed three times independently.</strong> The creative pass scratched it on prior art. The blind pass killed the same idea cold in its own cut list and kept only the verifier form. A Council killed it on 2026-07-26. When three passes that cannot see each other reach the same verdict, that verdict should be treated as settled unless you overrule it.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7">
+    <summary><h2>7. The four source documents</h2></summary>
+    <div class="sec-body">
+      <p>All four are in the repository, all four are merged to main, and all four remain canonical for their own scope. This page reconciles them; it does not replace them.</p>
+      <ul>
+        <li><code>docs/prds/tessera/enterprise-gtm-2026-09-16.md</code> &mdash; the enterprise track, five access plays, the enterprise-readiness audit and its eleven-item punch list, and the sequencing recommendation in section 2 above. It has its own live review page at <a href="https://boubacarbarry.com/review/20260916-tessera-enterprise-track/">boubacarbarry.com/review/20260916-tessera-enterprise-track/</a>.</li>
+        <li><code>docs/prds/tessera/asset-play-agentshq-embedded-2026-09-16.md</code> &mdash; the portfolio view, the nineteen-item reuse bundle, the ladder, and the data-handling clause.</li>
+        <li><code>docs/prds/tessera/asset-play-blind-standalone-2026-09-16.md</code> &mdash; the blind standalone-company pass, the six-product ladder, and the receipt-as-product reframe with the timestamp-anchoring fix.</li>
+        <li><code>docs/prds/tessera/creative-buildout-2026-09-16.md</code> &mdash; the six approved creative directions built into specs, with the crucible and Council records.</li>
+        <li><code>docs/prds/tessera/PRD.md</code> and <code>docs/prds/tessera/GTM.md</code> &mdash; the build contract and the existing go-to-market. Context rather than new input, and both still win on their own subject matter.</li>
+        <li><code>docs/prds/tessera/reconciliation-2026-09-16.md</code> &mdash; the durable repo record of section 6, written so the next agent reading the two stale documents finds the correction attached.</li>
+      </ul>
+      <p class="muted">Every product and project name on this page is an internal working name and none of it belongs in anything a customer reads.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Research lane &middot; reconciliation and synthesis pass &middot; 2026-09-16. Nothing on this page has been built, published, sold, or shown to anyone outside this system. Every accuracy number remains unmeasured until the Re-identification Trial runs.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
