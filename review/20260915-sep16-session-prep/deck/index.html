@@ -346,7 +346,8 @@ body.grid .hud,body.grid .hint{display:none}
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v5 · 2026-09-15-15:51:14 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v6 · 2026-09-15-18:51:54 MT</div><!-- DEPLOY_STAMP_END -->
+
 
 
 
@@ -641,11 +642,17 @@ var SLIDES = [
         close:'If you want it pointed at your business, book the free session.',
         contact:'calendly.com/boubacarbarry/free-ai-audit-owner-operators'},
 
-/* 35 */ {t:'res', sub:'ISSUED',
-        title:'ASK ME ANYTHING', ts:118, ground:'reserve',
+/* 35 CHANGE 11 - the closing sheet. ONE address, never the wordmark AND the
+      domain together: a sheet that says Catalyst Works and catalystworks.consulting
+      is saying the same thing twice. His contacts live here, and the booking QR is
+      on the sheet the room is looking at while he takes questions. */
+        {t:'res', sub:'ISSUED',
+        title:'ASK ME ANYTHING', ts:118, ground:'reserve', draw:'qrcal',
         lead:'I am here until they make me leave.',
-        body:['Book the free session. calendly.com/boubacarbarry/free-ai-audit-owner-operators',
-              'Boubacar &middot; Catalyst Works &middot; catalystworks.consulting'],
+        body:['Book the free session. calendly.com/boubacarbarry/free-ai-audit-owner-operators'],
+        rows:[['EMAIL','boubacar@catalystworks.consulting'],
+              ['LINKEDIN','linkedin.com/in/boubacarbarry']],
+        foot:'catalystworks.consulting',
         tb:{Scale:'1:20', Rev:'B', Zone:'B1'}}
 ];
 
@@ -1039,7 +1046,13 @@ function bodyKit(s){
      size a dimension would be if a dimension mattered this much. It is the one
      thing on the sheet somebody has to type correctly. */
   var o = head(s, 96, 138), h = '';
-  h += '<p class="url">' + s.url + '</p>';
+  /* The address is set as large as it can be and still finish inside the held
+     field. It is a monospace line that must not wrap and must not run off the
+     ground, so the size follows the character count instead of being a constant
+     that happens to fit the shortest address we ever wrote. A longer address on
+     a later deck shrinks itself rather than overrunning the sheet. */
+  var uSize = Math.min(42, Math.floor((MEASURE_OF(s) - 20) / (s.url.length * 0.66)));
+  h += '<p class="url" style="font-size:' + uSize + 'px">' + s.url + '</p>';
   (s.ops||[]).forEach(function(op, i){
     h += '<div class="op"><i>' + (i+1) + '</i><span>' + nw(op) + '</span></div>';
   });
@@ -1128,11 +1141,21 @@ function bodyRes(s){
     }).join('') + '</div>';
   }
   (s.body||[]).forEach(function(p){ h += '<p class="para">' + nw(p) + '</p>'; });
+  /* Contact rows use the same schedule furniture as the contact sheet, so an
+     address on the closing sheet is set exactly like an address anywhere else. */
+  if (s.rows){
+    h += '<div class="sched">' + s.rows.map(function(r){
+      return '<div class="row"><b style="width:170px">' + r[0] + '</b><span>' + nw(r[1]) + '</span></div>';
+    }).join('') + '</div>';
+  }
   if (s.close) h += '<p class="close">' + nw(s.close) + '</p>';
+  /* The foot carries the address alone. Never the wordmark beside it. */
+  if (s.foot) h += '<p class="contact">' + s.foot + '</p>';
   var w = MEASURE_OF(s);
   var draw = '';
   if (s.draw === 'band') draw = DWG(drawBand(1092, 240, 420, true));
   if (s.draw === 'ga6')  draw = DWG(drawGA6(560, 430));
+  if (s.draw === 'qrcal') draw = DWG(drawScan(1092, 240, 300, QR_CAL, 'SCAN TARGET'));
   return o + flow(s, w, h) + draw;
 }
 
@@ -1369,6 +1392,7 @@ build();
      &#8203;&#8204;&#8203;&#8204;&#8204;&#8203;&#8204;&#8203; -->
 </body>
 </html>
+
 
 
 
