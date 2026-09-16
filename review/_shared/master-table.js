@@ -118,7 +118,15 @@
     // himself. Without this the row still renders (falls through to the raw
     // status string) but shows the literal lowercase "drafted" instead of a
     // real label. Additive only -- no existing status label changes meaning.
-    drafted: 'Drafted, not yet sent'
+    drafted: 'Drafted, not yet sent',
+    // Added 2026-09-16. `withdrawn` has been a real status on this board since
+    // the Energy4Life row was withdrawn, and without an entry here it fell
+    // through to the raw string -- and in role-tracker.js to the outright FALSE
+    // "No decision yet", on a role where a decision was very much made. `offer`
+    // is added at the same time because the day it first appears is the worst
+    // possible day to discover it renders as a lowercase word.
+    withdrawn: 'Withdrawn',
+    offer: 'Offer'
   };
 
   var STAGE_LABEL = {
@@ -208,8 +216,12 @@
       sb.from(TABLE).select('item_id,value,updated_at').eq('board_id', cfg.boardId)
         .then(function (res) {
           if (res.error) { throw res.error; }
-          render(mount, res.data || []);
-          resolve(true);
+          // Resolve with the counts render computed, so the page header can be
+          // painted from the SAME read that built the table -- never a second
+          // query, and never a hand-typed number that can drift from it.
+          // Falls back to `true` so the older `.then(function () {...})` shape
+          // keeps working if render ever returns nothing.
+          resolve(render(mount, res.data || []) || true);
         })
         .catch(function (err) {
           fail(err && err.message ? err.message : String(err));
@@ -303,13 +315,28 @@
     });
 
     // ---- counts, computed from the same rows the table renders ----------
-    var counts = { all: rows.length, interviewed: 0, applied: 0, stale: 0, unclear: 0, rejected: 0 };
+    // 2026-09-16: `offer`, `withdrawn` and `drafted` added, and a distinct
+    // company count alongside them. Before this, a withdrawn or drafted row was
+    // counted by `all` but by none of the buckets, so the six boxes silently
+    // failed to add up to the total -- on a page whose own copy promises they
+    // do. These counts are now the ONLY source for the header numbers; nothing
+    // on this page is hand-typed any more.
+    var counts = {
+      all: rows.length, interviewed: 0, applied: 0, stale: 0,
+      unclear: 0, rejected: 0, offer: 0, withdrawn: 0, drafted: 0, companies: 0
+    };
+    var seenCompanies = {};
     rows.forEach(function (r) {
       var s = r.st.status || '';
       if (s === 'interviewed') { counts.interviewed++; }
       else if (s === 'applied') { counts.applied++; if (staleness(r.st)) { counts.stale++; } }
       else if (s === 'unclear') { counts.unclear++; }
       else if (s === 'rejected') { counts.rejected++; }
+      else if (s === 'offer') { counts.offer++; }
+      else if (s === 'withdrawn') { counts.withdrawn++; }
+      else if (s === 'drafted') { counts.drafted++; }
+      var c = String(companyOf(r.st, r.key) || '').trim().toLowerCase();
+      if (c && !seenCompanies[c]) { seenCompanies[c] = 1; counts.companies++; }
     });
 
     var FILTERS = [
@@ -536,6 +563,10 @@
     search.addEventListener('input', applyFilter);
 
     applyFilter();
+
+    // The page header is painted from this, by the caller. Returned rather than
+    // written here on purpose: this file owns the table, not the page around it.
+    return counts;
   }
 
   root.MasterTable = MasterTable;

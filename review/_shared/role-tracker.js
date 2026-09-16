@@ -342,6 +342,16 @@
                 : status === 'interviewed' ? 'Interviewed'
                 : status === 'rejected' ? 'Rejected'
                 : status === 'unclear' ? 'Status unclear'
+                // Added 2026-09-16, same defect as the three above and caught the
+                // same way. `withdrawn` has been a real status on this board since
+                // the Energy4Life row was withdrawn, and it rendered as "No
+                // decision yet" -- not merely unlabelled but FALSE, on a role where
+                // a decision was made and recorded. `offer` and `drafted` are added
+                // beside it so the day an offer first lands is not the day we
+                // discover it reads as undecided.
+                : status === 'withdrawn' ? 'Withdrawn'
+                : status === 'offer' ? 'Offer'
+                : status === 'drafted' ? 'Drafted, not yet sent'
                 : readFailed ? 'Unknown' : 'No decision yet';
       var when = state.statusDate ? ' on ' + esc(state.statusDate) : '';
 
