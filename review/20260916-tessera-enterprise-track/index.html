@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tessera: The Enterprise Track</title>
+
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-16-14:01:24 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Tessera &middot; Enterprise Track</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">The tension</a>
+      <a href="#sec-2">The clock</a>
+      <a href="#sec-3">5 access plays</a>
+      <a href="#sec-4">Inside a large org</a>
+      <a href="#sec-5">Who to target</a>
+      <a href="#sec-6">Named targets</a>
+      <a href="#sec-7">Readiness audit</a>
+      <a href="#sec-8">Council</a>
+      <a href="#sec-9">Not verified</a>
+      <a href="#sec-10">This week</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Tessera: The Enterprise Track</h1>
+    <div class="meta">Five access plays, the enterprise-readiness verdict, and the services-vs-enterprise sequencing call &middot; 16 September 2026</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      
+<p><strong>Tessera is further along than either companion document says, and further from enterprise-ready than that suggests.</strong> It is <strong>built</strong>, not designed: 30 modules, 654 passing tests, a working desktop window, a real two-wrap vault, one pinned dependency. But the <strong>Re-identification Trial has not run</strong>, so there is no accuracy number, and that single fact governs everything below.</p>
+
+<p><strong>Enterprise-readiness verdict: NOT DEPLOYABLE inside a large organization today.</strong> Not because of the code, which is unusually good. Because a Fortune 100 asks for about eleven artifacts and you have one. Top three punch-list items: <strong>(1) run the Trial</strong>, <strong>(2) code-signing certificate and a signed installer</strong> (modern endpoint control blocks unsigned binaries at the kernel, and a local admin cannot override it), <strong>(3) make the receipt exportable to a location the organization controls</strong>.</p>
+
+<p><strong>On services versus enterprise, the recommendation is: do not pivot.</strong> Every one of the six reasons the existing plan gave for staying on the consultant path is still true today, six for six. Near-term revenue stays exactly where it is. The enterprise track starts now as a set of cheap options on a long cycle, because a cycle not started pays never.</p>
+
+<p><strong>The honest answer to "what do I do this week" is: almost nothing.</strong> Two calendar entries and one five-minute copy fix. Everything else waits for the Trial.</p>
+
+<p><strong>Three findings worth your attention before the detail:</strong></p>
+<ul>
+<li><strong>"Renova" is almost certainly GE Vernova.</strong> GE split into three companies in April 2026. One word from you confirms it, and it makes the target list better rather than worse.</li>
+<li><strong>Workday is architecturally inadmissible, and that is a clean answer rather than a discouraging one.</strong> Every Workday channel needs an integration to certify, and Tessera has none by design.</li>
+<li><strong>The clock runs against the enterprise case, not for it.</strong> The platform vendors are shipping the first line of defence themselves, and the enterprises you would sell to are the ones most able to use it.</li>
+</ul>
+
+<p><strong>The one question only you can answer, and everything moves when it changes:</strong> do you want to <strong>sell a product</strong> to large organizations, or <strong>sell engagements</strong> to them using the product as proof? This work assumes the second, on five Council voices converging on it independently.</p>
+
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+  <details class="sec" id="sec-1" open>
+    <summary><h2>The tension, named rather than papered over</h2></summary>
+    <div class="sec-body">
+<p>You are asking for the enterprise exploration the existing plan argued against. That is a real disagreement, not something to smooth over, so here is both sides honestly.</p>
+
+<p><strong>The existing plan's reasoning has not expired. Six for six.</strong></p>
+<div class="table-scroll"><table>
+<tr><th>What the existing plan argued</th><th>Still true today?</th></tr>
+<tr><td>The enterprise de-identification tier is a disqualifier, not a competitor</td><td><strong>True, and it cuts both ways.</strong> Nobody in that tier sells to a solo consultant, and no Fortune 100 buys a security tool from one</td></tr>
+<tr><td>There is no distribution</td><td><strong>True.</strong> No page, no download, no product to buy</td></tr>
+<tr><td>No proof exists</td><td><strong>True, and now the most important fact here.</strong> The Trial still has not run</td></tr>
+<tr><td>Enterprise cycles are 6 to 18 months against a revenue-this-month goal</td><td><strong>True</strong></td></tr>
+<tr><td>Services-attached is the only path that pays inside two quarters</td><td><strong>True</strong></td></tr>
+<tr><td>The HR buyer is the user, not the approver</td><td><strong>True, and it becomes the strategy rather than a risk</strong></td></tr>
+</table></div>
+
+<p><strong>But three things it did not weigh, and each is a real gap rather than a rescue:</strong></p>
+<ul>
+<li>It reasoned about selling Tessera to an enterprise <em>as a product</em>. It never asked whether a Fortune 100 is a customer for <strong>the engagement Tessera unblocks</strong>, which is a different sale to a different buyer. You spent 10+ years inside one of these.</li>
+<li>It treated Workday as a competitor. Workday is neither a competitor nor a customer. It is a channel, and that is a third motion the plan does not contain.</li>
+<li>It assumed the two tracks compete for time. For most of the plays below, they do not. A conference submission is an afternoon. An analyst briefing is an email.</li>
+</ul>
+
+<p><strong>The recommendation: two unequal tracks, never merged.</strong></p>
+<ul>
+<li><strong>Track A, primary, unchanged</strong> — services-attached to solo and small HR consultants. This is where revenue comes from in the next two quarters. Its three gating items stay first in line.</li>
+<li><strong>Track B, secondary, cultivation only</strong> — the enterprise track, bounded by <strong>four named artifacts</strong> rather than by hours.</li>
+</ul>
+
+<p><strong>The binding rule: if Track A's three gating items are not all done, Track B gets nothing.</strong> Today none of the three is done, and two are not started.</p>
+
+<p><strong>Why an artifact budget and not a time budget.</strong> The first draft capped Track B at four hours a week. Council's objection was unanswerable: a time cap has no owner, no artifact and no way to notice when it is breached. An artifact budget can be checked. A time budget cannot.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>The clock runs against the enterprise case</h2></summary>
+    <div class="sec-body">
+<p><strong>This is the finding most likely to be unwelcome and it must not be softened.</strong> The existing plan warned that anonymisation is becoming a feature rather than a product, and called that risk unbounded. In the last few months it acquired specifics.</p>
+<ul>
+<li><strong>Microsoft Purview DLP for Copilot reached general availability around mid-2026.</strong> It evaluates prompts in real time and blocks sensitive categories from reaching a model. It does not do reversible reconstruction, which is your actual differentiator, but it moves detection and blocking natively into the stack large enterprises already own.</li>
+<li><strong>Anthropic shipped Enterprise Frontier Safeguards in early September 2026</strong>, moving enterprise data storage into customer-controlled infrastructure. Zero Data Retention already existed but is opt-in and negotiated rather than default.</li>
+</ul>
+
+<p><strong>Here is the asymmetry, and it is the whole point.</strong> A large organization is precisely the buyer that <em>can</em> negotiate zero retention, <em>can</em> deploy Purview, and <em>can</em> require a vendor to put data in infrastructure it controls. <strong>The enterprises you would sell to are the ones least likely to still need this by the time a sale closes.</strong> A solo HR consultant has none of those options and never will, which is exactly the buyer the existing plan already chose.</p>
+
+<p>This does <strong>not</strong> kill the enterprise track. It sets its size. The second layer still has real value: the receipt, the audit trail, the works-council answer, and the case where data must not cross at all regardless of anybody's retention promise. But that is a <strong>narrower and more defensible</strong> value than "you cannot send this data to a model," and the enterprise pitch has to be built on the narrow version or it will be out of date before it is delivered.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>Five ways to get access to people</h2></summary>
+    <div class="sec-body">
+<p>Deliberately not the obvious ones. Cold outreach, organic content and the free tool already belong to the consultant motion and stay there.</p>
+
+<p><strong>1. Own the question, aimed one level up.</strong> The same AI-employee-privacy content position already identified, redirected from solo consultants to <strong>privacy officers, in-house counsel and people-analytics leads inside large organizations</strong>. Almost everyone writing about employee-data privacy is a lawyer or a privacy engineer. Almost nobody writing about it has been the HR Business Partner on the other end of the request. <em>Available today. Costs nothing Track A needs.</em></p>
+
+<p><strong>2. The privacy and counsel circuit, not the HR circuit.</strong> The HR vendor hall is where this looks like it belongs and is exactly where it gets ignored, against an audience that buys platforms. The privacy circuit is smaller, practitioner-led, and holds the veto over any tool touching employee PII. <strong>IAPP runs an open call for proposals closing 2026-02-15</strong>; the HR Technology Conference runs a genuine CFP separate from paid sponsor slots. Your talk is the one nobody else can give: what the person holding the employee file actually does at 4pm on a Tuesday, and why the policy does not survive contact with it. <em>Available today, on CFP timing.</em></p>
+
+<p><strong>3. Free analyst briefings, for intelligence rather than leads.</strong> Gartner vendor briefings are <strong>free and explicitly do not require client status</strong>, requested through a public form, typically answered in two to three business days. This produces no leads and no Magic Quadrant inclusion, and anyone selling it as a channel has misunderstood it. What it buys is <strong>a calibrated outside read on the positioning from someone with no stake in the answer</strong>, which is the cheapest market intelligence available to an operator with no customers to learn from. <em>Available today. One form, one hour.</em></p>
+
+<p><strong>4. HRIS boutique implementation partners as a CHANNEL, never as a buyer.</strong> Firms of the TopBloc / Invisors / CrossVue / Intecrowd class are already inside the enterprise, already holding real employee data during a migration, and already facing your exact problem. They have the access and the client relationship you do not. <strong>This is the highest-value play on the list</strong> because it converts a multi-quarter enterprise cycle into a two-call sale to a 20-person firm. Aim at the boutiques deliberately, not the Big Four, who have their own tooling and no reason to depend on a one-person vendor. <em>Needs the Trial first. A partner puts its own delivery reputation behind this, and "I have not measured it" ends that conversation permanently.</em></p>
+
+<p><strong>5. A free anonymization audit for a company's internal AI-governance task force.</strong> Nearly every large organization now has some standing body chartered to answer how people can use AI on company data without an incident. They are typically under-resourced, doing it alongside day jobs, with no budget and no vendor relationship to protect, which is the only combination in a large enterprise where a stranger gets a meeting. Offer a real bounded assessment, not a demo. <strong>The trap: an audit that concludes "therefore buy my tool" is a pitch in a lab coat and they will read it that way in the first paragraph.</strong> It has to be genuinely willing to conclude they do not need you. <em>Run one as a test, not as a program.</em></p>
+
+<p><strong>Three things deliberately NOT on this list:</strong></p>
+<ul>
+<li><strong>The Workday ecosystem.</strong> Drafted as a play and removed on the research. See the named-targets section.</li>
+<li><strong>Open-sourcing part of the engine.</strong> The only part worth open-sourcing is the part whose value is that it is verified, and it would compete with a free Microsoft-backed library on its own ground. A worse Presidio is not a distribution strategy.</li>
+<li><strong>Buying a conference booth.</strong> Out of reach, and a booth competes on budget. The CFP is the same room entered through the door where the argument matters more than the spend.</li>
+</ul>
+</div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>How it would actually get used inside a large organization</h2></summary>
+    <div class="sec-body">
+<p><strong>There is no viable bottom-up path, and this is the opposite of the instinct.</strong> Three reasons, and the third settles it:</p>
+<ol>
+<li><strong>Modern endpoint control does not discourage an unsigned executable, it blocks it at the kernel.</strong> Microsoft has stopped developing AppLocker and is moving organizations to WDAC, which evaluates a binary before it loads and <strong>cannot be overridden by a local administrator</strong>. Enterprises increasingly pair it with a managed-installer policy where only software delivered through Intune or SCCM is trusted. This is not "IT would frown on it." It is "the program does not start."</li>
+<li>The vault binds to the machine and the user account by design. A laptop refresh loses every live engagement's ability to de-anonymize.</li>
+<li><strong>The product sells defensibility, and a shadow-IT deployment is by definition indefensible.</strong> An analyst quietly using an unapproved tool on employee PII has not reduced exposure, they have created a finding. <strong>Tessera cannot be adopted the way a note-taking app is, because the thing it sells is exactly what shadow IT destroys.</strong></li>
+</ol>
+
+<p><strong>So it goes top-down, through the approval function, from day one.</strong></p>
+
+<p><strong>The receipt is the wedge into that conversation — and Council narrowed this claim, so hold the narrow version.</strong> Look at what each approval function needs, and notice only one row is about anonymization at all:</p>
+<div class="table-scroll"><table>
+<tr><th>Function</th><th>What they need to sign off</th><th>What Tessera gives them</th></tr>
+<tr><td>Privacy / DPO</td><td>A record of what processing happened and what left the boundary</td><td><strong>The receipt</strong></td></tr>
+<tr><td>In-house counsel</td><td>Evidence producible later if a regulator or works council asks</td><td><strong>The receipt</strong></td></tr>
+<tr><td>Internal audit</td><td>A control that produces evidence, not a policy that asserts behaviour</td><td><strong>The receipt</strong></td></tr>
+<tr><td>CISO / security</td><td>Attack surface, supply chain, what leaves the endpoint</td><td><strong>One pinned dependency, zero network calls</strong></td></tr>
+<tr><td>The analyst</td><td>The analysis still working</td><td>Business data preserved byte-for-byte</td></tr>
+</table></div>
+
+<p><strong>Three things the receipt is NOT, and each would surface in the first serious meeting:</strong></p>
+<ul>
+<li><strong>It is not third-party-verifiable.</strong> It is generated by the party being audited, and it is an integrity digest rather than a cryptographic signature. An auditor's first question about any control is who produces the evidence and whether they can alter it.</li>
+<li><strong>It does not help where the processing is unsanctioned.</strong> If the activity was approved, they already hold a DPA and the vendor's own logs. <strong>If it was not, the receipt is a confession.</strong> Its value lives only in the band where the activity is approved but unlogged.</li>
+<li><strong>That band is closing for exactly these buyers</strong>, because Purview logs it natively.</li>
+</ul>
+
+<p><strong>What it genuinely is, and it is still worth a lot: a conversation opener with a privacy function, and evidence inside a services engagement.</strong> Those are real jobs. "The thing procurement buys" is not one of them.</p>
+
+<p><strong>The fix that actually answers the objection</strong> is punch-list item 6: make the receipt exportable to a location the organization controls. Then it is no longer evidence the vendor holds about himself, it is <strong>evidence the organization holds in a place he cannot reach</strong>. That is stronger than a signature, costs a modest build, and does not touch the offline guarantee.</p>
+
+<p><strong>So the opening line inside an enterprise is not "this anonymizes your employee data" and not "here is my receipt." It is:</strong> every time anyone in this organization sends employee data to an AI tool there is currently no record of it, and there will be no record of it when someone asks — <strong>and I know that because I spent ten years inside a company like yours holding that file.</strong> The control gap is the hook. The biography makes it credible. The tool is the third thing said, never the first.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>Who to target beyond HR and finance</h2></summary>
+    <div class="sec-body">
+<p><strong>The honest frame: inside a large organization Tessera does not have a buyer. It has an approver, several blockers, and one user.</strong> Getting that mapping right is most of the strategy.</p>
+<div class="table-scroll"><table>
+<tr><th>Persona</th><th>Verdict</th></tr>
+<tr><td><strong>Chief Privacy Officer / DPO</strong></td><td><strong>YES — the primary target.</strong> They own the control gap, have a budget line, are accountable for this exact exposure, and the receipt is built for them. If only one persona is pursued, this is it</td></tr>
+<tr><td><strong>In-house counsel / legal ops</strong></td><td><strong>Yes, close second.</strong> Their need is evidentiary rather than preventive, which is the receipt exactly. Legal ops is often the group running AI-tool intake now</td></tr>
+<tr><td><strong>Internal audit</strong></td><td><strong>Yes, and underrated.</strong> Auditors are structurally biased toward controls that produce evidence over policies that assert behaviour. They also have standing access everywhere and a mandate to ask questions nobody else can. <strong>A rare persona that can create a requirement rather than respond to one</strong></td></tr>
+<tr><td><strong>CISO / IT security</strong></td><td><strong>The blocker, not the buyer. Neutralize, do not pitch.</strong> They will never champion this and can kill it in one email. Talk to them second, never first, and never without the security artifacts in hand</td></tr>
+<tr><td><strong>People-analytics / HR-tech teams</strong></td><td><strong>Yes, as a champion, never as the buyer.</strong> They feel the pain weekly and can make it real to someone with budget</td></tr>
+<tr><td><strong>DEI / pay-equity analysts</strong></td><td><strong>Yes, narrowly, and handle with care.</strong> The most identity-and-comp-sensitive workload in HR, and often legally privileged — which makes the pain acute and a mistake worse than anywhere else. Needs counsel involved from the first conversation</td></tr>
+<tr><td><strong>Labor / employee relations, unionized environments</strong></td><td><strong>Yes, and genuinely unoccupied.</strong> Works councils in Germany and elsewhere have real rights over employee-data processing and can stall an AI rollout outright. <strong>A per-run record of exactly what was processed is a works-council answer, and nobody in this category is selling to that room</strong></td></tr>
+<tr><td><strong>Procurement</strong></td><td><strong>Do not target. Plan for.</strong> Procurement never wants anything; it processes what a sponsor wants. The punch list exists to survive it, not to persuade it</td></tr>
+<tr><td><strong>HRIS implementation partners</strong></td><td><strong>CHANNEL, emphatically not an end buyer.</strong> The boutiques matter far more than the Big Four here. Aim small deliberately</td></tr>
+<tr><td><strong>Chief AI Officer / AI-governance lead</strong></td><td><strong>Yes.</strong> A role that barely existed three years ago, chronically under-resourced, whose explicit charter is the exact question this answers. This is the door for the free-audit play</td></tr>
+</table></div>
+
+<p><strong>The three-move sequence, and it should not be reordered:</strong> privacy or legal first, because the problem and the budget are theirs. People-analytics second, as the internal champion who makes the pain concrete. <strong>Security last, and only with the punch list closed</strong> — they cannot say yes, only no, so that meeting's job is removing a veto rather than winning an advocate.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>The named targets: GE, Renova, Honeywell, Workday</h2></summary>
+    <div class="sec-body">
+<p><strong>"Renova" resolved, and it improves the list.</strong> GE completed a three-way split on 2026-04-02 into <strong>GE Aerospace</strong>, <strong>GE Vernova</strong> (energy) and <strong>GE HealthCare</strong> (separated earlier). No company named Renova exists in GE's, Honeywell's or HR tech's orbit. <strong>"Renova" is GE Vernova</strong>, with high confidence — one word from you confirms it.</p>
+
+<p>That makes the real list <strong>GE Aerospace, GE Vernova, Honeywell and Workday</strong>, and the first two are now separate companies with separate HR functions and separate procurement. <strong>Both split recently, which means their HR systems and governance are being rebuilt right now</strong>, and a function mid-rebuild is measurably more open to an outside idea than one that settled its tooling five years ago.</p>
+
+<p><strong>Three motions, because one plan does not fit four names:</strong></p>
+<ul>
+<li><strong>GE Aerospace, GE Vernova, Honeywell — end-customer, top-down, via privacy / legal / internal audit.</strong> Large industrials with real works-council and multi-jurisdiction exposure. They buy tools and they buy engagements.</li>
+<li><strong>Workday — not a sale at all.</strong> See below.</li>
+</ul>
+
+<p><strong>The supplier portals are the WRONG DOOR, and this finding saves a wasted month.</strong> All three industrials have public, findable supplier onboarding portals — Honeywell's Aerospace Supplier Portal and its SupplierOne self-registration route, GE Aerospace's portal, GE Vernova's portal routed through Tungsten Network. <strong>Every one of them is built for the physical and industrial supply chain, not for software procurement.</strong> Registering feels like progress and leads nowhere, and the feedback loop is slow enough that the mistake would not surface for weeks. Software is procured through IT vendor-risk management, which is an entirely different door. <em>Honeywell's SupplierOne is worth one hour to look at because it is explicitly aimed at small and new suppliers, but it is not a campaign.</em></p>
+
+<p><strong>Workday: a clean no, which is worth more than a vague maybe.</strong> The programs are real and named — Partner Center, the Emerging and Access tiers, Marketplace, Extend, and Workday Ventures, a roughly $500M fund with access to about 11,000 customers. <strong>None of them fits.</strong> Marketplace listing requires a Design-Approved or Certified Integration built against Workday's API. Extend is a platform to build apps on. Even the entry tier presumes you are building a connector. Ventures invests in fundable companies, not solo tools. <strong>Tessera reads exported files, offline, and never touches Workday's API, so there is no integration surface for any of these programs to evaluate.</strong> The mismatch is architectural, it is caused by the exact non-negotiable that makes the product what it is, and the version of Tessera that would fit Workday's ecosystem is a version the build contract forbids.</p>
+
+<p><strong>The honest read on all four: none is reachable today, for the same reason.</strong> A privacy officer who takes the meeting asks, in this order: who else uses it, what is your SOC 2 status, how accurate is it. Today the answers are nobody, none, and unmeasured. <strong>What the named targets are genuinely useful for right now is as the specification for the punch list</strong> — rather than guessing what enterprise-ready means, ask what each of these four would demand. That is free, and it is most of the next section.</p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>The enterprise-readiness audit: the honest verdict</h2></summary>
+    <div class="sec-body">
+<p><strong>Verdict: NOT DEPLOYABLE inside a large organization today. Not close.</strong></p>
+
+<p><strong>And the reason is not the code.</strong> The code is unusually good for its age: 654 tests, one pinned dependency, three review passes including one over the fixes, two reproduced critical findings closed. <strong>The gap is almost entirely in the artifacts and evidence an enterprise requires around software</strong>, plus one genuine product gap.</p>
+
+<p><strong>BLOCKERS</strong></p>
+<ul>
+<li><strong>The Trial has not run, and this one dominates everything else.</strong> No accuracy number exists. "I have not measured it" ends the conversation permanently rather than temporarily. <strong>This is also the highest-leverage item you have: it unblocks the enterprise track, the partner channel, the existing plan's weakest scoring lever, and the right to touch a real client file, all at once.</strong></li>
+<li><strong>No signed installer.</strong> Today it is a Python source install. WDAC blocks unsigned binaries unoverridably. An EV code-signing certificate is roughly $300-700 a year, though signing alone does not grant trust — the organization's own allowlist entry is separate. <strong>The cheapest blocker to close, and it gates everything about deployment.</strong></li>
+<li><strong>No SOC 2 Type II — for a software purchase. NOT required for a services engagement, and that asymmetry is the whole escape hatch.</strong> Selling software to a Fortune 100 effectively requires it: roughly <strong>$25k-$80k first-year all-in, and 3-5 months minimum</strong> because Type II needs an observation window before the audit can conclude. Worse, the controls an auditor observes are exactly what Tessera deliberately lacks by design. <strong>Delivering a consulting engagement where you use your own tool on your own machine usually requires none of it.</strong></li>
+<li><strong>No DPA or data-handling statement.</strong> A document, not a build. The parked legal work's trigger has effectively fired. Note a genuine differentiator here: <strong>a truly offline tool has no sub-processors to disclose</strong>, where reviewers default-assume a long list.</li>
+<li><strong>Multi-sheet workbooks are refused.</strong> Real enterprise HR exports are routinely multi-sheet. A functional blocker hiding as a limitation, and a bounded build.</li>
+</ul>
+
+<p><strong>BEHAVES LIKE A BLOCKER</strong></p>
+<ul>
+<li><strong>No security questionnaire prepared.</strong> This is usually the <em>first</em> artifact requested, before anyone reads a SOC 2, and a PII tool is likely scoped to the long form — roughly 855 questions rather than 126. A pen test report is separately expected, typically $5k-$25k. <strong>The good news: your answers are unusually strong</strong> — no network, no telemetry, no server, one dependency. Largely a writing exercise, and it should be pre-built rather than improvised under deadline.</li>
+</ul>
+
+<p><strong>NOT APPLICABLE — but with a real question hiding inside</strong></p>
+<ul>
+<li><strong>SSO / SAML.</strong> There is no server and no accounts, so SSO is not missing, it is meaningless. The failure mode is a checkbox marking it non-compliant, so write the answer in advance and write it well. <strong>But a good reviewer will find the real question underneath: how is vault access revoked when someone leaves?</strong> Today a departing employee's vault dies with their account, which is arguably correct behaviour and arguably a data-loss incident, and nobody has decided which.</li>
+</ul>
+
+<p><strong>THE REAL CONFLICT: offline versus monitoring.</strong> Security wants central logs and SIEM integration. Tessera is architecturally incapable of providing any, permanently and deliberately. Framed as a gap, this loses immediately. <strong>Framed correctly, it wins:</strong> the tool cannot exfiltrate data because it has no network path at all, and what it produces instead of telemetry is a per-run artifact generated at the moment of the action. <strong>But that only holds if the receipt can actually be collected</strong> — a control producing evidence nobody gathers is not a control. Hence punch-list item 6.</p>
+
+<p><strong>WHAT MUST NOT CHANGE — the deliberate strengths, currently filed as gaps.</strong> Every one of these will be described as a weakness by someone in a review, and the instinct will be to fix it. Do not.</p>
+<ul>
+<li><strong>Zero network calls on every load-bearing path.</strong> The strongest security claim you have. Every erosion is irreversible.</li>
+<li><strong>One pinned dependency.</strong> Supply chain is a top-tier enterprise concern and almost no small vendor can answer it. <strong>This is an accidental enterprise asset — lead with it, do not bury it.</strong></li>
+<li><strong>Fail-closed on everything.</strong> Reviewers test for partial processing. Refusing and emitting nothing is the correct and rare answer.</li>
+<li><strong>The un-skippable human approval gate.</strong> Reads as friction to a buyer who wants automation. <strong>It is what makes the receipt truthful</strong> — an automated pipeline produces a log, a human gate produces an attestation, and only one satisfies an auditor.</li>
+<li><strong>"Anonymized is not unidentifiable," stated in the tool's own output.</strong> Feels like a sales liability. <strong>In front of a privacy officer it is the single most credibility-building thing in the product</strong>, because it is the exact limit they know is true and have heard every vendor deny.</li>
+<li><strong>No compliance claims, ever.</strong> The moment this becomes "GDPR compliant" it is a liability rather than a tool.</li>
+</ul>
+
+<p><strong>THE PUNCH LIST, in order — and the order is the deliverable, not the list.</strong></p>
+<ol>
+<li><strong>Run the Trial and publish the numbers.</strong> Nothing else starts before this.</li>
+<li><strong>Fix "signed receipt" to "integrity-checked receipt"</strong> everywhere it appears. Five minutes. The only unblocked item on the list.</li>
+<li><strong>Answer the retention-window question</strong>, open since September. One decision, and every enterprise intake form asks it.</li>
+<li><strong>Code-signing certificate and a signed installer.</strong></li>
+<li><strong>Pre-build the security questionnaire answers</strong>, including a well-written SSO answer.</li>
+<li><strong>Make the receipt exportable to an organization-controlled location</strong>, as an explicit separate action, verified to carry nothing identifying. <strong>Highest strategic value per hour after the Trial.</strong></li>
+<li><strong>DPA and data-handling statement.</strong></li>
+<li><strong>Multi-sheet workbook support.</strong></li>
+</ol>
+
+<p><strong>Only with a named, paying enterprise customer — never speculatively:</strong> 9. managed packaging, 10. central admin console, 11. multi-user shared vaults.</p>
+
+<p><strong>The line between 8 and 9 is the most important line here.</strong> Items 1 to 8 are worth doing regardless — most of them improve the consultant track too, and none is wasted if the enterprise track goes nowhere. <strong>Items 9 to 11 are worth doing only for a customer who has said yes.</strong> Building them speculatively is how a one-person operation spends a quarter on a product nobody ordered.</p>
+
+<p><strong>One thing to correct about shared vaults specifically, because the existing reasoning does not transfer.</strong> The build contract refuses shared vaults because two different <em>clients</em> must not share a fake value. Inside one company there is no client A and client B, and consistency across two analysts would be a feature rather than a leak. <strong>So that refusal is not settled for this case</strong> — but three different risks replace it: an analyst could de-anonymize data about their own manager and themselves, which needs a real authorization model; <strong>the machine-and-user-bound wrap cannot work for a shared vault at all</strong>, so the most security-critical component would need redesigning; and the blast radius inverts from one engagement to every employee in the company. <strong>Keep the single-user model, and treat the enterprise version as a different product rather than an extension.</strong></p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>Council on the enterprise track</h2></summary>
+    <div class="sec-body">
+<p><strong>Run on the enterprise track specifically, not on the existing go-to-market, which already passed its own. It changed this work in five places rather than rubber-stamping it.</strong></p>
+
+<p><strong>THE CONTRARIAN.</strong> "The receipt is not an audit artifact. It is a self-reported incident report, generated by the party being audited, and it is not even signed." Three failures: it only helps where the processing is already approved, and <strong>where it is not approved it is a confession</strong>; the evidence is produced by the party with the incentive and is a digest rather than a signature; and <strong>the gating rule is unenforceable, with this very document as proof</strong> — it was written while all three gating items were still outstanding. A solo operator cannot enforce a curiosity budget against himself, and four hours becomes eleven across a quarter, invisibly.</p>
+
+<p><strong>THE FIRST PRINCIPLES THINKER.</strong> "Strip the question and the asset is not the tool." What is scarce is that <strong>you can walk into a Fortune 100 HR function and be read as a peer</strong>. The plan spends that on getting a desktop utility through an 18-month procurement gauntlet costing tens of thousands in compliance, to sell something priced at $249. <strong>That is using the most expensive asset you own to sell the cheapest thing you own.</strong> The right question is not how Tessera gets into GE — it is what your Fortune-100 fluency can sell at the highest value, and whether Tessera helps sell it. The answer is an engagement, and the tool's role is a prop in the first meeting, which needs almost none of the punch list.</p>
+
+<p><strong>THE EXPANSIONIST.</strong> "The gap is ten times bigger than the tool." A large organization has no record of <strong>any</strong> employee data going to <strong>any</strong> AI tool — not through Tessera, not through Copilot, not through the analyst pasting a headcount extract into a chat window. What closes that is <strong>an AI-processing register for HR data</strong>: who may send what, where, under what authority, with what evidence. Policy, process, templates, a review cadence. <strong>Zero software, zero SOC 2, zero endpoint approval, sellable next month rather than next year</strong>, and exactly an ex-HR-practitioner's deliverable. Tessera becomes one instrument inside it. Second missed play: the <strong>works-council angle</strong>, which is real leverage in Europe and completely unoccupied.</p>
+
+<p><strong>THE OUTSIDER</strong> <em>(an operations director at a mid-size manufacturer, reading cold).</em> "You are leading with your weakest thing and burying your strongest. You opened with software that wants to sit on my locked-down laptops and touch salary data, from a one-person company with no security paperwork. I stopped at sentence two. <strong>But somewhere in here is a man who spent ten years inside a company like mine holding the headcount file.</strong> If he had opened with that, I would have given him an hour. And — bluntly — <strong>everything you are offering is free. At some point free stops reading as generous and starts reading as the tell.</strong>"</p>
+
+<p><strong>THE EXECUTOR.</strong> "By this plan's own rules the correct Monday action is nothing, and the plan should say so in one line instead of presenting five blocked plays — a reader who does not reach the gating rule will start play two on Tuesday." One item is genuinely calendar-bound and evaporates silently if missed: <strong>the IAPP deadline is a date, not a task.</strong> One item takes five minutes and is the only unblocked thing here: the "signed receipt" wording. And <strong>four hours a week is not a mechanism</strong> — replace it with named artifacts on named dates.</p>
+
+<p><strong>CHAIRMAN SYNTHESIS.</strong> <strong>Convergence, and it is strong and uncomfortable: all five voices, from five directions, say the plan under-uses the biography and over-invests in the product's enterprise-readiness.</strong> Five independent routes to one place is the strongest signal a Council run produces, and it changed the work rather than being noted in it.</p>
+
+<p><strong>Second convergence: "the receipt is the wedge" SURVIVES, but narrowed.</strong> Not an audit artifact. A conversation opener with a privacy function, and evidence inside a services engagement. Real jobs, but not a procurement wedge for a software sale.</p>
+
+<p><strong>Divergence, named and not averaged.</strong> First Principles holds the enterprise <em>software</em> track should not exist until someone asks in writing. The Expansionist holds the answer is a larger, different product. The plan keeps a narrow cultivation track. <strong>The resolution taken: keep the track, drop the software-deployment ambition inside it, convert the time budget into an artifact budget.</strong> Second unresolved divergence: the Contrarian is right that the gating rule is unenforceable, and no mechanism fixes it.</p>
+
+<p><strong>VERDICT: CHANGE, then GO.</strong> Five changes, all applied: reframe the receipt; replace the time cap with an artifact budget; lead with the biography, never the tool; record the processing-register idea as a parked decision with a return trigger; and say plainly at the top that this week's correct action is almost nothing. <strong>Nothing found is a reason to abandon the enterprise track. Several things found are a reason to make it much smaller than it was drafted.</strong></p>
+</div>
+  </details>
+
+  <details class="sec" id="sec-9" open>
+    <summary><h2>What could not be verified</h2></summary>
+    <div class="sec-body">
+<p>Stated plainly rather than omitted, because an absence of a finding is not a finding of absence.</p>
+<ul>
+<li><strong>"Renova" = GE Vernova is a high-confidence inference, not your confirmation.</strong> One word settles it.</li>
+<li><strong>No HRIS platform was confirmed</strong> for GE Aerospace, GE Vernova, Honeywell or any target. Workday is the common assumption for large industrials and remains an assumption.</li>
+<li><strong>No published AI-governance or employee-data-privacy posture</strong> was surfaced for any of the three industrials individually.</li>
+<li><strong>No small-supplier or startup-partnership program was found for GE or Honeywell.</strong> Not searched exhaustively.</li>
+<li><strong>Workday's partner tiers above the second rung</strong> have criteria that were not found in an authoritative source. The Marketplace certification requirement, Extend and Ventures positions are confirmed; the ladder above is not.</li>
+<li><strong>No documented case was found of a boutique implementer formally reselling an independent ISV desktop tool.</strong> The pattern is plausible by industry norm and is how the highest-ranked play is framed, but <strong>it is an inference about how those firms behave, not an observed channel.</strong> Worth knowing before hours go into it.</li>
+<li><strong>SAP SuccessFactors boutique-partner dynamics</strong> were not separately researched; the Workday pattern is used as a proxy.</li>
+<li><strong>SHRM's flagship CFP mechanics were not confirmed</strong>, and People Analytics World, HR Tech Europe and Transform produced no usable CFP or date information.</li>
+<li><strong>The "6 to 12 months end to end" figure</strong> for a full Fortune 100 vendor review is a reasoned composite of individually-sourced component timelines, not a single sourced claim.</li>
+<li><strong>"No acquisition found" for the enterprise de-identification vendors is a negative finding over a live vendor surface and it EXPIRES.</strong> It came from a search pass, not a company-by-company check. Verify before relying on it in any conversation.</li>
+<li><strong>OpenAI's enterprise data controls and any native Workday anonymization feature were not researched.</strong> Both are directly relevant and both are open.</li>
+</ul>
+</div>
+  </details>
+
+  <details class="sec" id="sec-10" open>
+    <summary><h2>This week, and the one decision</h2></summary>
+    <div class="sec-body">
+<p><strong>The honest answer to "what do I do this week" is: almost nothing, and that is the plan working rather than failing.</strong> The consultant track's three gating items own the quarter.</p>
+
+<p><strong>Three things actually happen now:</strong></p>
+<ol>
+<li><strong>Fix the wording, today.</strong> The go-to-market document says "signed audit receipt" in two places. The built tool produces an integrity digest, not a cryptographic signature, and the build log says so explicitly. Five minutes.</li>
+<li><strong>Put two dates in the calendar, because a deadline is not a task.</strong> The <strong>IAPP call for proposals closes 2026-02-15</strong>; the HR Technology Conference runs its own cycle for the October event. <strong>A missed CFP is lost, not delayed.</strong></li>
+<li><strong>Capture the AI-processing-register idea as a parked decision</strong>, with a return trigger of the first enterprise privacy conversation. It may be larger than Tessera itself, it costs nothing to record, and an idea that lives only in a document dies with it.</li>
+</ol>
+
+<p><strong>The artifact budget — the whole enterprise track until the Trial runs:</strong></p>
+<div class="table-scroll"><table>
+<tr><th>Artifact</th><th>By when</th><th>Cost</th></tr>
+<tr><td>One IAPP CFP submission</td><td>2026-02-15</td><td>one afternoon</td></tr>
+<tr><td>One Gartner vendor briefing requested</td><td>anytime, better after the Trial</td><td>one hour</td></tr>
+<tr><td>One parked-decision entry for the processing-register idea</td><td>this week</td><td>minutes</td></tr>
+<tr><td>The "signed receipt" copy fix</td><td>today</td><td>five minutes</td></tr>
+</table></div>
+
+<p><strong>Anything beyond that list is the consultant track's time being spent, and it should be refused on sight.</strong></p>
+
+<p><strong>THE ONE QUESTION ONLY YOU CAN ANSWER, and every other answer here moves when it changes:</strong></p>
+
+<p><strong>Do you want to SELL A PRODUCT to large organizations, or SELL ENGAGEMENTS to them using the product as proof?</strong></p>
+
+<p>These are not variations of each other:</p>
+<ul>
+<li><strong>Engagements.</strong> The punch list stops at item 3. No SOC 2, no code signing, no packaging. Tessera is a prop in the first meeting and a capability in delivery. The biography leads, the tool follows, and it can start the day the Trial finishes.</li>
+<li><strong>A product.</strong> The punch list is the roadmap, SOC 2 is $25k-$80k and 3-5 months before an auditor can even conclude, and the first enterprise sale is a year out. <strong>It is not a wrong answer. It is a different company than the one you are running this quarter</strong>, and it should be chosen deliberately rather than drifted into.</li>
+</ul>
+
+<p><strong>The recommendation, stated as one of the options rather than as a hedge: engagements.</strong> It uses the asset that is actually scarce, it needs nothing that does not already exist, and it is the only one of the two that can produce a dollar inside the period you are measuring.</p>
+</div>
+  </details>
+
+  <footer class="foot">
+    Analysis and recommendation only. Nothing here has been sold, pitched or agreed with anyone. Source of record: <code>docs/prds/tessera/enterprise-gtm-2026-09-16.md</code>, companion to the build contract and the services-attached go-to-market. Council run on the enterprise track 2026-09-16 and applied in five places. Product names are internal working names and appear nowhere client-facing.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
