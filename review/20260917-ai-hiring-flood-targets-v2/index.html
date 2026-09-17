@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Hiring Flood Targets v2</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; white-space:pre-wrap;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  .badge{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.03em;
+    text-transform:uppercase; padding:3px 9px; border-radius:999px; margin-bottom:8px;}
+  .badge-t1{background:rgba(127,224,184,.15); color:var(--good); border:1px solid var(--good);}
+  .badge-t2{background:rgba(242,184,75,.15); color:var(--warn); border:1px solid var(--warn);}
+  .badge-ctx{background:rgba(167,173,187,.12); color:var(--text-dim); border:1px solid var(--border);}
+  .company{background:var(--bg2); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin:0 0 16px;}
+  .company h3{margin:0 0 6px; font-size:1.02rem;}
+  .company .num{font-family:ui-monospace,Menlo,Consolas,monospace; color:var(--accent2); font-weight:700;}
+  .copybtn{background:var(--card); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:6px 10px; font-size:.78rem; cursor:pointer; margin-top:8px;}
+  .copybtn:hover{border-color:var(--accent); color:var(--accent);}
+  .copybtn.copied{border-color:var(--good); color:var(--good);}
+  .caveat{color:var(--warn); font-size:.85rem;}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-17-12:47:00 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">AI HIRING FLOOD v2</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-method">Method</a>
+      <a href="#sec-t1">Tier 1</a>
+      <a href="#sec-t2">Tier 2</a>
+      <a href="#sec-ctx">Context (not targets)</a>
+      <a href="#sec-next">What this needs next</a>
+      <a href="#sec-sources">Sources</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>AI Hiring Flood Targets &mdash; v2, evidence-first</h1>
+    <div class="meta">Redo of the 09-17 shotgun pass, this time working backward from real complaints &middot; 2026-09-17</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>Honest yield: 1 Tier-1 target with a real, quotable, dated public complaint. 7 Tier-2 targets with real, checked-today open-req counts and no direct complaint. Zero padding to hit 20.</strong></p>
+      <ul>
+        <li><strong>Tier 1 (direct complaint, named company):</strong> Xponential Fitness &mdash; the corporate parent of StretchLab, Club Pilates, Rumble, Lindora, BFT, Pure Barre, YogaSix. Its AI interview vendor (Apriora, now "Alex") glitched live on a candidate, repeating "Vertical bar Pilates" 14 times, went viral (3.2M views), covered by NBC News and Futurism. This is a real, citable, embarrassing hiring-AI failure at a specific, reachable company.</li>
+        <li><strong>Tier 2 (volume signal only, no complaint found):</strong> Medix Staffing Solutions (736 open jobs, verified live today), Sears Home Services (293), Ace Hardware Corporation (~3,200), ProLogistix (~135), Spherion Staffing (292), MCI/BPO (~250-390), PeopleReady (~3,098) &mdash; each with a caveat on whether they plausibly lack in-house AI/HR tech, stated per row.</li>
+        <li><strong>What I could NOT find after ~20 search passes across LinkedIn, X, Reddit, and trade press:</strong> a second named, approachable, mid-market company with a self-reported "our AI hiring got worse" complaint. The real public complaints that exist are either anonymous (Reddit/Blind, no company name) or against companies too large to be a fractional-advisory buyer (Workday class action, Eightfold's clients Microsoft/PayPal, Meta, McDonald's/Paradox.ai, Google's internal memo) &mdash; logged in Context below, deliberately excluded from the target list.</li>
+        <li><strong>Recommendation:</strong> lead outreach with Xponential Fitness now (the evidence is strong and dated), use the 7 Tier-2 names as warm-but-unproven volume plays, and treat "named mid-market complaint" as a standing watch item for future scans rather than a one-shot search &mdash; see What This Needs Next.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-method" open>
+    <summary><h2>How this list was built (and where it broke)</h2></summary>
+    <div class="sec-body">
+      <p>Per the brief: work backward from evidence, not forward from a profile match. Search routes attempted, each logged honestly:</p>
+      <ul>
+        <li><strong>General web search</strong> (~20 queries) across "application flood," "fake candidates," "recruiter burnout," "AI screening backlash," "EEOC AI hiring," phrased with and without <code>site:</code> restrictions to LinkedIn/X/Reddit.</li>
+        <li><strong><code>site:linkedin.com</code>, <code>site:reddit.com</code>, <code>site:twitter.com</code>/<code>site:x.com</code> restricted queries</strong> &mdash; the search tool available in this session did not reliably honor these operators; results came back as generic blog/trade-press hits regardless of the restriction. This is a real tool limitation, stated plainly rather than silently worked around.</li>
+        <li><strong>Direct navigation to Reddit and X threads</strong> found via search &mdash; several loaded (TeamBlind, X posts), most named no company or named only huge ones.</li>
+        <li><strong>Direct navigation to LinkedIn company jobs pages</strong> &mdash; hit LinkedIn's authwall (login required) every time; not fetchable from this session.</li>
+        <li><strong>Direct navigation to Indeed company pages</strong> &mdash; blocked by Cloudflare (HTTP 403) every time.</li>
+        <li><strong>Direct navigation to company career sites</strong> for open-req counts &mdash; worked when the company runs its own job board (Medix's own site rendered a real count); failed on JS-heavy pages that only populate after a live search action (Amergis, CareerStaff).</li>
+        <li><strong>Trade press</strong> (HR Dive, SHRM, CNBC, The Markup, NBC News, Bricker, Reed Smith) &mdash; this is where the one real Tier-1 lead came from (NBC News' "AI job recruiters" piece naming actual vendor clients), and where the enterprise-litigation context came from.</li>
+      </ul>
+      <p><strong>The honest conclusion:</strong> named, self-reported, mid-market "our AI hiring backfired" complaints are genuinely rare in open-web search results &mdash; companies don't publish their own hiring failures, and the ones that do surface are either anonymous or attached to enterprises too large to be a realistic fractional-advisory buyer. A real sniper list at this evidence bar likely needs either a paid review-mining tool (Glassdoor/Comparably API), a logged-in LinkedIn/Reddit pass a human does by hand, or a standing watch that accumulates hits over weeks rather than one search session. Said plainly in What This Needs Next.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-t1" open>
+    <summary><h2>Tier 1 &mdash; Direct public complaint (1 company)</h2></summary>
+    <div class="sec-body">
+      <span class="badge badge-t1">Direct complaint, named &amp; dated</span>
+      <div class="company">
+        <h3>Xponential Fitness, Inc. (NYSE: XPOF) &mdash; parent of StretchLab, Club Pilates, Rumble, Lindora, BFT, Pure Barre, YogaSix</h3>
+        <p><strong>What happened:</strong> Kendiana Colin, a 20-year-old Ohio State student interviewing for an entry-level role at a StretchLab studio, had her AI phone interview (built by Apriora, since rebranded "Alex") glitch two questions in &mdash; the bot began repeating "Vertical bar Pilates" on a loop, 14 times in 25 seconds, slurring and mixing up words. She recorded it and posted it; the clip hit 3.2M views. Her quote: <em>"It was like she was going through a tongue twister. It was really creepy."</em></p>
+        <p><strong>When:</strong> Interview took place ~May 1-2, 2025; went viral and was covered starting May 5, 2025; still being cited by name in recruiting-tech trade press through 2026 as a cautionary example ("the Apriora rebrand fallout").</p>
+        <p><strong>Why this is a real door-opener, not a gotcha:</strong> Xponential's corporate HR/TA function sets the hiring-AI vendor for all 7 of its franchise brands from one seat, so this is not "one gym's problem" &mdash; it's a corporate-level exposure across a public company's entire brand portfolio, and it already went public and embarrassing once.</p>
+        <p><strong>Sourcing:</strong> NBC News (nbcnews.com/tech/innovation/ai-job-recruiters-used-top-companies-glitches-rcna215128), Futurism, sf.gazetteer.co, original post via X/@joshua_bote, corroborated across multiple independent outlets, not a single unverified source.</p>
+        <button class="copybtn" data-copy="Saw the StretchLab AI interview clip that went viral last year -- the one that got stuck repeating 'Vertical bar Pilates.' That's exactly the kind of AI-hiring failure I help mid-market and franchise companies catch and fix before it costs a hire or a headline. Worth 20 minutes to look at what's running across Xponential's other 6 brands?">Copy outreach opener</button>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-t2" open>
+    <summary><h2>Tier 2 &mdash; Volume signal only, no direct complaint found (7 companies)</h2></summary>
+    <div class="sec-body">
+      <span class="badge badge-t2">Volume signal, no direct complaint</span>
+      <p>Real, checkable open-req counts as of today (2026-09-17) unless noted. None of these have a public complaint tied to their name &mdash; the case for each is pure hiring volume plus a judgment call on whether they plausibly run this in-house without dedicated AI/HR tech staff. Read the caveat on each; some are weaker than others and are included for completeness, not because they're strong.</p>
+
+      <div class="company">
+        <h3>Medix Staffing Solutions &mdash; <span class="num">736 open jobs</span></h3>
+        <p>Verified live on Medix's own job board (jobs.medixteam.com) today. Privately held national healthcare/life-sciences staffing firm. Staffing agencies process huge inbound candidate volume on top of their own hiring, and firms this size rarely carry a dedicated internal AI/HR-engineering team &mdash; the strongest Tier-2 case here.</p>
+        <button class="copybtn" data-copy="Pulled your open-req count today -- 736 live postings is a lot of screening surface for AI application floods and fake-candidate noise to hide in. Worth a quick look at what's actually catching (or missing) right now?">Copy outreach opener</button>
+      </div>
+
+      <div class="company">
+        <h3>Sears Home Services &mdash; <span class="num">293 open positions</span></h3>
+        <p>Glassdoor, September 2026. Confirmed user of an AI voice-interview agent (Apriora/Alex, per NBC News' named-client list) for skilled-trades hiring at volume. No public complaint found &mdash; only positive vendor case studies exist (Classet also cites Sears as a customer) &mdash; but a confirmed AI-hiring adopter with real volume is a stronger Tier-2 case than a blind guess.</p>
+        <button class="copybtn" data-copy="You're running AI-assisted interviews for skilled-trades hiring at real volume (293 open reqs right now) -- I help companies doing exactly that catch where the AI is quietly costing them good candidates before it becomes a StretchLab-style headline. Worth 20 minutes?">Copy outreach opener</button>
+      </div>
+
+      <div class="company">
+        <h3>Ace Hardware Corporation &mdash; <span class="num">~3,200 open positions</span> (global, Glassdoor)</h3>
+        <p>Confirmed AI-interview-agent user (Apriora/Alex, NBC News' named-client list). <span class="caveat">Caveat: this is a large cooperative (~5,000 independently owned stores) &mdash; corporate HR/TA is a real single point of contact, but scale means they may already have more internal tech capacity than a typical mid-market target.</span></p>
+        <button class="copybtn" data-copy="You're on the list of companies using AI phone interviews at scale -- with 3,000+ open roles that's a lot riding on the tool working right. Happy to do a quick outside-in check on where it might be creating noise instead of cutting it.">Copy outreach opener</button>
+      </div>
+
+      <div class="company">
+        <h3>ProLogistix (EmployBridge brand) &mdash; <span class="num">~135 open jobs</span></h3>
+        <p>Glassdoor, September 2026. Warehouse/logistics staffing brand. <span class="caveat">Caveat: EmployBridge, the parent, is one of the largest industrial-staffing platforms in the US and has invested in its own workforce tech, so "no internal AI team" is a weaker assumption here than for Medix.</span></p>
+        <button class="copybtn" data-copy="Pulled your open-req count today -- warehouse/logistics roles are exactly where AI application floods and fake-candidate volume hit hardest. Worth a quick look at how your screening is holding up?">Copy outreach opener</button>
+      </div>
+
+      <div class="company">
+        <h3>Spherion Staffing &amp; Recruiting &mdash; <span class="num">292 open jobs</span></h3>
+        <p>Glassdoor, September 2026. <span class="caveat">Caveat: Spherion is a Randstad brand. Randstad globally invests heavily in its own AI/HR-tech stack, so the "no internal AI/data team" assumption is likely FALSE at the parent level, even if the US brand office feels independent day to day. Weakest entry on this list &mdash; included for completeness, not confidence.</span></p>
+        <button class="copybtn" data-copy="Pulled your open-req count today (292 live) -- worth a quick outside-in look at whether your screening pipeline is keeping pace with AI-generated application volume, or getting buried by it.">Copy outreach opener</button>
+      </div>
+
+      <div class="company">
+        <h3>MCI (mci.world, BPO/CX) &mdash; <span class="num">~250-390 open jobs</span> (Glassdoor/Indeed vary)</h3>
+        <p>Publicly traded (NASDAQ: MCII), ~13,000 employees, thin-margin BPO/call-center operator. <span class="caveat">Caveat: MCI's own careers page lists an internal "analytics" function, so some in-house data capability likely exists &mdash; but BPO margins are notoriously thin for dedicated AI/HR engineering specifically.</span></p>
+        <button class="copybtn" data-copy="Call-center hiring at your scale lives or dies on screening quality -- worth a quick look at whether AI application volume is slowing your time-to-fill instead of helping it?">Copy outreach opener</button>
+      </div>
+
+      <div class="company">
+        <h3>PeopleReady &mdash; <span class="num">~3,098 open positions</span> (Glassdoor, wide range by filter)</h3>
+        <p><span class="caveat">Caveat: PeopleReady is owned by TrueBlue (NYSE: TBI), a public staffing holding company with real internal tech investment. Included for its sheer volume signal, but the "no internal AI team" case is weak &mdash; flagged, not recommended as a first call.</span></p>
+        <button class="copybtn" data-copy="Pulled your open-req count today -- at that volume, worth a quick check on whether your AI screening is actually separating signal from noise.">Copy outreach opener</button>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-ctx" open>
+    <summary><h2>Context: real evidence the pain thesis is true &mdash; deliberately NOT targets</h2></summary>
+    <div class="sec-body">
+      <span class="badge badge-ctx">Thesis validation only, not snipeable</span>
+      <p>These are the strongest, most specific, most citable pieces of evidence this search actually turned up. They prove "you put AI on your hiring and it got worse" is a real, live, 2026 phenomenon with named companies attached &mdash; they are excluded from the target list only because none of them is a plausible buyer of a fractional AI/HR advisory engagement (too large, already in litigation with their own counsel engaged, or the company at fault is the AI vendor, not the employer).</p>
+      <ul>
+        <li><strong>Workday, Inc.</strong> &mdash; <em>Mobley v. Workday</em>, a certified nationwide class action alleging Workday's AI screening software filtered out applicants by age, race and disability; February 2026 ruling let the vendor itself be held liable, not just the employers using it.</li>
+        <li><strong>Eightfold AI</strong>, whose named enterprise clients per the underlying suit include <strong>Microsoft</strong> and <strong>PayPal</strong> &mdash; filed January 20, 2026, alleging Eightfold secretly generated AI "likelihood of success" scores in violation of the Fair Credit Reporting Act.</li>
+        <li><strong>Meta</strong> &mdash; July 2026 lawsuit by current/former employees alleging its internal AI system mishandled layoff decisions, ignoring disability and protected-leave status.</li>
+        <li><strong>McDonald's</strong> (via vendor Paradox.ai's "Olivia" chatbot on the McHire platform) &mdash; a "123456" admin password exposed roughly 64 million job-applicant records; discovered June 30, 2025 by researchers Ian Carroll and Sam Curry, widely covered through 2026 as the canonical AI-hiring-security-failure story. Outside the 6-12 month window but still the most-cited example in current trade coverage.</li>
+        <li><strong>Google</strong> &mdash; an internal memo (reported 2026) warned recruiters that its own automated hiring system had a meaningful chance of mistakenly discarding or delaying qualified applicants.</li>
+      </ul>
+      <p>Also confirmed but not pursued as targets due to scale: <strong>Chipotle, Zillow, Boston Red Sox, Fontainebleau Las Vegas</strong> &mdash; all named by NBC News as clients of Apriora/Alex's AI interview agent, none with a public complaint attached.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-next" open>
+    <summary><h2>What this needs next (honest, not a pitch to pad the list)</h2></summary>
+    <div class="sec-body">
+      <ol>
+        <li><strong>Lead with Xponential Fitness now.</strong> It's the one entry that survives the "only he could write this" bar for a case study reference &mdash; real, dated, quoted, embarrassing, and corporate-level reachable.</li>
+        <li><strong>Treat the 7 Tier-2 names as a warm list, not a sniper list.</strong> They earn a lower-confidence outreach angle ("your volume looks like it could be straining your screening") rather than a "we know you're already in pain" angle.</li>
+        <li><strong>A real Tier-1 sniper list at scale needs tooling this session didn't have</strong>: an authenticated LinkedIn/Reddit pass (this session hit an authwall and a 403 respectively, every time), or a paid review-mining feed (Glassdoor/Comparably API) that can search review text for "AI interview" + company name at scale, or accumulating hits over a standing weekly watch rather than one search session.</li>
+        <li><strong>If Boubacar wants this pursued further</strong>, the highest-leverage next move is a logged-in manual pass through r/recruiting, r/humanresources and r/TalentAcquisition search results for the last 90 days &mdash; a human eye (or an authenticated session) will catch named-company complaints this tool-limited pass could not.</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-sources">
+    <summary><h2>Sources (every URL used, collapsed by default)</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><a href="https://www.nbcnews.com/tech/innovation/ai-job-recruiters-used-top-companies-glitches-rcna215128" target="_blank" rel="noopener">NBC News &mdash; "Looking for a job? An AI recruiter might interview you next"</a> (named clients: StretchLab/Xponential, Sears Home Services, Ace Hardware, Chipotle, Zillow, Boston Red Sox, Fontainebleau Las Vegas, McDonald's, Whole Foods/Sage)</li>
+        <li><a href="https://x.com/joshua_bote/status/1919456289513521444" target="_blank" rel="noopener">X/@joshua_bote &mdash; original "Vertical bar Pilates" report</a></li>
+        <li><a href="https://futurism.com/ai-job-recruiter-glitch-video" target="_blank" rel="noopener">Futurism &mdash; "Deranged Video Shows AI Job Recruiter Absolutely Losing It"</a></li>
+        <li><a href="https://sf.gazetteer.co/college-students-job-interview-goes-tiktok-viral-as-creepy-ai-interviewer-goes-haywire" target="_blank" rel="noopener">SF Gazetteer &mdash; Kendiana Colin / StretchLab account</a></li>
+        <li><a href="https://www.classet.ai/blog/case-study-how-sears-scaled-skilled-trades-recruiting-with-ai-interviews" target="_blank" rel="noopener">Classet &mdash; Sears Home Services case study (vendor-side, positive)</a></li>
+        <li><a href="https://www.bricker.com/employment-law-report/ai-based-hiring-2026-developments-employers-cant-ignore" target="_blank" rel="noopener">Bricker &mdash; AI-Based Hiring: 2026 Developments (Mobley v. Workday, Eightfold suit, Meta suit)</a></li>
+        <li><a href="https://captaincompliance.com/education/mcdonalds-ai-hiring-bot-hacked-with-123456-password-exposing-millions-of-job-seekers/" target="_blank" rel="noopener">Captain Compliance &mdash; McDonald's/Paradox.ai "Olivia" breach</a></li>
+        <li><a href="https://www.cnbc.com/2026/09/15/job-seekers-refusing-ai-interviews-blacklisting-employers.html" target="_blank" rel="noopener">CNBC, 2026-09-15 &mdash; job seekers blacklisting employers over AI interviews (WebFetch blocked with HTTP 403; relied on search-result summary only, not fetched full text)</a></li>
+        <li><a href="https://themarkup.org/hello-world/2026/01/24/we-posted-a-job-then-came-the-ai-slop-impersonator-and-recruiter-scam" target="_blank" rel="noopener">The Markup &mdash; AI slop / impersonator / recruiter scam investigation</a></li>
+        <li><a href="https://www.hrdive.com/news/ai-hasnt-significantly-improved-the-speed-of-hiring/830316/" target="_blank" rel="noopener">HR Dive &mdash; ManpowerGroup: AI hasn't improved hiring speed (Sept 2026)</a></li>
+        <li><a href="https://jobs.medixteam.com/" target="_blank" rel="noopener">Medix Staffing Solutions job board (736 jobs, live-checked)</a></li>
+        <li><a href="https://www.glassdoor.com/Jobs/Ace-Hardware-Corporation-Jobs-E2699.htm" target="_blank" rel="noopener">Glassdoor &mdash; Ace Hardware Corporation open jobs</a></li>
+        <li><a href="https://www.glassdoor.com/Jobs/Sears-Home-Services-Jobs-E1054320.htm" target="_blank" rel="noopener">Glassdoor &mdash; Sears Home Services open jobs</a></li>
+        <li><a href="https://www.glassdoor.com/Jobs/Prologistix-Jobs-E306309.htm" target="_blank" rel="noopener">Glassdoor &mdash; ProLogistix open jobs</a></li>
+        <li><a href="https://www.glassdoor.com/Jobs/Spherion-Staffing-and-Recruiting-Jobs-E2511.htm" target="_blank" rel="noopener">Glassdoor &mdash; Spherion Staffing open jobs</a></li>
+        <li><a href="https://www.glassdoor.com/Jobs/Mci-Careers-Jobs-E4334900.htm" target="_blank" rel="noopener">Glassdoor &mdash; MCI open jobs</a></li>
+        <li><a href="https://www.glassdoor.com/Jobs/PeopleReady-Jobs-E234929.htm" target="_blank" rel="noopener">Glassdoor &mdash; PeopleReady open jobs</a></li>
+        <li>LinkedIn company jobs pages (Medix, others) &mdash; blocked by authwall, not usable in this session</li>
+        <li>Indeed company pages &mdash; blocked by Cloudflare (HTTP 403), not usable in this session</li>
+        <li>Reddit r/recruiting, r/humanresources, r/hrtechnology direct search &mdash; general search tool did not honor <code>site:reddit.com</code> restriction reliably; no named-company complaint surfaced via this route</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Built for Boubacar Barry &middot; supersedes boubacarbarry.com/review/20260917-ai-hiring-flood-targets/ (shotgun pass, profile-match only, zero company-specific evidence) &middot; task-board row ae2377c77c864807982976573d5c2091
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (a) {
+      var t = document.getElementById(a.getAttribute('href').slice(1));
+      if (t && t.tagName === 'DETAILS') { t.open = true; }
+      return;
+    }
+    var btn = e.target.closest && e.target.closest('.copybtn');
+    if (btn) {
+      var text = btn.getAttribute('data-copy') || '';
+      var done = function () {
+        var orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = orig; btn.classList.remove('copied'); }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {
+          try {
+            var ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta); done();
+          } catch (err) {}
+        });
+      } else {
+        try {
+          var ta2 = document.createElement('textarea');
+          ta2.value = text; document.body.appendChild(ta2); ta2.select();
+          document.execCommand('copy'); document.body.removeChild(ta2); done();
+        } catch (err2) {}
+      }
+    }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
