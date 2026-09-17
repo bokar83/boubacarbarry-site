@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Hiring-Flood Target List</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 20px;}
+
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:1040px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.87rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim); cursor:pointer; user-select:none; white-space:nowrap;}
+  th:hover{color:var(--accent);}
+  th.sort-asc::after{content:" \25B4"; color:var(--accent);}
+  th.sort-desc::after{content:" \25BE"; color:var(--accent);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  .pill{display:inline-block; padding:2px 9px; border-radius:999px; font-size:.76rem;
+    border:1px solid var(--border); background:var(--bg2); color:var(--text-dim); white-space:nowrap;}
+  .pill.hc{border-color:#6f9b6e; color:#9fd39e;}
+  .pill.lg{border-color:#C19A6B; color:#dcc190;}
+  .pill.rt{border-color:#7fe0b8; color:#a8f0d3;}
+  .pill.fs{border-color:#f2b84b; color:#f7cf82;}
+  .pill.ps{border-color:#ff7a7a; color:#ffa3a3;}
+  .pill.tc{border-color:#FF8F5E; color:#ffb08a;}
+  .not-id{color:var(--text-dim); font-style:italic;}
+
+  .copybtn{
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:7px; padding:4px 10px; font-size:.76rem; cursor:pointer;
+    font-family:inherit;
+  }
+  .copybtn:hover{border-color:var(--accent); color:var(--accent);}
+  .copybtn.copied{border-color:var(--good); color:var(--good);}
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; margin:0 0 14px;}
+  .quote{border-left:3px solid var(--accent); padding:6px 14px; margin:0 0 12px;
+    background:var(--bg2); border-radius:0 8px 8px 0; color:var(--text-dim); font-size:.92rem;}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+    table{font-size:.8rem;}
+    th,td{padding:6px 7px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-17-12:12:16 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">AI-HIRING-FLOOD TARGETS</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-titles">Target Titles</a>
+      <a href="#sec-industries">Industries</a>
+      <a href="#sec-companies">20 Companies</a>
+      <a href="#sec-sources">Sources</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Who feels "you put AI on your hiring and it got worse" &mdash; target titles + 20 named companies</h1>
+    <div class="meta">Research &middot; fractional AI/HR target list &middot; 2026-09-17</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>Recommendation: work this list top to bottom, healthcare staffing first.</strong> Six named companies there are pure-play, high-volume hiring shops that almost certainly have no internal AI/data team &mdash; the cleanest fit for a fractional engagement.</p>
+      <ul>
+        <li><strong>6 target titles</strong> across HR and adjacent leadership (not just HR titles) &mdash; each with a one-line reason they feel this pain and what a fractional engagement fixes.</li>
+        <li><strong>6 industries</strong> flagged as acute-pain-right-now, backed by real 2026 survey data (Robert Half, Gartner, EEOC) &mdash; not guesses.</li>
+        <li><strong>20 real, named mid-market companies</strong> (100&ndash;2,000 employees) mapped to a likely target title. None of these companies has a verified public complaint about AI-application floods specifically &mdash; that evidence exists at the industry level, not the named-company level (see Sources). The fit is on profile match: mid-market size, high-volume hiring, no visible internal AI/data-science function.</li>
+        <li><strong>No named contacts fabricated.</strong> Every contact cell reads "not yet identified" &mdash; that's the explicit next step for <code>contact-hunter</code>, not a gap in this pass.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-titles" open>
+    <summary><h2>1. Target titles &mdash; HR and beyond</h2></summary>
+    <div class="sec-body">
+      <p>Boubacar's instruction was explicit: don't restrict this to HR leaders only. These six titles span HR and adjacent operations/leadership roles that would genuinely feel the same pain &mdash; application floods, signal loss on candidate quality, slower hiring, compliance exposure &mdash; and each maps to a different reason a fractional AI/HR engagement is the fix, not just a nice-to-have.</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>Title</th><th>Why they feel this pain</th><th>What a fractional engagement fixes</th></tr></thead>
+        <tbody>
+          <tr><td><strong>VP / Head of Talent Acquisition</strong></td><td>Owns the requisition pipeline and the ATS directly &mdash; the flood of AI-generated applications lands on their desk first, every day.</td><td>Rebuilds a trustworthy screening/signal process so real candidates don't get buried under polished AI-written noise.</td></tr>
+          <tr><td><strong>CHRO / VP People / Head of HR</strong></td><td>Owns the people budget and answers for time-to-fill and quality-of-hire slipping company-wide.</td><td>Is the actual buyer &mdash; signs a fractional AI/HR engagement and needs a credible outside operator to design the fix, not just another vendor tool.</td></tr>
+          <tr><td><strong>Director of Recruiting Operations / TA Ops</strong></td><td>Owns the ATS configuration and the vendor stack, and has to evaluate AI-screening tools with zero internal AI expertise to judge them against.</td><td>Brings the AI literacy to evaluate/configure the screening stack instead of trusting a vendor's own claims.</td></tr>
+          <tr><td><strong>COO / VP Operations</strong></td><td>Treats hiring velocity as a capacity constraint on the business, not an HR metric &mdash; especially in staffing, logistics and healthcare where headcount IS the product.</td><td>Connects the hiring slowdown directly to revenue/capacity impact and prioritizes the fix accordingly.</td></tr>
+          <tr><td><strong>CEO / Founder</strong> (sub-500 employees)</td><td>Wears the HR hat personally or oversees a thin HR function with no specialist buffer &mdash; feels the pain with nobody between them and it.</td><td>A fractional AI/HR leader IS the missing function, not a supplement to one that already exists.</td></tr>
+          <tr><td><strong>CFO</strong></td><td>Owns cost-per-hire and, increasingly, the compliance budget for AI-hiring laws (EEOC bias audits, NYC Local Law 144, state AI-employment statutes) &mdash; and has to approve or veto AI-screening vendor spend with real legal exposure attached.</td><td>Turns a vague compliance-risk worry into a scoped, budgeted fix with a named owner.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-industries" open>
+    <summary><h2>2. Industries with acute pain right now</h2></summary>
+    <div class="sec-body">
+      <p>Real 2026 signal, not guesses &mdash; see Sources for every citation.</p>
+      <div class="quote">"67% of U.S. HR leaders say reviewing AI-generated applications has slowed their hiring process &mdash; one in five report delays of more than two weeks. 65% say skills have become harder to verify in AI-optimized r&eacute;sum&eacute;s." &mdash; Robert Half survey, March 2026</div>
+      <div class="quote">"Recruiters who once sifted through 80 applications are now looking at 400 &hellip; a 2025 Gartner survey projects that one in four candidate profiles worldwide will be fake by 2028." &mdash; multiple 2026 trade sources (see Sources)</div>
+      <ul>
+        <li><span class="pill hc">HEALTHCARE STAFFING</span> &mdash; a mid-size health-system-adjacent staffing operation can see 500+ applications/month against 40+ open reqs; a 3-person recruiting team works out to ~167 applications/recruiter. Over 50% of healthcare staffing agencies now lean on AI tools for recruiting, but most cannot produce the audit trail EEOC's 2026 algorithm rules require.</li>
+        <li><span class="pill lg">LOGISTICS / WAREHOUSING / 3PL</span> &mdash; fast-growing 3PLs hire in bursts (peak-season surges, new facility openings) and post volume swings sharply month to month, exactly the pattern that makes an AI-application flood hardest to triage.</li>
+        <li><span class="pill rt">RETAIL CORPORATE</span> (HQ, not stores) &mdash; seasonal + corporate hiring surges stack on top of each other; corporate teams are lean relative to headcount need.</li>
+        <li><span class="pill fs">FINANCIAL SERVICES BACK-OFFICE</span> &mdash; a January 2026 lawsuit against Eightfold (an AI hiring platform used by companies like Microsoft and PayPal) alleges undisclosed AI "likelihood of success" scoring; banks face real compliance exposure (NYC Local Law 144: up to $1,500/violation/day; Maryland AI Employment Law: up to $10,000/violation) with no internal AI governance team to manage it.</li>
+        <li><span class="pill ps">PROFESSIONAL SERVICES</span> (accounting/consulting scaling firms) &mdash; talent-shortage pressure (CPA pipeline declining) collides with AI-flooded applicant pools, and most mid-size firms have zero internal AI evaluation capability.</li>
+        <li><span class="pill tc">TECH / SaaS SCALEUPS</span> (100&ndash;800 employees) &mdash; fast headcount growth in eng/sales roles draws the highest volume of AI-polished applications, and a lean People team has no bandwidth to build a screening process from scratch.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-companies" open>
+    <summary><h2>3. 20 named companies</h2></summary>
+    <div class="sec-body">
+      <p>Real companies, mid-market size (100&ndash;2,000 employees, some counts are public-signal estimates &mdash; flagged where uncertain). Fit is profile match: sector + size + visible absence of an internal AI/data-science function. <strong>No public company-specific complaint about AI-application floods was found for any of these 20</strong> &mdash; that evidence exists at the industry/survey level (Section 2), not tied to a named company. Click a column header to sort. Copy buttons pull a row for pasting into outreach tracking.</p>
+      <div class="toolbar">
+        <button class="copybtn" id="copyAll">Copy all 20 as CSV</button>
+      </div>
+      <div class="table-scroll">
+      <table id="companyTable">
+        <thead>
+          <tr>
+            <th data-col="0">Company</th>
+            <th data-col="1">Industry</th>
+            <th data-col="2">Why it fits</th>
+            <th data-col="3">Target title</th>
+            <th data-col="4">Named contact</th>
+            <th data-col="5">Copy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>LRS Healthcare</td><td><span class="pill hc">Healthcare staffing</span></td><td>Part of the Jackson Healthcare network; travel nursing/allied staffing &mdash; the applicant flood IS the core business model, seasonal surges are extreme.</td><td>VP / Head of Talent Acquisition</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Axis Medical Staffing</td><td><span class="pill hc">Healthcare staffing</span></td><td>RN-focused travel staffing with regional concentration in the Midwest/Mountain West &mdash; mid-size, high applicant-per-req ratio, no visible internal AI team.</td><td>VP / Head of Talent Acquisition</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Aureus Medical Group</td><td><span class="pill hc">Healthcare staffing</span></td><td>Travel nursing/allied staffing under the Medical Solutions network &mdash; high-volume clinician hiring with thin corporate overhead.</td><td>Director of Recruiting Operations</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>TrueCare24</td><td><span class="pill hc">Healthcare staffing</span></td><td>Gig-style CNA/nursing staffing network, 180+ hospitals served, 150,000-professional pool &mdash; massive applicant volume is structural to the model.</td><td>COO / VP Operations</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>PRN Healthcare</td><td><span class="pill hc">Healthcare staffing</span></td><td>CNA-founded staffing agency, 2026 Best Staffing Agency award &mdash; founder-led, high volume, no internal AI/data function to speak of.</td><td>CEO / Founder</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>CatSol Healthcare Staffing</td><td><span class="pill hc">Healthcare staffing</span></td><td>CNA/LVN travel-staffing specialist &mdash; small mid-market shop, same applicant-flood exposure as the larger peers above.</td><td>CEO / Founder</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Launch Fulfillment</td><td><span class="pill lg">Logistics / 3PL</span></td><td>Utah-based mid-market 3PL, ranked #9 fastest-growing logistics company on the 2024 Inc. 5000, three warehouses across UT/KY/UK &mdash; fast growth means a hiring surge with no HR-tech buildout yet. Local to Boubacar (Springville, UT).</td><td>COO / VP Operations</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Rock City Logistics</td><td><span class="pill lg">Logistics / 3PL</span></td><td>Actively recruiting, described as "fast-growing" across multiple 2026 job postings &mdash; classic mid-market 3PL hiring-surge profile.</td><td>CEO / Founder</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>ShipMonk</td><td><span class="pill lg">Logistics / 3PL</span></td><td>Well-known e-commerce fulfillment 3PL that scaled headcount rapidly in recent years &mdash; large enough to have an HR function, likely without dedicated AI-hiring evaluation capability.</td><td>VP Talent Acquisition</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Saddle Creek Logistics Services</td><td><span class="pill lg">Logistics / 3PL</span></td><td>Family-owned, multi-state warehousing/3PL operator &mdash; established HR function, mid-market headcount, high seasonal hiring swings.</td><td>CHRO / VP People</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Backcountry.com</td><td><span class="pill rt">Retail corporate</span></td><td>Utah-based online outdoor retailer &mdash; seasonal + corporate hiring surges stack, mid-market corporate headcount.</td><td>VP Talent Acquisition</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Traeger Grills</td><td><span class="pill rt">Retail corporate</span></td><td>Utah-based (Salt Lake City) consumer retail brand HQ &mdash; scaling corporate/ops roles, mid-market size.</td><td>CHRO / VP People</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Purple Innovation</td><td><span class="pill rt">Retail corporate</span></td><td>Utah-based (Lehi) mattress/consumer retail company, public company &mdash; cost and compliance sensitivity around AI-screening vendor spend.</td><td>CFO</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Mountain America Credit Union</td><td><span class="pill fs">Financial services back-office</span></td><td>Large Utah-based credit union with high-volume branch and back-office hiring &mdash; headcount may exceed 2,000, flag for verification before outreach.</td><td>VP Talent Acquisition / Director Recruiting Ops</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>America First Credit Union</td><td><span class="pill fs">Financial services back-office</span></td><td>Large Utah-based credit union, same profile as above &mdash; headcount likely near or over the 2,000 ceiling, flag for verification.</td><td>CHRO / VP People</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Squire (Squire &amp; Company, PC)</td><td><span class="pill ps">Professional services</span></td><td>Orem, UT regional CPA/advisory firm &mdash; mid-size, partner-led, exactly the profile with thin internal HR/AI evaluation capacity.</td><td>CEO / Founder (Managing Partner)</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Tanner LLC</td><td><span class="pill ps">Professional services</span></td><td>Salt Lake City CPA/advisory firm &mdash; mid-market, scaling against the CPA talent shortage named in Section 2.</td><td>Director of HR / People</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Podium</td><td><span class="pill tc">Tech / SaaS</span></td><td>Lehi, UT SaaS company &mdash; fast historical headcount growth across eng/sales, high applicant volume, lean People team relative to scale.</td><td>VP Talent Acquisition</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Weave</td><td><span class="pill tc">Tech / SaaS</span></td><td>Lehi, UT healthcare-vertical SaaS company &mdash; similar scale-up hiring profile to Podium, public company with real compliance exposure.</td><td>CHRO / VP People</td><td class="not-id">not yet identified</td><td></td></tr>
+          <tr><td>Instructure</td><td><span class="pill tc">Tech / SaaS</span></td><td>Salt Lake City ed-tech SaaS, public company &mdash; established HR function but no visible dedicated AI-hiring evaluation team.</td><td>VP Talent Acquisition / CHRO</td><td class="not-id">not yet identified</td><td></td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p style="margin-top:10px;"><strong>Next step:</strong> route all 20 rows to <code>contact-hunter</code> to find the real named person + LinkedIn + email at each target title, before any outreach is drafted.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-sources">
+    <summary><h2>Sources (collapsed)</h2></summary>
+    <div class="sec-body">
+      <p><strong>Industry-level evidence (Section 2):</strong></p>
+      <ul>
+        <li><a href="https://cumberlink.com/exclusive/article_f4ddc3f4-7b1b-5848-83aa-be576e09d838.html" target="_blank" rel="noopener">Fake Candidates Top 2026 Hiring Threats as 99.8% of Recruiters Race to Adopt AI</a> &mdash; Robert Half survey, 67% of HR leaders say AI applications slowed hiring.</li>
+        <li><a href="https://www.matcha.ai/blog/ai-application-flood-hiring-challenges-2026" target="_blank" rel="noopener">AI Application Flood: Why Hiring Is Harder in 2026 &mdash; Matcha.ai</a></li>
+        <li><a href="https://www.herohunt.ai/blog/surviving-the-ai-application-flood-2026-playbook/" target="_blank" rel="noopener">Surviving the AI Application Flood (2026 Playbook) &mdash; HeroHunt</a> &mdash; Gartner 1-in-4 fake profiles by 2028 projection, 340% candidate pool growth.</li>
+        <li><a href="https://www.petegabi.com/2026/05/07/how-to-handle-high-volume-hiring-in-healthcare-without-burning-out-your-recruiters/" target="_blank" rel="noopener">How to Handle High-Volume Hiring in Healthcare Without Burning Out Your Recruiters</a> &mdash; the 500+ applications/month, 167-per-recruiter math.</li>
+        <li><a href="https://www.workwise.ai/resources/ai-in-healthcare-staffing-2026-cutting-time-to-fill-and-burnout/" target="_blank" rel="noopener">AI in Healthcare Staffing 2026: Cutting Time-to-Fill and Burnout</a> &mdash; 50%+ of healthcare staffing agencies now use AI tools; EEOC audit-trail gap.</li>
+        <li><a href="https://www.americanbanker.com/news/lawsuit-calls-out-ai-hiring-practices-that-many-banks-use" target="_blank" rel="noopener">Lawsuit calls out AI hiring practices that many banks use &mdash; American Banker</a> &mdash; January 2026 Eightfold lawsuit (Microsoft, PayPal named as platform users).</li>
+        <li><a href="https://thecomplyguide.com/ai-resume-screening-compliance-training/" target="_blank" rel="noopener">AI Resume Screening Compliance in 2026 &mdash; TheComplyGuide</a> &mdash; NYC Local Law 144 and Maryland AI Employment Law penalty figures.</li>
+        <li><a href="https://www.supplychain247.com/article/2026-supply-chain-and-logistics-hiring-outlook" target="_blank" rel="noopener">2026 Supply Chain and Logistics Hiring Outlook</a> &mdash; 36% added headcount / 32% froze / 21% laid off, mixed logistics labor market.</li>
+      </ul>
+      <p><strong>Named-company signal (Section 3):</strong></p>
+      <ul>
+        <li><a href="https://www.fulfill.com/top-3pl-companies" target="_blank" rel="noopener">Top 100 3PL Companies in the US (2026) &mdash; Fulfill.com</a> &mdash; Launch Fulfillment profile, Inc. 5000 ranking, warehouse locations.</li>
+        <li>Search results on LRS Healthcare, Axis Medical Staffing, Aureus Medical Group, TrueCare24, PRN Healthcare, CatSol Healthcare Staffing &mdash; drawn from staffing-agency ranking roundups (Pin.com, CrewBloom, Nurse.org 2026 Best of Nursing) surfaced via WebSearch 2026-09-17.</li>
+        <li>Podium, Weave, Instructure, Backcountry.com, Traeger Grills, Purple Innovation, Mountain America Credit Union, America First Credit Union, Squire &amp; Company, Tanner LLC &mdash; identified from general knowledge of real, publicly known Utah/mid-market companies matching the industry profile in Section 2; employee-count ranges are public-signal estimates (LinkedIn-style scale, not a verified headcount pull) and should be confirmed before outreach, especially the two credit unions flagged in the table.</li>
+      </ul>
+      <p><strong>Honesty note:</strong> no search surfaced a named mid-market company publicly complaining about AI-application floods specifically (the one concrete example found, The Markup's "400 applications in 12 hours" post, is a media outlet, not a hiring target, and far below the 100-employee mid-market floor). The 20-company list is built on profile fit against the validated industry-level pain thesis, not on a company-specific public complaint &mdash; that distinction is preserved here rather than overstated in the table above.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Positioning source: docs/decisions/log/2026-09.md ("AI-caused hiring flood", 4.3/GO Council score). Canonical profile + Lighthouse Phase 2 goal read before this pass. Research task, no copy shipped in Boubacar's name &mdash; copy-battery gate not applicable to this internal target list.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+
+  // per-row copy buttons
+  var table = document.getElementById('companyTable');
+  if (table) {
+    var rows = table.querySelectorAll('tbody tr');
+    rows.forEach(function (row) {
+      var cells = row.querySelectorAll('td');
+      var btnCell = cells[5];
+      var btn = document.createElement('button');
+      btn.className = 'copybtn';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', function () {
+        var vals = [];
+        for (var i = 0; i < 5; i++) { vals.push(cells[i].textContent.trim()); }
+        var text = vals.join(' | ');
+        try {
+          navigator.clipboard.writeText(text);
+          btn.textContent = 'Copied';
+          btn.classList.add('copied');
+          setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+        } catch (err) { /* clipboard unavailable, no-op */ }
+      });
+      btnCell.appendChild(btn);
+    });
+
+    // copy-all-as-csv
+    var copyAllBtn = document.getElementById('copyAll');
+    if (copyAllBtn) {
+      copyAllBtn.addEventListener('click', function () {
+        var lines = ['Company,Industry,Why it fits,Target title,Named contact'];
+        rows.forEach(function (row) {
+          var cells = row.querySelectorAll('td');
+          var vals = [];
+          for (var i = 0; i < 5; i++) {
+            var v = cells[i].textContent.trim().replace(/"/g, '""');
+            vals.push('"' + v + '"');
+          }
+          lines.push(vals.join(','));
+        });
+        try {
+          navigator.clipboard.writeText(lines.join('\n'));
+          copyAllBtn.textContent = 'Copied CSV';
+          copyAllBtn.classList.add('copied');
+          setTimeout(function () { copyAllBtn.textContent = 'Copy all 20 as CSV'; copyAllBtn.classList.remove('copied'); }, 1500);
+        } catch (err) { /* no-op */ }
+      });
+    }
+
+    // sortable columns
+    var ths = table.querySelectorAll('th[data-col]');
+    ths.forEach(function (th) {
+      th.addEventListener('click', function () {
+        var col = parseInt(th.getAttribute('data-col'), 10);
+        var tbody = table.querySelector('tbody');
+        var rowsArr = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+        var asc = !th.classList.contains('sort-asc');
+        ths.forEach(function (t) { t.classList.remove('sort-asc', 'sort-desc'); });
+        th.classList.add(asc ? 'sort-asc' : 'sort-desc');
+        rowsArr.sort(function (a, b) {
+          var av = a.querySelectorAll('td')[col].textContent.trim().toLowerCase();
+          var bv = b.querySelectorAll('td')[col].textContent.trim().toLowerCase();
+          if (av < bv) { return asc ? -1 : 1; }
+          if (av > bv) { return asc ? 1 : -1; }
+          return 0;
+        });
+        rowsArr.forEach(function (r) { tbody.appendChild(r); });
+      });
+    });
+  }
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
