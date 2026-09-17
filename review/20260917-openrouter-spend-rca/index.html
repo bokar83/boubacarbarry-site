@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenRouter Spend: Who Is Actually Burning It</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  .big{font-size:1.5rem; font-weight:700; color:var(--accent);}
+  .kpi-row{display:flex; flex-wrap:wrap; gap:12px; margin:0 0 16px;}
+  .kpi{flex:1 1 170px; background:var(--card); border:1px solid var(--border);
+    border-radius:10px; padding:12px 14px;}
+  .kpi .n{font-size:1.45rem; font-weight:700; line-height:1.15;}
+  .kpi .l{font-size:.76rem; color:var(--text-dim); margin-top:4px;}
+  .bad{color:var(--bad);} .good{color:var(--good);} .warn{color:var(--warn);}
+  .src{font-size:.78rem; color:var(--text-dim); font-style:italic;}
+  .bar{display:inline-block; height:9px; background:var(--accent); border-radius:3px;
+    vertical-align:middle;}
+  .barwrap{min-width:150px;}
+  .pill{display:inline-block; font-size:.72rem; border:1px solid var(--border);
+    border-radius:999px; padding:2px 9px; background:var(--bg2); color:var(--text-dim);}
+  .pill.done{border-color:var(--good); color:var(--good);}
+  .pill.you{border-color:var(--warn); color:var(--warn);}
+  .pill.killed{border-color:var(--bad); color:var(--bad);}
+  blockquote{margin:0 0 12px; padding:10px 14px; border-left:3px solid var(--accent);
+    background:var(--bg2); border-radius:0 8px 8px 0; color:var(--text-dim);}
+  h3{font-size:1rem; margin:20px 0 8px; color:var(--accent2);}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-17-01:48:36 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">OpenRouter spend</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">The numbers</a>
+      <a href="#sec-2">Culprits</a>
+      <a href="#sec-3">The meter is broken</a>
+      <a href="#sec-4">Council</a>
+      <a href="#sec-5">Fixed vs your call</a>
+      <a href="#sec-6">What I could not find out</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>OpenRouter spend: who is actually burning it</h1>
+    <div class="meta">Full investigation, real vendor numbers, five fixes &middot; 2026-09-17</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p>You are right that something is wrong, and it is worse than a leak. <strong>You are burning about $8.34 a day, roughly $250 a month, and the system can only account for 3 cents of every dollar of it.</strong> Nobody could have named a culprit, because the accounting was never wired up.</p>
+
+      <div class="kpi-row">
+        <div class="kpi"><div class="n">$8.34<span style="font-size:.9rem">/day</span></div><div class="l">real burn, vendor counter, 11 complete days</div></div>
+        <div class="kpi"><div class="n bad">96.8%</div><div class="l">of it has no owner in our own ledger</div></div>
+        <div class="kpi"><div class="n">51%</div><div class="l">lands in 6 unattended hours, 05:00&ndash;11:00 MT</div></div>
+        <div class="kpi"><div class="n bad">10h 45m</div><div class="l">you were frozen out last night, at a $2.51 balance</div></div>
+      </div>
+
+      <p><strong>Three things, in the order they matter:</strong></p>
+      <ol>
+        <li><strong>The freeze that cost you last night was not protecting you.</strong> It fired at a $2.51 balance against a $3.00 floor, killed your crews for 10h45m, and <em>spend carried on right through it</em> &mdash; the balance kept falling from $2.51 to $0.21 while it was frozen. It stopped your work and not the burner. You already ruled on this on 31 August: low balance is alert-only, never a work stop. The code never implemented your ruling.</li>
+        <li><strong>The money goes to unattended overnight jobs, not to you working.</strong> Half of everything is spent between 05:00 and 11:00 MT while you are asleep or just up. One named job, the lead-magnet miner, makes 181&ndash;274 paid calls every Monday and throws roughly half of them straight in the bin because of a bug I reproduced against the live API.</li>
+        <li><strong>The real question underneath yours.</strong> $250 a month is the biggest recurring cost of a business with no revenue yet. Nobody has ever gone through the ~100 scheduled jobs and asked which still deserve to run. That is the decision only you can make, and the number it needs is at the bottom of this page.</li>
+      </ol>
+
+      <p><span class="pill done">landed</span> Four code fixes, tested, on branch <code>fix/openrouter-spend-attribution</code>, held at the gate for your Telegram tap. <span class="pill killed">killed</span> A fifth fix I built and then threw away because my own control test proved it would lie. <span class="pill you">your call</span> Three decisions at the bottom, each with a recommendation.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. The real numbers, and where each one comes from</h2></summary>
+    <div class="sec-body">
+      <p>Every figure below is read from OpenRouter's own counters, not estimated. Where I could not get a number, I say so rather than guess.</p>
+
+      <h3>Account position, right now</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+        <tr><td>Remaining balance</td><td>$9.73</td><td><code>/api/v1/credits</code>: 972 credits purchased, $962.27 used</td></tr>
+        <tr><td>Last 7 days</td><td>$35.20</td><td><code>usage_weekly</code> on <code>/api/v1/auth/key</code></td></tr>
+        <tr><td>Month to date</td><td>$117.56</td><td><code>usage_monthly</code>, same call</td></tr>
+        <tr><td>Lifetime on this key</td><td>$956.85</td><td>same call</td></tr>
+      </table>
+      </div>
+
+      <h3>What a day actually costs</h3>
+      <p>Two independent windows, two methods, same answer:</p>
+      <ul>
+        <li><strong>$7.23/day</strong> averaged over 19 days &mdash; the difference in lifetime usage between consecutive nightly snapshots in the <code>provider_billing</code> table (29 Aug to 16 Sep).</li>
+        <li><strong>$8.34/day</strong> over 11 complete days &mdash; reconstructed from 29,800 five-minute samples the spend guard has been writing to its log since June, which nobody had ever read as a time series.</li>
+      </ul>
+      <p>Heavy days are not rare. Mon 14 Sep cost <strong>$19.78</strong>. Mon 7 Sep, $14.72. Mon 31 Aug, $14.39. Fri 11 Sep, $13.65. A quiet Saturday runs $1.70.</p>
+
+      <h3>Where the hours go &mdash; the finding that reframes everything</h3>
+      <p>Spend per hour of the day, averaged across 11 complete days:</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Hour (MT)</th><th>$/day</th><th class="barwrap">&nbsp;</th></tr>
+        <tr><td>05:00</td><td>$0.36</td><td><span class="bar" style="width:28px"></span></td></tr>
+        <tr><td>06:00</td><td>$0.81</td><td><span class="bar" style="width:64px"></span></td></tr>
+        <tr><td><strong>07:00</strong></td><td><strong>$1.27</strong></td><td><span class="bar" style="width:100px"></span></td></tr>
+        <tr><td>08:00</td><td>$0.81</td><td><span class="bar" style="width:64px"></span></td></tr>
+        <tr><td>09:00</td><td>$0.76</td><td><span class="bar" style="width:60px"></span></td></tr>
+        <tr><td>10:00</td><td>$0.59</td><td><span class="bar" style="width:46px"></span></td></tr>
+        <tr><td>11:00</td><td>$0.44</td><td><span class="bar" style="width:35px"></span></td></tr>
+        <tr><td>every other hour</td><td>$0.03 &ndash; $0.28</td><td><span class="bar" style="width:12px"></span></td></tr>
+      </table>
+      </div>
+      <p><strong>$46.54 of $91.76 &mdash; 51% of everything &mdash; is spent in six hours while nobody is watching.</strong> This is not you using the system. This is the scheduled overnight work.</p>
+      <p class="src">Method note: the guard prints a running daily total every 5 minutes but no timestamp on each line, so I anchored each day at its midnight reset and counted ticks forward. Days with a broken tick count were discarded (11 of 20 survived). The total it produces, $8.34/day, lands within 15% of the independent snapshot method, which is what gives me confidence in the shape. I would not defend any single hour to the cent.</p>
+
+      <h3>What our own ledger can account for</h3>
+      <p>The <code>llm_calls</code> table, across the same 14 days: <strong>$3.79 total, $0.27/day.</strong> Against a real $8.34/day, that is <strong>3.2% attributed, 96.8% anonymous.</strong></p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>What the ledger thinks is running</th><th>Calls, 14d</th><th>Cost</th></tr>
+        <tr><td>provider-probe (5-min health ping)</td><td>3,668</td><td>$0.05</td></tr>
+        <tr><td>studio</td><td>589</td><td>$0.56</td></tr>
+        <tr><td>chat_healthcheck</td><td>109</td><td>$2.44</td></tr>
+        <tr><td>digest council</td><td>96</td><td>$0.17</td></tr>
+        <tr><td>model_review_agent</td><td>48</td><td>$0.13</td></tr>
+        <tr><td>absorb</td><td>15</td><td>$0.35</td></tr>
+        <tr><td colspan="2"><strong>Everything else</strong></td><td><strong class="bad">~$113 unaccounted</strong></td></tr>
+      </table>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. The culprits, ranked</h2></summary>
+    <div class="sec-body">
+      <p>Ranked by how much spend each one explains, with the evidence attached. Where I can only bound a number rather than measure it, I say which.</p>
+
+      <h3>#1 &mdash; The accounting itself, by design. Explains the whole 96.8%.</h3>
+      <p>Not a bug. A comment in our own code, <code>orchestrator/usage_logger.py</code> line 418:</p>
+      <blockquote>"CrewAI's LLM.set_callbacks overwrites litellm.callbacks on every Crew init, so this won't catch CrewAI calls &mdash; that's by design (CrewAI calls aren't logged in Phase 1)."</blockquote>
+      <p>Phase 2 was never built. Every crew &mdash; absorb, studio, griot, newsletter, content-connection, the night crews &mdash; runs through CrewAI, and none of it has ever appeared in the ledger. On top of that, an audit of every call site in the repo found <strong>19 more places</strong> that build their own HTTP client and never touch the logger, including the public website-audit tools and the live voice pipeline.</p>
+      <p>The worst of them: <code>orchestrator/llm_router.py</code>. Two different callers describe it in their own docstrings as <em>"the logged chokepoint"</em>. It logged nothing. It enforced the spending caps and kept no record &mdash; so it could tell you a limit was hit and never who hit it. <span class="pill done">fixed on this branch</span></p>
+
+      <h3>#2 &mdash; The overnight cron window. $46.54 of $91.76 over 11 days.</h3>
+      <p>Measured above. 100 scheduled jobs, 51% of spend in six unwatched hours, peaking at 07:00 MT. The single clearest example of what lives in there:</p>
+      <p><strong>ai-visibility-weekly</strong> fires every Sunday, makes 180 API calls across three engines, and has returned <code>0.0%&ndash;0.0% answered</code> on <em>every engine on every run since it was first installed</em>. It writes an HTML report nobody opens. That is not a cost problem to optimise, it is a job to switch off.</p>
+
+      <h3>#3 &mdash; The lead-magnet miner, paying for output it throws away. $2.50&ndash;$5.50 every Monday.</h3>
+      <p>This one I reproduced end to end. <code>scripts/lead_magnet_miner.py</code> loops over every candidate file and makes one Claude Sonnet 5 call per file, direct, invisible to the ledger. Real counts from its own log:</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Run</th><th>Files collected</th><th>Real API calls</th><th>Window</th></tr>
+        <tr><td>Mon 31 Aug</td><td>913</td><td>274</td><td>13:30&ndash;13:50 UTC</td></tr>
+        <tr><td>Mon 7 Sep</td><td>1,149</td><td>181</td><td>13:30&ndash;13:50 UTC</td></tr>
+        <tr><td>Mon 14 Sep</td><td>1,191</td><td>270</td><td>13:30&ndash;13:50 UTC</td></tr>
+      </table>
+      </div>
+      <p>Roughly 40&ndash;60% of them end in this line:</p>
+      <pre>WARNING extract LLM failed for &lt;file&gt; ('NoneType' object has no attribute 'strip'); using heuristic</pre>
+      <p><strong>The cause, verified against the live API today, not guessed:</strong> extended thinking is on by default on Sonnet 5. Those reasoning tokens bill as output, and they come out of the <em>same</em> 400-token ceiling the script set. On a real 6,000-character file the thinking eats the budget, the answer never gets written, the call is billed anyway, and the code falls back to a keyword heuristic. I ran the identical payload twice: with the default, thinking present and the answer can come back empty; with thinking switched off, 49 completion tokens, zero reasoning tokens, clean answer, $0.0006. <span class="pill done">fixed on this branch</span></p>
+      <p class="src">The dollar figure is a token-based estimate, not a measurement &mdash; I can count the calls exactly but not price them individually, for the reason in section 6. It explains perhaps a third of the Monday anomaly. The rest of the Monday cluster is still unidentified.</p>
+
+      <h3>#4 &mdash; The spend guard, which has been costing you hours and protecting nothing.</h3>
+      <p>Four freezes since 14 August, every one of them triggered at a balance between $2.49 and $2.90 against a $3.00 floor:</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Froze</th><th>Balance</th><th>Released</th><th>You lost</th></tr>
+        <tr><td>14 Aug 14:25 UTC</td><td>$2.49</td><td>escalated to a full container stop at 18:30</td><td>hours, plus an outage</td></tr>
+        <tr><td>20 Aug 21:05 UTC</td><td>$2.83</td><td>21 Aug 01:15</td><td>4h 10m</td></tr>
+        <tr><td>31 Aug 13:50 UTC</td><td>$2.90</td><td>31 Aug 15:05</td><td>1h 15m</td></tr>
+        <tr><td><strong>16 Sep 20:10 UTC</strong></td><td><strong>$2.51</strong></td><td><strong>17 Sep 06:55</strong></td><td><strong class="bad">10h 45m</strong></td></tr>
+      </table>
+      </div>
+      <p>Two things make this worse than lost time.</p>
+      <p><strong>It contradicts your own standing rule.</strong> On 31 August you ruled: below $5 is a yellow heads-up, below $3 is an urgent red alert, and <em>work keeps running all the way to genuine exhaustion</em>. Alert-only, never a gate. The guard still hard-freezes at $3.00. Your ruling was written down and never implemented &mdash; and it froze again that same day, and twice since.</p>
+      <p><strong>It does not even stop the spending.</strong> Through last night's 10h45m freeze the balance kept dropping, $2.51 to $0.21, and the daily total kept climbing. The freeze killed the crews the ledger can see. The thing actually spending the money is not one of them, so it carried on untouched. You lost a night; the burn did not.</p>
+      <p>And the alerting around it has gone to noise: the guard's assumed baseline is $2.00/day against a real $8.34, so a spike alert fires roughly twice a day, every day, without exception since 28 August. <span class="pill you">needs your call</span></p>
+
+      <h3>#5 &mdash; Prices the system has wrong, so the caps do not bind.</h3>
+      <p>Our price tables are written with dashes (<code>claude-haiku-4-5</code>), OpenRouter serves dots (<code>claude-haiku-4.5</code>), so a model never matched its own row. Live in the container log:</p>
+      <pre>run_budget: model slug 'anthropic/claude-haiku-4.5' is not in _PRICING_PER_M
+-- pricing it at $0.00. Every spend cap and crew ceiling is BLIND to this model.</pre>
+      <p>Writing the tests exposed that my own first description of this was wrong, which is worth saying plainly. It is not that everything priced at zero. Three of four fell through to a <em>less specific</em> row and got a wrong price instead of a free one:</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Model</th><th>What it matched</th><th>Effect</th></tr>
+        <tr><td>haiku-4.5</td><td>nothing</td><td>$0.00 &mdash; the cap goes blind</td></tr>
+        <tr><td>opus-4.8</td><td>the opus-4 row</td><td>$15/$25 instead of $5/$25 &mdash; <strong>3x over</strong></td></tr>
+        <tr><td>fable-5.1</td><td>the fable-5 row</td><td>cache reads 4x over</td></tr>
+        <tr><td>sonnet-4.6</td><td>the sonnet-4 row</td><td>same price &mdash; harmless by luck, not design</td></tr>
+      </table>
+      </div>
+      <p>Over-pricing is not the safe direction: it manufactures ceiling breaches on calls that were cheap, which is one more way the guard fires when it should not. <span class="pill done">fixed on this branch</span></p>
+
+      <h3>Not a culprit, checked and cleared</h3>
+      <p>The deploy pipeline restarts the container 35&ndash;45 times a day, and every restart re-fires every scheduled wake immediately. That looked like a free multiplier on everything. It is not a bug: the trigger only fires after a real merge, and there genuinely are that many merges. Worth knowing, not worth fixing. Also cleared, with evidence: content-connection, the ops sentinel, and geo-score-weekly make no LLM calls at all.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. Yes, the meter itself is broken &mdash; three separate ways</h2></summary>
+    <div class="sec-body">
+      <p>You asked whether we are measuring this properly. We are not, and it matters for reading every number above.</p>
+      <ol>
+        <li><strong>The system's own "spend today" figure is about a seventh of reality.</strong> The nightly snapshot reads OpenRouter's <code>usage_daily</code>, which resets at UTC midnight &mdash; 18:00 your time. The snapshot runs at 23:55 MT, so it captures the 18:00&ndash;23:55 slice and calls it the day. That is why <code>provider_billing</code> shows ~$1/day while the truth is ~$7.23. This exact bug was found and fixed on 10 May 2026 &mdash; in the dashboard only. The snapshot and the guard never got the fix.</li>
+        <li><strong>The guard is blind during your evening.</strong> Same cause: its cumulative alarm compares a counter that just reset to zero at 18:00 MT, so from 18:00 to midnight it structurally cannot see a spike.</li>
+        <li><strong>The "who spent it" block in every alert is empty by construction.</strong> It computes <em>unattributed = today's total minus what the crews report</em>. Since the crews report 3%, it has always said "unattributed", every time. The alert has been telling you it does not know, for months.</li>
+      </ol>
+      <p><strong>One correction in the other direction, and you should hear it from me first.</strong> The $8.34/day baseline is measured over a period that contains roughly 16 hours of freeze, during which autonomous work was switched off. So the true unfrozen burn is <em>higher</em> than the number on this page. When the freezing stops, spend will go up before anything brings it down. That is the fix working, not failing.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4">
+    <summary><h2>4. Council: the five-angle pressure test</h2></summary>
+    <div class="sec-body">
+      <p>Run against these findings before they reached you. It changed the shape of this report, and it killed one of my fixes.</p>
+
+      <h3>The Contrarian</h3>
+      <p>The headline fix was a measuring tool whose error bar was bigger than most of what it would measure. It was right, and a control test proved it &mdash; see section 5. It also flagged that the two burn figures are not truly independent (both read the same vendor counter through the same code path), and that naming the lead-magnet miner "the Monday culprit" when it explains at most a third of the anomaly is stopping one layer early. Both stand.</p>
+
+      <h3>The First Principles Thinker</h3>
+      <p>You asked who is draining the credits. The question underneath is why the system spends $250 a month at all and what it buys. This is not an accounting gap, it is a <strong>consent gap</strong>: ~100 jobs were each authorised once, at different times, for different reasons, and not one has ever been re-authorised against a current goal. A perfect ledger over an unexamined job list only tells you which unnecessary work is most expensive.</p>
+
+      <h3>The Expansionist</h3>
+      <p>Two things nobody is looking at. First, the free and paid website-audit tools are listed here only as unlogged cost leaks &mdash; they are the only things in the whole inventory facing a customer, and nobody can currently answer "what does one paid report cost us to produce", which is a pricing input. Second, a five-minute-resolution burn curve showing where an AI system's money goes, built on your own system first, is a Catalyst Works offer with a working demo and a scar to show. Every company running agents on OpenRouter has this blind spot and the vendor does not solve it.</p>
+
+      <h3>The Outsider</h3>
+      <blockquote>"Your safety system locked you out of your own business for eleven hours because a balance hit three dollars. Meanwhile the thing actually spending money kept spending right through it. If a fire alarm emptied my warehouse for eleven hours while the fire kept burning, I would not tune the alarm &mdash; I would ask who installed it."</blockquote>
+      <p>Its sharpest point was not about money at all: <strong>three places in this system's own documentation say things that are not true.</strong> A function two files call "the logged chokepoint" that logs nothing. A comment I wrote claiming a whole model family priced at zero when three of four were wrong in a different direction. Two tests on the main branch that have been failing long enough that nobody noticed. The instruments lie in small ways, consistently, and that is a bigger finding than the credits.</p>
+
+      <h3>The Executor</h3>
+      <p>Nothing in this plan stops tonight's freeze. The branch is held at the gate until you tap Telegram. And presenting the freeze policy back to you as an open question is work handed back &mdash; you decided it on 31 August. Its other point: an instrument with no dial does not exist. If spend data lands in a table and nothing surfaces it, the work was theatre.</p>
+
+      <h3>What all five missed</h3>
+      <p>Nobody questioned whether $250/month is actually bad. It was assumed, because you said "too fast". If it were producing three qualified leads a month it would be cheap. Nobody checked &mdash; and that is what the open question at the bottom is for.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. What I fixed, what I killed, what needs you</h2></summary>
+    <div class="sec-body">
+
+      <h3><span class="pill done">Landed</span> Branch <code>fix/openrouter-spend-attribution</code></h3>
+      <p>Four changes plus ten tests. The tests are written bug-first and I checked they actually reproduce: five of them fail against the code as it was, all ten pass after. Head commit <code>44010c7d</code>.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Fix</th><th>What it does</th></tr>
+        <tr><td>llm_router ledger write</td><td>The "logged chokepoint" that logged nothing now writes a row. Makes absorb, link-reader and the chief-of-staff reasoning path attributable for the first time.</td></tr>
+        <tr><td>lead-magnet miner</td><td>Thinking switched off on the extraction call, plus a guard so an empty answer falls through cleanly instead of crashing. Stops paying for output that gets binned.</td></tr>
+        <tr><td>dotted-slug pricing</td><td>haiku-4.5 no longer prices at $0.00; opus-4.8 no longer prices 3x high. The caps start binding again.</td></tr>
+        <tr><td>price table ordering</td><td>Fable 5.1 no longer matches the Fable 5.0 row.</td></tr>
+      </table>
+      </div>
+      <p>It touches <code>orchestrator/</code> and <code>scripts/</code>, so it is <strong>held at the self-modification gate waiting for your Telegram tap</strong>. I did not and will not write the approval marker.</p>
+
+      <h3><span class="pill killed">Built, tested, thrown away</span> The per-job spend bracket</h3>
+      <p>My main idea was to bracket every scheduled job with a reading of OpenRouter's usage counter before and after, and record the difference against the job name &mdash; attribution for all 69 wrapped jobs without touching a single call site. I built it and tested it on the live box. It wrote rows. Then I ran the control:</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Test job</th><th>What it actually cost</th><th>What the bracket recorded</th></tr>
+        <tr><td>one real Sonnet 5 call</td><td>$0.003334</td><td>$0.004434</td></tr>
+        <tr><td><code>/bin/echo hello</code> &mdash; <strong>zero LLM calls</strong></td><td><strong>$0.00</strong></td><td><strong class="bad">$0.033805</strong></td></tr>
+      </table>
+      </div>
+      <p>OpenRouter's counter lags a call by about 60 seconds and lands in stages, so the bracket has to hold a two-minute window &mdash; and on a live box that window swallows whatever else the system is doing. It would have put real dollars against jobs that spent nothing, in the one table whose whole value is that its numbers are true. I removed it. The tempting option was to ship it with a caveat in a code comment; nobody ranking jobs by cost six weeks from now reads the comment.</p>
+      <p>It stays in git history so the next person with the same idea finds the measurement that rules it out. The test rows were deleted and I read the count back at zero.</p>
+
+      <h3><span class="pill you">Your call</span> Three decisions</h3>
+
+      <p><strong>Decision 1 &mdash; the freeze. Recommendation: implement your own 31 August rule, tonight.</strong><br>
+      Options: (a) leave it, and accept another 10-hour night; (b) drop the floor from $3.00 to something near zero, keeping the freeze as a true last resort; (c) implement what you already ruled &mdash; alert at $5, urgent alert at $3, never stop work, freeze only at genuine exhaustion. I recommend (c) because it is not a new decision, it is the one you already made. What is irreversible: nothing; it is one constant and one branch. What is at stake if we are wrong: a runaway could drain the balance to zero instead of being stopped at $3 &mdash; and the evidence from last night is that the freeze does not stop the runaway anyway, it only stops you. <em>I have not written this change. It weakens an existing guard, so it is yours to authorise, not mine to assume.</em></p>
+
+      <p><strong>Decision 2 &mdash; the management key. Recommendation: do it, it takes two minutes.</strong><br>
+      I could not get a per-model breakdown because <code>/api/v1/activity</code> refuses our key: <em>"Only management keys can fetch activity for an account."</em> Create a provisioning key at <code>openrouter.ai/settings/provisioning-keys</code> and the vendor's own per-model, per-day billing record becomes readable forever, with no instrumentation, no noise, and no error bar. It answers the half of your question I could not. This is the single highest-leverage thing on the page and it needs no code review and no gate.</p>
+
+      <p><strong>Decision 3 &mdash; the kill list. Recommendation: one hour, once, with me.</strong><br>
+      About 100 scheduled jobs; not one has been re-authorised against the Money Map. We do not need better measurement to start &mdash; a job returning 0.0% on every run since inception needs no further study. I recommend we go through the list together once and mark each one keep, cut, or slow down. Everything else on this page is downstream of that.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6">
+    <summary><h2>6. What I could not determine</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><strong>Per-model spend.</strong> Not available. <code>/api/v1/activity</code> returns 403 because our key is not a management key. Every per-model figure in this report would have been an estimate, so I did not produce any. See decision 2.</li>
+        <li><strong>The rest of the Monday cluster.</strong> The lead-magnet miner accounts for maybe a third of the $12&ndash;18 Monday anomaly. Nine Monday jobs were never examined: blotato-failure-scan, comms-signal-moneymap-sync, tax-receipt-monitor, money-map-worklist, sw-signal-refresh, weekly-email-digest, cw-inbox-triage, the LinkedIn comment jobs, and the chief-of-staff morning/overnight crons.</li>
+        <li><strong>The daily 07:00 MT peak.</strong> The biggest single hour, every day, and nothing I checked explains it. The most likely candidate not yet examined is comms-signal-moneymap-sync, which runs every 30 minutes all day.</li>
+        <li><strong>How much of the 96.8% is CrewAI specifically</strong>, versus the 19 direct call sites. Both are real; the split is unmeasured.</li>
+        <li><strong>Whether the $250/month buys anything.</strong> Nobody has ever checked what the autonomous work produces. That is the question the Council said all five of its voices missed, and it is the one that decides whether any of this is a problem at all.</li>
+      </ul>
+      <p class="src">Two tests in <code>orchestrator/tests/test_run_budget.py</code> fail on the main branch and have for some time. Not caused by this work &mdash; I verified they fail identically on a clean checkout. Flagging it because a failing test nobody notices is how the next thing slips through.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7">
+    <summary><h2>7. The one question only you can answer</h2></summary>
+    <div class="sec-body">
+      <p class="big">What is the monthly OpenRouter number you are actually willing to pay for a system that is not yet producing revenue?</p>
+      <p>Every other decision here is downstream of it.</p>
+      <ul>
+        <li>At <strong>$250/month</strong> &mdash; roughly where you are &mdash; the answer is a kill list and tighter jobs.</li>
+        <li>At <strong>$500/month</strong> the answer is to leave it running and spend the effort on instrumentation instead.</li>
+        <li>At <strong>$100/month</strong> the answer is that most of those hundred scheduled jobs stop this week.</li>
+      </ul>
+      <p>Nobody can set that number but you. Without it, the guard's baseline gets tuned against a measurement rather than an intention &mdash; which is exactly how it ended up sitting at $2.00 while reality ran at $8.34.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Investigation run 2026-09-17. Sources: OpenRouter <code>/api/v1/auth/key</code> and <code>/api/v1/credits</code>; <code>provider_billing</code> and <code>llm_calls</code> on orc-postgres; 29,800 samples in <code>/var/log/spend_rate_guard.log</code>; per-job logs under <code>/var/log/</code>; a full call-site audit of the repo. Branch <code>fix/openrouter-spend-attribution</code>, head <code>44010c7d</code>, held at the self-modification gate.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
