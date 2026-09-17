@@ -211,10 +211,16 @@
     var now = todayISO();
     // Zero-padded ISO dates compare correctly as strings.
     var after = when !== '' && now >= when;
+    // Day-of is NOT "past". The call has not happened yet, so the prep must stay
+    // open and readable; only a date strictly in the past folds the prep shut.
+    var sameDay = when !== '' && now === when;
 
     var st = block.querySelector('[data-ty-stamp]');
     if (st) {
-      st.textContent = after
+      st.textContent = sameDay
+        ? 'The interview is today (' + when + '). This moved up here so the debrief box is ' +
+          'ready straight after the call. The prep below stays open until then.'
+        : after
         ? 'Interview date ' + when + ' has passed (today is ' + now +
           '), so this section moved itself to the top and the prep below is folded shut.'
         : 'Interview is ' + when + ' (today is ' + now +
@@ -229,11 +235,13 @@
       } else {
         wrap.insertBefore(block, wrap.firstChild);
       }
-      document.querySelectorAll('details').forEach(function (el) {
-        if (!block.contains(el)) { el.open = false; }
-      });
+      if (!sameDay) {
+        document.querySelectorAll('details').forEach(function (el) {
+          if (!block.contains(el)) { el.open = false; }
+        });
+      }
       var d = block.querySelector('details');
-      if (d) { d.open = true; }
+      if (d) { d.open = !sameDay; }
     } else {
       block.classList.add('ty-pending');
       wrap.appendChild(block);
