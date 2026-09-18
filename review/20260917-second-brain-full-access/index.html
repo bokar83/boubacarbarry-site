@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Second Brain Full Access</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  .tag{display:inline-block; padding:2px 9px; border-radius:999px; font-size:.75rem; font-weight:600; margin-right:6px;}
+  .tag-pass{background:rgba(127,224,184,0.15); color:var(--good); border:1px solid var(--good);}
+  .tag-warn{background:rgba(242,184,75,0.15); color:var(--warn); border:1px solid var(--warn);}
+  .tag-block{background:rgba(255,122,122,0.15); color:var(--bad); border:1px solid var(--bad);}
+  .qbox{background:var(--bg2); border:1px solid var(--accent); border-radius:10px; padding:14px 16px; margin:14px 0;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-17-18:12:54 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Second Brain Full Access</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">Phased plan</a>
+      <a href="#sec-2">Phase 1 (build now)</a>
+      <a href="#sec-3">Phase 2 &amp; 3 (planning only)</a>
+      <a href="#sec-4">Open question for you</a>
+      <a href="#sec-5">Karpathy + Council</a>
+      <a href="#sec-6">What we will NOT build</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Second Brain Full Access -- Plan of Action</h1>
+    <div class="meta">PRD review &middot; ms02-init lane &middot; 2026-09-17</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>This is not a green-field build.</strong> A Postgres-backed second-brain
+      pipeline already exists and already indexes <code>memory/</code>, your governance
+      docs, decisions, PRDs, and 4 named Notion databases -- every lane and VPS crew
+      already queries it via one CLI (<code>ask.sh</code>). The gap is real but narrow:
+      it cannot see Drive, NotebookLM, or Notion outside those 4 databases.</p>
+      <p><strong>Phased plan, cheapest first:</strong></p>
+      <ul>
+        <li><strong>Phase 1 (build authorized by this PRD, buildable this week):</strong>
+        wire full-workspace Notion search into <code>ask.sh</code> -- reuses a tool
+        already connected, near-zero build cost.</li>
+        <li><strong>Phase 2 (planning only):</strong> NotebookLM ingestion via the VPS
+        <code>nlm</code> CLI -- needs a short capability spike first, its own PRD.</li>
+        <li><strong>Phase 3 (planning only, blocked):</strong> Drive ingestion -- the
+        real build. Blocked on YOU answering the open question below before it can even
+        be scoped.</li>
+      </ul>
+      <p><strong>Both Karpathy (10-principle code audit) and Council (5-voice adversarial
+      review) ran on this plan before it reached you</strong> -- see the section below for
+      what they changed. Verdict: SHIP Phase 1, with two fixes already applied.</p>
+      <p><strong>The one thing only you can answer:</strong> does "every single thing in
+      Drive" include the immutable <code>_ORIGINAL_TREE</code> folder and the opaque
+      "Pa We" folder for search/read purposes, or do those stay excluded the way they're
+      already excluded from mutation? See the Open Question section.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. The phased plan</h2></summary>
+    <div class="sec-body">
+      <p>Your instruction was "every single thing in Drive, NotebookLM, and Notion
+      needs to be accessible, and other lanes and VPS crews use it too." The system
+      already does most of that for the file/document side of this (memory files,
+      governance docs, decisions, PRDs) and for 4 core Notion databases. The gap is
+      specifically: full Notion workspace search, NotebookLM, and Google Drive.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Phase</th><th>Source</th><th>Build size</th><th>Status</th></tr>
+        <tr><td>1</td><td>Notion (full workspace)</td><td>Small -- one flag on an existing script, reuses an already-connected tool</td><td><span class="tag tag-pass">AUTHORIZED, build now</span></td></tr>
+        <tr><td>2</td><td>NotebookLM</td><td>Medium -- needs a capability spike first (what can the <code>nlm</code> CLI actually export)</td><td><span class="tag tag-warn">Planning only</span></td></tr>
+        <tr><td>3</td><td>Google Drive</td><td>Largest -- real auth decision, real corpus size, real exclusion rules needed</td><td><span class="tag tag-block">Blocked on your answer</span></td></tr>
+      </table>
+      </div>
+      <p>Full spec: <code>docs/prds/second-brain-full-access/PRD.md</code> (agent-internal
+      working document, 21-section Constraint-First Build Spec -- this page is the
+      readable summary).</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. Phase 1 -- what actually builds this week</h2></summary>
+    <div class="sec-body">
+      <p>Add a live Notion-search leg to the existing <code>ask.sh</code> query tool
+      (the one every lane already uses). It calls the Notion search tool that's already
+      connected to this session, or the Notion API directly from VPS crew containers
+      using the same credential the nightly Notion sync already uses. No new database,
+      no new cron job -- it's a live lookup at query time, merged into the same result
+      list agents already read, clearly labeled so a live Notion hit is never confused
+      with an indexed one.</p>
+      <p>Ship bar: works correctly on 2 real test questions whose answers live only in
+      an un-synced Notion page; degrades loudly (never silently) if Notion times out or
+      rate-limits; deployable within days, not weeks.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3">
+    <summary><h2>3. Phase 2 &amp; Phase 3 -- planned, not authorized to build yet</h2></summary>
+    <div class="sec-body">
+      <p><strong>NotebookLM (Phase 2):</strong> the only working path is the VPS
+      <code>nlm</code> CLI (your laptop's connection to NotebookLM is blocked by the TLS
+      interception on this machine). Before this can be scoped into its own build plan,
+      someone needs to spend a short session confirming exactly what <code>nlm</code> can
+      export -- source lists, generated notes, Q&amp;A transcripts. That spike is not
+      done yet.</p>
+      <p><strong>Google Drive (Phase 3):</strong> the real build. Larger, less structured
+      corpus, and it runs directly into two of your own standing rules: the immutable
+      "original tree" folder that's copy-only/never-move, and the "Pa We" folder that's
+      permanently off-limits. Both rules were written about <em>moving or editing</em>
+      files -- neither says anything about whether those folders should be
+      <em>searchable</em>. This plan does not decide that for you (see the next
+      section). There's also a real credential decision to make: a dedicated service
+      account vs. reusing your own Google login, which have different tradeoffs for
+      running unattended on the VPS.</p>
+      <p>Each of these gets its own build plan and its own Karpathy + Council review
+      before any code is written -- this PRD's go-ahead only covers Phase 1.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. The one question only you can answer</h2></summary>
+    <div class="sec-body">
+      <div class="qbox">
+        <p><strong>Does "every single thing in Drive" include the immutable
+        <code>_ORIGINAL_TREE</code> folder and the opaque "Pa We" folder for
+        search/indexing purposes?</strong></p>
+        <p>Both are currently hands-off by standing rule -- <code>_ORIGINAL_TREE</code>
+        is copy-only, never moved or edited; "Pa We" is permanently opaque, never opened
+        or reorganized. Neither rule was written with search in mind. Your instruction
+        ("every single thing... you use it") could reasonably mean those get indexed
+        too, or it could mean the existing hands-off treatment should hold even for
+        search. This plan will not guess -- Phase 3 (Drive) does not start until you
+        say which. Also worth naming while we're at it: are there any other Drive
+        folders (client-sensitive, personal/family, legal) you want excluded before a
+        crawler ever touches them?</p>
+        <p style="margin-bottom:0;color:var(--text-dim);font-size:.85rem;">Tracked as
+        task-board row <code>2cc683f2771146c6a4ebc3027a9622e2</code> so it doesn't sit
+        only in this document.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5">
+    <summary><h2>5. Karpathy + Council findings</h2></summary>
+    <div class="sec-body">
+      <p><span class="tag tag-pass">Karpathy: SHIP</span> Audited against all 10
+      principles. One WARN: the plan document scoped all three phases in one place,
+      which could read as if Phase 2/3 were already authorized to build -- fixed by
+      adding an explicit "planning only" banner. Everything else passed clean: the plan
+      was researched before written, Phase 1 is genuinely the minimum build, no scope
+      crept past what was asked, and a real done-condition was stated before any code
+      exists.</p>
+      <p><span class="tag tag-warn">Council: CHANGE, then ship</span> Five independent
+      reviewers pressure-tested the plan. Two real gaps found and fixed before this
+      page was published:</p>
+      <ul>
+        <li>The live Notion call could, under load, degrade the whole query tool for
+        every lane if Notion is slow or rate-limited. Fixed: that leg now has to fail
+        loudly and independently, never silently and never blocking the rest of the
+        tool.</li>
+        <li>The Drive open-question above was at risk of living only in this document
+        and quietly going stale, the way an earlier Drive plan did in September. Fixed:
+        it now has a dated task-board row with your name on it.</li>
+      </ul>
+      <p>One tension the reviewers surfaced rather than papered over: should this plan
+      prove Drive/Notion coverage is actually the bottleneck before building more, or
+      should it move fast and generalize the Phase 1 pattern to future sources? The
+      resolution: ship the cheap win now, and let real usage answer that question before
+      deciding what Phase 2/3 timing should be.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6">
+    <summary><h2>6. What this plan will NOT build</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li>No new database -- everything extends the Postgres index every lane already
+        queries.</li>
+        <li>No write/edit capability into Drive, Notion, or NotebookLM from this
+        pipeline -- read/search only, ever.</li>
+        <li>No blanket Drive crawl before the exclusion question above is answered.</li>
+        <li>No productized "connect anyone's Drive" tool -- this is your workspace,
+        wired for your own lanes and crews.</li>
+        <li>No real-time push/webhook sync in v1 -- everything runs on a schedule or at
+        query time, matching how the Notion sync already works.</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Full 21-section build spec: <code>docs/prds/second-brain-full-access/PRD.md</code>,
+    registered in <code>docs/prds/README.md</code>. Open-question tracking: task-board
+    row <code>2cc683f2771146c6a4ebc3027a9622e2</code>.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
