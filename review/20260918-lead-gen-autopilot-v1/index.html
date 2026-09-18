@@ -48,7 +48,7 @@ summary h2{display:inline;font-size:18px;margin:0;font-weight:600}
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-18-03:45:31 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-18-08:48:18 MT</div><!-- DEPLOY_STAMP_END -->
 
 <div class="wrap">
 <nav class="nav-bar" aria-label="Section navigation">
@@ -60,6 +60,8 @@ summary h2{display:inline;font-size:18px;margin:0;font-weight:600}
 <a href="#phases">Phases</a>
 <a href="#verdicts">Contract verdicts</a>
 <a href="#line3">The failing line</a>
+<a href="#caught">What review caught</a>
+<a href="#limits">Before it runs</a>
 <a href="#findings">Findings</a>
 <a href="#where">Where it lives</a>
 <a href="#next">What next</a>
@@ -75,7 +77,8 @@ summary h2{display:inline;font-size:18px;margin:0;font-weight:600}
 <li>The reply autopilot works: it watches Signal Works reply threads, sorts each reply into six buckets, drafts a response into Gmail Drafts, and attaches a Calendly link only when someone is genuinely interested.</li>
 <li><strong>It cannot send anything.</strong> Proven five separate ways, not asserted. Nothing in the new code can reach a send function, and a live test fails the instant any transport is touched.</li>
 <li>Independent QA executed all 36 lines verbatim: 33 of the 34 blocking lines PASS, including all three non-negotiable no-send lines, which QA read in full and judged genuine rather than surface-level. The 34th asks the whole repo test suite to exit clean, and that suite has 127 failures that exist without this build.</li>
-<li><strong>Nothing is merged and nothing is live.</strong> Every commit is tagged work-in-progress. Waiting on your call.</li>
+<li><strong>A review pass after QA found a real defect and it is now fixed.</strong> On the live path every reply would have been read as an empty message, and the live mode was what ran by default. Both closed, re-checked, and a test now exists that would catch it coming back.</li>
+<li><strong>Released to merge, dormant.</strong> Nothing is scheduled and nothing runs on its own. Seven known limits are named below and all of them must close before it is ever put on a timer.</li>
 </ul>
 </details>
 
@@ -151,6 +154,31 @@ git diff --name-only origin/main...HEAD -- [the 8 reused parts]  -&gt; no output
 </ul>
 <p><strong>Recommendation:</strong> accept the build with line 3 recorded as failed for a pre-existing reason. Repairing the repository test suite is real work and it is already underway on its own branch. Holding this build behind it would mean holding it behind a problem it did not cause, and the strict reading of the contract is what produces the not-accepted verdict, not any defect in what was built.</p>
 </details>
+<details open>
+<summary><h2 id="caught">What the review pass caught after QA passed it</h2></summary>
+<p>QA signed off 33 of 34 lines. A separate adversarial read afterwards found something the contract never asked about, and it was serious.</p>
+<ul>
+<li><strong>Every real reply would have been read as blank.</strong> The part that fetches replies was handing on a different set of fields than the parts that read them, and it was never fetching the message body at all. A reply saying yes and a reply saying never contact me again would both have arrived as an empty message. Worse, an <em>interested</em> verdict on that emptiness would have burned a real calendar booking link into a draft addressed to nobody.</li>
+<li><strong>Live mode was the default.</strong> Running the module with no arguments would have gone straight at the real mailbox. It now takes a typed flag to go live, and doing nothing gets you the safe sample pass.</li>
+<li><strong>Why nothing caught it earlier:</strong> the safe sample pass supplied its own made-up replies, in the shape the rest of the code wanted. The fixtures and the real thing disagreed, and only the fixtures were ever tested. Every gate before this one was reading the same fiction.</li>
+</ul>
+<p>Both are fixed. The field list now lives in exactly one place, so the two halves cannot drift apart again, and a new test derives both sides from that one definition &mdash; run against the old broken version it fails seven times, which is the proof it would catch a repeat. A second review then traced a real Gmail message all the way through and confirmed the classifier now receives the actual words and the draft goes to the actual person.</p>
+<p><strong>The honest read:</strong> this is what the review chain is for. Had this merged when the contract said it could, it would have sat there looking verified, and the danger was never that it sits idle &mdash; it is that someone puts it on a timer in three weeks believing it was checked.</p>
+</details>
+
+<details>
+<summary><h2 id="limits">Seven things that must close before it runs on a timer</h2></summary>
+<p>None of these block the merge, because nothing is scheduled. All of them block scheduling. They are written into the code itself, not just here.</p>
+<ol>
+<li>It remembers nothing between runs, so a second run re-drafts every reply and burns fresh booking links for people already handled.</li>
+<li>A Gmail hiccup mid-run kills the whole pass, and with nothing remembered, everything done so far is lost.</li>
+<li>If the database is unreachable it reports no replies, which looks identical to a quiet day. A failure that looks like success.</li>
+<li>If the classifier service is down, every reply is filed as needs-a-human, and the run still prints clean.</li>
+<li>Unsubscribes are logged and nothing more. There is no suppression handoff behind it. Compliance-adjacent, so this one matters most.</li>
+<li>The guard meant to stop the blank-reply bug returning only blocks one exact spelling; a near-synonym slips past it.</li>
+<li>A safety check that catches a reply with no sender address was written but never wired in, so that narrow case can still draft to nobody.</li>
+</ol>
+</details>
 <details>
 <summary><h2 id="findings">Findings worth keeping</h2></summary>
 <ul>
@@ -167,22 +195,21 @@ git diff --name-only origin/main...HEAD -- [the 8 reused parts]  -&gt; no output
 <table>
 <tr><th>Item</th><th>Value</th></tr>
 <tr><td>Branch</td><td><code>feat/lead-gen-autopilot-reply-autopilot-2026-09-18</code></td></tr>
-<tr><td>Tip commit</td><td><code>90068c572abd623425d3e3d39c9be63f6d879703</code></td></tr>
+<tr><td>Tip commit</td><td><code>01359f1274714a7fc197caf673d5275b5c7313f9</code></td></tr>
 <tr><td>New code</td><td><code>signal_works/reply_autopilot/</code> &mdash; watcher, classifier, drafter, runner</td></tr>
 <tr><td>New tests</td><td><code>tests/reply_autopilot/</code> &mdash; 92 tests, all passing</td></tr>
 <tr><td>Spec</td><td><code>docs/prds/lead-gen-autopilot/PRD.md</code> and <code>ACCEPTANCE_CONTRACT.md</code>, both merged</td></tr>
-<tr><td>Merged?</td><td><strong>No.</strong> Every commit is tagged work-in-progress, so nothing auto-merges.</td></tr>
+<tr><td>Released to merge?</td><td><strong>Yes</strong>, as of this page. The work-in-progress tag is off the final commit.</td></tr>
+<tr><td>Decision record</td><td><code>D-20260918-fb51d0</code>, on branch <code>docs/lead-gen-autopilot-go-2026-09-18</code> at <code>53f121a8d</code></td></tr>
 <tr><td>Deployed?</td><td><strong>No.</strong> Nothing runs on a schedule and nothing is wired into the daily job.</td></tr>
 </table>
 </details>
 
 <details open>
-<summary><h2 id="next">What happens next, if you say go</h2></summary>
-<p>Nothing below has been run. These are drafted for you, not executed.</p>
-<pre># 1. Flip the branch to ready so it can merge
-git commit --allow-empty -m "feat(reply-autopilot): v1 reply watcher, classifier and draft generator"
-git push origin feat/lead-gen-autopilot-reply-autopilot-2026-09-18</pre>
-<p><strong>My recommendation: merge it, and leave it unscheduled for now.</strong> Run it by hand against a day of real replies first and read what it drafts. The value of this build is the quality of those drafts, and so far it has only ever faced test fixtures, never a real person writing back.</p>
+<summary><h2 id="next">What happens next</h2></summary>
+<p>Nothing needs doing from you for it to land. It is released and dormant.</p>
+<p><strong>The one thing I would ask for:</strong> when you next have a day of real replies, let it draft against them by hand and read what it writes. Everything proven so far was proven against invented replies, and the defect above is exactly what that blind spot produces. The value of this thing is the quality of the drafts, and nobody has yet seen it face a real person writing back.</p>
+<p><strong>Do not put it on a timer yet.</strong> The seven items above are why, and the fifth one &mdash; unsubscribes being logged and nothing more &mdash; is the one I would close first.</p>
 </details>
 
 </div>
