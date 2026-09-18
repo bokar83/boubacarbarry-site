@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sept 24 workshop: signup push</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; white-space:pre-wrap; word-break:break-word;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .badge{display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.03em;
+    text-transform:uppercase; padding:3px 9px; border-radius:999px; margin:0 0 10px;}
+  .badge.bad{background:rgba(255,122,122,.15); color:var(--bad); border:1px solid rgba(255,122,122,.4);}
+  .badge.warn{background:rgba(242,184,75,.15); color:var(--warn); border:1px solid rgba(242,184,75,.4);}
+  .badge.good{background:rgba(127,224,184,.15); color:var(--good); border:1px solid rgba(127,224,184,.4);}
+  .ask{background:var(--bg2); border-left:3px solid var(--accent); border-radius:6px;
+    padding:10px 14px; margin:14px 0; font-weight:600;}
+  .copybox{position:relative; margin:10px 0;}
+  .copybox pre{margin:0; padding-right:80px;}
+  .copybtn{
+    position:absolute; top:8px; right:8px; background:var(--card); color:var(--accent);
+    border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:.76rem;
+    cursor:pointer; font-weight:600;
+  }
+  .copybtn:hover{border-color:var(--accent);}
+  .copybtn.copied{color:var(--good); border-color:var(--good);}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-18-13:19:55 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Sept 24 signup push</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-status">Real status</a>
+      <a href="#sec-posts">2 posts to approve</a>
+      <a href="#sec-outreach">Text your people</a>
+      <a href="#sec-ads">Ad spend draft</a>
+      <a href="#sec-moneymap">Money Map rows</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Sept 24 workshop: signup push</h1>
+    <div class="meta">6 days out &middot; SLCC Miller Campus, Sandy &middot; $50 seat &middot; 2026-09-18</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <span class="badge bad">ZERO real signups, 6 days out</span><br>
+      <p><strong>Real registration count for Thursday: 0.</strong> Sourced from Stripe (all 45 checkout sessions against the seat link are expired/unpaid) and the DB (the only rows on the current cohort are your own test emails). Confirmed independently two ways, not assumed.</p>
+      <p><strong>Today's committed post (D-20260906-eb6b86) had silently missed.</strong> Both giveaway posts were sitting Archived, unapproved, cause unknown. Fixed: flipped to Ready, copy unchanged and already voice/CTQ gated. They need your one-tap approval below &mdash; the LinkedIn one is now a day late.</p>
+      <p><strong>No Meta ad exists for Sept 24.</strong> The paid-media plan's recommended buy was never built. A ready-to-approve draft is below &mdash; nothing has been spent.</p>
+      <p><strong>The single highest-leverage move today is 1:1 texts to people you know.</strong> Draft ready to copy and personalize below.</p>
+      <p>Three Money Map rows added to y1 tracking all of this. Your asks, in order: (1) approve the two posts, (2) text 5-10 people, (3) decide on the ad spend.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-status" open>
+    <summary><h2>Real status, sourced</h2></summary>
+    <div class="sec-body">
+      <p><span class="badge bad">0 registrations</span></p>
+      <table>
+        <tr><th>Source</th><th>What was checked</th><th>Result</th></tr>
+        <tr><td>Stripe</td><td>All checkout sessions against the seat payment link, live read 2026-09-18</td><td>45 of 45 sessions <code>expired</code> / <code>unpaid</code>. Zero paid.</td></tr>
+        <tr><td>orc-postgres <code>workshop_registrations</code></td><td>Cohort <code>ic_workshop_next</code> (= Sept 24, per <code>workshop_config.py</code>)</td><td>Only rows present are your own <code>bokar83+wsfix...@gmail.com</code> QA-test addresses from 2026-08-22. Zero external conversions.</td></tr>
+      </table>
+      <p>This matches the last checkpoint's number, so nothing moved in either direction since then &mdash; the campaign has been silent.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-posts" open>
+    <summary><h2>2 posts to approve (one is a day late)</h2></summary>
+    <div class="sec-body">
+      <p>The Plan Check giveaway (D-20260906-eb6b86): one paid seat holder is drawn after Sept 24 for a 45-minute interview-first plan review. Both posts already cleared <code>boub_voice_mastery</code> (93 / 92) and <code>ctq-social</code> (92 / 91, viral 9/10) on 2026-09-06. Copy is unchanged since then &mdash; only the Content Board Status changed today, from Archived to Ready.</p>
+
+      <p><strong>Post 1 &mdash; LinkedIn (was due today, 09-18, now late)</strong></p>
+      <div class="copybox">
+        <pre id="post1">One person in the room on September 24 is going to bring me the thing they are about to spend money on, and we are going to find out together whether it holds up.
+
+A name comes out of the hat. We sit down for forty five minutes in the week after.
+
+For the first twenty I give no advice at all. I only ask. What exactly are you about to buy, and who is it for. What have you already tried, and what did that cost you. What would have to be true for this to be worth doing.
+
+Then we go and look, while you watch. Who is already doing this near you, and how well. What people say about them. What the work is actually worth. Whether anyone is paying money right now to reach the same buyer you want.
+
+You walk away with a verdict on your own plan. Go, wait, or leave it, with the reason and the source sitting next to every line. Where we could not find out, it says so instead of guessing.
+
+I built this check for myself first. It strips out the parts of a plan that are only there because they look clever, and it earned its place in my own week, which is the only reason it is in front of you.
+
+One name gets it done with me. Everyone in the room leaves able to run it themselves, which is the actual point.
+
+Your seat is your entry. Thursday September 24, in Sandy.
+
+catalystworks.consulting/workshop</pre>
+        <button class="copybtn" data-target="post1">Copy</button>
+      </div>
+      <p><a href="https://www.notion.so/3d3bcf1a30298188aa5ec93c85428a10" target="_blank" rel="noopener">Edit inline on the Content Board &rarr;</a></p>
+      <div class="ask">ASK: reply "approve LinkedIn" (or edit on the board first) and it goes to Queued for you to post today.</div>
+
+      <p><strong>Post 2 &mdash; X (scheduled 09-21)</strong></p>
+      <div class="copybox">
+        <pre id="post2">One person in the room on September 24 brings me the thing they are about to spend money on.
+
+Forty five minutes. For the first twenty I give no advice at all. I only ask. What are you buying, who is it for, what have you tried, what did it cost.
+
+Then we go and look while you watch. Who else does this near you. What the work is worth. Whether anyone is paying right now to reach your buyer.
+
+You leave with a verdict on your own plan and the source next to every line.
+
+I built this check for myself first.
+
+One name gets it done with me. Everyone in the room leaves able to run it themselves.
+
+Your seat is your entry.
+
+catalystworks.consulting/workshop</pre>
+        <button class="copybtn" data-target="post2">Copy</button>
+      </div>
+      <p><a href="https://www.notion.so/3d3bcf1a3029816097dafc63ddd33fdd" target="_blank" rel="noopener">Edit inline on the Content Board &rarr;</a></p>
+      <div class="ask">ASK: reply "approve X" (or edit on the board first) and it goes to Queued for 09-21.</div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-outreach" open>
+    <summary><h2>Text your people (highest-leverage single move)</h2></summary>
+    <div class="sec-body">
+      <p>No agent has access to your contacts, so this pick is yours. The 06-17 seat-fill kit ranked warm 1:1 outreach as the single highest-converting lever for a small local room, above any post or ad. Draft below, ready to personalize and send today.</p>
+      <div class="copybox">
+        <pre id="outreach">Hey -- quick one. I'm running a small, hands-on AI workshop this Thursday night (Sept 24, 7-8:30pm) at SLCC Miller Campus in Sandy. $50, small room on purpose, you leave having actually built something. Thought of you -- want a seat? catalystworks.consulting/workshop</pre>
+        <button class="copybtn" data-target="outreach">Copy</button>
+      </div>
+      <div class="ask">ASK: pick 5-10 people you actually know and send this today, personalized.</div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-ads" open>
+    <summary><h2>Ad spend draft (nothing built, nothing spent)</h2></summary>
+    <div class="sec-body">
+      <p><span class="badge warn">Tier-C: needs your approval, not built</span></p>
+      <p>Live Meta check today: no campaign exists for Sept 24. Only 4 old, inert campaigns remain (the Aug 27 one, now cancelled; two July 30 ones spending $0; one from June). The paid-media plan's recommended buy was never built despite recommending a Sep 8 launch.</p>
+      <table>
+        <tr><th>Setting</th><th>Value</th></tr>
+        <tr><td>Campaign</td><td>New (a campaign's objective can't change after creation, so this does not reuse the old Aug 27 one)</td></tr>
+        <tr><td>Objective</td><td>Sales, optimized for Purchase (fallback Lead)</td></tr>
+        <tr><td>Daily budget</td><td>$25/day at the ad set</td></tr>
+        <tr><td>Flight</td><td>Today, 09-18, through 09-24 &mdash; 6 days, about $150 total (compressed from the plan's original 12-day/$300 window since most of it already passed)</td></tr>
+        <tr><td>Location</td><td>SLCC Miller Campus, Sandy &mdash; 10 mile radius</td></tr>
+        <tr><td>Age</td><td>25-60</td></tr>
+        <tr><td>Targeting</td><td>No interest targeting &mdash; the creative does the targeting</td></tr>
+        <tr><td>Creative</td><td>Reuse existing <code>ad-A-lead.png</code> / <code>ad-B-start.png</code> / <code>ad-C-tools.png</code>, date line swapped to "Thu Sep 24". No price in the ad text.</td></tr>
+        <tr><td>Destination</td><td>catalystworks.consulting/workshop with UTMs, verified live before first dollar</td></tr>
+      </table>
+      <div class="ask">ASK: approve this spend (about $150 over 6 days) and it gets built and launched same day, or say no and it stays a draft.</div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-moneymap" open>
+    <summary><h2>Money Map rows added (board y1)</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><code>kpi-sept24-plan-check-giveaway</code> &mdash; updated with the fix and next step</li>
+        <li><code>kpi-next-action-sept24-warm-outreach-2026-09-18</code> &mdash; new</li>
+        <li><code>kpi-next-action-sept24-meta-adset-draft-2026-09-18</code> &mdash; new (explicitly supersedes the closed 2026-08-21 ad-set decision, which was for the cancelled Aug 27 date)</li>
+      </ul>
+      <p>All three written to Supabase <code>y0_money_map_state</code>, board <code>y1</code>, read back and confirmed. Worklist republished.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Built 2026-09-18 by the lighthouse lane. Task board row <code>d7143c9763694e41b190dc1842978a2d</code>.
+    Nothing on this page has been sent, posted, or spent &mdash; every ask above needs your tap.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (a) {
+      var t = document.getElementById(a.getAttribute('href').slice(1));
+      if (t && t.tagName === 'DETAILS') { t.open = true; }
+    }
+    var btn = e.target.closest && e.target.closest('.copybtn');
+    if (btn) {
+      var src = document.getElementById(btn.getAttribute('data-target'));
+      if (src) {
+        var text = src.textContent;
+        var done = function () {
+          btn.textContent = 'Copied';
+          btn.classList.add('copied');
+          setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+        };
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done);
+          } else {
+            var ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta); done();
+          }
+        } catch (err) { /* clipboard blocked; user can still select-all manually */ }
+      }
+    }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
