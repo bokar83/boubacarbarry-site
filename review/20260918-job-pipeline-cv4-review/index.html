@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Pipeline: Rejection Sweep + CV Cohort Read</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  .tag{display:inline-block; font-size:.78rem; padding:2px 8px; border-radius:999px; border:1px solid var(--border); margin-right:4px;}
+  .tag.good{color:var(--good); border-color:var(--good);}
+  .tag.bad{color:var(--bad); border-color:var(--bad);}
+  .tag.warn{color:var(--warn); border-color:var(--warn);}
+  .callout{background:var(--bg2); border-left:3px solid var(--accent); border-radius:8px; padding:12px 14px; margin:0 0 14px;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-18-10:28:30 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Job Pipeline Review</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">Rejections Logged</a>
+      <a href="#sec-2">CV Versions</a>
+      <a href="#sec-3">v4-vs-Earlier</a>
+      <a href="#sec-4">Other Patterns</a>
+      <a href="#sec-5">v3 vs v4 Diff</a>
+      <a href="#sec-6">Recommendation</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Job Pipeline: Rejection Sweep + CV Cohort Read</h1>
+    <div class="meta">Mailbox verification pass + resume-version rejection analysis &middot; 2026-09-18</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><strong>Recommendation: keep the current resume (the Sept 3 HR/AI split), don't chase the "new CV is hurting me" theory &mdash; the early data says the opposite, and the sample is too thin either way to call it yet.</strong></p>
+      <ul>
+        <li>The daily automated mailbox sweep is running and current (last success today 12:35 UTC) &mdash; this was a <strong>verification pass</strong>, not a from-scratch sweep.</li>
+        <li>Found <strong>2 rejections</strong> the sweep hadn't caught yet (both arrived right at/after its last watermark): <strong>Becton Dickinson</strong> (Director, HR MDS) and <strong>Deloitte</strong> (Specialist Manager, Talent Business Advisory). Both now marked rejected on the board.</li>
+        <li>Your "CV v4" almost certainly means the <strong>Sept 3 HR/AI-split resume</strong> (literally filed as v6), not the file literally named "v4" from April &mdash; that one was retired back in August. Named the mismatch below rather than guessing.</li>
+        <li>Applications on the current resume are rejecting <em>slower and less often</em> at matched time-since-applied than the historical baseline &mdash; but there are only 38 of them and the oldest is 15 days old, so this is suggestive, not proof.</li>
+        <li>No ATS-parseability red flags in the current resume file (clean single-column .docx, no tables/text-boxes/images).</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. Rejections Logged This Pass</h2></summary>
+    <div class="sec-body">
+      <p><strong>Sweep mode: verification, not from-scratch.</strong> <code>scripts/job_pipeline_mail_sweep.py</code> is installed, cron-gated, and running daily at 06:35 MDT (12:35 UTC) on both mailboxes &mdash; confirmed via <code>data/job_pipeline_mail_sweep_state.json</code> (watermark today at 12:35:49Z) and <code>data/cron-liveness/job-pipeline-mail-sweep.json</code> (<code>last_exit: 0</code>). It has already logged 14 rejections in the 2026-09-04&ndash;09-17 window on its own. My job here was to check the last day or two it hadn't reached yet and spot-check its "unclear" bucket.</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Company</th><th>Role</th><th>Applied</th><th>Rejection received</th><th>Resume version used</th></tr>
+        <tr><td>Becton Dickinson</td><td>Director, HR MDS (R-550938)</td><td>2026-08-19</td><td>2026-09-18</td><td>Not recoverable from Sent mail (no matching sent thread &mdash; likely a portal/ATS upload with no email copy). By date-proximity only (not confirmed): v5 was the resume in active use 08-16&rarr;09-02.</td></tr>
+        <tr><td>Deloitte</td><td>TEMPORARY TALENT WORKFORCE: Specialist Manager, Talent Business Advisory (363985)</td><td>2026-08-23</td><td>2026-09-18</td><td><strong>Confirmed</strong>: <code>Boubacar_Resume_2026_US_v5.pdf</code>, found as the literal attachment on the sent thread (subject "Interest in Career Opportunities &ndash; CV Attached," sent 2026-08-24).</td></tr>
+      </table>
+      </div>
+      <p>Both rows updated on the live <code>job-pipeline</code> Supabase board: <code>status&rarr;rejected</code>, <code>statusDate=2026-09-18</code>, a history entry appended. <code>notes</code>/<code>notesUpdated</code> were left untouched (both were already empty/null on these two rows) &mdash; read the rows back after writing to confirm.</p>
+      <p><strong>Unclear-bucket spot check:</strong> reviewed all 21 rows the sweep has marked <code>unclear</code>. Three fall inside the 14-day window (Lumos 09-04, MongoDB 09-05, Walmart 09-05) and all three are genuinely ambiguous in the retrieved mail text (e.g. Lumos: "reads like a decline but the outcome clause is cut off in the retrieved text") &mdash; this matches the sweep's own designed-conservative behavior (never guess a rejection when more than one candidate role or an unclear outcome clause is in play) rather than a miss. No other rejection-shaped mail found unflagged in a direct Gmail search of the last 2 days beyond the two above.</p>
+      <p><strong>Notion label check (fold-in instruction):</strong> "Professional 🏢/job hunt" is a <strong>Gmail label</strong> (<code>Label_8</code> on bokar83@gmail.com), not a Notion database field. Searched Notion workspace-wide for a job-pipeline mirror database &mdash; found none; every hit was an unrelated template/archive page. So there is no second canonical page to reconcile against. Both touched mail threads (BD, Deloitte) already carry <code>Label_8</code> &mdash; no gap, no label write needed. Per this task's explicit read-only-on-mail constraint (list/get only, no label/send/trash), I did not attempt any Gmail label mutation regardless of what I'd found.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. CV Version Cohorts &mdash; Resolving "v4"</h2></summary>
+    <div class="sec-body">
+      <p>Checked file mtimes in Drive + the local JobHunt folder rather than assuming. Real chronology of distinct resume files:</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Label</th><th>File</th><th>Date</th><th>Framing</th><th>Still in use?</th></tr>
+        <tr><td>v1</td><td>Boubacar_Resume_2025[_US]</td><td>2025-08-12</td><td>Original HR-leader resume</td><td>No</td></tr>
+        <tr><td>v2</td><td>Boubacar_Resume_2025_US_v2</td><td>2025-12-11</td><td>Revised HR-leader resume</td><td>No</td></tr>
+        <tr><td>v3</td><td>Boubacar_Resume_2026_US_v3</td><td>2026-03-06/08</td><td>HR-transformation leader framing</td><td>No</td></tr>
+        <tr><td>v4 (literal filename)</td><td>Boubacar_Resume_2026_v4</td><td>2026-04-15/25</td><td>Hard pivot to "AI Systems Builder" &mdash; leads with the agentsHQ infrastructure build, de-emphasizes HR title</td><td><strong>No &mdash; retired by mid-August</strong></td></tr>
+        <tr><td>v5</td><td>Boubacar_Resume_2026_US_v5</td><td>2026-08-16</td><td>Reverts to HR-leader framing, adds first-person narrative ("Ten years of my HR career sat inside GE...")</td><td>No, superseded 09-03</td></tr>
+        <tr><td>v6 (HR / AI split)</td><td>Boubacar_Resume_2026_v6_HR / v6_AI</td><td>2026-09-03</td><td>Two tailored variants of the v5 narrative style &mdash; HR-framed and AI-Strategy-framed</td><td><strong>Yes &mdash; currently active</strong></td></tr>
+        <tr><td>Workday oCHRO one-off</td><td>Boubacar_Resume_2026_Workday_oCHRO</td><td>2026-09-14</td><td>Single-role custom derivative of v6</td><td>Single use only</td></tr>
+      </table>
+      </div>
+      <div class="callout">
+        <p><strong>The naming mismatch, stated plainly instead of guessed past:</strong> the literal file named "v4" (April, pure AI-builder pivot) is <em>not</em> what's in use today &mdash; it was replaced by v5 in August, four weeks before the v6 split. The files confirmed active as of 9/16 (<code>v6_HR</code>, <code>v6_AI</code>, <code>Workday_oCHRO</code>) are all descendants of the <strong>Sept 3 cutover</strong>. Everything below treats "your CV v4" as <strong>the Sept 3 HR/AI split (v6)</strong> &mdash; the most recent resume change, and the one that would actually explain a recent rate shift if there is one. If you meant the literal April file, that hypothesis doesn't apply at all since it hasn't been used in a month.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. "New CV" vs Earlier &mdash; Rejection Rate, Confound Called Out</h2></summary>
+    <div class="sec-body">
+      <p><strong>Naive comparison (misleading on its own):</strong></p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Cohort</th><th>n</th><th>Rejected</th><th>Pending</th><th>Interview</th></tr>
+        <tr><td>Applied before 2026-09-03 (v1&ndash;v5 era)</td><td>269</td><td>117 (43%)</td><td>149</td><td>2</td></tr>
+        <tr><td>Applied on/after 2026-09-03 (v6, "your v4")</td><td>38</td><td>9 (24%)</td><td>28</td><td>1</td></tr>
+      </table>
+      </div>
+      <p><span class="tag bad">Confound</span> <strong>the older cohort has had months to accrue rejections; the newer cohort's oldest application is 15 days old.</strong> A recent application with no rejection yet is not evidence the new resume is better &mdash; it hasn't had time to be rejected, full stop. The 24% figure above is not usable as-is.</p>
+      <p><strong>Time-matched comparison (the one that actually controls for age):</strong> for each cohort, restricted to applications old enough to have had at least N days, what share was <em>already rejected within N days of applying</em>?</p>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Window</th><th>Older cohort (v1&ndash;v5), rejected within window</th><th>Current cohort (v6), rejected within window</th></tr>
+        <tr><td>Within 7 days of applying</td><td>112 / 269 = 41.6%</td><td>4 / 35 = 11.4%</td></tr>
+        <tr><td>Within 15 days of applying</td><td>112 / 269 = 41.6%</td><td>3 / 11 = 27.3%</td></tr>
+      </table>
+      </div>
+      <p>At both matched windows, the current resume's early rejection rate is <em>lower</em>, not higher &mdash; the opposite of a "new CV is hurting me" story. <span class="tag warn">Small n</span> the 15-day window only has 11 applications old enough to test, and the 7-day window's 35 span a narrower slice of companies/seasons than the historical baseline's 269 (which spans January&ndash;August, a different hiring-market moment). This is a real, honest signal against the "v4 is hurting" hypothesis, but it is not a large enough or clean enough sample to declare the new resume <em>better</em> either &mdash; it just clears the bar of "no evidence it's worse."</p>
+      <p><strong>What more would settle it:</strong> another 2&ndash;3 weeks of the current cohort aging past the 15/30-day marks (n will grow from 38 toward 60&ndash;80+ at the current application pace) would give a real like-for-like comparison. Don't revisit the resume decision before then unless a new, independent signal shows up.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. Other Patterns Checked</h2></summary>
+    <div class="sec-body">
+      <p><span class="tag good">Checked</span> <strong>Role level / title clustering.</strong> Across all 151 historical rejections, title keywords roughly track overall application volume (Senior 45, Director 37, Manager 29, "AI" 38, Principal 6, VP 7) &mdash; no cluster stands out as disproportionately rejected relative to how often it was applied to.</p>
+      <p><span class="tag good">Checked</span> <strong>Day-of-week applied.</strong> Rejection rate by day-of-week ranges 30&ndash;53% (Tue highest at 53%, Fri lowest at 30%) with no obvious driver and no monotonic pattern &mdash; reads as noise on this sample size, not a real timing effect.</p>
+      <p><span class="tag good">Checked</span> <strong>ATS-parseability of the current resume.</strong> Opened the actual <code>v6_HR.docx</code> and <code>v6_AI.docx</code> files (not just eyeballed the PDF): 0 tables, 0 text boxes, 0 embedded images, single-column layout (<code>&lt;w:cols&gt;</code> present but with no multi-column attribute set). Clean linear text, nothing that would break an ATS parser.</p>
+      <p><span class="tag warn">Not fully checked</span> <strong>Blind application vs warm-contact skew.</strong> The board rows don't carry a reliable blind/warm field I could query at scale across all 356 rows in this pass, so I could not cleanly cross-check the rejected batch against the standing "no blind applications" rule. This needs a follow-up pass reading actual thread content (or the original per-mailbox roster docs, which may carry this judgment call) if you want it resolved rather than assumed clean.</p>
+      <p><span class="tag good">Checked</span> <strong>Company size/industry clustering in rejections.</strong> No obvious skew toward one industry or company size band jumped out scanning the rejected-company list (a broad mix of tech, healthcare, retail, and enterprise HR-tech names) &mdash; did not run a formal industry classification, so treat this as an eyeball pass, not a rigorous check.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. v3 vs v4 Diff (Read, Not Guessed)</h2></summary>
+    <div class="sec-body">
+      <p>Pulled actual text from both PDFs (<code>pdftotext -layout</code>) rather than assuming from filenames.</p>
+      <ul>
+        <li><strong>Length:</strong> v3 = 638 words &rarr; v4 = 771 words (+21%). Each later version got longer still (v5 = 986, v6 = 1,224&ndash;1,294).</li>
+        <li><strong>Framing, the real change:</strong> v3 opens as a traditional HR-transformation leader ("Global HR Leader | Org Transformation Strategist | Human-First AI Innovator"), lead bullets are HR programs. v4 opens as "AI Systems Builder | Organizational Transformation | Human-First AI Execution" and leads immediately with the agentsHQ personal AI infrastructure build (multi-agent system, CrewAI, n8n, LiteLLM) before any HR credential appears.</li>
+        <li><strong>Is this plausibly causal for a rate shift?</strong> Yes, structurally &mdash; a resume that de-emphasizes the HR title up top could plausibly read wrong to an HR-recruiting ATS or human screener expecting an HR-title match. But v4 was only in use April&ndash;August and isn't the resume behind the current cohort being asked about, so this diff explains a possible <em>historical</em> April&ndash;August pattern, not a September one. Did not have time in this pass to isolate a v3-only vs v4-only rejection-rate comparison for that April&ndash;August window specifically; flagging as a possible follow-up if you want the historical question answered too, separate from the current-resume question this pass was scoped to.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>6. Recommendation</h2></summary>
+    <div class="sec-body">
+      <p><strong>Keep the current resume (Sept 3 HR/AI split). Don't revert or rewrite it off the "new CV is hurting me" theory &mdash; the matched-time data says the opposite so far, and the sample is still too small to be a real verdict either way.</strong></p>
+      <p>Concretely: let the current cohort age another 2&ndash;3 weeks (it'll roughly double in size), then re-run this same time-matched comparison. If the early "lower rejection rate" pattern holds up at a bigger n, that's real signal the Sept resume is working as well or better than what came before. If it reverses, that's the point to actually change something &mdash; not now, on 11&ndash;35 data points.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Read-only investigation + tracker field updates. No emails sent, replied to, or labeled. Board writes: 2 rows (Becton Dickinson, Deloitte) via <code>apply_role_row_merge</code>, read back and confirmed. Source: <code>y0_money_map_state</code> (Supabase <code>jscucboftaoaphticqci</code>), board_id <code>job-pipeline</code>.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
