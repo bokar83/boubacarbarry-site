@@ -39,10 +39,60 @@ if (!process.env.API_TOKEN) {
   process.exit(2);
 }
 
-const srv = spawn("npx", ["-y", "hostinger-api-mcp@latest"], { env: { ...process.env }, stdio: ["pipe", "pipe", "inherit"] });
-const rl = readline.createInterface({ input: srv.stdout });
-const send = (o) => srv.stdin.write(JSON.stringify(o) + "\n");
+// 2026-09-20 (SYS: bbsite-autodeploy false-negative fix). Root cause of a run
+// of "deploy FAILED" alerts that turned out to be false: the child MCP
+// process (`npx hostinger-api-mcp`) can legitimately take longer than the
+// old 240s timeout to finish the TUS archive upload + trigger a deploy on a
+// slow Hostinger tick. When that happened, this script's own timeout fired
+// FIRST, called srv.kill(), and the child then threw an uncaught EPIPE while
+// still trying to write to its now-closed stdin/stdout pipe -- crashing the
+// whole node process with a non-zero exit even though the log line
+// immediately above the crash read "Successfully triggered deployment for
+// boubacarbarry.com". The deploy had already succeeded; only this wrapper's
+// bookkeeping (and the alert it fired) was wrong. Confirmed on the VPS host
+// log (/var/log/boubacarbarry_autodeploy.log) and by curling the live site
+// for content that only exists in the commit the "failed" run was deploying.
+//
+// Two independent fixes, both scoped to this file (the deploy logic itself
+// -- domain, archivePath, removeArchive -- is unchanged):
+//   1. The timeout is raised 240s -> 480s. A full-site TUS upload is I/O
+//      bound on Hostinger's side, not agentsHQ's; doubling the budget trades
+//      a slower failure report for far fewer false negatives.
+//   2. `srv` now has an 'error' listener. Node treats an unhandled 'error'
+//      event on a stream as fatal-and-uncaught by design; catching it here
+//      turns a crash into an ordinary, already-decided exit instead. It
+//      cannot mask a REAL failure: `done` is only ever set true after the
+//      MCP server's own tools/call response (id===2) has been read and
+//      printed, so an error before that point still exits non-zero exactly
+//      as it did before -- this only stops a POST-completion pipe error from
+//      overriding a result this script already saw and reported.
 let done = false;
+let exitCode = null;
+
+const srv = spawn("npx", ["-y", "hostinger-api-mcp@latest"], { env: { ...process.env }, stdio: ["pipe", "pipe", "inherit"] });
+
+srv.on("error", (err) => {
+  // Fires for spawn failures AND for a write to an already-closed pipe
+  // (EPIPE). If we already decided an exit code from a real MCP response,
+  // that decision stands -- this handler only prevents an UNCAUGHT crash
+  // from clobbering it. If we have NOT decided yet, this genuinely is a
+  // failure (the child died before answering) and exits non-zero.
+  console.error("MCP child process error:", err && err.message ? err.message : err);
+  if (exitCode === null) exitCode = 1;
+  process.exit(exitCode);
+});
+
+const rl = readline.createInterface({ input: srv.stdout });
+const send = (o) => {
+  try {
+    srv.stdin.write(JSON.stringify(o) + "\n");
+  } catch (err) {
+    // A write after the pipe is gone must not crash the process (see the
+    // 'error' handler above for the matching async case) -- log and let the
+    // existing flow (timeout or the 'error' listener) decide the exit code.
+    console.error("MCP stdin write failed:", err && err.message ? err.message : err);
+  }
+};
 
 rl.on("line", (line) => {
   let m;
@@ -53,10 +103,18 @@ rl.on("line", (line) => {
   } else if (m.id === 2) {
     console.log("RESULT:", JSON.stringify(m.result || m.error));
     done = true;
+    exitCode = m.error ? 1 : 0;
     srv.kill();
-    process.exit(m.error ? 1 : 0);
+    process.exit(exitCode);
   }
 });
 
 send({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "deploy-cli", version: "1.0.0" } } });
-setTimeout(() => { if (!done) { console.error("TIMEOUT"); srv.kill(); process.exit(2); } }, 240000);
+setTimeout(() => {
+  if (!done) {
+    console.error("TIMEOUT");
+    exitCode = 2;
+    srv.kill();
+    process.exit(exitCode);
+  }
+}, 480000);
