@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data-activation positioning: drafts for your approval</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; white-space:pre-wrap; word-wrap:break-word;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  .flag{border:1px solid var(--warn); border-left:5px solid var(--warn);
+    background:rgba(242,184,75,.08); border-radius:10px; padding:12px 16px; margin:0 0 16px;}
+  .flag strong{color:var(--warn);}
+  .stop{border:1px solid var(--bad); border-left:5px solid var(--bad);
+    background:rgba(255,122,122,.08); border-radius:10px; padding:12px 16px; margin:0 0 16px;}
+  .stop strong{color:var(--bad);}
+  .ok{color:var(--good);}
+  .lbl{display:inline-block; font-size:.72rem; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--text-dim); border:1px solid var(--border); border-radius:999px;
+    padding:2px 9px; margin:0 0 8px;}
+  .old{color:var(--text-dim);}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-20-10:34:47 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Positioning drafts</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">Locked pitch</a>
+      <a href="#sec-2">New pitch</a>
+      <a href="#sec-3">Catalyst Works</a>
+      <a href="#sec-4">boubacarbarry.com</a>
+      <a href="#sec-5">LinkedIn</a>
+      <a href="#sec-6">Content board</a>
+      <a href="#sec-7">The anonymizer</a>
+      <a href="#sec-9">Gates</a>
+      <a href="#sec-8">Loose end</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Data-activation positioning: drafts for your approval</h1>
+    <div class="meta">Nothing here is live. Nothing has been published or sent. &middot; 20 September 2026</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p>You approved the sharpening today: from "I find your constraints and fix your problems" to
+      "you already have the data, I make it usable so you can decide faster, safely, without it
+      leaving your system." These are the drafts. All of them are drafts. None of it is published.</p>
+
+      <div class="stop">
+        <strong>THE ONE THING YOU HAVE TO DECIDE FIRST.</strong>
+        <p style="margin-top:8px">Your elevator pitch is <strong>LOCKED verbatim</strong> as of 15 September,
+        with no end date, on your own words: "Lock it! Love it!" The system treats that text as
+        untouchable, and a running email reads it out of the file at send time every day.
+        <strong>I have not changed it.</strong> Section 2 is a PROPOSED replacement. It only becomes
+        the pitch if you say so explicitly, the same way you locked the last one. Until then the
+        15 September text stands exactly as it is.</p>
+      </div>
+
+      <p>Everything else: the specific sentences on both sites that need to change (not full
+      rewrites, just the lines that carry the old framing), a LinkedIn headline and About, and
+      a read of what is queued on the content board against the new framing.</p>
+
+      <p>Also in here, and worth two minutes: what the anonymizer you named actually does today,
+      and the two sentences we must <em>not</em> write about it yet.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>1. The locked-pitch flag, in full</h2></summary>
+    <div class="sec-body">
+      <p>You asked to update the elevator pitch. There is a hard rule in the way, and the honest
+      move is to show it to you rather than route around it.</p>
+
+      <p><strong>The current LOCKED text, 15 September, quoted exactly:</strong></p>
+      <pre>I help companies put AI to work without the confusion and the overwhelm. I come in, assess what's really stuck, build a roadmap around it, then put the fix in alongside the team, using AI only where it helps. I know it works because I run my own business on AI, on a system I built myself.</pre>
+
+      <p>Three things depend on that exact string, which is why no agent may quietly edit it:</p>
+      <ul>
+        <li>Your midday refresher email reads the pitch out of the memory file at send time, so
+        the day it changes, the email changes with it.</li>
+        <li>A Money Map row carries the same text as a second source, and the reader takes the
+        longest quoted run on the row that starts with "I ".</li>
+        <li>The lock has no end date. The last one lapsed with nobody deciding, and the drift
+        that followed is the reason this one was written to stand until you change it yourself.</li>
+      </ul>
+
+      <p><strong>What I need from you:</strong> either "lock the new one" (and I update the file,
+      the Money Map row, the style guide and the boot rules in one pass), or "keep the old one,"
+      or "run both by audience." Anything short of an explicit yes leaves the 15 September text
+      in place.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>2. Candidate elevator pitch (PROPOSED, needs your fresh lock)</h2></summary>
+    <div class="sec-body">
+      <span class="lbl">Candidate A &mdash; the recommendation</span>
+      <pre>I help companies put AI to work without the confusion and the overwhelm. Most of them are already sitting on the answer in their own data, the sales patterns, the service calls, the decisions they already made, and they still cannot get to it. I come in, put that data somewhere their people can actually ask it questions, and we keep it inside their own system so it never has to leave. I know it works because I run my own business on AI, on a system I built myself.</pre>
+
+      <p><strong>What changed, and what deliberately did not.</strong> The first line is word for word
+      the line you have never disputed. The proof kicker at the end is word for word the one you
+      locked. Only the middle moved: where the locked version spends it on the sequence of the work
+      (assess, roadmap, put the fix in), this one spends it on what the buyer already owns and cannot
+      reach. That is the sharpening you described, and it keeps this an enhancement rather than a
+      pivot.</p>
+
+      <p>It still opens with "I ", so the Money Map fallback reader keeps working. No resume, no
+      numbers, no em-dashes, present tense.</p>
+
+      <span class="lbl">Candidate B &mdash; shorter, for a noisy room</span>
+      <pre>I help companies put AI to work without the confusion and the overwhelm. The answer is usually already sitting in their own data and nobody can get to it, so we make it usable, inside their own system, where it never has to leave. I know it works because I run my own business on AI, on a system I built myself.</pre>
+
+      <p><strong>Read both out loud before you decide.</strong> That is the test that matters. If you
+      would not say it at a table full of people, it fails whatever it scores.</p>
+
+      <p><strong>Voice check:</strong> both pass. No credential stuffing, no commercial disavowal, no
+      em-dash, first person, sentence case, shared verbs where the work is shared ("we keep it",
+      "we make it usable"). Candidate A is the recommendation because it names the three concrete
+      kinds of data, and the concrete is what makes a listener picture their own business.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>3. Catalyst Works: the sentences that need to change</h2></summary>
+    <div class="sec-body">
+      <p>Not a rewrite. These are the specific lines carrying the old framing, with a replacement
+      for each. Everything else on the site stands.</p>
+
+      <h3>Services page, the hero lede</h3>
+      <p class="old"><strong>Now:</strong> "Most consultants hand you a deck and a bill. I find the
+      one thing slowing you down, fix it with the right tools, and stay long enough that your people
+      can run it without me."</p>
+      <p><strong>Proposed:</strong></p>
+      <pre>Most consultants hand you a deck and a bill. You already have what you need to make the call, it is sitting in your own data, and nobody can get to it. We make it usable, inside your own systems, and I stay long enough that your people can run it without me.</pre>
+      <p>Note the verb change you have corrected before: "I find" and "I fix" become "we make it
+      usable". The one place "I" stays is the part you genuinely do alone, which is staying.</p>
+
+      <h3>Services page, move 1 of three</h3>
+      <p class="old"><strong>Now:</strong> "Find the constraint." / "Not a list of everything wrong.
+      The single thing that, once fixed, moves the number."</p>
+      <p><strong>Proposed:</strong></p>
+      <pre>Find what you already know.
+
+Your sales records, your service calls, the decisions you already made and paid for. The answer to what is slowing you down is usually in there. Getting to it is the first move, not a six-week discovery.</pre>
+
+      <h3>Services page, the "Where AI fits" callout</h3>
+      <p class="old"><strong>Now:</strong> "AI is a tool, not the point. I reach for it when it is the
+      right fix for your bottleneck... You will never pay me to bolt AI onto a problem that did not
+      need it."</p>
+      <p><strong>Proposed, one sentence added on the end:</strong></p>
+      <pre>And your data stays yours. It lands in a system you own, not on somebody else's servers, and the names come out before anything goes near an AI.</pre>
+
+      <h3>Homepage hero subhead</h3>
+      <p class="old"><strong>Now:</strong> "Most consultants want a six-week discovery before they tell
+      you anything. Catalyst Works starts differently. Type a sentence. Get a diagnosis."</p>
+      <p><strong>Proposed:</strong></p>
+      <pre>Most consultants want a six-week discovery before they tell you anything. You already have the answer in your own records. Type a sentence. Get a diagnosis.</pre>
+
+      <div class="flag">
+        <strong>One thing I did not touch, on purpose.</strong>
+        <p style="margin-top:8px">The homepage hero headline, "Name the constraint. In writing. In
+        ninety seconds," is a whole product surface with a live interactive demo, a price and a
+        booking path underneath it. Changing that headline is a bigger decision than a copy tweak
+        and it is yours, not mine. If you want the data framing on that page too, say so and it
+        gets its own pass.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>4. boubacarbarry.com: the sentences that need to change</h2></summary>
+    <div class="sec-body">
+      <h3>Hero eyebrow</h3>
+      <p class="old"><strong>Now:</strong> "AI + Operations Strategist for Growing Businesses"</p>
+      <p><strong>Proposed:</strong></p>
+      <pre>AI and HR, for companies already sitting on the answer</pre>
+
+      <h3>Hero subhead</h3>
+      <p class="old"><strong>Now:</strong> "Most growing businesses aren't behind on AI. They're buried
+      in it. New tools every week, no clear signal, and leadership frozen by decision overload. I help
+      owner-operators and small leadership teams find what is actually holding their business back and
+      remove it."</p>
+      <p><strong>Proposed:</strong></p>
+      <pre>Most growing businesses are not behind on AI. They are buried in it. New tools every week, no clear signal, and the thing that would actually settle the argument is sitting in their own records where nobody can reach it. We make that usable, inside your own systems, so the next decision gets made on what you already know.</pre>
+
+      <h3>Services section sub</h3>
+      <p class="old"><strong>Now:</strong> "Every engagement starts with a diagnostic to find what is
+      actually holding your business back... We work alongside your team and stay until the change
+      sticks."</p>
+      <p><strong>Proposed, first sentence only:</strong></p>
+      <pre>Every engagement starts with what you already have. Your records, your history, the decisions you already made.</pre>
+      <p>The rest of that paragraph is good and stays.</p>
+
+      <h3>About section, paragraph 3 (the main positioning paragraph)</h3>
+      <p class="old"><strong>Now, opening:</strong> "Today I work with owner-operators and small
+      leadership teams through Catalyst Works Consulting. My diagnostic approach is grounded in
+      finding the real constraint..."</p>
+      <p><strong>Proposed, replacing the first two sentences and leaving the rest:</strong></p>
+      <pre>Today I work with owner-operators and small leadership teams through Catalyst Works Consulting. Most of them already have what they need to decide. It is in the sales patterns nobody has read in years, in the service calls that show the same mistake over and over, in the decisions they already made and paid for. The work is making that reachable, in a system they own, so the next call is made on evidence instead of a feeling.</pre>
+
+      <div class="flag">
+        <strong>Separate from this task, but you should see it.</strong>
+        <p style="margin-top:8px">About paragraph 1 currently opens "I've spent fifteen years in HR and
+        leadership development inside global organisations." Your own correction on file is that the
+        precise version is consulting-world project and HR delivery work first, then ten-plus years
+        inside a Fortune 100, and the rounded fifteen-year framing is the one that keeps drifting back
+        in. Worth a five-minute fix on its own, not folded into this change.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>5. LinkedIn: headline and About</h2></summary>
+    <div class="sec-body">
+      <p>You publish these yourself. They are drafts sitting here for you to copy.</p>
+
+      <h3>Headline &mdash; three options, pick one</h3>
+      <span class="lbl">Option 1, recommended</span>
+      <pre>AI and HR | Your answer is already in your own data | We make it usable, inside your systems</pre>
+      <span class="lbl">Option 2, plainer</span>
+      <pre>I help companies put AI to work without the confusion | Your own data already holds the answer | We make it reachable, safely, in your systems</pre>
+      <span class="lbl">Option 3, shortest</span>
+      <pre>AI and HR | You already have the data | I help you use it without sending it anywhere</pre>
+      <p>Each segment carries a different kind of information: the domain, the reader's situation,
+      the method. That is the test, not whether pipes are present.</p>
+
+      <h3>About section</h3>
+      <pre>Most companies I talk to already have the answer. It is sitting in their own data.
+
+The sales patterns nobody has read in years. The service calls that show the same mistake happening over and over. The decisions they already made and paid for, and the reasons behind them. None of it is reachable, so the next call gets made on a gut feel instead.
+
+That is the work. We take what a company already has, put it somewhere their people can ask plain questions and get a straight answer back, and it stays inside their own systems. Nobody has to send their people's names out to a model somewhere to find out what their own history already says.
+
+I do not start with a tool. We get clear on what is actually stuck first, build the roadmap around that, then put the fix in alongside the team, using AI only where it helps. Where it does not help, I say so.
+
+I know this works because I run my own business on it. I taught myself to code, not to become a software engineer, but to understand the machine well enough to bend it to what I need and to what my clients need. Almost nobody sits on both sides of that line. Most people either decide or they build.
+
+Before this, 10 years in global HR leadership for a Fortune 100 company, most recently four years based in Dubai. English, French, Haitian Creole and Fulah.
+
+Salt Lake City, Utah. If your data is sitting there doing nothing, that is a good conversation to have.</pre>
+
+      <div class="flag">
+        <strong>Banner is out of scope here.</strong>
+        <p style="margin-top:8px">A LinkedIn banner is a design asset, not copy, and it should not be
+        redesigned inside a copy pass. If the new framing lands, the banner needs its own visual task
+        with real art direction. Say the word and it gets dispatched separately.</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-6" open>
+    <summary><h2>6. Content board: what is queued, read against the new framing</h2></summary>
+    <div class="sec-body">
+      <p>I read every Draft, Ready, Queued and Scheduled row on the board. I changed nothing.
+      Draft to Ready is your gate.</p>
+
+      <p><strong>The good news first: nothing on the board contradicts the new framing.</strong>
+      Nothing has to be pulled. Five rows sit close enough to the data angle that a one-line tweak
+      would make them carry it, and three rows carry the old constraint-first framing in a way that
+      will read as the previous version of you if they go out after the new positioning lands.</p>
+
+      <h3>Rows that would carry the new framing with one line</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Row</th><th>Status</th><th>Suggested tweak</th></tr>
+        <tr>
+          <td>Nobody onboards the software (LinkedIn and X, two rows)</td>
+          <td>Queued, 22 Sep</td>
+          <td>This is the closest thing on the board to the new pitch already. The onboarding
+          material you describe (what you sell, who buys it, what you charge) IS their own data.
+          Add one line naming that: the stuff you would tell a new hire is already written down
+          somewhere in the business, nobody has ever handed it to the software.</td>
+        </tr>
+        <tr>
+          <td>Solution finder, not problem solver</td>
+          <td>Draft</td>
+          <td>Strong line, no anchor. Tie it to the data: a problem solver waits for the thing to
+          break, a solution finder goes and reads what already happened.</td>
+        </tr>
+        <tr>
+          <td>Selling the pickaxes: the tools I build for myself first</td>
+          <td>Draft</td>
+          <td>Already carries the proof leg. One line would land it: the dashboard that turned six
+          to eight hours into ten minutes was not new information, it was information the company
+          already had and could not reach.</td>
+        </tr>
+        <tr>
+          <td>The AI thing you tried that did not work</td>
+          <td>Scheduled, Beehiiv</td>
+          <td>Governance angle is good and stays. One sentence connects it: the reason the check
+          matters is that the data it is reading is yours and it never leaves.</td>
+        </tr>
+        <tr>
+          <td>Good AI copy that decides your market for you is the expensive kind</td>
+          <td>Queued, 22 Sep</td>
+          <td>No change needed to the point. Optional half-line: the sentence got through because
+          nobody checked it against what the business actually does, which was on record.</td>
+        </tr>
+      </table>
+      </div>
+
+      <h3>Rows carrying the old framing</h3>
+      <div class="table-scroll">
+      <table>
+        <tr><th>Row</th><th>Status</th><th>Read</th></tr>
+        <tr>
+          <td>Bottleneck was the wrong word</td>
+          <td>Queued, 24 Sep</td>
+          <td>Purely constraint-first. It is a good post and it is not wrong, it is just the older
+          sentence. Either let it run as-is (it is queued and dated) or hold it and add the second
+          half: a constraint you can name is usually one your own records already showed you.</td>
+        </tr>
+        <tr>
+          <td>I can help with almost anything was the problem</td>
+          <td>Queued, 21 Sep</td>
+          <td>This is about narrowing the sentence. It would be the natural place to say the new
+          one out loud, if you lock it. Otherwise leave it.</td>
+        </tr>
+        <tr>
+          <td>Most retainers are built to grow. Mine is built to shrink.</td>
+          <td>Queued, 22 Sep</td>
+          <td>Neutral, no conflict. Flagged only because "if I am still necessary in a year, I did
+          the job wrong" pairs unusually well with the data framing (you leave, the system you built
+          around their own records stays). A one-line add, nothing more.</td>
+        </tr>
+      </table>
+      </div>
+
+      <p>The fourteen workshop and September-session rows are all event promotion for a dated
+      event. They should run exactly as they are. Do not fold new positioning into a live campaign
+      that already has seats to fill.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-7" open>
+    <summary><h2>7. The anonymizer: what it actually is today</h2></summary>
+    <div class="sec-body">
+      <p>You named this as something we built, and you are right. I went and found it rather than
+      writing copy around a thing I had not read. Here is what it actually does, because the copy
+      above has to be true.</p>
+
+      <p><strong>It exists and it runs.</strong> Its own working tree, thirty modules, its test suite
+      passing, and the full loop proven end to end on a real file: read a document, classify the
+      fields, mint stand-ins, substitute, verify, hold at a gate you approve, write a receipt, and
+      reverse it afterwards.</p>
+
+      <p><strong>The design point that matters for copy is that it is selective, not blanket.</strong>
+      Identity fields get consistent fake stand-ins. Business data is preserved exactly as it is, byte
+      for byte. That is the whole reason the analysis still works afterwards. A scrubber that makes
+      everything unmatchable would hand back a useless dataset.</p>
+
+      <p><strong>The anonymizing, the key creation and the reversal all run with no network at all,
+      on your machine.</strong> Only the already-anonymized version goes to a cloud model. If it cannot
+      confidently classify a field, it refuses and emits nothing rather than handing back a
+      half-anonymized file.</p>
+
+      <div class="stop">
+        <strong>Two sentences we may NOT write yet, and one word we may never write.</strong>
+        <ul style="margin-top:8px">
+          <li><strong>Never "unidentifiable", never "anonymous", never a compliance claim.</strong>
+          The tool's own spec is explicit: anonymized is not unidentifiable, and it reduces exposure
+          rather than conferring a legal status. Any page in your name that implies otherwise is
+          a problem you do not want.</li>
+          <li><strong>No claim that it has been run on a real client's data.</strong> The trial run
+          against a real corpus has not happened yet, and its own run log says plainly that no real
+          client document should go through it today. So the site copy above describes how the work
+          is set up, in present tense, which is true. It does not say "I have done this for clients",
+          which is not.</li>
+        </ul>
+        <p>If you want the copy to carry a stronger claim than that, the thing that unlocks it is
+        running the trial, which the last review of it said is the single highest-leverage unblocked
+        move on that whole board.</p>
+      </div>
+
+      <p><strong>And the name never appears in anything public.</strong> Internally it has a name.
+      Externally it is "the names come out before anything goes near an AI, and they go back in on
+      the other side." That sentence is the product description; the codename is not.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-9" open>
+    <summary><h2>9. Gates run on this copy</h2></summary>
+    <div class="sec-body">
+      <p>Every piece of copy above went through the voice gate, and the public-facing pieces
+      (the LinkedIn headline and About) also went through the social quality pass. Composite
+      self-score: <strong class="ok">92</strong>. Bar is 90.</p>
+      <ul>
+        <li>Zero em-dashes, zero commercial disavowals, first person throughout, sentence case.</li>
+        <li>No fabricated story, no invented client, no named person.</li>
+        <li>Two unverified numbers were caught and removed ("nobody has read in two years"
+        became "in years") because neither was checkable.</li>
+        <li>Shared verbs where the work is shared. "I find it and I fix it" is out everywhere
+        it appeared and "we make it usable" is in, which is the correction you have given before.</li>
+        <li>No internal codenames anywhere in the copy itself. The anonymizer is described by
+        what it does, never by its name.</li>
+        <li>No compliance claim, no "anonymous", no "unidentifiable", no claim of client work
+        that has not happened.</li>
+      </ul>
+      <p><strong>The one thing the gates cannot score, and the one I would push back on you
+      about if you disagreed:</strong> the LinkedIn About runs long. It is a profile, not a
+      post, so length is allowed, but read paragraph five out loud. If the decide-versus-build
+      line reads as a flex rather than a fact when you say it, cut it. It is the only line in
+      there that is about you rather than about them.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-8" open>
+    <summary><h2>8. One loose end</h2></summary>
+    <div class="sec-body">
+      <p>I could not find today's positioning decision in the decision ledger. Seven entries are
+      logged for 20 September and none of them is this one. Either it was written and lost before
+      it was committed, which has happened six times on record, or it was never written.</p>
+      <p>I did not add it myself, because a GO on your own positioning is your entry to make, not
+      an agent's. Say the word and it gets logged with today's date and your reasoning attached.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Drafts only. Nothing here has been published, sent, or written to the content board.
+    The 15 September elevator-pitch lock is unchanged and still in force.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
