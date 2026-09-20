@@ -17,3 +17,18 @@
 *.otf   binary
 *.mp4   binary
 *.zip   binary
+
+# 2026-09-20 SYS incident: review/archive/ grew to 119MB of retired review
+# pages (never pruned), pushing the `git archive` payload the autodeploy
+# cron ships to Hostinger's TUS upload past ~180MB. That payload size
+# intermittently exceeds the upload's internal timeout in
+# scripts/deploy-static-hostinger.mjs, which then throws mid-retry trying
+# to reopen the already-consumed archive stream (ENOENT on the temp zip).
+# Net effect: most 5-min deploy ticks failed silently-ish (alerted but easy
+# to miss), so brand-new review pages (e.g. 20260920-data-activation-positioning)
+# sat correctly on origin/main for hours while the live site 404'd them.
+# export-ignore keeps review/archive/ fully tracked in git history/tree
+# (nothing deleted, nothing lost) but drops it from `git archive` output,
+# cutting the deploy payload from ~180MB to ~60MB. Revert this line if any
+# archived review page's direct URL needs to stay live on the real site.
+review/archive/** export-ignore
