@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sadia Ashfaq &mdash; coaching tracker</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--bad); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--bad);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; white-space:pre-wrap;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  .badge{display:inline-block; padding:2px 9px; border-radius:999px; font-size:.75rem; font-weight:700;}
+  .badge.warn{background:rgba(242,184,75,.15); color:var(--warn); border:1px solid var(--warn);}
+  .badge.bad{background:rgba(255,122,122,.15); color:var(--bad); border:1px solid var(--bad);}
+  .badge.good{background:rgba(127,224,184,.15); color:var(--good); border:1px solid var(--good);}
+  .quote{border-left:3px solid var(--accent); padding:6px 14px; margin:0 0 12px; color:var(--text-dim); font-style:italic;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+
+  /* ---- tracker additions ---- */
+  .coachee-card{background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:18px; margin:18px 0;}
+  .coachee-card h2{margin:0 0 10px; font-size:1.05rem;}
+  .kv{display:grid; grid-template-columns:150px 1fr; gap:6px 14px; font-size:.9rem;}
+  .kv dt{color:var(--text-dim);} .kv dd{margin:0;}
+  .session-block{border:1px solid var(--border); border-radius:14px;
+    background:var(--bg2); padding:6px 16px 16px; margin:26px 0;}
+  .session-block > h2.session-head{font-size:1.25rem; margin:14px 0 4px;}
+  .session-meta{color:var(--text-dim); font-size:.85rem; margin:0 0 10px;}
+  .pill{display:inline-block; border:1px solid var(--border); border-radius:999px;
+    padding:3px 10px; font-size:.75rem; color:var(--text-dim); background:var(--card);}
+  .pill.live{border-color:var(--good); color:var(--good);}
+  .pill.tbd{border-color:var(--warn); color:var(--warn);}
+  .pill.done{border-color:var(--good); color:var(--good);}
+  .pill.priv{border-color:var(--bad); color:var(--bad);}
+  .hw-table td.status{white-space:nowrap;}
+  .status-open{color:var(--warn); font-weight:700;}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-21-18:45:40 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Sadia Ashfaq &mdash; coaching tracker</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks" aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#coachee">Coachee</a>
+      <a href="#session-1">Session 1</a>
+      <a href="#next-steps">Next steps</a>
+      <a href="#private-note">Private note</a>
+      <a href="#session-2">Session 2 prep</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="mast">
+    <h1>Sadia Ashfaq &mdash; coaching tracker</h1>
+    <div class="meta">Leland / Verizon reskilling benefit &middot; what we've done and what's next</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p><span class="pill live">Session 1: 2026-09-17</span> done. Landed on her guiding-star story (the Verizon dashboard that ended a recurring reporting meeting), a 3-year target (data engineering / analyst-engineer hybrid, AI layered on top), and a masters-path direction. A follow-up message with resume suggestions was sent the same day.</p>
+      <p><strong>7 action items open, 0 done</strong> &mdash; 6 hers, 1 his own (resume review, already sent). <span class="pill tbd">Session 2: not yet booked</span> &mdash; checked live against every calendar on the account, next 45 days, no match.</p>
+      <p>Next session: interviews, STAR-story practice on the dashboard story, a homework check, and more of her talking than him &mdash; his own coach-feedback flagged this as the one thing to fix.</p>
+    </div>
+  </details>
+
+  <section class="coachee-card" id="coachee">
+  <details class="sec" open>
+    <summary><h2>Coachee</h2></summary>
+    <div class="sec-body">
+    <dl class="kv">
+      <dt>Name</dt><dd>Sadia Ashfaq</dd>
+      <dt>Program</dt><dd>Leland / Verizon reskilling benefit</dd>
+      <dt>Status</dt><dd>Active</dd>
+      <dt>Contact email</dt><dd>sadiaa595@gmail.com</dd>
+      <dt>Location</dt><dd>Allen, TX. Grew up in Queens, NY.</dd>
+      <dt>Background</dt><dd>Laid off from Verizon (Data &amp; Reporting Analyst, Sep 2024 &ndash; Sep 2026, role landed via the Multiverse apprenticeship then went full-time). Before that: Payroll Compliance Auditor at Schultheis &amp; Panettieri, LLP; Financial Analyst at Aigner Chocolates.</dd>
+      <dt>Education</dt><dd>M.S. Business Analytics and AI, CUNY Baruch College (Zicklin School of Business) &mdash; one class in, expected Dec 2027. B.A. Psychology, minor in Data Analytics, Queens College (CUNY), 2023.</dd>
+      <dt>Guiding star</dt><dd>Built the Customer Journey trend-analysis dashboard at Verizon: 150+ metrics migrated from manual Google Sheets into a live Qlik Sense dashboard, ending the biweekly reporting meeting and speeding up AVP-level decisions. Also cut the monthly reporting timeline by 4&ndash;5 days via Google Apps Script + SQL automation.</dd>
+      <dt>3-year target</dt><dd>Decided in Session 1: data engineering, or an analyst/engineer hybrid role, with AI layered on top.</dd>
+    </dl>
+    </div>
+  </details>
+  </section>
+
+<section class="session-block" id="session-1">
+  <details class="sec" open>
+    <summary><h2 class="session-head">Session 1 &mdash; done</h2></summary>
+    <div class="sec-body">
+  <p class="session-meta"><span class="pill live">2026-09-17</span> &nbsp; First Leland session, Verizon reskilling benefit.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-summary" open>
+    <summary><h2>What happened</h2></summary>
+    <div class="sec-body">
+      <p>Covered her background: Guinea/GE/HR context for Boubacar, her New York-to-Dallas move, the Multiverse apprenticeship that turned into a full-time Verizon role, and the September 2026 layoff. Set a session goal of clarity/direction.</p>
+      <p>Surfaced her imposter syndrome directly &mdash; she described feeling she needed AI help to do her own SQL work &mdash; and reframed it using the dashboard she actually built at Verizon: 150+ metrics migrated into Qlik Sense, ending the biweekly reporting meeting and speeding up senior-leader decisions. Named the layoff as a business decision, not a performance one.</p>
+      <p>Discussed her new M.S. in Business Analytics and AI at Baruch College against a UT Dallas information-systems/cloud-computing alternative. Landed on keeping the business-analytics-and-AI direction but leaning toward an engineering/design-flavored track, done as fast as possible &mdash; ideally 1&ndash;2 years, not the most technical option available.</p>
+      <p>Reviewed her current AI tool usage (Gemini, Claude, NotebookLM, GitHub Copilot) and introduced adversarial prompting between models. Shared Boubacar's prompts site (profile setup, resume, council, pre-mortem, prompt-fix) and the Leland AI job-search prompts link, both live in session chat.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-direction" open>
+    <summary><h2>Direction landed on</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><strong>3-year target:</strong> data engineering, or an analyst/engineer hybrid role, with AI layered on top.</li>
+        <li><strong>Masters path:</strong> stay on Business Analytics and AI (Baruch) rather than switch to plain information systems, add an engineering/design element, finish as fast as possible. Open to UT Dallas if credits transfer.</li>
+        <li><strong>Guiding star:</strong> the Customer Journey dashboard &mdash; the anchor STAR-method story for interviews going forward.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-resume" open>
+    <summary><h2>Resume suggestions given</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li>Drop the GPA line under her Queens College degree &mdash; adds no value, can only raise questions.</li>
+        <li>Update her summary so she reads as 3&ndash;4 years of experience, not entry level &mdash; a fair read of what she's actually done.</li>
+        <li>Lead the Verizon dashboard bullet with the outcome first (ended a recurring meeting, sped up senior-leader decisions), not just the hours saved.</li>
+        <li>Keep Aigner Chocolates and Schultheis &amp; Panettieri on the resume &mdash; they support the 3&ndash;4-years read and show range.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-message" open>
+    <summary><h2>Follow-up message &mdash; sent 2026-09-21, verbatim</h2></summary>
+    <div class="sec-body">
+      <p>Sent by Boubacar via the Leland chat, same day as the session.</p>
+      <div class="quote">Sadia, it was great spending time with you today. I loved hearing about your path from Queens to Dallas and the apprenticeship that turned into your Verizon role. But the dashboard you built is the real story: it ended those biweekly reporting meetings and helped senior leaders make faster decisions. That is your guiding star. Wear it with pride, and build it into a STAR-method story for your interviews. We got real clarity on direction too. You are aiming at data engineering or an analyst-engineer hybrid role over the next three years, with AI layered on top. Whichever school you land at, stay on a Business Analytics and AI path rather than plain information systems, add an engineering and design element, and finish it as fast as you can.
+      <br><br>
+      I looked at your resume and have a few specific suggestions. Drop the GPA line under your Queens College degree. It adds no value and can only raise questions. Update your summary so you read as three to four years of experience, not entry level, because that is a fair read of what you have done. Lead your Verizon dashboard bullet with the outcome first: it ended a recurring meeting and sped up decisions for senior leaders, not just the hours saved. Keep Aigner Chocolates and Schultheis and Panettieri on there. They support the three to four years and show range.
+      <br><br>
+      Here is your homework before we talk again. Pull a handful of job descriptions for the roles you actually want, and note the degrees and skills they ask for. Ask UT Dallas whether any of your current master's credits would transfer, even partially. Add your Business Analytics and AI master's to your LinkedIn education section, and copy your Verizon resume bullets into your LinkedIn experience section. Then run the updated profile through the prompts here: boubacarbarry.com/toolbox/coaching-kit/. Next time we talk about interviews. You are further along than you think. You've got this! Talk soon.</div>
+    </div>
+  </details>
+</section>
+
+<section id="next-steps">
+  <details class="sec" id="sec-homework" open>
+    <summary><h2>Her homework &mdash; all open</h2></summary>
+    <div class="sec-body">
+      <div class="table-scroll">
+      <table class="hw-table">
+        <tr><th>Item</th><th>Status</th><th>Context</th></tr>
+        <tr><td>Research target job descriptions for data analyst, data engineer, and analyst-engineer hybrid roles &mdash; pull the degrees and skills they list &mdash; to guide the masters program decision</td><td class="status status-open">Open</td><td>No due date stated</td></tr>
+        <tr><td>Ask UT Dallas (UTD) whether any Baruch College Business Analytics and AI credits would transfer, even partially</td><td class="status status-open">Open</td><td>Boubacar said always ask</td></tr>
+        <tr><td>Add the M.S. Business Analytics and AI (Baruch College) to the LinkedIn Education section (currently only in the About summary)</td><td class="status status-open">Open</td><td>Do today, per the session</td></tr>
+        <tr><td>Copy the Verizon resume bullets into the LinkedIn Experience section (currently only job title and dates are there)</td><td class="status status-open">Open</td><td>Do today, per the session</td></tr>
+        <tr><td>Run the updated LinkedIn profile through Boubacar's prompts page and the Leland AI-job-search prompts</td><td class="status status-open">Open</td><td>&mdash;</td></tr>
+        <tr><td>Update resume to reflect 3&ndash;4 years of experience and remove the GPA line</td><td class="status status-open">Open</td><td>Boubacar's direct in-session suggestion</td></tr>
+      </table>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-his-commitment" open>
+    <summary><h2>Boubacar's own commitment</h2></summary>
+    <div class="sec-body">
+      <table>
+        <tr><th>Item</th><th>Status</th><th>Context</th></tr>
+        <tr><td>Review Sadia's resume and send suggestions</td><td><span class="pill done">Done</span></td><td>Self-committed "today and tomorrow" &mdash; delivered same day, in the follow-up message above</td></tr>
+      </table>
+    </div>
+  </details>
+</section>
+
+<section class="session-block" id="private-note">
+  <details class="sec" open>
+    <summary><h2 class="session-head">Coach's private note <span class="pill priv">Boubacar only</span></h2></summary>
+    <div class="sec-body">
+  <p class="session-meta">Logged to <code>coaching_session_private_notes</code>, session id 3. Six-dimension self-review, not shared with Sadia.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-private" open>
+    <summary><h2>Six-dimension coach self-review</h2></summary>
+    <div class="sec-body">
+      <ol>
+        <li><strong>GROW ordering &mdash; solid.</strong> Rapport/background opened the call, an explicit Goal checkpoint followed ("let's put a quick goal in&hellip; what does good look like"), then deep Reality (the dashboard story, layoff feelings, masters doubts), Options (career-track/program comparison), and a Will/homework close ("next time we talk interviews"). Phases showed up in the right order.</li>
+        <li><strong>Talk ratio &mdash; needs work.</strong> Coach turns ran visibly longer, with stretches of six-plus consecutive coach turns on imposter syndrome and on AI/recruiting. Her turns stayed short ("Yeah." "Okay."). By volume, coach talked meaningfully more.</li>
+        <li><strong>Question quality &mdash; needs work, mixed.</strong> Strong open questions landed ("What else is on your mind?", "Why do you feel like an imposter? Give me an example", "Can you think of a moment when you helped solve a problem for the team?"). But there was heavy use of rhetorical/leading "Okay?" tags and questions that supply their own answer (e.g. "Who is going to pay even more than just straight-up engineering?" leads straight to AI as the coach's preferred answer).</li>
+        <li><strong>Whose evidence carried the session &mdash; needs work, mixed.</strong> The anchor moment (the dashboard story) was genuinely surfaced from her own words after a direct prompt ("close your eyes, think about it"). But the masters-program/career-track decision leaned heavily on the coach supplying the narrative &mdash; including the claim that "information systems is old school" &mdash; his own opinion presented with confidence, not elicited from her.</li>
+        <li><strong>Action-item fidelity risk &mdash; low.</strong> All seven action items trace directly to explicit statements in the session. None required inference beyond what was said.</li>
+        <li><strong>Dependency vs. empowerment (his own stated anti-goal) &mdash; needs work.</strong> Real surfacing moments landed well. But the Options-phase content, especially the masters-program comparison, is the coach supplying the answer rather than her arriving at it &mdash; even though she reported feeling clarity afterward. A content-heavy session from the coach scores against this dimension even when it felt helpful in the moment.</li>
+      </ol>
+      <p><strong>Single most useful change for next session:</strong> in the Options phase, when comparing paths (masters program, career track), ask her what she thinks the market view is before supplying his own read &mdash; the way the dashboard-recall question in Reality already does well.</p>
+    </div>
+  </details>
+</section>
+
+<section class="session-block" id="session-2">
+  <details class="sec" open>
+    <summary><h2 class="session-head">Session 2 prep</h2></summary>
+    <div class="sec-body">
+  <p class="session-meta"><span class="pill tbd">Not yet booked</span> &nbsp; Checked live against every calendar on the account (5 calendars, next 45 days) &mdash; no Sadia event found.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-s2-focus" open>
+    <summary><h2>What session 2 covers</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><strong>Interviews.</strong> Named as the topic to close on in session 1: "next time we talk interviews."</li>
+        <li><strong>STAR-story practice on the dashboard story.</strong> Turn her guiding star (the Verizon Customer Journey dashboard) into a rehearsed STAR-method answer she can deliver live, not just describe.</li>
+        <li><strong>Homework check.</strong> Walk through all six open items above &mdash; job-description research, the UTD credit question, the two LinkedIn updates, the prompts pass, and the resume rewrite &mdash; before adding anything new.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-s2-coach-note" open>
+    <summary><h2>Coach discipline for this session</h2></summary>
+    <div class="sec-body">
+      <p>Direct carry-over from the private self-review above: let her talk more, and draw the decisions out of her instead of supplying them.</p>
+      <ul>
+        <li>On the masters-program direction, ask what she thinks the market view is before offering his own read.</li>
+        <li>Watch for stretches of six-plus consecutive coach turns &mdash; that was the talk-ratio pattern last time.</li>
+        <li>Trade rhetorical "Okay?" tags and leading questions for open ones that let her generate the answer.</li>
+      </ul>
+    </div>
+  </details>
+</section>
+
+  <footer class="foot">
+    Internal tracker, not sent to Sadia or to Leland. Coachee and session rows live in orc-postgres (<code>coaching_coachees</code> id=2, <code>coaching_sessions</code> id=3, 7 <code>coaching_action_items</code>, 1 <code>coaching_session_private_notes</code> row). Sources: <code>docs/prds/coaching-tracker/session1-sadia-ashfaq-review.md</code>, her resume on file, and a live Google Calendar check (5 calendars, 45-day window). Spec: <code>docs/prds/coaching-tracker/PRD.md</code>.
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
