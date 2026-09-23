@@ -2137,7 +2137,29 @@
 
       var displayMust = mustPick.kept;
       var displayShould = shouldPick.kept;
-      var displayCould = liveCouldAll.slice(0, COULD_ROLLING_N);
+      // REVENUE FILTER (2026-09-23, memory/feedback_money_map_could_tier_must_stay_revenue_generating_2026_09_02.md):
+      // "the Could tier is a standing pool of 5 real action items" spanning his
+      // active revenue lanes (outreach, content, HAW, reseller, Signal Works
+      // review, traffic-building) -- infra/bug rows explicitly "do not count
+      // toward this." Before this fix `displayCould` sliced the top 5 of
+      // `liveCouldAll` by rank alone, with no regard for `item.revenue` (the
+      // publisher's own lane-derived flag, already computed in
+      // scripts/publish_money_map_worklist.py and already rendered as the
+      // "revenue" chip -- see the `mm-rev-chip` usage below -- but never used
+      // to FILTER). A non-revenue row ranked above a revenue row crowded the
+      // real one out of the visible five. Confirmed live 2026-09-23: rank #12
+      // (Edwards offer check, revenue=false) held a slot a lower-ranked
+      // revenue row (e.g. rank #21, Jennie Barron follow-up) would otherwise
+      // have filled.
+      //
+      // Fixed by filtering to `item.revenue` BEFORE the slice. If fewer than
+      // COULD_ROLLING_N revenue candidates are live, this deliberately shows
+      // fewer than 5 rather than backfilling with non-revenue filler -- an
+      // honest "3 of 5" beats a padded five that repeats the exact defect
+      // this exists to close. `renderList()` already renders `rows.length`
+      // as its own meta count, so a short Could list says so on its own.
+      var liveCouldRevenue = liveCouldAll.filter(function (i) { return !!i.revenue; });
+      var displayCould = liveCouldRevenue.slice(0, COULD_ROLLING_N);
       var shouldOverflowCount = shouldPick.overflow.length; // true leftover -- tomorrow's candidates, not shown today
 
       tiers.MUST = displayMust;
