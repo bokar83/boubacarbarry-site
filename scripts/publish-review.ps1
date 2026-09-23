@@ -192,8 +192,17 @@ finally {
 }
 
 # Update manifest -- same row updated on republish, never a duplicate appended.
+# -Encoding UTF8 is LOAD-BEARING here, same reason as rebuild-review-index.ps1 line ~168
+# (fixed there 2026-08-21, missed here until 2026-09-23/SYS infra-drift response). Without
+# it, Windows PowerShell 5.1 reads this UTF-8 file as ANSI/cp1252, so every non-ASCII char
+# comes back as mojibake -- and this same function writes it back out as real UTF-8 three
+# lines below. That lossy round trip COMPOUNDS one generation per publish: the
+# "20260811-aug19-campaign" title decayed from 22 chars to 35.8 MILLION chars over ~2 weeks
+# of publishes (79.7MB manifest file, review/index.html following it up to 80.1MB, both
+# converging on GitHub's 100MB single-file push limit). Repaired in the same commit as this
+# fix -- see agent_comms "RE: review-index infra drift" 2026-09-23.
 $manifest = if (Test-Path $ManifestPath) {
-    @(Get-Content $ManifestPath -Raw | ConvertFrom-Json)
+    @(Get-Content $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json)
 } else { @() }
 
 if ($IsUpdate) {

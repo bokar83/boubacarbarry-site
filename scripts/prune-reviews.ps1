@@ -17,7 +17,11 @@ $TodayStr = $Today.ToString("yyyy-MM-dd")
 
 if (-not (Test-Path $ManifestPath)) { Write-Host "No manifest. Nothing to prune."; exit 0 }
 
-$manifest = @(Get-Content $ManifestPath -Raw | ConvertFrom-Json)
+# -Encoding UTF8 is LOAD-BEARING (same fix as rebuild-review-index.ps1 2026-08-21 and
+# publish-review.ps1 2026-09-23) -- without it, Windows PowerShell 5.1 mis-reads this
+# UTF-8 file as ANSI/cp1252 and the write-back below re-encodes the mojibake as real
+# UTF-8, compounding corruption one generation per run.
+$manifest = @(Get-Content $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json)
 $archived = @()
 
 foreach ($item in $manifest) {
