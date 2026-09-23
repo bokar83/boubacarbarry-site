@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CW Design Refresh — Checkpoint 1</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- compare layout ---- */
+  .compare{display:flex; gap:16px; flex-wrap:wrap; margin:14px 0;}
+  .compare-col{flex:1 1 280px; min-width:0;}
+  .compare-col img{width:100%; height:auto; border:1px solid var(--border); border-radius:8px; display:block;
+    background:var(--bg2);}
+  .compare-cap{font-size:.85rem; color:var(--text-dim); margin-top:8px; text-align:center;}
+  .compare-cap.before{color:var(--bad);}
+  .compare-cap.after{color:var(--good);}
+
+  .closeups{display:flex; gap:14px; flex-wrap:wrap; margin:14px 0;}
+  .closeup-col{flex:1 1 220px; min-width:0; max-width:280px;}
+  .closeup-col img{width:100%; height:auto; border:1px solid var(--border); border-radius:8px; display:block;}
+  .closeup-cap{font-size:.82rem; color:var(--text-dim); margin-top:6px;}
+
+  .question-box{
+    background:var(--bg2); border:2px solid var(--warn); border-radius:10px;
+    padding:16px 18px; margin:12px 0;
+  }
+  .question-box .q-label{color:var(--warn); font-weight:700; font-size:.82rem;
+    letter-spacing:.04em; text-transform:uppercase; margin-bottom:8px;}
+  .question-box p:last-child{margin-bottom:0;}
+
+  .verify-list li{color:var(--text);}
+  .verify-list .check{color:var(--good); font-weight:700; margin-right:6px;}
+
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+    .compare{flex-direction:column;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-22-19:24:50 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">CW CHECKPOINT 1</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-desktop">Desktop</a>
+      <a href="#sec-mobile">Mobile</a>
+      <a href="#sec-closeups">Close-ups</a>
+      <a href="#sec-question">The Question</a>
+      <a href="#sec-verified">Verified</a>
+      <a href="#sec-next">Next Step</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Catalyst Works homepage design refresh — Checkpoint 1</h1>
+    <div class="meta">Go / no-go review, one page only &middot; 2026-09-22</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p>This is checkpoint 1 of the Catalyst Works design refresh: <strong>one page rebuilt</strong> — the homepage — under a single consistent style. Every other page on the site is untouched, and nothing is live. This page is real before/after screenshots so you can look at it and decide.</p>
+      <ul>
+        <li>Scroll down for desktop and mobile side-by-sides, plus three mobile close-ups.</li>
+        <li>There is one open question for you about the starfield background — see "The Question" below.</li>
+        <li>CTA, lead form, copy, and SEO/analytics were all checked and are unchanged — see "Already Verified".</li>
+        <li>If this looks right, the same treatment goes to the other 8 pages next. Say go (or no), and name anything you want changed first.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-desktop" open>
+    <summary><h2>Desktop — before / after</h2></summary>
+    <div class="sec-body">
+      <p>Full homepage at desktop width, side by side.</p>
+      <div class="compare">
+        <div class="compare-col">
+          <img src="images/before-desktop.png" alt="Before: current live Catalyst Works homepage, desktop width">
+          <div class="compare-cap before">Before — 6 different color systems across the site</div>
+        </div>
+        <div class="compare-col">
+          <img src="images/after-desktop.png" alt="After: relocked Catalyst Works homepage, desktop width">
+          <div class="compare-cap after">After — one locked system, one accent color</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-mobile" open>
+    <summary><h2>Mobile (375px) — before / after</h2></summary>
+    <div class="sec-body">
+      <p>Same pairing, at 375px mobile width.</p>
+      <div class="compare">
+        <div class="compare-col">
+          <img src="images/before-375.png" alt="Before: current live Catalyst Works homepage, 375px mobile width">
+          <div class="compare-cap before">Before — 6 different color systems across the site</div>
+        </div>
+        <div class="compare-col">
+          <img src="images/after-375.png" alt="After: relocked Catalyst Works homepage, 375px mobile width">
+          <div class="compare-cap after">After — one locked system, one accent color</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-closeups" open>
+    <summary><h2>Mobile close-ups — what actually changed</h2></summary>
+    <div class="sec-body">
+      <p>Three spots on the mobile page, zoomed in, with what changed noted under each.</p>
+      <div class="closeups">
+        <div class="closeup-col">
+          <img src="images/after-375-hero.png" alt="After: mobile hero section close-up">
+          <div class="closeup-cap"><strong>Hero</strong> — restyled under the same locked system, no copy changed.</div>
+        </div>
+        <div class="closeup-col">
+          <img src="images/after-375-method-rail.png" alt="After: mobile method rail close-up, now a numbered vertical list">
+          <div class="closeup-cap"><strong>Method rail</strong> — the five-lens rail is now a numbered vertical list, not sliding cards.</div>
+        </div>
+        <div class="closeup-col">
+          <img src="images/after-375-offer.png" alt="After: mobile pricing/offer block close-up, no bordered card">
+          <div class="closeup-cap"><strong>Offer</strong> — the pricing block lost its bordered card and now hangs off a single line.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-question" open>
+    <summary><h2>One question for you</h2></summary>
+    <div class="sec-body">
+      <div class="question-box">
+        <div class="q-label">One question for you</div>
+        <p>The starry background behind the whole page is still there and still glows cyan/blue. That element was frozen by the PRD — out of scope for this build — so it wasn't touched. But now that everything else on the page is warm and restrained, it may read as two different design systems stacked on top of each other.</p>
+        <p>Does this bother you, or is it fine? (If it bothers you, the fix is a separate follow-up — not a redo of this build.)</p>
+      </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-verified" open>
+    <summary><h2>Already verified — no action needed</h2></summary>
+    <div class="sec-body">
+      <ul class="verify-list">
+        <li><span class="check">&#10003;</span>The CTA still opens the real Calendly booking link — unchanged.</li>
+        <li><span class="check">&#10003;</span>The lead-capture form still works exactly as before — tested.</li>
+        <li><span class="check">&#10003;</span>No copy was changed anywhere — byte-identical.</li>
+        <li><span class="check">&#10003;</span>No SEO or analytics tags were touched.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-next" open>
+    <summary><h2>Next step</h2></summary>
+    <div class="sec-body">
+      <p>Nothing is live. If this looks right, the next step is the other 8 pages, same treatment.</p>
+      <p><strong>Say go (or no), and name anything you want changed first.</strong></p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Checkpoint 1 review &middot; Catalyst Works homepage design refresh &middot; screenshots captured 2026-09-22
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
