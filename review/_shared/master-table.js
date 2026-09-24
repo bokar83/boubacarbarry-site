@@ -133,6 +133,10 @@
     'recruiter': 'Recruiter screen',
     'hiring-manager': 'Hiring manager',
     'panel': 'Panel / team',
+    // Added 2026-09-24 alongside the HARTING/Edwards advance to an in-person
+    // on-site round. Before this the raw string 'onsite' rendered lowercase
+    // and unstyled, which read as a data bug rather than the real next stage.
+    'onsite': 'In-person on-site',
     'final': 'Final round',
     'offer': 'Offer stage'
   };
