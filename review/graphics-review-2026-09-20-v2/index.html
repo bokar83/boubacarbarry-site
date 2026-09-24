@@ -158,7 +158,9 @@
 </style>
 </head>
 <body>
-<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v11 · 2026-09-24-12:28:41 MT</div><!-- DEPLOY_STAMP_END -->
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-24-13:07:45 MT</div><!-- DEPLOY_STAMP_END -->
+
+
 
 
 
@@ -864,19 +866,32 @@
   // Rasterised client-side (SVG -> canvas -> PNG blob) so a click produces a real
   // file download, not a right-click-save-image chore. 3x scale = social-native
   // resolution for a viewBox already sized for portrait feed posts.
-  function downloadSvgAsPng(svgEl, filename, scale) {
+  // XML comments cannot contain "--" (only HTML tolerates that); the hand-written
+  // SVGs on this page have prose comments that do ("...sewn together -- geometric
+  // motif only."), and a strict-XML data: URI Image load fails hard on the whole
+  // document because of it. Comments carry no visual information, so strip every
+  // comment node from the clone before serialising rather than trying to escape them.
+  function stripComments(node) {
+    for (var i = node.childNodes.length - 1; i >= 0; i--) {
+      var child = node.childNodes[i];
+      if (child.nodeType === 8) { node.removeChild(child); }
+      else if (child.nodeType === 1) { stripComments(child); }
+    }
+  }
+  function downloadSvgAsPng(svgEl, filename, scale, onDone) {
     scale = scale || 3;
     var vb = svgEl.viewBox && svgEl.viewBox.baseVal;
     var w = (vb && vb.width) ? vb.width : (svgEl.clientWidth || 720);
     var h = (vb && vb.height) ? vb.height : (svgEl.clientHeight || 900);
     var clone = svgEl.cloneNode(true);
+    stripComments(clone);
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     if (!clone.getAttribute('width')) { clone.setAttribute('width', w); }
     if (!clone.getAttribute('height')) { clone.setAttribute('height', h); }
     var xml = new XMLSerializer().serializeToString(clone);
     var svg64;
     try { svg64 = btoa(unescape(encodeURIComponent(xml))); }
-    catch (e) { return false; }
+    catch (e) { onDone(false); return; }
     var img = new Image();
     img.onload = function () {
       var canvas = document.createElement('canvas');
@@ -887,7 +902,7 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(function (blob) {
-        if (!blob) { return; }
+        if (!blob) { onDone(false); return; }
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
@@ -896,13 +911,11 @@
         a.click();
         document.body.removeChild(a);
         setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+        onDone(true);
       }, 'image/png');
     };
-    img.onerror = function () {
-      window.__gfxDownloadFailed = filename;
-    };
+    img.onerror = function () { onDone(false); };
     img.src = 'data:image/svg+xml;base64,' + svg64;
-    return true;
   }
   document.querySelectorAll('.btn-download').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -910,9 +923,17 @@
       var svgEl = svgId && document.getElementById(svgId);
       var filename = btn.getAttribute('data-filename') || 'diagram.png';
       if (!svgEl) { flashState(btn, 'err', 'Image not found', 2000); return; }
-      var ok = downloadSvgAsPng(svgEl, filename, 3);
-      if (ok) { flashState(btn, 'ok', 'Downloading…', 1400); }
-      else { flashState(btn, 'err', 'Could not export, right-click the image', 3000); }
+      btn.disabled = true;
+      var origLabel = btn.textContent;
+      btn.textContent = 'Preparing…';
+      downloadSvgAsPng(svgEl, filename, 3, function (ok) {
+        btn.disabled = false;
+        if (ok) { flashState(btn, 'ok', 'Downloaded', 1800); }
+        else {
+          btn.textContent = origLabel;
+          flashState(btn, 'err', 'Could not export, right-click the image', 3000);
+        }
+      });
     });
   });
 })();
@@ -920,6 +941,7 @@
 
 <!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
      fold-state memory and the expand/collapse-all control just above 
+
 <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
 <style id="review-furniture-css">
   /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
@@ -1072,6 +1094,7 @@
 </body> at publish
      time. Do not add your own; you would ship two. -->
 
+
 <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
 <style id="review-furniture-css">
   /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
@@ -1223,6 +1246,9 @@
 <!-- REVIEW_FURNITURE_END -->
 </body>
 </html>
+
+
+
 
 
 
