@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bo McCoy: keep, evolve or replace</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 120px;}
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+  .nav-bar{position:sticky; top:0; z-index:50; background:rgba(15,17,21,0.93);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border); padding:10px 0;}
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim); margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px; padding:6px 12px; background:var(--bg2); white-space:nowrap;}
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1; min-width:44px; min-height:40px;}
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  details.sec, details.tldr{background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;}
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;}
+  details.sec > summary::-webkit-details-marker, details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{content:"\25B8"; color:var(--accent);
+    font-size:.9rem; transition:transform .15s ease; flex:none;}
+  details[open].sec > summary::before, details[open].tldr > summary::before{transform:rotate(90deg);}
+  details.sec > summary h2, details.tldr > summary h2{margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;}
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  h3{font-size:1rem; margin:18px 0 8px; color:var(--accent2);}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px; padding:1px 5px; font-size:.86em;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.88rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  .verdict{font-size:1.15rem; font-weight:700; color:var(--good);}
+  .dim{color:var(--text-dim); font-size:.86rem;}
+  .pill{display:inline-block; border-radius:999px; padding:1px 9px; font-size:.78rem; font-weight:700;}
+  .p-pass{background:#17372c; color:var(--good);} .p-warn{background:#3a2e14; color:var(--warn);} .p-fail{background:#3b1a1a; color:var(--bad);}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px; border-top:1px solid var(--border); margin-top:26px;}
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch; gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;} .nav-inner{padding:0 14px;}
+  }
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;} }
+  @media print{ .nav-bar{position:static;} details{border:0;} details > summary::before{display:none;} }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-24-08:09:25 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Bo McCoy review</span>
+    <button type="button" class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+      <a href="#tldr">TL;DR</a>
+      <a href="#sec-1">What Bo is today</a>
+      <a href="#sec-2">Comparison</a>
+      <a href="#sec-3">Code audit</a>
+      <a href="#sec-4">Pressure test</a>
+      <a href="#sec-5">Verdict</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Bo McCoy: keep, evolve or replace</h1>
+    <div class="meta">Answering-agent decision memo, 30 to 60 day horizon &middot; 2026-09-24</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p class="verdict">Verdict: EVOLVE. Keep Bo on the stack we own. Do not move him to OpenAI or Grok.</p>
+      <ul>
+        <li><strong>Claude</strong> has no voice or phone product for developers. It can only be the brain inside Bo, never a replacement for him.</li>
+        <li><strong>OpenAI's realtime voice</strong> scored highest (65%) against Bo (59%). The gap is under 10%, so the tiebreaker applies: keep the owned setup. Moving would give up native outbound calling and control of the call data, and support for Boubacar's cloned voice is not confirmed.</li>
+        <li><strong>Grok's voice agent</strong> is the cheapest flat rate but has the thinnest enterprise paper (49%).</li>
+        <li>Bo works: 374 tests pass and replies start in 0.9 seconds on a typical turn. It is also barely used: 2 calls in September.</li>
+        <li>Bo is <strong>not enterprise-ready</strong> and should not be sold that way in the next 60 days.</li>
+        <li><strong>Next action, 2026-10-01:</strong> replay Bo's 75 logged caller turns against three models, keep the fastest, and correct the docs that name the wrong model.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-1" open>
+    <summary><h2>What Bo is today</h2></summary>
+    <div class="sec-body">
+      <p>Bo McCoy is a self-hosted phone agent running on our own server. The parts are rented. The wiring is ours. Everything below was checked against the live code and the live server on 2026-09-24.</p>
+      <div class="table-scroll"><table>
+        <tr><th>Layer</th><th>What runs today</th><th>Checked how</th></tr>
+        <tr><td>Phone line</td><td>Telnyx, three numbers (private screening line, public demo line, test line)</td><td>Number records, live API check on file 2026-07-14</td></tr>
+        <tr><td>Call engine</td><td>Pipecat 1.4.0 on our own server, running for 11 days straight</td><td>Live container status</td></tr>
+        <tr><td>Hearing</td><td>Deepgram Nova-2 (English), Nova-3 (other languages)</td><td>Code</td></tr>
+        <tr><td>Brain</td><td><strong>Gemini 2.5 Flash</strong> through OpenRouter. The model can be swapped with one setting.</td><td>Code default plus the live server setting (unset, so the default runs)</td></tr>
+        <tr><td>Voice</td><td>ElevenLabs Turbo v2.5 with Boubacar's own cloned voice</td><td>Code</td></tr>
+        <tr><td>Jobs it does</td><td>Answers and places calls, presses phone-menu keys, books through Calendly and Google Calendar, sends a summary after each call, runs a capped demo line, blocks robocalls, keeps a per-client registry</td><td>Code, 374 passing tests</td></tr>
+        <tr><td>Use</td><td>52 calls since June 29: 13 in June, 33 in July, 4 in August, 2 in September. One client row, Boubacar's own line.</td><td>Call database, read back</td></tr>
+        <tr><td>Speed</td><td>Brain starts replying in 0.88 s on a typical turn, 1.83 s on a slow one (75 turns measured). Voice starts in 0.11 s.</td><td>Call database, read back</td></tr>
+      </table></div>
+      <h3>Known gaps</h3>
+      <ul>
+        <li>No live transfer to a human. Bo can take a message but cannot hand a caller over.</li>
+        <li>Not yet screening Boubacar's real calls. His number is not forwarded to Bo. That was his call, pending fixes.</li>
+        <li>One open bug: a call dropped five seconds into the greeting (July 22).</li>
+        <li>No caller allowlist on the screening line.</li>
+      </ul>
+      <h3>Where the sources disagree</h3>
+      <ul>
+        <li>The setup guide and the build spec both say the brain is Claude Sonnet 4.6. The code says Gemini 2.5 Flash, and the server confirms it. Gemini was swapped in because Sonnet left callers in 4.7 seconds of silence. The docs never caught up, so this memo goes by the code.</li>
+        <li>The August 25 research doc listed as a source for this memo is about a book pen name that happens to share the Bo McCoy name. It has nothing to do with the phone agent, so it was set aside.</li>
+        <li>The name is Bo McCoy, his childhood nickname. "Beau" was a dictation slip.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-2" open>
+    <summary><h2>Comparison</h2></summary>
+    <div class="sec-body">
+      <p>Every vendor claim below was pulled from official pages on 2026-09-24. UNVERIFIED means no official source confirmed it, so it was not guessed. Cost assumes a 3-minute average call, so 500 calls a month is 1,500 minutes and 5,000 calls is 15,000 minutes.</p>
+      <div class="table-scroll"><table>
+        <tr><th>Criterion (weight)</th><th>Bo today</th><th>OpenAI realtime voice</th><th>Grok voice agent</th><th>Claude</th></tr>
+        <tr><td>Cost (20)</td>
+          <td>About $0.06/min in usage. Voice plans are sold in tiers, so real totals run about $323/mo at 500 calls and $1,221/mo at 5,000. <a href="https://elevenlabs.io/pricing">ElevenLabs</a>, <a href="https://telnyx.com/pricing/voice-api">Telnyx</a>, <a href="https://deepgram.com/pricing">Deepgram</a>, <a href="https://openrouter.ai/google/gemini-2.5-flash">OpenRouter</a>. <strong>3/5</strong></td>
+          <td>$32 in / $64 out per million audio tokens (mini: $10 / $20). Per-minute rate not published; about $0.05 to $0.10/min estimated, plus about $0.009 for the phone line. About $90 to $165/mo at 500 calls, $880 to $1,630 at 5,000. <a href="https://developers.openai.com/api/docs/pricing">OpenAI pricing</a>. <strong>3/5</strong></td>
+          <td>$0.08/min flat plus the phone line: about $133/mo at 500 calls, $1,331 at 5,000. <a href="https://docs.x.ai/developers/pricing">xAI pricing</a>. <strong>3/5</strong></td>
+          <td rowspan="5">Not scored. No developer voice or phone product exists. Voice mode lives only inside the Claude apps. Haiku 4.5 costs $1 / $5 per million tokens and can run as Bo's brain. <a href="https://platform.claude.com/docs/en/about-claude/pricing">Claude pricing</a>, <a href="https://support.claude.com/en/articles/11101966-use-voice-mode">voice mode</a>.</td></tr>
+        <tr><td>Speed and reliability (20)</td>
+          <td>Measured: 0.88 s typical, 1.83 s slow, brain only. Single server, no uptime promise. <strong>3/5</strong></td>
+          <td>Speech in, speech out, no separate hearing and voice steps. 99.9% uptime promise only on Scale or Enterprise plans, and it excludes speed. <a href="https://help.openai.com/en/articles/5008641-is-there-an-sla-for-latency-guarantees-on-the-various-engines">OpenAI SLA</a>. <strong>4/5</strong></td>
+          <td>No published uptime promise found. Status page exists, content unreadable. UNVERIFIED. <strong>2/5</strong></td></tr>
+        <tr><td>Phone, booking, handoff (25)</td>
+          <td>Inbound and outbound, phone menus, Calendly and Google booking, summaries, demo caps. No handoff to a human. <strong>3/5</strong></td>
+          <td>Answers phone calls directly and can transfer to a person. No native outbound: calls must start at a phone carrier. Booking has to be rebuilt. <a href="https://developers.openai.com/api/docs/guides/realtime-sip">OpenAI phone guide</a>. <strong>3/5</strong></td>
+          <td>Answers through Telnyx or Twilio and can transfer. Booking has to be built. <a href="https://docs.x.ai/developers/model-capabilities/audio/speech-to-speech/sip">xAI phone guide</a>. <strong>3/5</strong></td></tr>
+        <tr><td>Enterprise readiness (20)</td>
+          <td>Each supplier holds its own security audit, but the path through OpenRouter has no health-data agreement, and ElevenLabs offers one only on enterprise plans. We have no sign-on, audit trail or uptime promise of our own. <strong>2/5</strong></td>
+          <td>SOC 2 Type 2, ISO 27001 and 42001, audit logs, US and EU processing including an EU phone endpoint. Health-data agreement confirmed for the API in general, UNVERIFIED for realtime voice. <a href="https://trust.openai.com/">OpenAI trust</a>. <strong>4/5</strong></td>
+          <td>SOC 2 by its own statement, report under NDA. No ISO claim. Single sign-on UNVERIFIED. US data region available. <a href="https://docs.x.ai/developers/faq/security">xAI security</a>. <strong>2/5</strong></td></tr>
+        <tr><td>Lock-in and data control (15)</td>
+          <td>Every part can be swapped. We keep the recordings and logs. Audio passes through three suppliers. <strong>4/5</strong></td>
+          <td>All call audio goes to OpenAI with no self-host option. Custom cloned voice not confirmed. <strong>2/5</strong></td>
+          <td>All call audio goes to xAI. Speaks the same protocol as OpenAI, which lowers switching cost. <strong>2/5</strong></td></tr>
+        <tr><th>Weighted score</th><th>59%</th><th>65%</th><th>49%</th><th>n/a</th></tr>
+      </table></div>
+      <h3>Tiebreaker, shown</h3>
+      <p>OpenAI leads by 6 points, a 9% gap. The rule for this memo: inside 10%, prefer less new lock-in and more reuse of the setup we own. So the tiebreaker was used, and it decides the call.</p>
+      <p>A check on the weights. If enterprise readiness counts more (25) and phone depth less (20), OpenAI leads 66% to 58%. That is outside the tiebreaker. For a regulated enterprise buyer, OpenAI's realtime voice is the stronger engine. That is why the enterprise verdict below names it as the exception engine and not as a new home.</p>
+      <h3>The move that makes migration unnecessary</h3>
+      <p>The Pipecat version Bo already runs ships working connectors for both OpenAI's and xAI's realtime voice models, confirmed in the installed package. Either can sit inside Bo, behind our own phone line, recordings and client registry. Nobody has tested that path with a live call yet, so it gets a test before anyone promises it.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-3" open>
+    <summary><h2>Code audit</h2></summary>
+    <div class="sec-body">
+      <p>Ten-principle audit of Bo's current code. The architecture is sound and well tested. One fail, and it is about the docs, not the code.</p>
+      <div class="table-scroll"><table>
+        <tr><th>Principle</th><th>Result</th><th>Evidence</th></tr>
+        <tr><td>Think first</td><td><span class="pill p-pass">PASS</span></td><td>Build spec locks scope and dated vetoes before code.</td></tr>
+        <tr><td>Simplicity</td><td><span class="pill p-warn">WARN</span></td><td>The main pipeline file is 2,217 lines. Every guard was earned by a real call failure, but it now needs splitting.</td></tr>
+        <tr><td>Surgical changes</td><td><span class="pill p-pass">PASS</span></td><td>Recent commits are single-purpose.</td></tr>
+        <tr><td>Clear goal</td><td><span class="pill p-warn">WARN</span></td><td>No stated speed target, so the speed data triggers nothing.</td></tr>
+        <tr><td>Hotspots</td><td><span class="pill p-pass">PASS</span></td><td>Nothing unbounded.</td></tr>
+        <tr><td>Verification</td><td><span class="pill p-pass">PASS</span></td><td>374 tests run and pass. Each live bug has a regression test.</td></tr>
+        <tr><td>Debugging</td><td><span class="pill p-pass">PASS</span></td><td>Fixes cite real call transcripts.</td></tr>
+        <tr><td>Dependencies</td><td><span class="pill p-warn">WARN</span></td><td>Core packages pinned after a June outage. Two Google packages are not.</td></tr>
+        <tr><td>Communication</td><td><span class="pill p-fail">FAIL</span></td><td>Docs name the wrong model. The hearing-speed column reads zero on every row, yet it is presented as measured.</td></tr>
+        <tr><td>Failure modes</td><td><span class="pill p-warn">WARN</span></td><td>Early-hangup bug still open. No caller allowlist.</td></tr>
+      </table></div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-4" open>
+    <summary><h2>Pressure test</h2></summary>
+    <div class="sec-body">
+      <p>Five-angle review of the draft verdict. It held, with four changes.</p>
+      <ul>
+        <li><strong>Contrarian:</strong> the weights pick the winner, so show what happens when they shift (done above). Ten test calls cannot measure a slow-turn speed, and the realtime option is only proven to exist, not to work.</li>
+        <li><strong>First principles:</strong> the real issue is workload, not vendor. At 2 calls a month no platform choice matters. Fix what the next real job needs.</li>
+        <li><strong>Expansionist:</strong> when we own the call and only rent the brain, we answer the lock-in worry larger buyers raise. Keep that slot open to any vendor.</li>
+        <li><strong>Outsider:</strong> a procurement lead hears "one operator, one server, no uptime promise" and stops listening. A plumber only cares that the phone gets answered. Two buyers, two answers. A client product should also not carry Boubacar's personal nickname.</li>
+        <li><strong>Executor:</strong> nobody has time to make 30 test calls. Replay the logged caller turns against each model instead. Hours of work, no phone needed.</li>
+      </ul>
+      <p><strong>What changed:</strong> the model test became a replay of logged turns. The enterprise exception was downgraded to "test first." The weight check went onto this page. Product naming stays separate from Bo.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-5" open>
+    <summary><h2>Verdict</h2></summary>
+    <div class="sec-body">
+      <p class="verdict">EVOLVE for both audiences. MIGRATE for neither.</p>
+      <h3>Boubacar's own call handling (Catalyst Works, Signal Works)</h3>
+      <p>Keep Bo on the stack we own. Upgrades, in order:</p>
+      <ol>
+        <li>Correct the setup guide and build spec to name Gemini 2.5 Flash, and fix the hearing-speed measurement.</li>
+        <li>Replay the 75 logged caller turns against Gemini 2.5 Flash, Claude Haiku 4.5 and Grok 4.1 Fast. Switch only if one cuts the slow-turn time by 20% or more without worse answers.</li>
+        <li>Test ElevenLabs Flash v2.5 on the same turns. Same price, faster start.</li>
+        <li>Before Bo screens Boubacar's real calls: fix the early-hangup bug, add a caller allowlist, and add a live handoff to a human through Telnyx.</li>
+      </ol>
+      <h3>A resellable offer for enterprise clients</h3>
+      <p>Do not sell Bo as enterprise-grade in the next 60 days. The resale offer is already parked until 2026-12-01 pending a fulfillment partner. If a regulated client signs before then, the named exception is this: keep our phone line, recordings and client registry, and run OpenAI's realtime voice as the engine inside Bo, pinned to US or EU processing with zero data retention. That sends client call audio to OpenAI, a tradeoff that must be named to the client and not hidden. It only happens after a live test proves the connector works. Buyer-facing copy describes the outcome and never names a vendor we do not run.</p>
+      <h3>Next action</h3>
+      <p><strong>By 2026-10-01</strong>, the voice owner (the systems lane) runs the three-model replay on the logged turns, records typical and slow-turn times per model, and commits the doc correction in the same change.</p>
+      <p class="verdict">Final: EVOLVE. Keep Bo McCoy, measure the brain, close the handoff gap, and hold enterprise claims until the evidence exists.</p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Research as of 2026-09-24. Vendor prices and features in this space change month to month; re-check the linked pages before quoting any number to a buyer.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+})();
+</script>
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
