@@ -68,6 +68,12 @@
   var STAGES = [
     { v: 'recruiter',      label: 'Recruiter screen' },
     { v: 'hiring-manager', label: 'Hiring manager' },
+    // Added 2026-09-24 alongside master-table.js's own STAGE_LABEL entry, same
+    // day and same reason: HARTING and Edwards both advanced to an in-person
+    // on-site round and the raw string 'onsite' was rendering unstyled in the
+    // stage-summary chip bar (readable in the summary even with the section
+    // folded shut, which is exactly the bar this omission broke).
+    { v: 'onsite',         label: 'In-person on-site' },
     { v: 'panel',          label: 'Panel / team' },
     { v: 'final',          label: 'Final round' },
     { v: 'offer',          label: 'Offer stage' }
