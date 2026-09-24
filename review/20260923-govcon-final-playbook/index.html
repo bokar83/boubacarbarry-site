@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Government contracting playbook</title>
+<style>
+  :root{
+    --bg:#0f1115; --bg2:#171a21; --card:#1c202a; --border:#2b3040;
+    --text:#e7e9ee; --text-dim:#a7adbb; --accent:#FF8F5E; --accent-visited:#B87333; --accent2:#7fe0b8;
+    --warn:#f2b84b; --bad:#ff7a7a; --good:#7fe0b8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    /* Room at the top for the deploy stamp pill, and at the bottom for the floating
+       controls, so neither ever sits on top of content. */
+    padding:0 0 120px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+
+  /* ---- masthead ------------------------------------------------------------------- */
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  /* ---- floating nav (rule 5) -------------------------------------------------------
+     Floating = position:sticky, which is the practical version of "floating" for a long
+     scrolling document: it rides with him without covering anything on the way down. */
+  .nav-bar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,17,21,0.93); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:10px 0;
+  }
+  .nav-inner{max-width:960px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .nav-title{font-weight:700; font-size:.9rem; color:var(--text-dim);
+    margin-right:auto; letter-spacing:.02em;}
+  .nav-links{display:flex; flex-wrap:wrap; gap:8px;}
+  .nav-links a{
+    color:var(--text); text-decoration:none; font-size:.82rem;
+    border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; background:var(--bg2); white-space:nowrap;
+  }
+  .nav-links a:hover{border-color:var(--accent); color:var(--accent);}
+  .nav-toggle{
+    display:none; appearance:none; -webkit-appearance:none; cursor:pointer;
+    background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; font-size:1rem; line-height:1;
+    min-width:44px; min-height:40px;
+  }
+  .nav-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---- sections (rules 1-3) --------------------------------------------------------- */
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:var(--accent); background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+    user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker,
+  details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:var(--accent); font-size:.9rem;
+    transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{
+    transform:rotate(90deg);
+  }
+  details.sec > summary h2, details.tldr > summary h2{
+    margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;
+  }
+  details.tldr > summary h2{color:var(--accent);}
+  summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  /* base link colours -- HARD RULE no-blue-on-dark (2026-07-21, 5th violation 2026-08-25).
+     This is the actual source of most live-page violations: every review page starts
+     from this template, so a missing/blue base `a{color}` rule here ships on EVERY page
+     that does not override it. Fixing it here is the prevention fix, not just a patch. */
+  a{color:var(--accent);}
+  a:visited{color:var(--accent-visited);}
+  a:hover,a:active{color:#FFB08A;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 6px;}
+  code{background:#11141b; border:1px solid var(--border); border-radius:5px;
+    padding:1px 5px; font-size:.86em;}
+  pre{background:#11141b; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px;
+    border-top:1px solid var(--border); margin-top:26px;}
+
+  /* ---- mobile: real hamburger, not a wrapped pill row (rule 5) ---------------------- */
+  @media (max-width:768px){
+    .nav-toggle{display:inline-flex; align-items:center; justify-content:center;}
+    .nav-links{display:none; flex-direction:column; align-items:stretch;
+      gap:6px; width:100%; margin-top:10px;}
+    .nav-bar.open .nav-links{display:flex;}
+    .nav-links a{text-align:left;}
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+    .nav-inner{padding:0 14px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    details.sec > summary::before, details.tldr > summary::before{transition:none;}
+  }
+  @media print{
+    .nav-bar{position:static;}
+    details{border:0;}
+    details > summary::before{display:none;}
+  }
+
+  .q{background:#221c14; border:1px solid var(--warn); border-radius:10px; padding:12px 14px; margin:0 0 10px;}
+  .q b{color:var(--warn);}
+  .badge{display:inline-block; font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:999px; margin-left:6px; vertical-align:middle;}
+  .open{background:#15352a; color:var(--good);} .soon{background:#3a2f15; color:var(--warn);} .later{background:#3a1d1d; color:var(--bad);}
+  .copyblock{position:relative;}
+  .copyblock pre{white-space:pre-wrap; padding-right:78px;}
+  .copybtn{position:absolute; top:8px; right:8px; background:var(--bg2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:5px 10px; font-size:.78rem; cursor:pointer; min-height:32px;}
+  .copybtn:hover{border-color:var(--accent); color:var(--accent);}
+  .note{color:var(--text-dim); font-size:.88rem;}
+  ol.today > li{margin-bottom:10px;}
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v2 · 2026-09-23-20:46:59 MT</div><!-- DEPLOY_STAMP_END -->
+
+
+<!-- RULE 5: floating (sticky) nav on desktop, real hamburger under 768px. -->
+<nav class="nav-bar" id="navBar" aria-label="Section navigation">
+  <div class="nav-inner">
+    <span class="nav-title">Govcon playbook</span>
+    <button type="button" class="nav-toggle" id="navToggle"
+            aria-expanded="false" aria-controls="navLinks"
+            aria-label="Toggle section navigation">&#9776;</button>
+    <div class="nav-links" id="navLinks">
+            <a href="#tldr">TL;DR</a>
+      <a href="#sec-q">5 questions</a>
+      <a href="#sec-today">Tomorrow</a>
+      <a href="#sec-tracks">7 tracks</a>
+      <a href="#sec-bid">Bid-desk</a>
+      <a href="#sec-copy">Copy blocks</a>
+      <a href="#sec-corr">Corrections</a>
+      <a href="#sec-risk">Risks + unverified</a>
+      <a href="#sec-rev">How it was checked</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Government contracting playbook</h1>
+    <div class="meta">Every lever, ranked, with what to do tomorrow &middot; 2026-09-23</div>
+  </header>
+
+  <!-- RULES 1 + 2: TL;DR at the very top, and the TL;DR is ITSELF collapsible.
+       `open` so a first-time reader sees it in full. Once he collapses it, the injected
+       fold-state memory keeps it collapsed on every later visit to this page, which is the
+       whole point: he never scrolls past the same summary twice. -->
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <ul>
+<li><b>Three doors are open this week, no certification needed:</b> federal small-business set-asides of $15K to $350K (below $350K there is no legal cap on how much you sub out), subcontracting to big federal primes, and Utah state and city bids.</li>
+<li><b>One door opens in about 3.5 months:</b> the minority-business certificate (NMSDC) for corporate buyers. It needs US citizenship.</li>
+<li><b>Later upgrades, not starting moves:</b> 8(a) (late 2027 to 2028, because the race presumption ended 9/10/26), the holding-company "be the face" structure, and state-funded training seats for laid-off workers.</li>
+<li><b>Realistic target:</b> 2 to 4 awards of $15K to $150K by September 2027. Not 3 to 4 at $50K this year.</li>
+<li><b>Best HR bid live right now:</b> Millcreek City, Employee Classification and Compensation Study, due <b>Oct 5, 4:00 PM</b>. Treat it as a learning rep.</li>
+<li><b>Fastest possible first dollar:</b> an AI bid-desk sold to Utah trades firms. No registration needed.</li>
+</ul>
+    </div>
+  </details>
+
+  <!-- RULE 3: EVERY section gets its own toggle. Not one collapsible among several static
+       ones -- every single <h2> lives inside a <summary> inside a <details>. -->
+<details class="sec" id="sec-q" open>
+<summary><h2>The 5 questions only you can answer</h2></summary>
+<div class="sec-body">
+<div class="q"><b>1. Does a legal entity exist for this (Catalyst Works LLC or another)?</b><br>Everything you register, and every contract you win, attaches to the entity. If none exists, form the Utah LLC online first ($59), get the EIN online the same day, then register. Don't register as a sole proprietor to save a day.</div>
+<div class="q"><b>2. Are you a US citizen?</b><br>Required for the NMSDC certificate and for 8(a). If not, those two drop and nothing else changes.</div>
+<div class="q"><b>3. Is your net worth (not counting home equity or retirement) under $850K, and your 3-year average income under $400K?</b><br>Only matters for 8(a), which is 2027 or later.</div>
+<div class="q"><b>4. What exactly is Johnson Gas?</b><br>A commercial kitchen? A mobile unit? Food permits and insurance? That decides whether catering is a sub deal, a joint venture, or off the table.</div>
+<div class="q"><b>5. Is your business address in a HUBZone?</b><br>A free check on the <a href="https://maps.certify.sba.gov/hubzone/map" target="_blank" rel="noopener">SBA HUBZone map</a>. If yes, another race-neutral set-aside lane opens.</div>
+<p class="note">Plus one only you can set: <b>how many hours a week will you give this alongside Catalyst Works?</b> Suggested: 5.</p>
+</div>
+</details>
+<details class="sec" id="sec-today" open>
+<summary><h2>Tomorrow (Sep 24): five moves</h2></summary>
+<div class="sec-body">
+<ol class="today">
+<li><b>Answer questions 1, 2 and 5, and call Johnson Gas for question 4.</b></li>
+<li><b>Call Utah APEX Accelerator (free counseling).</b> Main line <b>801-538-8655</b>. Your area (South Jordan / West Jordan) is covered by regional manager <b>Alex Quayson-Sackey, 801-957-5357</b>. Questions to ask are in the Copy blocks section.</li>
+<li><b>Register on U3P</b>, the Utah procurement portal: <a href="https://utah.bonfirehub.com/" target="_blank" rel="noopener">utah.bonfirehub.com</a>. It's free and live the same day. Category list is in Copy blocks.</li>
+<li><b>Start the UEI and SAM.gov registration</b> at <a href="https://sam.gov" target="_blank" rel="noopener">sam.gov</a> once the entity is settled. It's free. Full registration takes <b>2 to 6 weeks</b>, not a day. Never pay third-party "registration" sites or "Utah SBA(TM)" certification sellers.</li>
+<li><b>Pull the Millcreek RFP 01-26 package</b> on U3P. Decide bid or no-bid by <b>Sep 29</b>. Budget: 8 hours at most. Bid only if the scope doesn't require a proprietary salary database.</li>
+</ol>
+<h3>This week</h3>
+<ul>
+<li><b>Write a one-page capability statement.</b> Nothing with a prime or a sources-sought reply works without it. A skeleton is in Copy blocks.</li>
+<li><b>Reply to the VA "Financial Management Leadership Training" sources-sought</b> (36C10X26Q0266, due <b>Sep 28</b>). Then use it to find the primes who won that kind of work (track B).</li>
+<li><b>Bid-desk test:</b> free sample scans go to the first 3 Utah trades firms. The outreach copy goes through voice review before anything is sent.</li>
+</ul>
+<p class="note"><b>Not tomorrow:</b> 8(a), GSA Schedule (needs 2 years plus $25K revenue), GoHighLevel (wait until a client needs it), the holding company, and the state training-provider list.<br><b>Checkpoint Dec 22, 2026:</b> keep going if you've made 4+ bids or replies, booked 1+ prime conversation, and sold 2+ paid bid-desk reports. Otherwise narrow to the one track that moved.</p>
+</div>
+</details>
+<details class="sec" id="sec-tracks" open>
+<summary><h2>The 7 tracks, fastest first</h2></summary>
+<div class="sec-body">
+<h3>A. Federal small-business set-asides, $15K to $350K <span class="badge open">OPEN NOW</span></h3>
+<ul><li>Buys in this range are generally reserved for small business. Registration is all you need; no certification.</li>
+<li><b>Below $350K there is no cap on subcontracting</b> (13 CFR 125.6(f)(1)), and reselling is allowed. "Win it and sub the parts I can't do" is fully legal here.</li>
+<li><b>Above $350K:</b> no more than 50% of the money can go to subs that are not themselves small businesses in that field.</li>
+<li><b>Work your own AI system delivers counts as yours.</b> The test is money paid to outside firms, not your hours. A 1099 freelancer counts as a sub.</li>
+<li><b>Reality:</b> marketing set-asides draw 6 to 24 bids. Plan on 10 to 20 bids for 2 wins.</li></ul>
+<h3>B. Subcontracting to big federal primes <span class="badge open">OPEN NOW</span></h3>
+<ul><li>Big primes on contracts over $900K must hit small-business subcontracting goals.</li>
+<li><b>Your protection:</b> if you help write the prime's proposal and are named in it, the prime has to make a good-faith effort to use you (FAR 19.704(a)(12)). Just sending a quote doesn't count.</li>
+<li><b>Method:</b> find a Sources Sought notice in your field on SAM.gov; look up who won that kind of work at that agency on USASpending.gov; approach 2 or 3 of those primes about that ONE opportunity; sign a teaming agreement for it. Never mass-message primes.</li>
+<li><b>Pitch:</b> "a small business that makes your subcontracting goal easy and does the AI work faster." Never identity alone. A March 2026 executive order makes race-based supplier picks risky for federal contractors.</li>
+<li><b>Live triggers:</b> VA Financial Management Leadership Training (due Sep 28); Air Force "Total Force eLearning" (FA895126Q4012, due Oct 6).</li></ul>
+<h3>C. Utah state, city and county <span class="badge open">OPEN NOW</span></h3>
+<ul><li>Utah has no minority preference, and a 2024 state law (HB 261) cuts against one. You win on the offer and on relationships.</li>
+<li><b>Why it's fast:</b> free, same-day registration. The state can hire a consultant for <b>up to $100,000 by direct negotiation</b>. The county buys directly under $15,000.</li></ul>
+<div class="table-scroll"><table><tr><th>Closes (MT)</th><th>Buyer</th><th>What</th><th>Fit</th></tr>
+<tr><td><b>Sep 28, 4:00 PM</b></td><td>Utah Transit Authority</td><td>Program Management Consultant Services (26-04046JM)</td><td>Read the scope; it may be capital-projects work</td></tr>
+<tr><td><b>Oct 5, 4:00 PM</b></td><td>Millcreek City</td><td>Employee Classification and Compensation Study (RFP 01-26)</td><td><b>HR, your core. A learning rep.</b></td></tr>
+<tr><td>Oct 5, 2:00 PM</td><td>UDOT</td><td>Zero Fatalities PR Media Management (re-issue)</td><td>Large campaign; incumbent agencies are likely</td></tr>
+<tr><td>Oct 7, 2:00 PM</td><td>Park City School District</td><td>Form Automation and Workflow Solution</td><td>May want software, not a consultant</td></tr>
+<tr><td>Oct 8, 1:00 PM</td><td>Salt Lake City</td><td>Comp Benchmarking and Salary Survey <b>Management Platform</b> (SLCI26059)</td><td>A software buy. Not a consulting fit</td></tr>
+<tr><td>Oct 15, 2:00 PM</td><td>State Purchasing (NASPO)</td><td>Emerging Technologies Consulting and Services</td><td>Multi-state; probably large-firm scale</td></tr></table></div>
+<p class="note">Times come from the portal's feed, which doesn't state a timezone. They're shown as if the feed is UTC. If it's actually local time, each deadline is 6 hours later, so the times shown are the safe ones. Confirm on the portal. SLC Purchasing holds open office hours the first Wednesday of every month, 1 to 2 PM at City Hall. Next one: <b>Oct 7</b>.</p>
+<h3>D. Minority-business certificate (NMSDC) for corporate buyers <span class="badge soon">~75 BUSINESS DAYS</span></h3>
+<ul><li>Northwest Mountain MSDC covers Utah. $300 the first year, $250 to renew. You need 51% minority ownership with you as CEO, <b>US citizenship</b>, formation documents, and 2 years of personal tax returns. There's a webinar the first Tuesday of each month (next: Oct 6).</li>
+<li>It gets you into corporate buyer databases and events. It does not guarantee spend: many corporations are folding "diversity" sourcing into "small and local" sourcing.</li></ul>
+<h3>E. Catering, supply, broker (the Johnson Gas lane) <span class="badge soon">DEPENDS ON Q4</span></h3>
+<ul><li><b>Correction:</b> wildfire crew catering runs on a <b>national Forest Service contract through Dec 2030</b>, with Salt Lake City and Kanab as dispatch points. The door to win it directly is closed until about 2030. The realistic wildfire move is to sub to the companies that already hold that contract here.</li>
+<li><b>Open now:</b> National Guard training meals, US Marshals training meals, and Army contract cooks. FY26 awards ran $108K to $247K with 6 to 15 bidders.</li>
+<li>Food permits and insurance sit with whoever cooks, and the liability flows up to you.</li>
+<li>Commodity resale (office and IT supplies) is crowded and thin, at 5 to 15% margin. The margin lives in the service wrapped around the goods.</li></ul>
+<h3>F. 8(a) <span class="badge later">LATE 2027-2028</span></h3>
+<ul><li>The race presumption ended 9/10/26. You now have to document discrimination AND material harm to you personally. It also requires 2 years in business with contract history.</li>
+<li><b>Trap:</b> 8(a) is STRICTER on subcontracting. The cap applies at every dollar amount, and your subs have to be 8(a) firms too. Loose "win it and sub it out" works best on plain small-business set-asides (A).</li></ul>
+<h3>G. Holding company / "be the face" <span class="badge later">AFTER A TRACK RECORD</span></h3>
+<ul><li><b>Real models:</b> Thompson Hospitality (Black-owned, about half its revenue through a real joint venture with Compass Group); H.J. Russell (grew from plastering into construction, then airport and stadium joint ventures); Divisions Maintenance Group (a network of 16,000 technicians, no certification needed). Each one grew out of a core it actually ran.</li>
+<li><b>Prosecuted version:</b> <i>Kousisis v. US</i> (2025, 9-0) held it's fraud even when the work gets done and the government loses nothing. Broadway Electric paid $21.3M; TriMark paid $48.5M.</li>
+<li><b>The line:</b> you find, price, manage and answer for the work. Never lend your name or certification to a bigger firm that does all of that behind you. That offer will come.</li>
+<li><b>Available now without government contracts:</b> HOA and property-maintenance brokerage, the same shape as the water-heater play.</li></ul>
+<h3>New this pass: training for laid-off workers (NAICS 611430) <span class="badge later">PARKED</span></h3>
+<ul><li>The state list that pays for laid-off workers' training (WIOA) requires 2 years as a training provider, and the provider has to teach directly with no subcontractors. That makes it a 2028 lever.</li>
+<li><b>Side door:</b> Utah rule R152-34-6 exempts a school from registration if it charges no student more than $3,000 in 12 months. A practical-AI course priced under that can run now, paid by the student or an employer, and it starts the 2-year clock. Confirm with the Division of Consumer Protection before marketing it on job outcomes.</li></ul>
+</div>
+</details>
+<details class="sec" id="sec-bid" open>
+<summary><h2>AI bid-desk: a revenue test of its own</h2></summary>
+<div class="sec-body">
+<ul><li><b>What:</b> for small Utah trades and service firms, find the federal and Utah bids that fit them, match them to primes, and draft and price their responses. All of it runs on free public data.</li>
+<li><b>Why it fits:</b> your own system does all the work (no subcontracting cap), no government registration is needed, and it shows you which trades are worth bidding on yourself later.</li>
+<li><b>Price ladder (a hypothesis, not tested with buyers):</b> free sample scan, then a $97 one-off matched-primes report, then a $500/month digest, then $1,500 per proposal. The pricing-ladder check passed; the $97 to $500 step (5.2x) is on watch.</li>
+<li><b>Test:</b> 10 trades firms get the free scan. Continue only if <b>2 buy the $97 report within 30 days</b>.</li></ul>
+</div>
+</details>
+<details class="sec" id="sec-copy" open>
+<summary><h2>Copy-paste blocks</h2></summary>
+<div class="sec-body">
+<p class="note">APEX call notes</p><div class="copyblock"><button type="button" class="copybtn">Copy</button><pre>APEX Accelerator call, 4 questions:
+1. Can I be a subcontractor to a federal prime with only a UEI, before my full SAM.gov registration is active?
+2. What SAM.gov registration timeline should I expect right now, and what trips people up?
+3. Millcreek City RFP 01-26 (Employee Classification and Compensation Study, due Oct 5): does a new firm with no public-sector past performance have a real shot, and what should the response lead with?
+4. UTA 26-04046JM Program Management Consultant Services (due Sep 28): is this capital-projects program management or general management consulting?</pre></div><p class="note">U3P categories</p><div class="copyblock"><button type="button" class="copybtn">Copy</button><pre>U3P registration categories to select:
+- Management consulting
+- Human resources consulting / compensation studies
+- Training and professional development (leadership, AI adoption)
+- Marketing, communications and public relations
+- Strategic planning / workforce planning</pre></div><p class="note">SAM.gov registration checklist</p><div class="copyblock"><button type="button" class="copybtn">Copy</button><pre>SAM.gov checklist (have ready before you start):
+- Legal business name + physical address exactly as on the state LLC filing
+- EIN (from irs.gov) and the IRS name that goes with it
+- Bank account + routing number for payments
+- NAICS codes: 541611 (management consulting), 611430 (professional/management training), 541612 (HR consulting), 541613 (marketing consulting), 541810 (advertising)
+- Small-business self-certification for each code
+- Point of contact + an alternate
+Do not pay any third-party site. sam.gov registration is free.</pre></div><p class="note">Capability statement skeleton. It carries your name, so it runs through voice review before any prime sees it.</p><div class="copyblock"><button type="button" class="copybtn">Copy</button><pre>CAPABILITY STATEMENT: one page, skeleton (needs a voice pass before use)
+[Company name] | UEI: [pending] | CAGE: [pending] | Salt Lake City, Utah
+Core competencies: HR consulting and compensation studies; leadership and AI-adoption training; AI-run operations, content and reporting
+Differentiators: [delivery speed and fixed price from an AI system I built and run]; [15 years of HR delivery inside large companies]; [one concrete result, with a number you can prove]
+Past performance: [first 1-3 engagements, public or private]
+NAICS: 541611, 541612, 611430, 541613, 541810
+Contact: [name, phone, email]</pre></div>
+</div>
+</details>
+<details class="sec" id="sec-corr">
+<summary><h2>Corrections to earlier notes</h2></summary>
+<div class="sec-body">
+<div class="table-scroll"><table><tr><th>An earlier note said</th><th>What's true (checked 9/23)</th></tr>
+<tr><td>8(a): race presumed, $950K net-worth cap, $4.5M sole source, 90-120 days</td><td>Presumption ended 9/10/26. Cap is $850K; sole source is $5.5M; no approvals since Aug 2025, and SBA won't estimate timing</td></tr>
+<tr><td>SAM.gov registration is same-day</td><td>The UEI can be quick; full registration takes 2 to 6 weeks. U3P really is same-day</td></tr>
+<tr><td>Sign up for 2027 wildfire catering</td><td>It's a national contract through Dec 2030. Sub to the current holders instead</td></tr>
+<tr><td>The SLC comp survey is the best HR fit</td><td>It's a software-platform buy. Millcreek's comp study is the fit</td></tr>
+<tr><td>NMSDC: $270-1,700, 45 days, Utah council unconfirmed</td><td>Northwest Mountain MSDC covers Utah: $300 first year, 75 business days</td></tr>
+<tr><td>A flat 50% "you must do half the work" floor</td><td>No cap from $15K to $350K; 50% above that only for subs that aren't small; stricter under 8(a)</td></tr></table></div>
+</div>
+</details>
+<details class="sec" id="sec-risk" open>
+<summary><h2>Risks + what is not yet verified</h2></summary>
+<div class="sec-body">
+<h3>Pitfalls on every track</h3>
+<ul><li><b>Cash flow:</b> the government pays in 30 to 45 days, slower during a shutdown, while trade subs often want to be paid weekly. Ask for progress payments, write "paid when paid" into sub contracts, and start with services.</li>
+<li><b>You carry the liability:</b> a sub's failure goes on YOUR record. Stay in trades where you can write a quality checklist, keep a backup sub, and pass indemnity and insurance down to them.</li>
+<li><b>Fronting is fraud even when the work gets done.</b></li></ul>
+<h3>Not yet verified. Confirm with APEX or an attorney before relying on these</h3>
+<ul><li>The exact wording of the "similarly situated" definition (13 CFR 125.1). The "small subs don't count" lever depends on it.</li>
+<li>Which subcontracting clause text (FAR 52.219-14) a given bid uses after the FAR rewrite.</li>
+<li>Bonding for federal construction over about $150K (Miller Act).</li>
+<li>Utah contractor licensing (DOPL). Painting and most trades need a license even when a sub does the work.</li>
+<li>Service Contract Act wage rules, which pass down to subs.</li>
+<li>Whether a sub needs only a UEI (question 1 on the APEX call).</li></ul>
+</div>
+</details>
+<details class="sec" id="sec-rev">
+<summary><h2>How this was checked</h2></summary>
+<div class="sec-body">
+<ul><li><b>Prompt review, 2 rounds:</b> ranked the tracks by speed to the first dollar, capped the tomorrow list at 5, re-checked every fact that was handed in, flagged the timezone.</li>
+<li><b>Ten-principle audit:</b> HOLD, then SHIP. It caught the missing "not verified" list, the missing odds on the Millcreek bid, and the missing cash-flow and liability risks. All fixed.</li>
+<li><b>Five-voice council:</b> KEEP, with 5 changes, all made: add a capability statement, add an hours cap and a Dec 22 checkpoint, spell out the path if there's no LLC, cap Millcreek at 8 hours, send bid-desk outreach through voice review.</li>
+<li><b>Marketing orchestrator:</b> only its pricing-ladder check applied, and it's what forced the $97 middle step. Its campaign loop doesn't fit a strategy plan like this one.</li>
+<li><b>Deadlines re-pulled live</b> from the Utah portal; the catering contract read from the Forest Service PDF; NMSDC and APEX checked on their own sites.</li></ul>
+</div>
+</details>
+
+
+  <footer class="foot">
+    Consolidated from five research threads plus a fresh research pass, 2026-09-23. Research, not legal advice: check any real bid with the APEX counselor or a government-contracts attorney.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // Real hamburger: opens/closes the link list, and closes again on link tap so the menu
+  // never sits over the section he just jumped to.
+  var navBar = document.getElementById('navBar');
+  var navToggle = document.getElementById('navToggle');
+  if (navBar && navToggle) {
+    navToggle.addEventListener('click', function () {
+      var isOpen = navBar.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    Array.prototype.slice.call(navBar.querySelectorAll('.nav-links a')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        navBar.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // A nav link must open the section it points at, even if he left it collapsed last visit.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) { return; }
+    var t = document.getElementById(a.getAttribute('href').slice(1));
+    if (t && t.tagName === 'DETAILS') { t.open = true; }
+  });
+  Array.prototype.slice.call(document.querySelectorAll('.copybtn')).forEach(function (b) {
+    b.addEventListener('click', function () {
+      var txt = b.parentNode.querySelector('pre').innerText;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(txt).then(function () {
+          b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500);
+        }, function () { b.textContent = 'Select + copy'; });
+      }
+    });
+  });
+})();
+</script>
+
+<!-- scripts/inject-review-furniture.ps1 appends the back-to-top button, the per-page
+     fold-state memory and the expand/collapse-all control just above <!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body> at publish
+     time. Do not add your own; you would ship two. -->
+<!-- REVIEW_FURNITURE_START (managed by scripts/inject-review-furniture.ps1 -- do not hand-edit) -->
+<style id="review-furniture-css">
+  /* Base link-colour safety net -- see comment above. Zero-specificity fallback only;
+     any page-authored {color:...} rule (even at the same normal specificity) wins. */
+  :where(a){color:#FF8F5E;}
+  :where(a:visited){color:#B87333;}
+  :where(a:hover),:where(a:active){color:#FFB08A;}
+  /* Floating controls, bottom-right. Thumb-reachable on a phone, out of the way of the
+     deploy stamp (which moves to bottom-LEFT under 560px). */
+  #rf-controls{position:fixed;right:14px;bottom:16px;z-index:99998;display:flex;
+    flex-direction:column;gap:8px;align-items:flex-end;}
+  #rf-controls button{appearance:none;-webkit-appearance:none;cursor:pointer;
+    font:600 13px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#e7e9ee;background:rgba(28,32,42,0.92);border:1px solid rgba(236,226,210,0.22);
+    border-radius:999px;padding:10px 14px;min-height:40px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);transition:opacity .18s ease,transform .18s ease;}
+  #rf-controls button:hover{transform:translateY(-1px);}
+  #rf-controls button:focus-visible{outline:2px solid #FF8F5E;outline-offset:2px;}
+  #rf-top{opacity:0;pointer-events:none;}
+  #rf-top.rf-show{opacity:1;pointer-events:auto;}
+  /* Phone: shrink the controls so they cover as little body text as possible, AND on
+     mobile only, gate the fold-all button behind the same scroll threshold as back-to-top
+     (2026-08-31 fix -- see memory/feedback for the incident). At the top of a page on a
+     375px screen the first card can run right into the bottom-right corner where these
+     controls float, so on load (scrollY 0) BOTH buttons now stay hidden instead of just
+     back-to-top; they fade in together once he has actually scrolled, by which point the
+     card that used to sit under them has scrolled out of the way. Desktop is untouched --
+     this whole hide/show behaviour lives inside the mobile media query only.
+     NOTE: the old opacity:.93 on the shared button rule below used to silently win over
+     #rf-top{opacity:0} (higher specificity: #rf-controls button beats a bare #rf-top
+     inside this media query), which is WHY back-to-top was rendering fully visible over
+     card text on mobile even at scrollY 0 despite the JS gating existing. Removed. */
+  @media (max-width:560px){
+    #rf-controls{right:10px;bottom:12px;gap:6px;}
+    #rf-controls button{padding:0 11px;font-size:12px;}
+    #rf-foldall{opacity:0;pointer-events:none;}
+    #rf-foldall.rf-show{opacity:.93;pointer-events:auto;}
+    #rf-top.rf-show{opacity:.93;}
+  }
+  @media (prefers-color-scheme: light){
+    #rf-controls button{color:#1b1b1b;background:rgba(255,255,255,0.94);
+      border-color:rgba(0,0,0,0.16);}
+  }
+  @media print{ #rf-controls{display:none !important;} }
+</style>
+<div id="rf-controls" role="group" aria-label="Page controls">
+  <button type="button" id="rf-foldall" aria-label="Collapse or expand every section">Collapse all</button>
+  <button type="button" id="rf-top" aria-label="Back to top">&#8593; Top</button>
+</div>
+<script id="review-furniture-js">
+(function () {
+  'use strict';
+
+  // ---- back to top (+ mobile-only fold-all gating, same threshold) --------------
+  var topBtn = document.getElementById('rf-top');
+  var foldBtnEarly = document.getElementById('rf-foldall');
+  function onScroll() {
+    var show = (window.pageYOffset || document.documentElement.scrollTop) > 320;
+    if (topBtn) { topBtn.classList.toggle('rf-show', show); }
+    // rf-show only affects visibility of #rf-foldall inside the mobile media query
+    // (see CSS above) -- on desktop this class is inert, so no behaviour change there.
+    if (foldBtnEarly) { foldBtnEarly.classList.toggle('rf-show', show); }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ---- fast re-entry: remember what he folded ----------------------------------
+  // Key on the page path so every review page keeps its own memory, and on a stable
+  // per-section key so reordering content does not scramble which sections were shut.
+  var STORE = 'rf-fold:' + (location.pathname || 'page');
+
+  function readState() {
+    try { return JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function writeState(s) {
+    try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* private mode */ }
+  }
+
+  function keyFor(d, i) {
+    if (d.id) { return 'id:' + d.id; }
+    var s = d.querySelector(':scope > summary');
+    var label = s ? (s.textContent || '').trim().slice(0, 60) : '';
+    return label ? 'sum:' + label : 'idx:' + i;
+  }
+
+  var details = Array.prototype.slice.call(document.querySelectorAll('details'));
+  if (!details.length) {
+    // Nothing collapsible on this page -- hide the fold-all control rather than lie
+    // about what it does. Back-to-top still works.
+    var fa0 = document.getElementById('rf-foldall');
+    if (fa0) { fa0.style.display = 'none'; }
+    return;
+  }
+
+  var state = readState();
+  var restored = false;
+  details.forEach(function (d, i) {
+    var k = keyFor(d, i);
+    d.setAttribute('data-rf-key', k);
+    // FIRST visit (no stored value) -> leave the author's markup alone, which the
+    // template ships fully OPEN. REPEAT visit -> restore exactly what he left.
+    if (Object.prototype.hasOwnProperty.call(state, k)) {
+      d.open = !!state[k];
+      restored = true;
+    }
+    d.addEventListener('toggle', function () {
+      var s = readState();
+      s[d.getAttribute('data-rf-key')] = d.open;
+      writeState(s);
+      syncFoldLabel();
+    });
+  });
+
+  // ---- expand all / collapse all -----------------------------------------------
+  var foldBtn = document.getElementById('rf-foldall');
+  function anyOpen() {
+    return details.some(function (d) { return d.open; });
+  }
+  function syncFoldLabel() {
+    if (!foldBtn) { return; }
+    foldBtn.textContent = anyOpen() ? 'Collapse all' : 'Expand all';
+  }
+  if (foldBtn) {
+    foldBtn.addEventListener('click', function () {
+      var target = !anyOpen();          // if everything is shut, open everything
+      var s = readState();
+      details.forEach(function (d) {
+        d.open = target;
+        s[d.getAttribute('data-rf-key')] = target;
+      });
+      writeState(s);
+      syncFoldLabel();
+    });
+    syncFoldLabel();
+  }
+
+  // If we restored a folded state, jump the reader back to the top so the page does
+  // not open mid-content after the reflow.
+  if (restored && !location.hash) { window.scrollTo(0, 0); }
+})();
+</script>
+<!-- REVIEW_FURNITURE_END -->
+</body>
+</html>
+
+
+
