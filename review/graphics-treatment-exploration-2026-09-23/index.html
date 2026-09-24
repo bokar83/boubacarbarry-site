@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graphics treatment exploration</title>
+
+<style>
+  :root{
+    --bg:#141210; --bg2:#1c1916; --card:#211d19; --border:#3a332b;
+    --text:#f0e9dd; --text-dim:#b8ab97; --accent:#C9A227;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:76px;}
+  body{
+    background:var(--bg); color:var(--text); margin:0; line-height:1.6;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:0 0 100px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px;}
+  header.mast{padding:38px 0 14px;}
+  header.mast h1{font-size:1.75rem; line-height:1.25; margin:0 0 6px;}
+  header.mast .meta{color:var(--text-dim); font-size:.86rem;}
+
+  details.sec, details.tldr{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; margin:18px 0; overflow:hidden;
+  }
+  details.tldr{border-color:#C9A227; background:var(--bg2);}
+  details.sec > summary, details.tldr > summary{
+    cursor:pointer; list-style:none; padding:14px 18px;
+    display:flex; align-items:center; gap:10px; user-select:none;
+  }
+  details.sec > summary::-webkit-details-marker, details.tldr > summary::-webkit-details-marker{display:none;}
+  details.sec > summary::before, details.tldr > summary::before{
+    content:"\25B8"; color:#C9A227; font-size:.9rem; transition:transform .15s ease; flex:none;
+  }
+  details[open].sec > summary::before, details[open].tldr > summary::before{transform:rotate(90deg);}
+  details.sec > summary h2, details.tldr > summary h2{margin:0; font-size:1.12rem; font-weight:650; border:0; padding:0;}
+  details.tldr > summary h2{color:#C9A227;}
+  summary:focus-visible{outline:2px solid #C9A227; outline-offset:-2px;}
+  .sec-body{padding:2px 18px 18px; border-top:1px solid var(--border);}
+  .sec-body > :first-child{margin-top:14px;}
+
+  a{color:#C9A227;}
+  a:visited{color:#8C6A22;}
+  a:hover,a:active{color:#E6C767;}
+  p{margin:0 0 12px;}
+  ul,ol{margin:0 0 12px; padding-left:22px;}
+  li{margin:0 0 8px;}
+  code{background:#0f0d0b; border:1px solid var(--border); border-radius:5px; padding:1px 5px; font-size:.86em;}
+  table{width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.9rem;}
+  th,td{border:1px solid var(--border); padding:9px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg2); color:var(--text-dim);}
+  .table-scroll{overflow-x:auto;}
+  footer.foot{color:var(--text-dim); font-size:.8rem; padding:24px 0 10px; border-top:1px solid var(--border); margin-top:26px;}
+
+  .swatch-row{display:flex; gap:10px; flex-wrap:wrap; margin:10px 0 16px;}
+  .swatch{display:flex; align-items:center; gap:8px; background:var(--bg2); border:1px solid var(--border);
+    border-radius:8px; padding:6px 10px; font-size:.82rem; color:var(--text-dim);}
+  .swatch .chip{width:18px; height:18px; border-radius:4px; border:1px solid rgba(255,255,255,.15); flex:none;}
+
+  .opt-card{border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin:0 0 14px; background:var(--bg2);}
+  .opt-card h3{margin:0 0 4px; font-size:1.02rem;}
+  .opt-card .tag{display:inline-block; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;
+    color:#C9A227; border:1px solid #6b5423; border-radius:999px; padding:2px 9px; margin-bottom:8px;}
+  .opt-card.built{border-color:#C9A227;}
+
+  figure.gfx{margin:0 0 26px;}
+  figure.gfx svg{width:100%; height:auto; display:block; border-radius:10px; border:1px solid var(--border);}
+  figure.gfx figcaption{color:var(--text-dim); font-size:.86rem; padding:10px 2px 0;}
+
+  @media (max-width:768px){
+    header.mast h1{font-size:1.4rem;}
+    .wrap{padding:0 14px;}
+  }
+</style>
+</head>
+<body>
+<!-- DEPLOY_STAMP_START --><style id="deploy-stamp-css">@media (max-width:560px){#deploy-stamp{position:static !important;display:block;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;width:auto;max-width:calc(100% - 20px);margin:6px 10px 0;}}@media print{#deploy-stamp{position:static !important;}}</style><div id="deploy-stamp" style="position:fixed;top:8px;right:10px;z-index:99999;font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1;color:rgba(165,151,131,0.78);background:rgba(20,18,16,0.72);border:1px solid rgba(236,226,210,0.14);border-radius:6px;padding:4px 8px;letter-spacing:0.02em;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;user-select:none;white-space:nowrap;">v1 · 2026-09-23-19:16:12 MT</div><!-- DEPLOY_STAMP_END -->
+
+<div class="wrap">
+
+  <header class="mast">
+    <h1>Graphics treatment exploration &mdash; a third option</h1>
+    <div class="meta">Reacting to "I like the dark version better but it feels too much like slop" &middot; 23 September 2026</div>
+  </header>
+
+  <details class="tldr" id="tldr" open>
+    <summary><h2>TL;DR</h2></summary>
+    <div class="sec-body">
+      <p class="lede">You picked dark over light, then flagged the real problem: dark-with-neon-glow
+      is now the same look every AI tool's landing page uses, no matter how well it's executed.
+      That's a correct read, not a taste complaint &mdash; teal/amber-on-dark navy blue is a template now.</p>
+      <ul>
+        <li><strong>Research-02 already found the underlying mechanism problem</strong> (bus message,
+        2026-09-22): every anti-slop check we own is negative &mdash; a ban list applied after the
+        model has already defaulted to its own pattern. A ban list produces the absence of slop.
+        It cannot produce a look that's actually yours. See "What research-02 already found" below.</li>
+        <li><strong>This page is the positive fix for these three graphics specifically:</strong> a
+        palette grounded in something that's actually, verifiably yours &mdash; the kente-pattern
+        stole you wear in your own photos &mdash; instead of a palette guessed from the topic
+        (AI/tech &rarr; cyan/teal, the exact "category-reflex" trap our own design-audit rubric
+        already bans).</li>
+        <li><strong>Three directions below, one built.</strong> Built: <strong>Charcoal &amp; Gold</strong>
+        &mdash; near-black warm charcoal (not dark navy blue), a gold accent (kente: royalty, wealth), a
+        burgundy secondary, and a restrained geometric strip-border echoing how kente is actually
+        woven (narrow strips sewn together), never a literal cloth texture or a named symbol I
+        can't verify.</li>
+        <li>What I need from you: does this read as yours, or still generic in a different color?
+        And does the strip-border treatment feel tasteful or too literal?</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-context" open>
+    <summary><h2>What research-02 already found (not duplicating it)</h2></summary>
+    <div class="sec-body">
+      <p>Posted to the agent bus 2026-09-22, subject "Anti-AI-slop design findings + WOW-lock gap."
+      The finding, stated plainly: <strong>every anti-slop mechanism we own fires AFTER generation
+      and only says what NOT to do</strong> &mdash; our design-audit ban list, the no-blue-on-dark
+      checker, the em-dash ban. A ban list produces the absence of slop, never the presence of taste.
+      The fix that research found (and that two independent absorb sessions converged on
+      independently) is a <strong>positive, specific, per-build style commitment written before
+      generation</strong>, not another rule added to the pile.</p>
+      <p>This page applies that finding to exactly one case &mdash; instead of banning "teal-on-navy," it
+      commits, up front, to a specific alternative palette that is grounded in something real and
+      personal rather than picked by aesthetic instinct alone. That is the whole method below.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-ground" open>
+    <summary><h2>Where this is grounded</h2></summary>
+    <div class="sec-body">
+      <p>Your own photos (LinkedIn, headshots used across the site) show a kente-pattern stole worn
+      over a formal suit &mdash; a specific, personal visual signature tied to your Guinean/American
+      background, and it currently shows up nowhere in these graphics' color or pattern choices.
+      Two things pulled from real, sourced references, not invented:</p>
+      <ul>
+        <li><strong>Traditional kente color associations</strong> (sourced: The African Gourmet,
+        Cultureville, Sankofa Edition &mdash; cross-checked, not a single source): gold reads as
+        royalty, wealth, high status, and spiritual purity; black reads as maturity and ancestral
+        depth; green reads as growth and renewal; red is the heaviest color historically, carrying
+        associations with sacrifice and conflict, so it is used here sparingly and desaturated
+        rather than as a bright accent.</li>
+        <li><strong>The structural fact of how kente is made</strong>: narrow strips, woven
+        separately, then sewn together into the final cloth. That structural idea &mdash; parallel
+        strips joined at a seam &mdash; is what the border treatment below borrows, as a plain
+        geometric motif, never as a reproduction of an actual named cloth pattern.</li>
+      </ul>
+      <p><strong>What I deliberately did not do:</strong> name or use a specific Adinkra symbol.
+      Adinkra symbols carry real, specific meanings tied to specific communities, and I could not
+      verify a specific one well enough to use it correctly and respectfully. If you want a named
+      symbol in future work, that's a real answer to go get, not something to guess at.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-options" open>
+    <summary><h2>Three directions</h2></summary>
+    <div class="sec-body">
+      <p>All three keep the same content and diagram logic already approved in the v2 review &mdash;
+      only the visual treatment changes.</p>
+
+      <div class="opt-card built">
+        <span class="tag">Built below</span>
+        <h3>1. Charcoal &amp; Gold</h3>
+        <div class="swatch-row">
+          <span class="swatch"><span class="chip" style="background:#161311;"></span>#161311 warm charcoal (not navy)</span>
+          <span class="swatch"><span class="chip" style="background:#C9A227"></span>#C9A227 gold (royalty / wealth)</span>
+          <span class="swatch"><span class="chip" style="background:#7A2437"></span>#7A2437 desaturated burgundy</span>
+          <span class="swatch"><span class="chip" style="background:#3F6B4F"></span>#3F6B4F muted forest green</span>
+          <span class="swatch"><span class="chip" style="background:#F0E9DD"></span>#F0E9DD warm off-white text</span>
+        </div>
+        <p>A warm near-black ground instead of the tech-dark navy blue every dark AI page uses, one gold
+        accent doing most of the work, burgundy and forest green as quiet seconds. A thin
+        strip-and-seam border along each diagram's edge stands in for the neon glow &mdash; it reads
+        as premium and personal instead of "AI SaaS landing page." Editorial, not glowing.</p>
+      </div>
+
+      <div class="opt-card">
+        <span class="tag">Not built</span>
+        <h3>2. Ink &amp; Ochre (more restrained)</h3>
+        <div class="swatch-row">
+          <span class="swatch"><span class="chip" style="background:#100E0C"></span>#100E0C near-black ink</span>
+          <span class="swatch"><span class="chip" style="background:#B8863B"></span>#B8863B ochre</span>
+          <span class="swatch"><span class="chip" style="background:#E7DFCF"></span>#E7DFCF bone text</span>
+        </div>
+        <p>Two colors total, almost no accent color at all &mdash; the most "printed report, not a
+        tech demo" of the three. No strip-border, no secondary hue. If Charcoal &amp; Gold still
+        reads as "trying," this is the fallback: it can't look like a template because it barely
+        looks decorated.</p>
+      </div>
+
+      <div class="opt-card">
+        <span class="tag">Not built</span>
+        <h3>3. Deep Emerald &amp; Bronze</h3>
+        <div class="swatch-row">
+          <span class="swatch"><span class="chip" style="background:#122019"></span>#122019 deep forest ground</span>
+          <span class="swatch"><span class="chip" style="background:#B87333"></span>#B87333 bronze</span>
+          <span class="swatch"><span class="chip" style="background:#EFE7D8"></span>#EFE7D8 cream text</span>
+        </div>
+        <p>Leans on green (growth/renewal) as the ground color rather than an accent, bronze doing
+        what gold does in option 1. Closer in spirit to a heritage/legacy brand than a personal-tech
+        one &mdash; worth testing if "AI and HR" content wants to feel less like software and more
+        like an institution.</p>
+      </div>
+
+      <p><strong>Why Charcoal &amp; Gold got built first:</strong> gold is the strongest, most
+      unambiguous kente association (royalty/wealth is the dominant reading across every source
+      checked), it reads as premium in general design language independent of the kente reference
+      (see the "luxury color palette" research below), and warm charcoal is the biggest single
+      departure from the dark navy blue-plus-neon template without losing "dark and serious."</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-built" open>
+    <summary><h2>Built: The correction loop, Charcoal &amp; Gold</h2></summary>
+    <div class="sec-body">
+      <p class="lede">Same diagram, same content as the version you already reviewed &mdash; only the
+      palette and border treatment changed.</p>
+      <figure class="gfx">
+<svg viewBox="0 0 720 1000" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The correction loop: four nodes in a ring, Correct, Record, Load, Compound, with a chart in the middle showing rules in force climbing and repeat mistakes falling to zero. Warm charcoal ground, gold and burgundy accents, a strip-and-seam border.">
+<style>
+  .h1-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.08em;}
+  .h1-serif{font-family:Georgia,'Times New Roman',serif;}
+  .h1-sans{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;}
+</style>
+<defs>
+  <marker id="h1-arrow" markerWidth="9" markerHeight="9" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#C9A227"/></marker>
+</defs>
+<rect x="0" y="0" width="720" height="1000" fill="#161311"/>
+
+<!-- strip-and-seam border: parallel strips joined at a seam, echoing how kente cloth is
+     structurally made (narrow woven strips sewn together) -- geometric motif only, not a
+     reproduction of any specific named cloth pattern. -->
+<g opacity="0.9">
+  <rect x="0" y="0" width="720" height="14" fill="#0F0D0B"/>
+  <rect x="0" y="0" width="60" height="14" fill="#C9A227"/>
+  <rect x="120" y="0" width="60" height="14" fill="#7A2437"/>
+  <rect x="240" y="0" width="60" height="14" fill="#3F6B4F"/>
+  <rect x="360" y="0" width="60" height="14" fill="#C9A227"/>
+  <rect x="480" y="0" width="60" height="14" fill="#7A2437"/>
+  <rect x="600" y="0" width="60" height="14" fill="#3F6B4F"/>
+  <line x1="0" y1="7" x2="720" y2="7" stroke="#0F0D0B" stroke-width="1" stroke-dasharray="1 11"/>
+  <rect x="0" y="986" width="720" height="14" fill="#0F0D0B"/>
+  <rect x="60" y="986" width="60" height="14" fill="#3F6B4F"/>
+  <rect x="180" y="986" width="60" height="14" fill="#7A2437"/>
+  <rect x="300" y="986" width="60" height="14" fill="#C9A227"/>
+  <rect x="420" y="986" width="60" height="14" fill="#3F6B4F"/>
+  <rect x="540" y="986" width="60" height="14" fill="#7A2437"/>
+  <rect x="660" y="986" width="60" height="14" fill="#C9A227"/>
+</g>
+
+<!-- header -->
+<rect x="48" y="52" width="10" height="10" fill="#C9A227"/>
+<text x="66" y="61" class="h1-mono" font-size="14" fill="#C9A227" font-weight="700">MECHANISM 01 / 03</text>
+<line x1="252" y1="57" x2="672" y2="57" stroke="#3a332b" stroke-width="2"/>
+
+<text x="48" y="120" class="h1-serif" font-size="42" font-weight="700" fill="#F0E9DD">You correct it once.</text>
+<text x="48" y="168" class="h1-serif" font-size="42" font-weight="700" fill="#F0E9DD">It never comes back.</text>
+
+<text x="48" y="202" class="h1-mono" font-size="13" fill="#b8ab97" font-weight="700">CORRECTION &#8594; WRITTEN RULE &#8594; EVERY SESSION AFTER IT</text>
+
+<!-- ring -->
+<g transform="translate(360,478)">
+  <circle r="168" fill="none" stroke="#3a332b" stroke-width="2" stroke-dasharray="2 8"/>
+
+  <path d="M 55,-160 A 168,168 0 0 1 160,-55" fill="none" stroke="#C9A227" stroke-width="5" marker-end="url(#h1-arrow)"/>
+  <path d="M 160,55 A 168,168 0 0 1 55,160" fill="none" stroke="#3F6B4F" stroke-width="5" marker-end="url(#h1-arrow)"/>
+  <path d="M -55,160 A 168,168 0 0 1 -160,55" fill="none" stroke="#7A2437" stroke-width="5" marker-end="url(#h1-arrow)"/>
+  <path d="M -160,-55 A 168,168 0 0 1 -55,-160" fill="none" stroke="#8C6A22" stroke-width="5" marker-end="url(#h1-arrow)"/>
+
+  <!-- center chart disc -->
+  <circle r="96" fill="#0F0D0B"/>
+  <text x="0" y="-58" text-anchor="middle" class="h1-mono" font-size="11.5" font-weight="700" fill="#C9A227">RULES IN FORCE</text>
+  <polyline points="-62,32 -38,32 -38,16 -14,16 -14,-2 10,-2 10,-20 34,-20 34,-34 58,-34" fill="none" stroke="#C9A227" stroke-width="3.4" stroke-linejoin="round"/>
+  <circle cx="58" cy="-34" r="4.5" fill="#C9A227"/>
+  <polyline points="-62,8 -14,26 34,40 58,46" fill="none" stroke="#6b6357" stroke-width="2.2" stroke-dasharray="4 4"/>
+  <text x="0" y="62" text-anchor="middle" class="h1-mono" font-size="10.5" fill="#8a8072" font-weight="700">REPEAT MISTAKES</text>
+  <text x="0" y="82" text-anchor="middle" class="h1-mono" font-size="9.5" fill="#6b6357">SESSIONS &#8594;</text>
+
+  <!-- CORRECT node (top) -->
+  <g transform="translate(0,-206)">
+    <circle r="42" fill="#161311" stroke="#C9A227" stroke-width="4"/>
+    <path d="M-11,10 L7,-10 M2,-15 L11,-6 L-7,14 L-16,15 L-15,6 Z" fill="none" stroke="#C9A227" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <text x="0" y="66" text-anchor="middle" class="h1-mono" font-size="15" font-weight="700" fill="#F0E9DD">CORRECT</text>
+    <text x="0" y="86" text-anchor="middle" class="h1-sans" font-size="12.5" fill="#b8ab97">you catch it, in plain words</text>
+  </g>
+
+  <!-- RECORD node (right) -->
+  <g transform="translate(206,0)">
+    <circle r="42" fill="#161311" stroke="#3F6B4F" stroke-width="4"/>
+    <path d="M-11,-16 h18 l6,6 v26 h-24 z" fill="none" stroke="#3F6B4F" stroke-width="2.6" stroke-linejoin="round"/>
+    <circle cx="7" cy="10" r="3" fill="#3F6B4F"/>
+    <text x="0" y="66" text-anchor="middle" class="h1-mono" font-size="15" font-weight="700" fill="#F0E9DD">RECORD</text>
+    <text x="0" y="86" text-anchor="middle" class="h1-sans" font-size="12.5" fill="#b8ab97">it becomes a written rule</text>
+  </g>
+
+  <!-- LOAD node (bottom) -->
+  <g transform="translate(0,206)">
+    <circle r="42" fill="#161311" stroke="#7A2437" stroke-width="4"/>
+    <path d="M0,-14 v20 M-9,-3 L0,8 L9,-3 M-13,15 h26" fill="none" stroke="#7A2437" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <text x="0" y="66" text-anchor="middle" class="h1-mono" font-size="15" font-weight="700" fill="#F0E9DD">LOAD</text>
+    <text x="0" y="86" text-anchor="middle" class="h1-sans" font-size="12.5" fill="#b8ab97">every new session pulls it in first</text>
+  </g>
+
+  <!-- COMPOUND node (left) -->
+  <g transform="translate(-206,0)">
+    <circle r="46" fill="#C9A227"/>
+    <rect x="-16" y="2" width="7" height="14" fill="#161311"/>
+    <rect x="-5" y="-6" width="7" height="22" fill="#161311"/>
+    <rect x="6" y="-14" width="7" height="30" fill="#161311"/>
+    <text x="0" y="88" text-anchor="middle" class="h1-mono" font-size="15" font-weight="700" fill="#F0E9DD">COMPOUND</text>
+    <text x="0" y="108" text-anchor="middle" class="h1-sans" font-size="12.5" fill="#b8ab97">the floor never drops back</text>
+  </g>
+</g>
+
+<!-- bottom pills -->
+<g transform="translate(48,810)">
+  <rect x="0" y="0" width="290" height="86" rx="12" fill="#241a15" stroke="#7A2437" stroke-width="2"/>
+  <circle cx="34" cy="28" r="14" fill="#161311" stroke="#7A2437" stroke-width="2.4"/>
+  <path d="M27,21 L41,35 M41,21 L27,35" stroke="#7A2437" stroke-width="2.6" stroke-linecap="round"/>
+  <text x="58" y="24" class="h1-mono" font-size="13" font-weight="700" fill="#d99aa8">TOLD IT IN CHAT</text>
+  <text x="58" y="46" class="h1-sans" font-size="12.5" fill="#b8ab97">scrolls away, say it again next week</text>
+</g>
+<g transform="translate(382,810)">
+  <rect x="0" y="0" width="290" height="86" rx="12" fill="#182219" stroke="#3F6B4F" stroke-width="2"/>
+  <circle cx="34" cy="28" r="14" fill="#3F6B4F"/>
+  <path d="M27,28 L32,34 L42,22" stroke="#F0E9DD" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="58" y="24" class="h1-mono" font-size="13" font-weight="700" fill="#9fd4b3">WRITTEN AS A RULE</text>
+  <text x="58" y="46" class="h1-sans" font-size="12.5" fill="#b8ab97">loads itself, every session, forever</text>
+</g>
+
+<line x1="48" y1="930" x2="672" y2="930" stroke="#3a332b" stroke-width="1.5"/>
+<text x="48" y="952" class="h1-mono" font-size="11.5" fill="#8a8072" font-weight="700">THE CORRECTION LOOP</text>
+<text x="672" y="952" text-anchor="end" class="h1-mono" font-size="11.5" fill="#8a8072" font-weight="700">BOUBACARBARRY.COM</text>
+</svg>
+        <figcaption>Same four-node ring and the same center chart as the reviewed version. What
+        changed &mdash; warm charcoal instead of navy, gold/burgundy/forest-green instead of
+        pink/teal/orange/amber, and the strip-and-seam border top and bottom instead of a dotted
+        rule &mdash; the one new element, standing in for the neon glow treatment.</figcaption>
+      </figure>
+      <p>Contrast check: gold #C9A227 on #161311 charcoal and cream #F0E9DD on #161311 both clear
+      WCAG AA (4.5:1) for body text; this passes the standing no-blue-on-dark rule outright since no
+      blue appears anywhere in the palette.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-open" open>
+    <summary><h2>What's still open</h2></summary>
+    <div class="sec-body">
+      <ul>
+        <li><strong>The strip-and-seam border is the one genuinely new idea here.</strong> If it
+        reads as "trying too hard" rather than "premium," it comes out cleanly &mdash; the palette
+        change alone (charcoal/gold/burgundy vs. dark navy blue/neon) already does most of the differentiation
+        work on its own.</li>
+        <li><strong>Not yet applied to the other two graphics</strong> (the build pipeline, four
+        kinds of helper) or re-scored by design-audit or the voice/social gates. This is a single
+        mockup to react to before touching the other two or the live v2 page.</li>
+        <li><strong>Live v2 page not touched.</strong> Lighthouse claimed a color fix on
+        <code>graphics-review-2026-09-20-v2</code> the same day this was built (bus, 2026-09-23
+        23:22) &mdash; that page is untouched by this work and should stay that way until you pick
+        a direction here.</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Built 2026-09-23 as a reaction page, not a replacement. Sourced: kente color associations
+    cross-checked against The African Gourmet, Cultureville, and Sankofa Edition; kente
+    strip-construction is the structural fact used for the border motif. No Adinkra symbol named or
+    used &mdash; not verified well enough to use correctly. Grounded per
+    <code>memory/reference_boubacar_canonical_profile.md</code> (Guinean/American background,
+    section 1).
+  </footer>
+
+</div>
+
+</body>
+</html>
+
