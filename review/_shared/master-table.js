@@ -240,19 +240,32 @@
   // silently would make "the sweep found nothing new" and "the sweep did not
   // run" look identical, which is the one thing this page must never do.
   //
-  // The honest thing to report is the newest `sweep` tag actually present in
-  // the data. There is no last-run timestamp to show: `lastSweep` exists in
-  // ROLE_MERGE_ALLOWED_KEYS in orchestrator/cos_office/money_map.py and nothing
-  // has ever written it, on any row. So this reports the tag, and says plainly
-  // that a tag is not a run time. It must not claim the sweep never ran --
-  // all 308 rows carry a sweep tag, so that would be false.
+  // CORRECTED 2026-09-25 (Boubacar direct: rejections + interview advances he
+  // knew had happened were not showing up here). The comment this replaces
+  // said "lastSweep ... nothing has ever written it, on any row" -- that was
+  // true when this file was written (2026-09-10) and is FALSE now:
+  // orchestrator/scripts/job_pipeline_mail_sweep.py has been merging
+  // `lastSweep` into ROLE_MERGE_ALLOWED_KEYS-patched rows on every daily run
+  // since, live-verified 2026-09-25 (Micron rejection, SLCC interview advance,
+  // both stamped lastSweep=2026-09-25). The bug was never a dead cron or a
+  // missing rejection-tracking feature -- the sweep tracks status changes on
+  // EXISTING roles correctly. It was this panel: `sweep` is a ONE-TIME tag set
+  // when a role row is first INSERTED and never touched again, so a status
+  // change on an already-tracked role (a rejection, an interview invite) could
+  // run today and still leave every row's `sweep` value dated 2026-09-09 or
+  // whenever it was first added -- invisible here even though the write really
+  // happened today. `lastSweep` is the field that actually moves on every
+  // touch, so it is the one this panel must report from. Fall back to `sweep`
+  // only for a row `lastSweep` has genuinely never reached (pre-2026-09-17
+  // installs, before the field existed) so a legitimate first-tag date is not
+  // hidden as "no sweep tag" while lastSweep is rolling out.
   function renderSweepStatus(mountSel, rows) {
     var mount = document.querySelector(mountSel);
     if (!mount) { return; }
     var tags = {};
     var newest = '';
     rows.forEach(function (r) {
-      var t = r.st.sweep;
+      var t = r.st.lastSweep || r.st.sweep;
       if (!t) { return; }
       tags[t] = (tags[t] || 0) + 1;
       if (String(t) > newest) { newest = String(t); }
@@ -264,11 +277,14 @@
       ? '<p>Every role the mailbox sweep has found is already a row in the master ' +
         'table, so there is nothing listed separately here any more. That is the ' +
         'sweep working, not the sweep empty.</p>' +
-        '<p><strong>Most recent sweep tag in the data: <code>' + esc(newest) +
-        '</code>.</strong> That is a tag written onto the rows, <em>not</em> a ' +
-        'recorded run time &mdash; no row on this board carries a last-run ' +
-        'timestamp, so the honest answer to "when did it last run" is that the ' +
-        'newest batch it wrote is tagged ' + esc(newest) + '.</p>' +
+        '<p><strong>Most recent sweep activity in the data: <code>' + esc(newest) +
+        '</code>.</strong> That date is the newest <code>lastSweep</code> stamp on ' +
+        'any row (falling back to its one-time creation tag if the row predates ' +
+        '<code>lastSweep</code>) &mdash; it counts a status CHANGE on an existing ' +
+        'role the same as a brand-new role, so a rejection or interview advance on ' +
+        'a role already on this board shows up here, not just new rows. It is still ' +
+        'not a literal cron-run timestamp: a day with zero writes advances no tag ' +
+        'even though the sweep ran and found nothing to change.</p>' +
         '<ul class="mt-dim">' + breakdown + '</ul>'
       : '<p><strong>No sweep tag is present on any row.</strong> That is not the same ' +
         'as an empty sweep, and it is not a claim that it never ran &mdash; it means ' +
