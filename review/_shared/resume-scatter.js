@@ -303,15 +303,24 @@
       txt.textContent = STAGE_AXIS_LABEL[rIdx];
       svg.appendChild(txt);
     }
-    // month ticks along the bottom (thin out when the timeline is dense)
-    months.forEach(function (m, i) {
-      if (months.length > 14 && i % 2 === 1) { return; }
+    // month ticks along the bottom. Thinned by actual PIXEL distance, not just
+    // index parity -- these are real calendar dates, not evenly-spaced
+    // buckets, so two adjacent months can sit only days apart on the axis
+    // (May and Jun 2026 each had exactly one application, 7 days apart) and
+    // their labels collided when thinning only looked at every-other index.
+    // A minimum pixel gap catches both the "many months" case and the
+    // "few months but close together" case with one rule.
+    var MIN_TICK_GAP = 46;
+    var lastTickX = -Infinity;
+    months.forEach(function (m) {
       var firstOfMonth = null;
       for (var pi = 0; pi < points.length; pi++) {
         if (points[pi].month === m) { firstOfMonth = points[pi]; break; }
       }
       if (!firstOfMonth) { return; }
       var tx = leftPad + ((firstOfMonth.day - minDay) / spanDays) * plotWidth;
+      if (tx - lastTickX < MIN_TICK_GAP) { return; }
+      lastTickX = tx;
       var mm = parseInt(m.split('-')[1], 10) - 1;
       var yy = m.split('-')[0].slice(2);
       var tick = document.createElementNS(svgNS, 'text');
