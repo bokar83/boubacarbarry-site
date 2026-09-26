@@ -141,6 +141,84 @@
     'offer': 'Offer stage'
   };
 
+  /* ---- FUNNEL / STAGE TAXONOMY (2026-09-25) -----------------------------
+     Boubacar, verbatim: "I want to see not only the ones rejected (straight
+     up) but also rejected after an interview to see how far along i got...
+     applied (total)....rejected without interview (total)...interview with
+     recruiter (total number), interview with Hiring Manager (total),
+     additional interview/onsite (total), offers received (total)."
+
+     This is a FUNNEL count -- one bucket per role, by the FURTHEST STAGE IT
+     EVER REACHED, regardless of whether it was later rejected. A role that
+     reached the hiring-manager round and was then rejected (WGU) still
+     counts under "interview with hiring manager", not under "rejected
+     without interview" -- the whole point is seeing how far it got. The
+     per-role Status cell still shows the real outcome (Rejected / Offer /
+     still open) so nothing is hidden; this just adds the "how far" axis
+     his own words asked for, on top of the "what happened" axis that
+     already existed.
+
+     `onsite`, `panel` and `final` all collapse into one "additional
+     interview / onsite" bucket -- his own phrasing groups them, and the
+     board's own STAGE_LABEL already treats them as later-round variants of
+     the same thing. A role with status 'interviewed' and no interviewStage
+     recorded yet is treated as having reached the recruiter stage at
+     minimum, since 'interviewed' is never set before some human contact
+     happened -- see classify()/INTERVIEW_PHRASES in job_pipeline_mail_sweep.py,
+     which requires at least a screening signal before that status is set. */
+  var FUNNEL_LABEL = {
+    rejected_no_interview: 'Rejected without interview',
+    interview_recruiter: 'Interview with recruiter',
+    interview_hiring_manager: 'Interview with hiring manager',
+    interview_onsite: 'Additional interview / onsite',
+    offer: 'Offer received'
+  };
+
+  function normalizeFunnelStage(raw) {
+    var s = String(raw || '').toLowerCase();
+    if (s === 'recruiter') { return 'recruiter'; }
+    if (s === 'hiring-manager') { return 'hiring-manager'; }
+    if (s === 'onsite' || s === 'panel' || s === 'final') { return 'onsite'; }
+    if (s === 'offer') { return 'offer'; }
+    return '';
+  }
+
+  // The furthest interview stage a role has ever reached, independent of
+  // whether it was later rejected/withdrawn or is still live.
+  function furthestStage(st) {
+    if ((st.status || '') === 'offer') { return 'offer'; }
+    var stage = normalizeFunnelStage(st.interviewStage);
+    if (stage) { return stage; }
+    // `interviewed` with no interviewStage recorded yet still means SOME
+    // interview signal fired -- treat as recruiter-stage-at-minimum rather
+    // than dropping it out of the funnel entirely.
+    if ((st.status || '') === 'interviewed') { return 'recruiter'; }
+    return '';
+  }
+
+  // One funnel bucket per role. Returns '' for a role that never reached an
+  // interview and was never rejected (still just 'applied'/'unclear'/etc --
+  // those live in the existing status counts, not this funnel).
+  function funnelBucket(st) {
+    var stage = furthestStage(st);
+    if (stage === 'offer') { return 'offer'; }
+    if (stage === 'recruiter') { return 'interview_recruiter'; }
+    if (stage === 'hiring-manager') { return 'interview_hiring_manager'; }
+    if (stage === 'onsite') { return 'interview_onsite'; }
+    if ((st.status || '') === 'rejected') { return 'rejected_no_interview'; }
+    return '';
+  }
+
+  // Status-cell label for a REJECTED role: shows the stage it reached, not
+  // a bare "Rejected", so "how far did I get" is answered on the row itself
+  // and not only in the summary counts above the table.
+  function rejectedStageSuffix(st) {
+    var stage = normalizeFunnelStage(st.interviewStage);
+    if (!stage) { return ''; }
+    var label = STAGE_LABEL[stage] || stage;
+    return ' (reached ' + label + ')';
+  }
+
   /* ---- THANK-YOU STATE (2026-09-10) -------------------------------------
      One more optional key on the row's existing JSON value -- `thankYouState`
      plus an optional `thankYouUrl` -- read the same way `interviewStage` and
@@ -291,6 +369,44 @@
         'this page cannot tell you, and you should not read the table as complete.</p>';
   }
 
+  // ---- FUNNEL SUMMARY -- "how far did it get", 2026-09-25 -----------------
+  // A small table, six rows, funnel order (applied at the top, offer at the
+  // bottom). Mirrors STATUS/FUNNEL_LABEL exactly so the words on this page
+  // match the words in his own request. Renders even at zero so an empty
+  // bucket reads as "zero of these", never a missing row.
+  function renderFunnel(mountSel, funnel) {
+    var mount = document.querySelector(mountSel);
+    if (!mount) { return; }
+    if (!funnel) {
+      mount.innerHTML = '<p class="mt-dim">Could not compute the funnel -- the board read failed.</p>';
+      return;
+    }
+    var ORDER = [
+      ['appliedTotal', 'Applied (total)'],
+      ['rejectedNoInterview', FUNNEL_LABEL.rejected_no_interview],
+      ['interviewRecruiter', FUNNEL_LABEL.interview_recruiter],
+      ['interviewHiringManager', FUNNEL_LABEL.interview_hiring_manager],
+      ['interviewOnsite', FUNNEL_LABEL.interview_onsite],
+      ['offer', FUNNEL_LABEL.offer]
+    ];
+    var rowsHtml = ORDER.map(function (pair) {
+      var key = pair[0], label = pair[1];
+      var n = funnel[key];
+      return '<div class="qr-row"><span class="qr-label">' + esc(label) +
+        '</span><span class="qr-val">' + esc(n == null ? '—' : n) + '</span></div>';
+    }).join('');
+    mount.innerHTML =
+      '<div class="counts-total" style="margin-bottom:0;">' + rowsHtml + '</div>' +
+      '<p class="counts-note">Counted by the FURTHEST stage each role ever reached, ' +
+      'not by its final outcome -- a role rejected after the hiring-manager round ' +
+      '(e.g. WGU) counts under &ldquo;Interview with hiring manager&rdquo;, not under ' +
+      '&ldquo;Rejected without interview&rdquo;. The row itself still shows the real ' +
+      'outcome (its Status cell reads &ldquo;Rejected (reached Hiring manager)&rdquo;, ' +
+      'not a bare &ldquo;Rejected&rdquo;). &ldquo;Additional interview / onsite&rdquo; ' +
+      'covers panel, final-round and in-person on-site stages together. Read live from ' +
+      'the same database read that builds the table below -- nothing here is hand-typed.</p>';
+  }
+
   function render(mount, data) {
     // ---- harvest the authored write-ups already on the page -------------
     // The five roles at interview carry hand-written detail -- recruiter name
@@ -343,7 +459,15 @@
     // on this page is hand-typed any more.
     var counts = {
       all: rows.length, interviewed: 0, applied: 0, stale: 0,
-      unclear: 0, rejected: 0, offer: 0, withdrawn: 0, drafted: 0, companies: 0
+      unclear: 0, rejected: 0, offer: 0, withdrawn: 0, drafted: 0, companies: 0,
+      funnel: {
+        appliedTotal: rows.length,
+        rejectedNoInterview: 0,
+        interviewRecruiter: 0,
+        interviewHiringManager: 0,
+        interviewOnsite: 0,
+        offer: 0
+      }
     };
     var seenCompanies = {};
     rows.forEach(function (r) {
@@ -357,6 +481,13 @@
       else if (s === 'drafted') { counts.drafted++; }
       var c = String(companyOf(r.st, r.key) || '').trim().toLowerCase();
       if (c && !seenCompanies[c]) { seenCompanies[c] = 1; counts.companies++; }
+
+      var fb = funnelBucket(r.st);
+      if (fb === 'rejected_no_interview') { counts.funnel.rejectedNoInterview++; }
+      else if (fb === 'interview_recruiter') { counts.funnel.interviewRecruiter++; }
+      else if (fb === 'interview_hiring_manager') { counts.funnel.interviewHiringManager++; }
+      else if (fb === 'interview_onsite') { counts.funnel.interviewOnsite++; }
+      else if (fb === 'offer') { counts.funnel.offer++; }
     });
 
     var FILTERS = [
@@ -411,6 +542,10 @@
       var d = rowDate(st);
       var rank = parseInt(st.preferenceRank, 10);
       var label = STATUS_LABEL[s] || (s ? s : 'No decision recorded');
+      // Boubacar, 2026-09-25: a rejected role should show HOW FAR it got, not
+      // just "Rejected" -- so a rejection after the hiring-manager round
+      // (WGU) reads differently from one that never had an interview at all.
+      if (s === 'rejected') { label += rejectedStageSuffix(st); }
       var stage = st.interviewStage || '';
 
 
@@ -501,7 +636,17 @@
         var live = host.querySelector('.rt-state');
         if (!live) { return; }
         var v = live.getAttribute('data-state') || '';
-        chipCell.textContent = live.textContent;
+        // FIX 2026-09-25: RoleTracker's own chip carries no reached-stage
+        // suffix, so a blind copy of its textContent was silently erasing
+        // the "(reached Hiring manager)" wording the moment RoleTracker
+        // painted (which happens on every load, right after MasterTable
+        // resolves -- see the ORDER MATTERS comment where these two are
+        // wired together). interviewStage is not a field RoleTracker ever
+        // writes, so re-deriving the suffix from the same `st` this row was
+        // built from is safe and always current.
+        var liveText = live.textContent;
+        if (v === 'rejected') { liveText += rejectedStageSuffix(st); }
+        chipCell.textContent = liveText;
         chipCell.className = 'st st-' + (v || 'none') + ' mt-chip';
         tr.setAttribute('data-status', v);
         // A status that is no longer 'applied' cannot be stale, and a row he
@@ -517,6 +662,7 @@
     });
 
     renderSweepStatus('#sweep-mount', rows);
+    renderFunnel('#funnel-mount', counts.funnel);
 
     // ---- filtering ------------------------------------------------------
     var allRows = Array.prototype.slice.call(tbody.querySelectorAll('.mt-row'));
